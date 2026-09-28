@@ -20,7 +20,7 @@ The manifest of every fixture is byte-identical to its source (same sha256):
 - `cs/20260925T235434Z-af48/manifest.json`: `89640893c800d81203a41bcbd54f8f5de804ef9849345a3ad5700619c5a65c50`
 
 `SHA256SUMS` beside this file lists the sha256 of every fixture file (429 files), in the
-format `shasum -a 256` prints; its own sha256 is `63d0e0c1c83101836b89025fa2541dac5c0dd846a440c735139a0be30a644ed5`.
+format `shasum -a 256` prints; its own sha256 is `f5ecc08bac0a69bfc4942caa6ea1f9063abf6e34e6e85f3b0f71659f241c7c23`.
 Verify with `cd tests/fixtures && shasum -a 256 -c SHA256SUMS`.
 
 ## The runs
@@ -43,7 +43,7 @@ Verify with `cd tests/fixtures && shasum -a 256 -c SHA256SUMS`.
 
 For each source run: `manifest.json` copied byte for byte; each `episodes/part-*.parquet`
 read with pyarrow, its `trace_obs` column replaced by an all-null string column of the same
-length, and written back under the same name. Nothing else in any column changed: the
+length, and written back under the same name. Nothing else in any column changed (one exception, below): the
 envelope (`trace`), `meta`, `config`, `backend_meta`, `outcome`, `error`, `t`, `horizon`,
 `seed`, `replicate_index`, `wall_time` and `confidence` are the originals.
 
@@ -67,8 +67,10 @@ cap and no declaration. Timed-out, capped, unreadable, no-leaf and declared-step
 on the synthetic store the tests build through `Store.create_run` / `Store.append`
 (`tests/conftest.py`, `synth_rows`).
 
-## Known content
+## One edit beyond the nulling
 
 The cs replay fixture's three `error` values are Python tracebacks recorded by the replay
-harness. They name the file paths of the machine that recorded them. They are kept as the
-originals were stored.
+harness, and the originals name the home directory of the machine that recorded them. In
+the copy, the prefix `/Users/<user>/` in those three strings reads `~/` (ruled 2026-09-28);
+the rest of each traceback, and every other value in every column, is the original. The
+digests in `SHA256SUMS` are of the copy as committed.
