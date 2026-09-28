@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="672" viewBox="0 0 760 672" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12">
+<rect x="0" y="0" width="760" height="672" fill="#fcfcfb"/>
+<text x="64" y="22" fill="#0b0b0b" font-size="14" font-weight="600">20260915T210140Z-4847 · tau2-airline/gpt-4.1-mini-2025-04-14@v0</text>
+<text x="64" y="40" fill="#52514e">placed 200 · died 110 · ended 90 · timed out 0 · capped 0 · excluded 0 · events: unsolved</text>
+<line x1="64" y1="326.0" x2="736" y2="326.0" stroke="#e5e4e0" stroke-width="1"/>
+<text x="56" y="330.0" fill="#52514e" text-anchor="end">0</text>
+<line x1="64" y1="263.5" x2="736" y2="263.5" stroke="#e5e4e0" stroke-width="1"/>
+<text x="56" y="267.5" fill="#52514e" text-anchor="end">0.25</text>
+<line x1="64" y1="201.0" x2="736" y2="201.0" stroke="#e5e4e0" stroke-width="1"/>
+<text x="56" y="205.0" fill="#52514e" text-anchor="end">0.5</text>
+<line x1="64" y1="138.5" x2="736" y2="138.5" stroke="#e5e4e0" stroke-width="1"/>
+<text x="56" y="142.5" fill="#52514e" text-anchor="end">0.75</text>
+<line x1="64" y1="76.0" x2="736" y2="76.0" stroke="#e5e4e0" stroke-width="1"/>
+<text x="56" y="80.0" fill="#52514e" text-anchor="end">1</text>
+<line x1="64.0" y1="326" x2="64.0" y2="330" stroke="#52514e" stroke-width="1"/>
+<text x="64.0" y="343" fill="#52514e" text-anchor="middle">0</text>
+<line x1="216.7" y1="326" x2="216.7" y2="330" stroke="#52514e" stroke-width="1"/>
+<text x="216.7" y="343" fill="#52514e" text-anchor="middle">10</text>
+<line x1="369.5" y1="326" x2="369.5" y2="330" stroke="#52514e" stroke-width="1"/>
+<text x="369.5" y="343" fill="#52514e" text-anchor="middle">20</text>
+<line x1="522.2" y1="326" x2="522.2" y2="330" stroke="#52514e" stroke-width="1"/>
+<text x="522.2" y="343" fill="#52514e" text-anchor="middle">30</text>
+<line x1="674.9" y1="326" x2="674.9" y2="330" stroke="#52514e" stroke-width="1"/>
+<text x="674.9" y="343" fill="#52514e" text-anchor="middle">40</text>
+<line x1="64" y1="326" x2="736" y2="326" stroke="#52514e" stroke-width="1"/>
+<text x="736" y="358" fill="#52514e" text-anchor="end">step</text>
+<text transform="translate(16 201.0) rotate(-90)" fill="#52514e" text-anchor="middle">share of runs still going</text>
+<line x1="64" y1="584.0" x2="736" y2="584.0" stroke="#e5e4e0" stroke-width="1"/>
+<text x="56" y="588.0" fill="#52514e" text-anchor="end">0</text>
+<line x1="64" y1="536.5" x2="736" y2="536.5" stroke="#e5e4e0" stroke-width="1"/>
+<text x="56" y="540.5" fill="#52514e" text-anchor="end">0.25</text>
+<line x1="64" y1="489.0" x2="736" y2="489.0" stroke="#e5e4e0" stroke-width="1"/>
+<text x="56" y="493.0" fill="#52514e" text-anchor="end">0.5</text>
+<line x1="64" y1="441.5" x2="736" y2="441.5" stroke="#e5e4e0" stroke-width="1"/>
+<text x="56" y="445.5" fill="#52514e" text-anchor="end">0.75</text>
+<line x1="64" y1="394.0" x2="736" y2="394.0" stroke="#e5e4e0" stroke-width="1"/>
+<text x="56" y="398.0" fill="#52514e" text-anchor="end">1</text>
+<line x1="64.0" y1="584" x2="64.0" y2="588" stroke="#52514e" stroke-width="1"/>
+<text x="64.0" y="601" fill="#52514e" text-anchor="middle">0</text>
+<line x1="216.7" y1="584" x2="216.7" y2="588" stroke="#52514e" stroke-width="1"/>
+<text x="216.7" y="601" fill="#52514e" text-anchor="middle">10</text>
+<line x1="369.5" y1="584" x2="369.5" y2="588" stroke="#52514e" stroke-width="1"/>
+<text x="369.5" y="601" fill="#52514e" text-anchor="middle">20</text>
+<line x1="522.2" y1="584" x2="522.2" y2="588" stroke="#52514e" stroke-width="1"/>
+<text x="522.2" y="601" fill="#52514e" text-anchor="middle">30</text>
+<line x1="674.9" y1="584" x2="674.9" y2="588" stroke="#52514e" stroke-width="1"/>
+<text x="674.9" y="601" fill="#52514e" text-anchor="middle">40</text>
+<line x1="64" y1="584" x2="736" y2="584" stroke="#52514e" stroke-width="1"/>
+<text x="736" y="616" fill="#52514e" text-anchor="end">step</text>
+<text transform="translate(16 489.0) rotate(-90)" fill="#52514e" text-anchor="middle">share of runs died, cumulative</text>
+<polygon points="64.0,76.0 201.5,76.0 201.5,76.9 216.7,76.9 216.7,78.4 232.0,78.4 232.0,82.1 247.3,82.1 247.3,91.7 262.5,91.7 262.5,96.4 277.8,96.4 277.8,104.0 293.1,104.0 293.1,108.1 308.4,108.1 308.4,113.8 323.6,113.8 323.6,120.0 338.9,120.0 338.9,127.9 354.2,127.9 354.2,142.0 369.5,142.0 369.5,155.9 384.7,155.9 384.7,173.4 400.0,173.4 400.0,182.9 415.3,182.9 415.3,192.7 430.5,192.7 430.5,208.1 445.8,208.1 445.8,219.1 461.1,219.1 461.1,221.9 476.4,221.9 476.4,230.7 491.6,230.7 491.6,236.7 506.9,236.7 506.9,248.9 522.2,248.9 522.2,266.3 552.7,266.3 552.7,273.6 568.0,273.6 568.0,282.4 583.3,282.4 583.3,293.0 598.5,293.0 598.5,300.2 736.0,300.2 736.0,326.0 736.0,326.0 736.0,326.0 736.0,326.0 736.0,326.0 598.5,326.0 598.5,323.2 583.3,323.2 583.3,315.9 568.0,315.9 568.0,309.4 552.7,309.4 552.7,304.1 522.2,304.1 522.2,290.1 506.9,290.1 506.9,279.7 491.6,279.7 491.6,274.3 476.4,274.3 476.4,266.2 461.1,266.2 461.1,263.5 445.8,263.5 445.8,252.7 430.5,252.7 430.5,237.1 415.3,237.1 415.3,226.7 400.0,226.7 400.0,216.4 384.7,216.4 384.7,196.4 369.5,196.4 369.5,179.9 354.2,179.9 354.2,162.6 338.9,162.6 338.9,152.5 323.6,152.5 323.6,144.5 308.4,144.5 308.4,136.9 293.1,136.9 293.1,131.4 277.8,131.4 277.8,120.9 262.5,120.9 262.5,114.0 247.3,114.0 247.3,98.7 232.0,98.7 232.0,91.5 216.7,91.5 216.7,87.8 201.5,87.8 201.5,76.0 64.0,76.0" fill="#cde2fb" opacity="0.7"/>
+<polyline points="64.0,76.0 201.5,76.0 201.5,82.3 216.7,82.3 216.7,85.0 232.0,85.0 232.0,90.4 247.3,90.4 247.3,102.9 262.5,102.9 262.5,108.7 277.8,108.7 277.8,117.7 293.1,117.7 293.1,122.5 308.4,122.5 308.4,129.2 323.6,129.2 323.6,136.2 338.9,136.2 338.9,145.3 354.2,145.3 354.2,161.0 369.5,161.0 369.5,176.2 384.7,176.2 384.7,194.9 400.0,194.9 400.0,204.8 415.3,204.8 415.3,214.9 430.5,214.9 430.5,230.4 445.8,230.4 445.8,241.3 461.1,241.3 461.1,244.1 476.4,244.1 476.4,252.5 491.6,252.5 491.6,258.2 506.9,258.2 506.9,269.5 522.2,269.5 522.2,285.2 552.7,285.2 552.7,291.5 568.0,291.5 568.0,299.1 583.3,299.1 583.3,308.1 598.5,308.1 598.5,314.1 736.0,314.1 736.0,326.0 736.0,326.0" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round"/>
+<text x="64" y="68" fill="#0b0b0b">Kaplan–Meier over leaf-span index; band: Greenwood, plain, 95%</text>
+<line x1="400.0" y1="201.0" x2="400.0" y2="326" stroke="#52514e" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="406.0" y="195.0" fill="#52514e">median step 22</text>
+<polyline points="64.0,584.0 201.5,584.0 201.5,579.2 216.7,579.2 216.7,577.2 232.0,577.2 232.0,573.1 247.3,573.1 247.3,563.6 262.5,563.6 262.5,559.2 277.8,559.2 277.8,552.3 293.1,552.3 293.1,548.6 308.4,548.6 308.4,543.6 323.6,543.6 323.6,538.2 338.9,538.2 338.9,531.4 354.2,531.4 354.2,519.4 369.5,519.4 369.5,507.9 384.7,507.9 384.7,493.6 400.0,493.6 400.0,486.1 415.3,486.1 415.3,478.4 430.5,478.4 430.5,466.7 445.8,466.7 445.8,458.4 461.1,458.4 461.1,456.3 476.4,456.3 476.4,449.8 491.6,449.8 491.6,445.5 506.9,445.5 506.9,436.9 522.2,436.9 522.2,425.0 552.7,425.0 552.7,420.2 568.0,420.2 568.0,414.4 583.3,414.4 583.3,407.6 598.5,407.6 598.5,403.1 736.0,403.1 736.0,394.0 736.0,394.0" fill="none" stroke="#eb6834" stroke-width="2" stroke-linejoin="round"/>
+<line x1="736.0" y1="408.9" x2="736.0" y2="394.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+<rect x="64" y="623" width="10" height="10" rx="2" fill="#eb6834"/>
+<text x="79" y="632" fill="#0b0b0b">llm · 110 deaths · F = 1.000</text>
+<text x="64" y="386" fill="#0b0b0b">Aalen–Johansen cumulative incidence; band: bootstrap 95%, B = 1000, seed = 0</text>
+<text x="64" y="662" fill="#52514e">Poisson Trace · Prove 0.0.1 · leaf span index</text>
+</svg>
