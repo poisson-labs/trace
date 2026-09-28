@@ -1,0 +1,71 @@
+{
+  "axis_types": {
+    "scenario": "categorical"
+  },
+  "backend": "local",
+  "created_at": "2026-09-25T23:54:34.443919Z",
+  "environment": {
+    "capture": {
+      "active": true,
+      "alias_map_version": "1",
+      "content": true,
+      "instrumented": [
+        "openai_agents"
+      ],
+      "max_observation_bytes": "none",
+      "max_spans": null,
+      "reason": null,
+      "requested": true,
+      "semconv": "1.42.0"
+    },
+    "import_path": "cs_agents_wrapper.rollout:rollout",
+    "max_mde_accepted": 0.99,
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "proofload_version": "0.0.1",
+    "python": "3.11.7 (main, Feb 12 2025, 16:08:13) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "sweep": {
+      "axis_types": {
+        "scenario": "categorical"
+      },
+      "configs": [
+        {
+          "scenario": "cs-seat-change"
+        },
+        {
+          "scenario": "cs-flight-status"
+        },
+        {
+          "scenario": "cs-rebook-after-delay"
+        },
+        {
+          "scenario": "cs-cancel-trip"
+        },
+        {
+          "scenario": "cs-baggage-policy"
+        },
+        {
+          "scenario": "cs-wifi-question"
+        },
+        {
+          "scenario": "cs-compensation-claim"
+        },
+        {
+          "scenario": "cs-off-topic"
+        }
+      ],
+      "duplicates_dropped": 0,
+      "replicates": 3,
+      "retain_traces_for": null,
+      "t_unit": "turns",
+      "target_id": "cs_agents/replay"
+    }
+  },
+  "proofload_version": "0.0.1",
+  "retain_traces_for": null,
+  "run_id": "20260925T235434Z-af48",
+  "run_salt": "717c974e451043ec",
+  "schema_version": 1,
+  "status": "complete",
+  "t_unit": "turns",
+  "target_id": "cs_agents/replay"
+}
