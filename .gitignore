@@ -1,0 +1,34 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+
+# Testing / tooling caches
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# Agent tooling
+.claude/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Devlogs are kept outside the repository (docs/repo-hygiene.md, section 2.7)
+devlog.md
+
+# Local secrets. Never committed.
+.env
+.env.local
