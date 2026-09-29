@@ -41,6 +41,21 @@ format `shasum -a 256` prints. Verify with `cd tests/fixtures && shasum -a 256 -
   rows with an outcome and 3 errored rows whose `error` is a `ReplayMiss` traceback (no
   outcome, not a timeout).
 
+## The recipe as a script
+
+`build_fixtures.py` beside this file holds the three recipes described below (bodies removed,
+copied whole, outcome-only) and the one edit beyond them. Given the two source stores it
+rebuilds all seven fixtures into an empty directory, checks each copy through Prove's own
+reader, and compares every file it wrote with `SHA256SUMS`:
+
+```
+python tests/fixtures/build_fixtures.py DEST --runs RUNS_ROOT --cs CS_ROOT
+```
+
+The source stores are not public, so the script is the record of how the fixtures were made;
+with the sources and pyarrow 25.0.1 it reproduces the 770 committed files byte for byte. It is
+not listed in `SHA256SUMS`, which covers the fixture stores only.
+
 ## The nulling recipe
 
 For each source run: `manifest.json` copied byte for byte; each `episodes/part-*.parquet`
@@ -80,8 +95,8 @@ digests in `SHA256SUMS` are of the copy as committed.
 ## Added for the fix check (2026-09-29)
 
 Three more of Prove's stored runs, copied on 2026-09-29 under rulings 9 and 10 of that day,
-after a scan of every byte that is committed (below). The recipe is
-`projects/trace/log/trace-fix-check-a/evidence/build_fixtures.py` in the Poisson Labs vault.
+after a scan of every byte that is committed (below). The recipe is `build_fixtures.py`
+beside this file.
 
 | Fixture | Source (on the machine that made it) | Source manifest sha256 | Parts | Rows | Made how | Size before | Size after |
 |---|---|---|---|---|---|---|---|
