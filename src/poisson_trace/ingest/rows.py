@@ -31,6 +31,7 @@ class Run:
     started_from: str
     declared: Mapping[str, Any]
     files: tuple[Mapping[str, str], ...]
+    counts: Mapping[str, int] = field(default_factory=dict)  # the reader's own, as printed
 
 
 def case_id(text: str) -> str:
