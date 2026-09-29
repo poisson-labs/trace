@@ -60,3 +60,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = ["-m", "not lane_j"]
+markers = [
+    "lane_j: runs DeepEval itself at the pinned version, installed from PyPI; deselected unless -m lane_j",
+]
