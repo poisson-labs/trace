@@ -1,4 +1,4 @@
-"""The two reports: markdown to stdout, the JSON structure, and the one SVG. Stdlib only."""
+"""The reports: markdown to stdout, the JSON structure, and the one SVG. Stdlib only."""
 
 from __future__ import annotations
 
@@ -265,6 +265,28 @@ class CompareReport:
 
     def to_json(self) -> str:
         return _dumps({k: v for k, v in self.data.items() if not k.startswith("_")})
+
+
+@dataclass(frozen=True)
+class FixCheckReport:
+    data: Mapping[str, Any]
+
+    def to_markdown(self) -> str:
+        raise NotImplementedError
+
+    def to_json(self) -> str:
+        raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class ChangesReport:
+    data: Mapping[str, Any]
+
+    def to_markdown(self) -> str:
+        raise NotImplementedError
+
+    def to_json(self) -> str:
+        raise NotImplementedError
 
 
 # ---------- SVG ----------

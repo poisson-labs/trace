@@ -238,3 +238,9 @@ def bh(p: np.ndarray, q: float) -> np.ndarray:
     out = np.empty(m, dtype=np.float64)
     out[order] = adjusted
     return out.reshape(arr.shape)
+
+
+def deaths_needed(
+    max_mde_hr: float, share_a: float, *, alpha: float = 0.05, power: float = 0.8
+) -> int:
+    raise NotImplementedError

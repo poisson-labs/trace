@@ -1,4 +1,4 @@
-"""The console script: ``poisson-trace where`` and ``poisson-trace compare``.
+"""The console script: ``poisson-trace where``, ``compare``, ``fix-check`` and ``changes``.
 
 ``proofload`` is imported inside ``main`` and nowhere at module level, so the check that it is
 present and at the pinned version runs first and reports in one sentence.
@@ -28,7 +28,9 @@ class _Parser(argparse.ArgumentParser):
 
 def _build_parser() -> _Parser:
     parser = _Parser(prog="poisson-trace", description="Where in the workflow runs die.")
-    verbs = parser.add_subparsers(dest="verb", required=True, metavar="where|compare")
+    verbs = parser.add_subparsers(
+        dest="verb", required=True, metavar="where|compare|fix-check|changes"
+    )
 
     def common(p: argparse.ArgumentParser) -> None:
         p.add_argument("--store", required=True, help="the root of a Prove store")
@@ -69,6 +71,36 @@ def _build_parser() -> _Parser:
         help="the largest minimum detectable hazard ratio the comparison is allowed",
     )
     compare.add_argument("--alpha", type=float, default=0.05, metavar="A")
+
+    def paired(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--store", required=True, help="the root of a Prove store")
+        p.add_argument(
+            "--event",
+            action="append",
+            required=True,
+            metavar="NAME",
+            help="an outcome that counts as a failure; repeatable",
+        )
+        p.add_argument("--alpha", type=float, default=0.05, metavar="A")
+        p.add_argument("--top", type=int, default=10, metavar="N")
+        p.add_argument("--json", action="store_true", help="print the JSON structure only")
+
+    fix = verbs.add_parser(
+        "fix-check", help="an old and a new version re-run on the same inputs, compared"
+    )
+    fix.add_argument("old")
+    fix.add_argument("new")
+    paired(fix)
+    fix.add_argument("--failing-from", metavar="RUN")
+    fix.add_argument("--min-failures", type=int, metavar="M")
+    fix.add_argument("--inputs", metavar="all")
+    fix.add_argument("--max-mde", type=float, metavar="X")
+    fix.add_argument("--seed", type=int, default=0, metavar="S")
+
+    changes = verbs.add_parser("changes", help="the inputs whose failure share moved")
+    changes.add_argument("a")
+    changes.add_argument("b")
+    paired(changes)
     return parser
 
 
@@ -99,7 +131,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         ns = _build_parser().parse_args(argv)
         _validate(ns)
-        return _where(ns) if ns.verb == "where" else _compare(ns)
+        if ns.verb == "where":
+            return _where(ns)
+        if ns.verb == "compare":
+            return _compare(ns)
+        if ns.verb == "fix-check":
+            return _fix_check(ns)
+        return _changes(ns)
     except _Refusal as e:
         sys.stderr.write(str(e) + "\n")
         return 1
@@ -433,6 +471,17 @@ def _compare(ns: argparse.Namespace) -> int:
     report = CompareReport(data=data)
     sys.stdout.write(report.to_json() if ns.json else report.to_markdown())
     return code
+
+
+# ---------- fix-check and changes ----------
+
+
+def _fix_check(ns: argparse.Namespace) -> int:
+    raise NotImplementedError
+
+
+def _changes(ns: argparse.Namespace) -> int:
+    raise NotImplementedError
 
 
 if __name__ == "__main__":
