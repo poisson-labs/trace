@@ -431,10 +431,12 @@ def accepts_at(limit: float, *, decimals: int) -> float:
 
 
 def _fisher(c: Counts) -> float:
-    """Fisher's exact test on one input, two-sided: the exact test with one stratum."""
-    failed = c.failed_old + c.failed_new
-    low, pmf = _hypergeometric(c.runs_old, c.runs_new, failed)
-    return _two_sided(pmf, c.failed_new - low)
+    """Fisher's exact test on one input, two-sided, computed as Prove computes it (scipy's
+    ``fisher_exact``). The exact test above gives the same number to 1e-12 on one input; the
+    flags use this one so that an input whose adjusted value sits exactly on the level is
+    flagged, or not, as Prove's ``diff`` flags it."""
+    table = [[c.failed_old, c.runs_old - c.failed_old], [c.failed_new, c.runs_new - c.failed_new]]
+    return float(stats.fisher_exact(table, alternative="two-sided")[1])
 
 
 def flags(counts: Sequence[Counts], *, alpha: float = 0.05, power: float = 0.8) -> tuple[Flag, ...]:
