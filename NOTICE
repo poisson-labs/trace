@@ -157,10 +157,13 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 Test fixtures
-tests/fixtures/ holds four stored runs of Prove with their observation bodies removed:
-two runs of the tau2-bench airline domain (tau2-bench, MIT,
-https://github.com/sierra-research/tau2-bench) driven by gpt-4.1-mini, and two runs of the
-OpenAI Agents SDK customer-service example (MIT,
-https://github.com/openai/openai-agents-python). The envelopes carry span names, kinds,
-timings, model ids and response ids, and no prompt or completion content.
+tests/fixtures/ holds seven stored runs of Prove with their observation bodies removed:
+three runs of the tau2-bench airline domain (tau2-bench, MIT,
+https://github.com/sierra-research/tau2-bench) driven by gpt-4.1-mini, one of them the
+patched guardrail pilot stored with no trace; two runs of the OpenAI Agents SDK
+customer-service example (MIT, https://github.com/openai/openai-agents-python); and two runs
+of an agent on the HumanEval problems (HumanEval, MIT, https://github.com/openai/human-eval)
+driven by gpt-4o-mini, reduced to their outcomes (task id, temperature, seed, outcome and
+timing; no problem text and no completion). The envelopes carry span names, kinds, timings,
+model ids and response ids, and no prompt or completion content.
 tests/fixtures/PROVENANCE.md records each source and its digest.

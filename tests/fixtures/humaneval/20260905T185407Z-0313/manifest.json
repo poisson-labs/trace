@@ -1,0 +1,1372 @@
+{
+  "axis_types": {
+    "task_id": "categorical",
+    "temperature": "continuous"
+  },
+  "backend": "modal",
+  "created_at": "2026-09-05T18:54:08.373078Z",
+  "environment": {
+    "capture": {
+      "active": false,
+      "content": false,
+      "instrumented": [],
+      "max_span_bytes": 8192,
+      "max_spans": 1000,
+      "reason": "the host installs nothing for a Modal run; the container may not even hold the packages. Each batch records what happened at backend_meta['capture']",
+      "requested": true,
+      "semconv": "1.42.0"
+    },
+    "concurrency": 16,
+    "image": {
+      "apt": [],
+      "dockerfile": "examples/golden_pilot/Dockerfile",
+      "gpu": null,
+      "local_packages": [
+        "golden_pilot"
+      ],
+      "pip": [],
+      "python": "3.11"
+    },
+    "import_path": "golden_pilot.agent:rollout",
+    "modal_app": "proofload",
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "proofload_version": "0.0.1",
+    "python": "3.11.7 (main, Feb 12 2025, 16:08:13) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "secrets": [
+      "golden-pilot"
+    ],
+    "sweep": {
+      "axis_types": {
+        "task_id": "categorical",
+        "temperature": "continuous"
+      },
+      "configs": [
+        {
+          "task_id": "HumanEval/0",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/0",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/1",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/1",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/2",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/2",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/3",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/3",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/4",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/4",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/5",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/5",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/6",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/6",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/7",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/7",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/8",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/8",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/9",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/9",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/10",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/10",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/11",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/11",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/12",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/12",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/13",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/13",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/14",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/14",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/15",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/15",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/16",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/16",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/17",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/17",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/18",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/18",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/19",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/19",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/20",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/20",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/21",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/21",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/22",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/22",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/23",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/23",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/24",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/24",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/25",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/25",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/26",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/26",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/27",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/27",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/28",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/28",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/29",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/29",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/30",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/30",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/31",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/31",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/32",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/32",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/33",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/33",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/34",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/34",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/35",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/35",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/36",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/36",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/37",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/37",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/38",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/38",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/39",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/39",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/40",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/40",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/41",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/41",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/42",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/42",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/43",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/43",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/44",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/44",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/45",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/45",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/46",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/46",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/47",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/47",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/48",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/48",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/49",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/49",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/50",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/50",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/51",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/51",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/52",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/52",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/53",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/53",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/54",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/54",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/55",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/55",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/56",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/56",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/57",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/57",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/58",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/58",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/59",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/59",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/60",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/60",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/61",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/61",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/62",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/62",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/63",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/63",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/64",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/64",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/65",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/65",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/66",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/66",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/67",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/67",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/68",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/68",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/69",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/69",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/70",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/70",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/71",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/71",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/72",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/72",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/73",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/73",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/74",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/74",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/75",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/75",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/76",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/76",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/77",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/77",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/78",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/78",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/79",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/79",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/80",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/80",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/81",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/81",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/82",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/82",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/83",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/83",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/84",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/84",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/85",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/85",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/86",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/86",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/87",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/87",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/88",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/88",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/89",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/89",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/90",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/90",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/91",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/91",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/92",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/92",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/93",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/93",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/94",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/94",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/95",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/95",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/96",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/96",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/97",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/97",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/98",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/98",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/99",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/99",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/100",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/100",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/101",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/101",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/102",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/102",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/103",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/103",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/104",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/104",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/105",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/105",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/106",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/106",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/107",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/107",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/108",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/108",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/109",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/109",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/110",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/110",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/111",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/111",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/112",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/112",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/113",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/113",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/114",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/114",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/115",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/115",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/116",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/116",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/117",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/117",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/118",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/118",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/119",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/119",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/120",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/120",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/121",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/121",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/122",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/122",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/123",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/123",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/124",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/124",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/125",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/125",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/126",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/126",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/127",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/127",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/128",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/128",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/129",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/129",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/130",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/130",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/131",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/131",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/132",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/132",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/133",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/133",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/134",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/134",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/135",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/135",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/136",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/136",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/137",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/137",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/138",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/138",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/139",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/139",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/140",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/140",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/141",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/141",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/142",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/142",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/143",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/143",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/144",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/144",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/145",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/145",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/146",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/146",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/147",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/147",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/148",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/148",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/149",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/149",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/150",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/150",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/151",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/151",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/152",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/152",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/153",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/153",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/154",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/154",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/155",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/155",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/156",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/156",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/157",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/157",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/158",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/158",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/159",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/159",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/160",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/160",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/161",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/161",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/162",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/162",
+          "temperature": 0.7
+        },
+        {
+          "task_id": "HumanEval/163",
+          "temperature": 0.0
+        },
+        {
+          "task_id": "HumanEval/163",
+          "temperature": 0.7
+        }
+      ],
+      "duplicates_dropped": 0,
+      "replicates": 32,
+      "retain_traces_for": null,
+      "t_unit": "tool_calls",
+      "target_id": "golden-pilot/gpt-4o-mini-2024-07-18@v0"
+    }
+  },
+  "proofload_version": "0.0.1",
+  "retain_traces_for": null,
+  "run_id": "20260905T185407Z-0313",
+  "run_salt": "f4b697a8e295f01a",
+  "schema_version": 1,
+  "status": "complete",
+  "t_unit": "tool_calls",
+  "target_id": "golden-pilot/gpt-4o-mini-2024-07-18@v0"
+}
