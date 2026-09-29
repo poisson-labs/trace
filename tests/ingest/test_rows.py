@@ -66,3 +66,13 @@ def test_ic8_cut_and_rows_import_the_standard_library_only() -> None:
         for module in _imports(INGEST / name):
             top = module.split(".")[0]
             assert top == "__future__" or top in sys.stdlib_module_names, (name, module)
+
+
+def test_s22_run_carries_the_readers_counts_empty_by_default() -> None:
+    """Ruled 2026-09-29 (Session A ruling 3). Green by construction on the skeleton that has it."""
+    from poisson_trace.ingest.rows import Run
+
+    base = {"name": "r", "tool": "deepeval", "rows": (), "started": "2026-01-01T00:00:00Z",
+            "started_from": "given", "declared": {}, "files": ()}
+    assert dict(Run(**base).counts) == {}
+    assert dict(Run(**base, counts={"without this metric": 2}).counts) == {"without this metric": 2}

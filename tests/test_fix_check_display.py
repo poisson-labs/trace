@@ -65,6 +65,11 @@ def test_tr72_one_run_per_input_per_version_prints_no_kappa(tmp_path: Path) -> N
         assert "κ" not in block and "times the runs" not in block and "fails again" not in block, block
         text = norm(block).lower()
         assert "cannot" in text and "one run per" in text, block
+        # ruled 2026-09-29 (Session A ruling 5): the JSON says the same, and keeps the p computed
+        j = fix_check(root, "a", "b", ("fail",), "--inputs", "all", "--max-mde", "0.5", "--json")
+        c = j.json()["consistency"]
+        assert c["fails_again"] is None and c["kappa"] is None, c
+        assert isinstance(j.json()["test"]["p"], float)
 
 
 def test_tr72_with_more_than_one_run_per_input_kappa_is_still_printed() -> None:
@@ -73,3 +78,5 @@ def test_tr72_with_more_than_one_run_per_input_kappa_is_still_printed() -> None:
     assert r.code == 0, r.text
     block = norm(_block(r.out, "Consistency"))
     assert "κ 0.779" in block and "4.52 times the runs" in block
+    j = fix_check(HUMANEVAL, HE_A, HE_B, HE_EVENTS, "--inputs", "all", "--max-mde", "0.05", "--json")
+    assert j.json()["consistency"]["kappa"] is not None and j.json()["consistency"]["fails_again"] is not None

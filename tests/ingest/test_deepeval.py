@@ -5,8 +5,10 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import pytest
@@ -15,6 +17,7 @@ from support import (
     IMPORT_MAIN, by_case, case, conversation, deepeval_argv, holds, metric, read_rows, refused,
     run_doc, run_import, run_python, save, scored, tree,
 )
+from support import scalars
 
 STARTED = ["--started", "2026-09-05T18:54:07Z"]
 
@@ -428,3 +431,96 @@ def test_ic5_the_manifest_files_are_each_input_files_name_and_digest(tmp_path: P
         {"name": "one.json", "sha256": hashlib.sha256(first.read_bytes()).hexdigest()},
         {"name": "two.json.gz", "sha256": hashlib.sha256(second.read_bytes()).hexdigest()},
     ]
+
+
+# ---------- ruled 2026-09-29, Session A ruling 1: the name is DeepEval's local clock ----------
+
+NEW_YORK = "America/New_York"
+
+
+def _names_the_zone(text: str, local: datetime) -> bool:
+    """The summary names the zone the name was read in: its IANA name, its abbreviation, or its
+    offset from UTC in any of the usual spellings."""
+    offset = local.utcoffset()
+    assert offset is not None
+    minutes = int(offset.total_seconds() // 60)
+    sign, hours, rest = "-" if minutes < 0 else "+", abs(minutes) // 60, abs(minutes) % 60
+    spelled = rf"(?<![\d:]){re.escape(sign)}0?{hours}(?::?{rest:02d})?(?![\d])"
+    return NEW_YORK in text or re.search(rf"\b{local.strftime('%Z')}\b", text) is not None or re.search(spelled, text) is not None
+
+
+@pytest.mark.parametrize("name,utc", [
+    ("test_run_20260905_145407.json", "2026-09-05T18:54:07Z"),  # EDT, four hours behind UTC
+    ("test_run_20260105_135407.json", "2026-01-05T18:54:07Z"),  # EST, five hours behind UTC
+])
+def test_id9_the_name_is_read_in_the_zone_of_the_machine_running_the_import(tmp_path: Path, name: str, utc: str) -> None:
+    f = save(tmp_path / name, run_doc(scored("x", [0.9, 0.2])))
+    root = tmp_path / "store"
+    r = run_python(IMPORT_MAIN, deepeval_argv(f, root, "v1"), env=dict(os.environ, TZ=NEW_YORK), cwd=tmp_path)
+    assert r.code == 0, r.text
+    m = Store(root).manifest("v1")
+    assert (m.created_at, m.environment["import"]["started_from"]) == (utc, "file name")
+    local = datetime.fromisoformat(utc[:-1] + "+00:00").astimezone(ZoneInfo(NEW_YORK))
+    text = r.out.replace(str(tmp_path.resolve()), "").replace(str(tmp_path), "")
+    assert "saved" in text.lower(), r.out
+    assert _names_the_zone(text, local), r.out
+
+
+def test_id9_a_name_with_deepevals_collision_suffix_is_read_the_same(tmp_path: Path) -> None:
+    f = save(tmp_path / "test_run_20260905_185407_2.json", run_doc(scored("x", [0.9])))
+    os.utime(f, (1_800_000_000, 1_800_000_000))
+    root = tmp_path / "store"
+    r = run_python(IMPORT_MAIN, deepeval_argv(f, root, "v1"), env=dict(os.environ, TZ="UTC"), cwd=tmp_path)
+    assert r.code == 0, r.text
+    m = Store(root).manifest("v1")
+    assert (m.created_at, m.environment["import"]["started_from"]) == ("2026-09-05T18:54:07Z", "file name")
+
+
+# ---------- ruled 2026-09-29, Session A ruling 2: --case input is always a digest ----------
+
+
+def test_id6_case_input_is_a_digest_whatever_the_inputs_length(tmp_path: Path) -> None:
+    short, tiny = "Kz3w what is two plus two", "Q7"
+    doc = run_doc([case("a", [metric("Score", 0.9)], order=0, input=short),
+                   case("b", [metric("Score", 0.1)], order=1, input=tiny)])
+    f = save(tmp_path / "results.json", doc)
+    root = tmp_path / "store"
+    _ok(deepeval_argv(f, root, "v1", case="input"))
+
+    def digest(text: str) -> str:
+        return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+    assert by_case(read_rows(root, "v1")) == {digest(short): ["met"], digest(tiny): ["missed"]}
+    assert holds(root, short) == []
+
+
+# ---------- ruled 2026-09-29, Session A ruling 3: the reader's counts reach --json too ----------
+
+
+def _carries(value: Any, label: str, count: int) -> bool:
+    """Somewhere in the JSON, a mapping pairs the label with the count: as key and value, or as
+    two values of one object."""
+    if isinstance(value, dict):
+        if value.get(label) == count or (label in value.values() and count in value.values()):
+            return True
+        return any(_carries(v, label, count) for v in value.values())
+    if isinstance(value, list):
+        return any(_carries(v, label, count) for v in value)
+    return False
+
+
+def test_id2_without_this_metric_and_the_thresholds_are_carried_in_json(tmp_path: Path) -> None:
+    doc = run_doc([
+        *[case(f"a{i}", [metric("Score", 0.9, threshold=0.25)], order=i) for i in range(3)],
+        *[case(f"b{i}", [metric("Score", 0.9, threshold=0.75)], order=3 + i) for i in range(2)],
+        case("c0", [metric("Other", 0.5)], order=5), case("c1", [metric("Other", 0.5)], order=6),
+    ])
+    f = save(tmp_path / "results.json", doc)
+    root = tmp_path / "store"
+    r = run_import(deepeval_argv(f, root, "v1", cut=("recorded",), extra=["--json"]))
+    assert r.code == 0, r.text
+    out = r.json()
+    assert _carries(out, "without this metric", 2), out
+    labels = [s for s in scalars(out) if isinstance(s, str)]
+    for threshold, count in (("0.25", 3), ("0.75", 2)):
+        assert any(threshold in s and _carries(out, s, count) for s in labels) or _carries(out, float(threshold), count), (threshold, out)

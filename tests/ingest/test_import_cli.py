@@ -468,3 +468,15 @@ def test_ic14_no_frozen_trace_test_is_edited() -> None:
     """Green by construction: the digests of Trace's test files as they stood at main 42456f7."""
     got = {name: hashlib.sha256((TESTS / name).read_bytes()).hexdigest() for name in FROZEN}
     assert got == FROZEN
+
+
+def test_ic7_case_input_keeps_no_text_of_the_input(tmp_path: Path) -> None:
+    """Ruled 2026-09-29 (Session A ruling 2): the input is the case's identity only as a digest."""
+    doc = _content_doc()
+    doc["conversationalTestCases"] = []
+    f = save(tmp_path / "results.json", doc)
+    root = tmp_path / "store"
+    r = run_import(deepeval_argv(f, root, "v1", case="input"))
+    assert r.code == 0, r.text
+    assert len(read_rows(root, "v1")) == 5
+    assert holds(root, SENTINEL) == []
