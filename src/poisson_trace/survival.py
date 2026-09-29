@@ -238,3 +238,24 @@ def bh(p: np.ndarray, q: float) -> np.ndarray:
     out = np.empty(m, dtype=np.float64)
     out[order] = adjusted
     return out.reshape(arr.shape)
+
+
+def deaths_needed(
+    max_mde_hr: float, share_a: float, *, alpha: float = 0.05, power: float = 0.8
+) -> int:
+    """Schoenfeld inverted: the smallest number of deaths whose minimum detectable hazard
+    ratio is at most ``max_mde_hr``. The closed form gives the neighbourhood and
+    ``mde_hazard_ratio`` itself settles the integer, so the two cannot disagree."""
+    if not max_mde_hr > 1.0:
+        raise ValueError("no number of deaths detects a hazard ratio of 1 or below")
+    if not 0.0 < share_a < 1.0:
+        raise ValueError("share_a must be strictly between 0 and 1")
+    z = float(stats.norm.isf(alpha / 2.0)) + float(stats.norm.ppf(power))
+    deaths = max(1, math.ceil((z / math.log(max_mde_hr)) ** 2 / (share_a * (1.0 - share_a))))
+    while mde_hazard_ratio(deaths, share_a, alpha=alpha, power=power) > max_mde_hr:
+        deaths += 1
+    while deaths > 1 and mde_hazard_ratio(deaths - 1, share_a, alpha=alpha, power=power) <= (
+        max_mde_hr
+    ):
+        deaths -= 1
+    return deaths

@@ -1,4 +1,4 @@
-"""The two reports: markdown to stdout, the JSON structure, and the one SVG. Stdlib only."""
+"""The reports: markdown to stdout, the JSON structure, and the one SVG. Stdlib only."""
 
 from __future__ import annotations
 
@@ -90,8 +90,146 @@ def _header_lines(run: Mapping[str, Any], events: Sequence[str]) -> list[str]:
     return lines
 
 
-def _cannot_say_lines() -> list[str]:
-    return ["## What this cannot say", ""] + [f"- {sentence}" for sentence in CANNOT_SAY]
+def _cannot_say_lines(sentences: Sequence[str] = CANNOT_SAY) -> list[str]:
+    return ["## What this cannot say", ""] + [f"- {sentence}" for sentence in sentences]
+
+
+COMPARE_POINTER = (
+    "For the share of runs that fail, input by input, and the inputs that changed: "
+    "poisson-trace fix-check A B --inputs all"
+)
+GUIDE_NOT_PROMISE = (
+    "It is a guide to the next design and not a promise about it: a design built to the "
+    "number has an expected limit at the ceiling asked for, so about half the time its own "
+    "limit will land a little above."
+)
+CMH_CAPTION = (
+    "exact conditional Cochran-Mantel-Haenszel test, stratified by input over {inputs} "
+    "{input_word} ({informative} informative), two-sided; α = {alpha}"
+)
+DIFFERENCE_CAPTION = "Mantel-Haenszel weights; interval: Sato variance, large-sample, {level}%"
+LIMIT_CAPTION = (
+    "proportional change on every input, 80% power, α = {alpha}, continuity-corrected normal "
+    "approximation to the stratified statistic"
+)
+FLAGS_CAPTION = (
+    "Fisher's exact test per input, Benjamini-Hochberg at q = {alpha} over {tested} "
+    "{input_word}; {flagged} flagged"
+)
+NO_INTERVAL = "no interval: Sato's variance is not positive on these counts"
+DISAGREE = "the interval and the test disagree; the line above follows the test"
+COPIES = (
+    "no input gave mixed outcomes across its repeats in the {arm} arm: the repeats may be "
+    "copies of one another, and the by-input reading is the safer one"
+)
+
+
+def _points(x: float, *, signed: bool = False, places: int | None = None) -> str:
+    """A share as points: one decimal, two below one point."""
+    value = 100.0 * x
+    if places is None:
+        places = 1 if abs(value) >= 1.0 else 2
+    return f"{value:+.{places}f}" if signed and value != 0.0 else f"{value:.{places}f}"
+
+
+def _percent(x: float) -> str:
+    return f"{100.0 * x:.1f}%"
+
+
+def _sig(x: float) -> str:
+    return f"{x:.3g}"
+
+
+def _count(n: int, word: str) -> str:
+    return f"{n} {word}" if n == 1 else f"{n} {word}s"
+
+
+def _gap(seconds: float) -> str:
+    """Hours and minutes, whole minutes rounded down: ``40 h 50 min``, ``56 min``."""
+    if seconds < 60.0:
+        return f"{int(seconds)} s"
+    hours, minutes = divmod(int(seconds // 60), 60)
+    return f"{hours} h {minutes} min" if hours else f"{minutes} min"
+
+
+def _tally_line(label: str, tally: Mapping[str, Any]) -> str:
+    return f"- Prove's tally ({label}): " + " · ".join(
+        f"{name} {tally[key]}"
+        for name, key in (
+            ("rows", "rows"),
+            ("with outcome", "with_outcome"),
+            ("no outcome", "no_outcome"),
+            ("timed out", "timed_out"),
+            ("infra", "infra"),
+            ("other", "other"),
+        )
+    )
+
+
+def _run_lines(label: str, run: Mapping[str, Any]) -> list[str]:
+    declared = run["declared_repeats"]
+    return [
+        f"- {label}: {run['run_id']} · target: {run['target_id']} · status: {run['status']} · "
+        f"started: {run['created_at']} · declared repeats: "
+        f"{'not recorded' if declared is None else declared}",
+        _tally_line(label, run["tally"]),
+    ]
+
+
+def _config_cell(config: Any) -> str:
+    text = json.dumps(config, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return text.replace("|", "\\|")
+
+
+def _flag_lines(block: Mapping[str, Any], top: int, first: str, second: str) -> list[str]:
+    """The flags table and the attainability sentences. ``first`` and ``second`` name the two
+    arms in the column heads and in the flag."""
+    tested = block["tested"]
+    lines = [
+        FLAGS_CAPTION.format(
+            alpha=_g(block["alpha"]),
+            tested=tested,
+            input_word="input" if tested == 1 else "inputs",
+            flagged=block["flagged"],
+        )
+        + ".",
+        "",
+        f"| input | {first} failed/runs | {second} failed/runs | change | p | q | flag | "
+        "could not have detected a rise below |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    flagged = [r for r in block["rows"] if r["flag"] is not None]
+    rest = [r for r in block["rows"] if r["flag"] is None]
+    shown = flagged + rest[: max(0, top - len(flagged))]
+    for r in shown:
+        flag = "–" if r["flag"] is None else r["flag"][: -len("B")] + second
+        lines.append(
+            f"| {_config_cell(r['config'])} | {r['failed_a']}/{r['runs_a']} | "
+            f"{r['failed_b']}/{r['runs_b']} | {_points(r['change'], signed=True, places=1)} "
+            f"points | {_p(r['p'])} | {_p(r['q'])} | {flag} | "
+            f"{_points(r['limit_rise'], places=1)} points |"
+        )
+    if len(shown) < tested:
+        lines += ["", f"{len(shown)} of {tested} inputs shown, by ascending p; --json lists all."]
+    lone = (
+        f"A lone changed input is flagged only if its p is below α / M = "
+        f"{_sig(block['lone_threshold'])}, and the smallest p an input of this design can give "
+        f"is {_sig(block['smallest_attainable_p'])}: "
+    )
+    if block["together"] is None:
+        lone += "no input can be flagged whatever happens"
+    elif block["together"] == 1:
+        lone += "a lone change can be flagged"
+    else:
+        lone += (
+            "a lone changed input cannot be flagged; at least "
+            f"{block['together']} inputs would have to flip completely together"
+        )
+    lone += (
+        f"; a lone complete flip needs {block['lone_flip_repeats']} repeats per arm. "
+        "An input with no flag is not an input that did not change."
+    )
+    return lines + ["", lone]
 
 
 @dataclass(frozen=True)
@@ -260,7 +398,282 @@ class CompareReport:
             f"**{d['_verdict_line']}**",
             "",
         ]
+        guidance = c.get("guidance")
+        if guidance is not None:
+            lines += self._guidance_lines(guidance) + [""]
+        lines += [COMPARE_POINTER, ""]
         lines += _cannot_say_lines() + [""]
+        return "\n".join(lines)
+
+    def _guidance_lines(self, g: Mapping[str, Any]) -> list[str]:
+        d = self.data
+        c = d["comparison"]
+        asked = _g(c["max_mde_hr"])
+        lines = ["## Guidance", ""]
+        if g["deaths"] is None:
+            lines.append(f"- no number of deaths reaches a hazard ratio of {asked}")
+        else:
+            lines += [
+                f"- deaths: {g['deaths']} would bring the detectable hazard ratio to {asked}; "
+                f"this design has {d['_deaths_common']}",
+                f"- runs: {g['runs']} placed runs at the present share of deaths, which is "
+                f"{g['inputs']} inputs at the present repeats, or {g['repeats']} repeats per "
+                f"arm on these {c['cells']}; this design has {d['_placed_common']} placed runs",
+            ]
+        if g["accepts_at"] is not None:
+            lines.append(
+                f"- ceiling: --max-mde-hr {g['accepts_at']:.3f} accepts this design as it stands"
+            )
+        lines += [
+            "",
+            "These numbers assume the share of runs that die holds in the next runs, and that "
+            "new inputs resemble the present ones. " + GUIDE_NOT_PROMISE,
+        ]
+        return lines
+
+    def to_json(self) -> str:
+        return _dumps({k: v for k, v in self.data.items() if not k.startswith("_")})
+
+
+@dataclass(frozen=True)
+class FixCheckReport:
+    """``data`` is the ``poisson-trace.fix-check/1`` structure, keys in order; keys that start
+    with an underscore serve the markdown only."""
+
+    data: Mapping[str, Any]
+
+    def to_markdown(self) -> str:
+        d = self.data
+        old, new = d["runs"]["old"], d["runs"]["new"]
+        lines = [
+            f"# Poisson Trace · fix check · {old['run_id']} (old) and {new['run_id']} (new)",
+            "",
+            "## Runs",
+            "",
+        ]
+        lines += self._header_lines()
+        lines += ["", "## The control", ""]
+        lines += self._control_lines()
+        lines += ["", "## The comparison", ""]
+        lines += self._comparison_lines()
+        lines += ["", "## Consistency", ""]
+        lines += self._consistency_lines()
+        lines += ["", "## What it could not have detected", ""]
+        lines += self._limit_lines()
+        lines += ["", f"**{d['_verdict_line']}**", ""]
+        if d.get("_disagree"):
+            lines += [DISAGREE, ""]
+        if d["guidance"] is not None:
+            lines += self._guidance_lines() + [""]
+        lines += ["## Inputs that changed", ""]
+        lines += _flag_lines(d["changes"], d["_top"], "old", "new")
+        lines += [""] + _cannot_say_lines(d["cannot_say"]) + [""]
+        return "\n".join(lines)
+
+    def _header_lines(self) -> list[str]:
+        d = self.data
+        inputs, rows = d["inputs"], d["rows"]
+        lines = _run_lines("old", d["runs"]["old"]) + _run_lines("new", d["runs"]["new"])
+        lines.append(f"- the two runs started {_gap(d['gap_seconds'])} apart")
+        lines.append(f"- events: {', '.join(d['events'])}")
+        lines += [f"- {note}" for note in d.get("_event_notes", [])]
+        if inputs["rule"] == "all":
+            rule = "every input either run carries"
+        else:
+            rule = (
+                f"inputs that failed at least {_count(inputs['min_failures'], 'time')} in "
+                f"{inputs['failing_from']}"
+            )
+        left = inputs["left_out"]
+        reasons = "; ".join(f"{reason} {n}" for reason, n in left.items() if n)
+        lines.append(
+            f"- inputs: {rule} · selected {inputs['selected']} · compared "
+            f"{inputs['compared']} · left out {sum(left.values())}"
+            + (f" ({reasons})" if reasons else "")
+        )
+        lines.append(
+            "- rows used: "
+            + " · ".join(
+                f"{arm} {rows[arm]['runs']} (timed out {rows[arm]['timed_out']}, no outcome "
+                f"{rows[arm]['no_outcome']})"
+                for arm in ("old", "new")
+            )
+        )
+        lines.append(
+            "- inputs short of the declared repeats: "
+            f"old {rows['old']['short']} · new {rows['new']['short']}"
+        )
+        lines.append(
+            "- inputs with mixed outcomes across their repeats: "
+            f"old {rows['old']['mixed']} · new {rows['new']['mixed']}"
+        )
+        lines += [f"- {COPIES.format(arm=arm)}" for arm in d.get("_copies", [])]
+        return lines
+
+    def _control_lines(self) -> list[str]:
+        d = self.data
+        lines = [
+            "The old version, re-run on the same inputs with nothing changed.",
+            "",
+            "| version | runs | failed | failure share | did not fail on re-run |",
+            "|---|---|---|---|---|",
+        ]
+        for arm in ("old", "new"):
+            r = d["rows"][arm]
+            stayed = d["control"][f"{arm}_did_not_fail_share"]
+            lines.append(
+                f"| {arm} | {r['runs']} | {r['failed']} | {_percent(1.0 - stayed)} | "
+                f"{_percent(stayed)} |"
+            )
+        lines += [
+            "",
+            "Re-running these inputs and counting the runs that did not fail would have read "
+            f"{_percent(d['control']['old_did_not_fail_share'])} on the old version, where "
+            "nothing changed.",
+        ]
+        return lines
+
+    def _comparison_lines(self) -> list[str]:
+        d = self.data
+        t, diff, by = d["test"], d["difference"], d["by_input"]
+        inputs = d["inputs"]
+        lines = [
+            CMH_CAPTION.format(
+                inputs=inputs["compared"],
+                input_word="input" if inputs["compared"] == 1 else "inputs",
+                informative=inputs["informative"],
+                alpha=_g(t["alpha"]),
+            )
+            + ".",
+            "",
+            f"new failures: observed {t['observed_new']}, expected {_f(t['expected_new'])}, "
+            f"variance {_f(t['variance'])}; p = {_p(t['p'])}",
+        ]
+        caption = DIFFERENCE_CAPTION.format(level=_g(100.0 * (1.0 - t["alpha"])))
+        if diff["variance"] is None:
+            lines.append(
+                f"difference: {_points(diff['points'], signed=True)} points, new minus old "
+                f"(Mantel-Haenszel weights); {NO_INTERVAL}"
+            )
+        else:
+            figures = (diff["points"], diff["lo"], diff["hi"])
+            places = 2 if all(abs(100.0 * x) < 1.0 for x in figures) else 1
+            point, lo, hi = (_points(x, signed=True, places=places) for x in figures)
+            lines.append(f"difference: {point} points, new minus old ({lo} to {hi}; {caption})")
+        if by["method"] == "exact":
+            how = "exact"
+        else:
+            how = f"{by['draws']:,} draws, seed = {by['seed']}"
+        lines.append(
+            f"by input: p = {_p(by['p'])} (sign-flip over the {_count(by['moved'], 'input')} "
+            f"that moved, {how}); not part of the line below"
+        )
+        return lines
+
+    def _consistency_lines(self) -> list[str]:
+        c = self.data["consistency"]
+        kappa = c["kappa"]
+        lines = [
+            f"failure share {_f(c['failure_share'])} · fails again {_f(c['fails_again'])} · "
+            f"κ {_f(kappa)} · within-input variance {_f(c['within'])} against pooled "
+            f"{_f(c['pooled'])}"
+        ]
+        if kappa is not None and kappa < 1.0:
+            lines.append(
+                "a comparison that ignored the inputs would need 1/(1 − κ) = "
+                f"{1.0 / (1.0 - kappa):.2f} times the runs"
+            )
+        return lines
+
+    def _limit_lines(self) -> list[str]:
+        limits = self.data["limits"]
+        alpha = _g(self.data["test"]["alpha"])
+        lines = [LIMIT_CAPTION.format(alpha=alpha) + ".", ""]
+        largest = self.data["_largest"]
+        for name, extreme in (("drop", "every failure gone"), ("rise", "every run failing")):
+            limit = limits[name]
+            if limit is None:
+                lines.append(
+                    f"- a {name} in failure share: no limit; even {extreme}, a {name} of "
+                    f"{_points(largest[name])} points, would have been detected less than four "
+                    "times in five"
+                )
+            else:
+                lines.append(
+                    f"- a {name} in failure share: could not have detected one below "
+                    f"{_points(limit)} points"
+                )
+        return lines
+
+    def _guidance_lines(self) -> list[str]:
+        d = self.data
+        g = d["guidance"]
+        compared = d["inputs"]["compared"]
+        asked = _g(100.0 * d["limits"]["max_mde"])
+        lines = ["## Guidance", ""]
+        if g["repeats"] is None:
+            lines.append(f"- no number of repeats on these inputs reaches {asked} points")
+        else:
+            lines.append(
+                f"- repeats: {g['repeats']} per arm on these {_count(compared, 'input')} would "
+                f"bring the limit to {asked} points"
+            )
+        if g["inputs"] is None:
+            lines.append(f"- no number of inputs at the present repeats reaches {asked} points")
+        else:
+            lines.append(
+                f"- inputs: {g['inputs']} inputs like these, at the present repeats, would "
+                "do the same"
+            )
+        if g["accepts_at"] is None:
+            lines.append("- ceiling: no value of --max-mde accepts this design as it stands")
+        else:
+            lines.append(
+                f"- ceiling: --max-mde {g['accepts_at']:.4f} accepts this design as it stands"
+            )
+        lines += [
+            "",
+            "These numbers assume the next runs fail at the rates these did, input by input, "
+            "and that new inputs resemble the present ones: for failing inputs chosen by a "
+            "rule, chosen by the same rule. " + GUIDE_NOT_PROMISE,
+        ]
+        return lines
+
+    def to_json(self) -> str:
+        return _dumps({k: v for k, v in self.data.items() if not k.startswith("_")})
+
+
+@dataclass(frozen=True)
+class ChangesReport:
+    """``data`` is the ``poisson-trace.changes/1`` structure, keys in order; keys that start
+    with an underscore serve the markdown only."""
+
+    data: Mapping[str, Any]
+
+    def to_markdown(self) -> str:
+        d = self.data
+        a, b = d["runs"]["a"], d["runs"]["b"]
+        lines = [
+            f"# Poisson Trace · changes · {a['run_id']} (A) and {b['run_id']} (B)",
+            "",
+            "## Runs",
+            "",
+        ]
+        lines += _run_lines("A", a) + _run_lines("B", b)
+        if "_gap_seconds" in d:
+            lines.append(f"- the two runs started {_gap(d['_gap_seconds'])} apart")
+        lines.append(f"- events: {', '.join(d['events'])}")
+        lines += [f"- {note}" for note in d.get("_event_notes", [])]
+        held = d.get("_inputs")
+        if held is not None:
+            lines.append(
+                f"- inputs: A carries {held['a']}, B carries {held['b']} · compared "
+                f"{d['tested']}, each with an outcome in both runs · in A only "
+                f"{held['a_only']} · in B only {held['b_only']}"
+            )
+        lines += ["", "## Inputs that changed", ""]
+        lines += _flag_lines(d, d.get("_top", 10), "A", "B")
+        lines += [""] + _cannot_say_lines(d["cannot_say"]) + [""]
         return "\n".join(lines)
 
     def to_json(self) -> str:
