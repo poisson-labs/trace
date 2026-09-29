@@ -807,6 +807,39 @@ def test_tr65_the_interval_and_test_sentence(tmp_path: Path) -> None:
     assert DISAGREE not in norm(fix_check(strong, "old", "new", ["fail"], *ALL, *MAX).out)
 
 
+NO_INTERVAL = "no interval: Sato's variance is not positive on these counts"
+
+
+def test_tr49_the_no_interval_sentence_prints_exactly_when_the_variance_is_null(tmp_path: Path) -> None:
+    """Session A ruling 2, ruled yes 2026-09-29: the fixed sentence prints exactly when
+    ``difference.variance`` is null, whatever the test says."""
+    separated = pair_store(tmp_path / "separated", [(4, 4, 0, 4)] * 3)  # Sato's variance 0, exact p tiny
+    single = pair_store(tmp_path / "single", [(1, 1, 0, 1)])  # Sato's variance 0, exact p 1
+    for root in (separated, single):
+        d = _json(fix_check(root, "old", "new", ["fail"], *ALL, *MAX, "--json"))
+        assert d["difference"]["variance"] is None and d["difference"]["lo"] is None and d["difference"]["hi"] is None
+        assert NO_INTERVAL in norm(ok(fix_check(root, "old", "new", ["fail"], *ALL, *MAX)).out)
+    worked = pair_store(tmp_path / "worked", WORKED)
+    for argv in ((worked, "old", "new", ["fail"], *ALL, *MAX),
+                 (TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.12"),
+                 (TAU2, TAU2_B, PILOT, TAU2_EVENTS, "--failing-from", TAU2_A, "--max-mde", "0.2")):
+        assert _json(fix_check(*argv, "--json"))["difference"]["variance"] is not None
+        assert NO_INTERVAL not in norm(ok(fix_check(*argv)).out)
+
+
+def test_tr65_the_interval_and_test_sentence_needs_an_interval(tmp_path: Path) -> None:
+    """Session A ruling 2, ruled yes 2026-09-29: with no interval printed, the interval-and-test
+    sentence does not print, even where the test calls a difference."""
+    separated = pair_store(tmp_path / "separated", [(4, 4, 0, 4)] * 3)
+    d = _json(fix_check(separated, "old", "new", ["fail"], *ALL, *MAX, "--json"))
+    assert d["test"]["p"] < 0.05 and d["difference"]["variance"] is None
+    assert d["verdict"] == "different"
+    text = norm(ok(fix_check(separated, "old", "new", ["fail"], *ALL, *MAX)).out)
+    assert DISAGREE not in text and NO_INTERVAL in text
+    single = pair_store(tmp_path / "single", [(1, 1, 0, 1)])
+    assert DISAGREE not in norm(ok(fix_check(single, "old", "new", ["fail"], *ALL, *MAX)).out)
+
+
 def test_tr65_the_copies_sentence_and_the_gap(store70: Path, tmp_path: Path) -> None:
     text = norm(ok(_sel(store70)).out)
     assert _copies("new") in text and _copies("old") not in text
