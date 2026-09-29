@@ -141,6 +141,19 @@ def test_tr70_inputs_all_compares_every_input_with_an_outcome_in_both(store70: P
     assert d["rows"]["new"] == {"runs": 8, "failed": 2, "timed_out": 0, "no_outcome": 0, "short": 0, "mixed": 0}
 
 
+def test_tr70_inputs_all_counts_an_input_carried_by_one_run_as_left_out(store70: Path) -> None:
+    """Session A ruling 1, ruled yes 2026-09-29: under ``--inputs all`` the selection is every
+    input either run carries, and an input in one run only is left out under the first reason of
+    section 3.3 that applies (in2 is in the new arm only, in4 in the old arm only)."""
+    d = _json(fix_check(store70, "old", "new", ["fail"], *ALL, *MAX, "--json"))
+    assert d["inputs"]["selected"] == 8
+    assert d["inputs"]["left_out"] == {
+        "not re-run on the old version": 1, "not re-run on the new version": 1,
+        "no outcome on the old version": 1, "no outcome on the new version": 1,
+    }
+    assert d["inputs"]["compared"] == 4
+
+
 # ---------- TR37 ----------
 
 
