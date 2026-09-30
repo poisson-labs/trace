@@ -2,7 +2,8 @@
 
 ## 0.1.0 — 2026-10-01
 
-First release, two parts, both reading Prove's stored runs.
+First release, three parts. The first two read Prove's stored runs; the third writes a
+store in Prove's format from the result files of another tool.
 
 Where runs die: `where` and `compare` over leaf-span index; Kaplan–Meier with Greenwood;
 Aalen–Johansen by kind with a bootstrap band; stratified log-rank with the minimum
@@ -13,6 +14,10 @@ exact conditional Cochran–Mantel–Haenszel test stratified by input, with the
 re-run as the control; the Mantel–Haenszel difference with Sato's interval; per-input flags
 with Benjamini–Hochberg; and, wherever the line is *too small to tell*, how many repeats or
 inputs would settle it.
+
+Results from other tools: `poisson-trace-import` reads the files a tool already wrote and
+writes one new run per version, for `fix-check` and `changes` to compare. The first reader
+is DeepEval's.
 
 - `poisson-trace where RUN --store ROOT --event NAME`: the survival curve over step index
   with a plain Greenwood 95% band, the median step, the cumulative incidence by kind of
@@ -63,3 +68,24 @@ inputs would settle it.
   list. A run that did not fail is written *did not fail*.
 - Three more fixtures: the patched tau2 pilot, copied whole, and two HumanEval runs,
   outcome-only, with provenance and checksums.
+- `poisson-trace-import TOOL FILE [FILE ...] --store ROOT --run NAME [--started ISO-8601]
+  [--json]`: one import is one version, written as one new run through Prove's public API
+  (`Store`, `RunManifest`, `EpisodeRecord`, `from_otel`). A run name the store holds is
+  refused; nothing is added to a run. A score becomes the outcome `met` or `missed` at a cut
+  the user declares with its side, and a score equal to the cut met it. Rows that share a
+  case are repeats of it, in the order read. No prompt, answer or reason text is written,
+  and span attributes that Prove lists as content are dropped before a span is stored. The
+  summary prints the files with their digests, the rules as declared, the start time and
+  where it came from, the counts, and the Trace command to run next; `--json` prints
+  `poisson-trace.import/1`. A refusal is one sentence, exit 1, with nothing written.
+- `poisson-trace-import deepeval … --metric NAME --cut (recorded | X (--below | --above))
+  --case (name | input | position)`: reads DeepEval's saved test runs as DeepEval 4.2.6
+  writes them (`docs/integrations/deepeval.md`), one metric per import. `--cut recorded`
+  takes DeepEval's own decision for that metric; `--case input` is a digest of the input,
+  never its text; a metric that raised is a row with no outcome. Nothing imports DeepEval.
+- `fix-check` prints a p below 1e-300 as the bound `p < 1e-300`, in the comparison line and
+  in the line that states the result. With one run per input per version its consistency
+  block says consistency cannot be measured and prints no κ; in `--json`,
+  `consistency.fails_again` and `consistency.kappa` are then `null`.
+- Two more fixtures: the HumanEval pair as two result files written by DeepEval 4.2.6, with
+  the recipe beside them, provenance and checksums.
