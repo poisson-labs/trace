@@ -29,8 +29,8 @@ more than once per version: one run per case is the smallest design there is. De
 before you look: the score under which, or over which, a case counts as missed.
 
 A file written by Ragas's `@experiment` is read the same way, by whatever columns your
-function returned. pandas's `to_json` writes each score at ten decimal digits, and that is
-the score the import reads.
+function returned. pandas's `to_json` writes each score to at most ten decimal digits, and
+that is the score the import reads.
 
 One thing about Ragas itself, which this reader never runs. In Ragas 0.4.3 `evaluate()`
 posts usage events to Ragas's own server unless `RAGAS_DO_NOT_TRACK=true` is set before Ragas
@@ -67,8 +67,9 @@ cut is and which column identifies a case.
   of its report. A missing score is never read as 0.
 - `--case-column` is the column that identifies a case. Rows that share a value are repeats
   of that case, in the order read, and several files given to one import are read as one
-  version, in the order given. A row with no value there is refused, and the refusal names
-  the row. In a CSV the value is the text as written: `007` and `7` are two cases.
+  version, in the order given. A row with no value there refuses the whole import, and the
+  refusal names the row. In a CSV the value is the text as written: `007` and `7` are two
+  cases.
 - `--started` is when that version's run started, with its zone. Without it the first
   file's modification time is used, and the summary says which of the two it was.
 
@@ -206,11 +207,11 @@ faithfulness moved. It says what would: each question three times per version, o
 questions.
 
 The Consistency block of this report rests on three questions. Three of the 137 questions
-compared were asked more than once, and Trace prints the block whenever any input has more
-than one run on a version. The other 134 have one run per version, and for them its figures
-set the base model's run beside the fine-tuned model's. So the κ of -0.080 and the 0.93 say
-mostly how far the two models miss the same questions, not how consistently either one
-fails. Do not plan a design from them.
+compared were asked more than once, and Trace prints a κ, and the line under it, whenever
+any input has more than one run on a version. The other 134 have one run per version, and
+for them its figures set the base model's run beside the fine-tuned model's. So the κ of
+-0.080 and the 0.93 say mostly how far the two models miss the same questions, not how
+consistently either one fails. Do not plan a design from them.
 
 The same two files at the same cut, on the other two scores:
 
@@ -319,7 +320,8 @@ Ragas 0.4.3 gave for a stored memory-retrieval experiment: the same 1,800 lookup
 with causal reads and on one with strong reads. Each row holds the ids the memory returned
 and the ids that answer the question, and Ragas's two id-based context metrics, which call
 no model, scored them. Context precision has no score on 1,130 of the 1,800 rows of the
-causal memory: the rows where nothing was retrieved.
+causal memory: the rows where nothing was retrieved. The start times given are the two
+stored runs' own.
 
 <!-- command -->
 ```
@@ -371,11 +373,11 @@ difference: -0.15 points, new minus old (-0.66 to +0.36; Mantel-Haenszel weights
 **no significant difference (p = 1.000); could not have detected a drop in failure share below 1.7 points**
 ```
 
-On the 670 cases left, precision did not move: -0.15 points, in a design that could have
-detected a drop of 1.7 points. The header says that 1,130 cases were left out and why, and
-they are the cases where the causal memory returned nothing. Read that line before the
-verdict. The two means do not show it: 0.453 over the 670 rows Ragas scored, against 0.458
-over 1,800.
+On the 670 cases left the report reads *no significant difference*: 339 misses, then 338,
+-0.15 points, in a design that could have detected a drop of 1.7 points. The header says
+that 1,130 cases were left out and why, and they are the cases where the causal memory
+returned nothing. Read that line before the verdict. The two means do not show it: 0.453
+over the 670 rows Ragas scored, against 0.458 over 1,800.
 
 ## What this does not do
 
@@ -399,5 +401,6 @@ over 1,800.
 - It does not add to a run. A run name the store already holds is refused.
 - A store the importer wrote is for Trace's verbs. Prove's own `diff` pairs rows by seed,
   and a score table records none.
-- Tables from Ragas versions other than 0.4.3 are read by their column names and are not
-  tested.
+- Tables from Ragas versions other than 0.4.3 are read by their column names, like any
+  table, and no test runs another version. The published pair above is such a table: the
+  version that scored it is not stated.

@@ -658,8 +658,10 @@ seeded bootstrap (`--boot 1000 --seed 0` by default), not a closed-form variance
 after every few runs and stopping when the line reads well is not covered by the stated
 confidence, and no report can see it. No store among the fixtures is a changed agent at a
 size that reads *different: the new version failed less*; on stored runs that line is
-exercised on synthetic ones only. It is read on real data through the Ragas import alone,
-on two pairs of score tables (`docs/integrations/ragas.md`).
+exercised on synthetic ones only. Among the fixtures it is read through the Ragas import
+alone: on a published pair of score tables, a base model and the same model fine-tuned, on
+two of its three scores (`docs/integrations/ragas.md`), and on the memory pair at recall
+(`tests/ingest/test_ragas_fixture.py`).
 
 ## Results from other tools
 

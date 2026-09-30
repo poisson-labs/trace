@@ -74,7 +74,8 @@ DeepEval's and Ragas's.
   refused; nothing is added to a run. A score becomes the outcome `met` or `missed` at a cut
   the user declares with its side, and a score equal to the cut met it. Rows that share a
   case are repeats of it, in the order read. No prompt, answer or reason text is written,
-  and span attributes that Prove lists as content are dropped before a span is stored. The
+  but for the value of the column a user names as the case to the Ragas reader (below), and
+  span attributes that Prove lists as content are dropped before a span is stored. The
   summary prints the files with their digests, the rules as declared, the start time and
   where it came from, the counts, and the Trace command to run next; `--json` prints
   `poisson-trace.import/1`. A refusal is one sentence, exit 1, with nothing written.
@@ -98,7 +99,8 @@ DeepEval's and Ragas's.
   columns are kept: the score, and the case as written when it is at most 80 printable
   characters and as a digest otherwise. A named column the file lacks is refused with the
   file's columns listed, and a JSON Lines file with a line that is not an object is refused
-  whole. Nothing imports Ragas; tested on tables written by Ragas 0.4.3.
+  whole, as is a `.gz` that cannot be read. Nothing imports Ragas; tested on tables written
+  by Ragas 0.4.3.
 - Four more fixtures: two pairs of Ragas score tables, one from a stored memory-retrieval
   experiment scored by Ragas 0.4.3 and one a published base and fine-tuned pair reduced to
   question hashes and scores, with the recipe beside them, provenance and checksums.
