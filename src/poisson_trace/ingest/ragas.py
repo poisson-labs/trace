@@ -18,6 +18,7 @@ import io
 import json
 import math
 import re
+import zlib
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -118,7 +119,9 @@ def _text(path: Path, fmt: str, body: bytes) -> str:
 
 
 def _named(columns: tuple[str, ...]) -> str:
-    return ", ".join(column if column else "(a column with no name)" for column in columns)
+    """The columns for a refusal; a name that is not valid Unicode is written with escapes."""
+    names = (column.encode("utf-8", "backslashreplace").decode("utf-8") for column in columns)
+    return ", ".join(name if name else "(a column with no name)" for name in names)
 
 
 def _columns_checked(path: Path, columns: tuple[str, ...], wanted: tuple[str, str]) -> None:
@@ -136,11 +139,12 @@ def _columns_checked(path: Path, columns: tuple[str, ...], wanted: tuple[str, st
 
 
 def _csv(path: Path, body: bytes, wanted: tuple[str, str]) -> list[_Pair]:
-    """Every cell of a CSV is text. A line with nothing on it is not a row."""
+    """Every cell of a CSV is text. A line with nothing on it, or with spaces alone, is not a
+    row."""
     source = csv.reader(io.StringIO(_text(path, "csv", body), newline=""), strict=True)
     limit = csv.field_size_limit(_CELL_LIMIT)
     try:
-        lines = [line for line in source if line]
+        lines = [line for line in source if line and (len(line) > 1 or line[0].strip())]
     except csv.Error as e:
         raise _not_a_table(path, "csv", f"line {source.line_num}: {e}") from None
     finally:
@@ -219,7 +223,8 @@ def _parquet(path: Path, body: bytes, wanted: tuple[str, str]) -> list[_Pair]:
     try:
         table = file.read(columns=list(wanted))
         scores, cases = (table.column(column).to_pylist() for column in wanted)
-    except (pa.ArrowException, OSError, ValueError, KeyError):
+    except (pa.ArrowException, OSError, ValueError, KeyError, ArithmeticError):
+        # ArithmeticError: a value Python cannot hold, such as a timestamp out of its range
         raise _not_a_table(path, "parquet", "its columns could not be read") from None
     return list(zip(scores, cases, strict=True))
 
@@ -227,13 +232,19 @@ def _parquet(path: Path, body: bytes, wanted: tuple[str, str]) -> list[_Pair]:
 _READ = {"csv": _csv, "jsonl": _jsonl, "json": _json, "parquet": _parquet}
 
 
+def _gunzipped(path: Path, raw: bytes) -> bytes:
+    """The content of a file named ``.gz``. An empty file is not a gzip file, and a damaged
+    one is refused like any file that is not what its name says."""
+    try:
+        if not raw:
+            raise EOFError
+        return gzip.decompress(raw)
+    except (OSError, EOFError, ValueError, zlib.error):
+        raise Refusal(f"{path} is named .gz and is not a gzip file that can be read") from None
+
+
 def _pairs(path: Path, fmt: str, gzipped: bool, raw: bytes, wanted: tuple[str, str]) -> list[_Pair]:
-    body = raw
-    if gzipped:
-        try:
-            body = gzip.decompress(raw)
-        except (OSError, EOFError, ValueError):
-            raise Refusal(f"{path} is named .gz and is not a gzip file") from None
+    body = _gunzipped(path, raw) if gzipped else raw
     pairs = _READ[fmt](path, body, wanted)
     if not pairs:
         raise Refusal(f"{path} holds no row, so there is nothing to read from it")
@@ -264,7 +275,13 @@ def _case(path: Path, n: int, column: str, cell: Any) -> str:
             f"row {n} of {path} has no value in the column {column}, so nothing identifies its case"
         )
     if isinstance(cell, str):
-        return case_id(cell)
+        try:
+            return case_id(cell)
+        except UnicodeEncodeError:
+            raise Refusal(
+                f"row {n} of {path} holds text in the column {column} that is not valid "
+                "Unicode (half of a surrogate pair), so it cannot identify a case"
+            ) from None
     if isinstance(cell, bool) or not isinstance(cell, (int, float, Decimal)):
         raise Refusal(
             f"row {n} of {path} holds a value in the column {column} that is neither text "
