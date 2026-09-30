@@ -21,9 +21,9 @@ The manifest of every fixture is byte-identical to its source (same sha256):
 - `cs/20260925T234602Z-3ea0/manifest.json`: `f1bc2e6c15525850af28c64d7e7e950e58cc41911cf6df13b03572bfd8437851`
 - `cs/20260925T235434Z-af48/manifest.json`: `89640893c800d81203a41bcbd54f8f5de804ef9849345a3ad5700619c5a65c50`
 
-`SHA256SUMS` beside this file lists the sha256 of every fixture file (770 files: the 429 of
-the first four runs, their lines unchanged, and 341 for the three added on 2026-09-29), in the
-format `shasum -a 256` prints. Verify with `cd tests/fixtures && shasum -a 256 -c SHA256SUMS`.
+`SHA256SUMS` beside this file lists the sha256 of every fixture file (776 files: the 429 of
+the first four runs, their lines unchanged, 341 for the three added on 2026-09-29, two for the
+DeepEval import and four for the Ragas import), in the format `shasum -a 256` prints. Verify with `cd tests/fixtures && shasum -a 256 -c SHA256SUMS`.
 
 ## The runs
 
@@ -198,3 +198,92 @@ one threshold, and names the user set. Every other shape (a wrapped file, a link
 metric that raised, two metrics, positional names, a conversational case, differing
 thresholds) is built as a dictionary in the tests. No file is a changed agent: the pair is the
 same agent run twice.
+
+## Added for the Ragas import (2026-09-30)
+
+Four score tables in the shape Ragas's `EvaluationResult.to_pandas()` gives, for the
+`poisson-trace-import ragas` tests (`tests/ingest/`). They are not Prove stores. The recipe is
+`make.py` beside them, in `ingest/ragas/`.
+
+| Fixture | Made from | Rows | Cases | Columns | Size |
+|---|---|---|---|---|---|
+| `ingest/ragas/memory-causal.jsonl.gz` | a stored memory-retrieval run, causal reads | 1,800 | 1,800 | `user_input`, `retrieved_context_ids`, `reference_context_ids`, `id_based_context_recall`, `id_based_context_precision` | 69,662 B |
+| `ingest/ragas/memory-strong.jsonl.gz` | the same experiment, strong reads | 1,800 | 1,800 | the same five | 107,182 B |
+| `ingest/ragas/rag-base.jsonl` | `R0bfried/RAGAS-BASE-llama-3-2-1B-eval2` on Hugging Face, commit `ebed5a6e42407ee10fc63abff17f5b270b7e0aa4` | 150 | 146 | `case`, `faithfulness`, `answer_relevancy`, `answer_correctness` | 17,599 B |
+| `ingest/ragas/rag-raft.jsonl` | `R0bfried/RAGAS-RAFT-llama-3-2-1B-eval2` on Hugging Face, commit `5b131e43163020e01e13f2d9b195481ce3317c11` | 150 | 146 | the same four | 17,602 B |
+
+**The memory pair.** Two runs of one stored memory-retrieval experiment: 18 conditions × 100
+generated customer histories, the same 1,800 lookups on a memory with causal reads and on one
+with strong reads. Each stored row holds the fact ids the memory returned and the fact ids that
+answer the question; no model is involved. The two source runs are Prove stores that are not
+public; their manifests' sha256 are
+`fc979bc6e7e925fe4866899a18e2e40e5af0290accde68c0aedde60c006ba601` (causal) and
+`613fe6fd1eef4e19e3bfb1e99070a84f017ee80641468041c158990a812a4548` (strong).
+
+Each stored row, read through `proofload.store.Store` in the order `Store.read` returns, became
+one Ragas `SingleTurnSample`: `user_input` the row's own id, `<config_hash>:<seed>`;
+`retrieved_context_ids` and `reference_context_ids` the two lists of fact ids. Ragas 0.4.3
+(PyPI, Apache-2.0), installed beside `langchain-community` 0.3.31 because it does not import
+beside 0.4.2, scored every sample with its `IDBasedContextRecall` and `IDBasedContextPrecision`,
+which call no model, with its usage tracking off (`RAGAS_DO_NOT_TRACK=true`; without it Ragas
+posts usage events to its own server). The table `to_pandas()` gave was saved with
+`to_json(orient="records", lines=True)` and gzipped as it is, level 9, with no name and mtime 0
+in the gzip header:
+
+```
+python tests/fixtures/ingest/ragas/make.py memory-rows SOURCE CAUSAL STRONG WORK   # proofload importable
+python tests/fixtures/ingest/ragas/make.py memory-score WORK                       # ragas 0.4.3 importable
+python tests/fixtures/ingest/ragas/make.py memory-gzip WORK tests/fixtures/ingest/ragas
+```
+
+| Table as Ragas's `to_json` wrote it | sha256 | Bytes |
+|---|---|---|
+| `memory-causal.jsonl` | `8573a43b5ffb70d49f45f9438528ab69e1830600253b8f0e0abd18f1cf44b6ca` | 416,358 |
+| `memory-strong.jsonl` | `be6037eb6c884e56955ccd9e28b1f9ec666c160072882514029611550cb4f95d` | 526,032 |
+
+On the 1,130 samples of the causal run where the memory returned nothing, Ragas printed that it
+cannot calculate precision without retrieved ids and wrote `NaN`, saved as `null`. Recall is 0
+or 1 on every row: 1,140 rows of the causal run are 0, none of the strong run.
+
+**The public pair.** Two result sets published on Hugging Face by one author on 2025-03-31, each
+the table `to_pandas()` gives: 150 rows, the same questions in the same order, three
+model-judged Ragas scores per row, a base Llama 3.2 1B and the same model fine-tuned. The Ragas
+version that made them is not stated. Neither set carries a licence (each dataset card holds its
+schema and nothing else), so the fixture keeps a hash of each question and the three scores, and
+no question, context, answer or reference text: `case` is `q-` and the first 16 hex characters of
+the SHA-256 of `user_input`'s UTF-8 bytes; `faithfulness`, `answer_relevancy` and
+`answer_correctness` are copied as published. `make.py` reads each Parquet file by URL at the
+commit above and refuses it unless its sha256 is the one pinned:
+
+```
+python tests/fixtures/ingest/ragas/make.py pair WORK tests/fixtures/ingest/ragas   # pandas and pyarrow; reads two URLs
+```
+
+| Source file at the pinned commit | sha256 | Bytes |
+|---|---|---|
+| `RAGAS-BASE-llama-3-2-1B-eval2/data/train-00000-of-00001.parquet` | `fc76783271005b0f538bef880692da45edbe0ccee5f4accc44593fce3388426b` | 993,825 |
+| `RAGAS-RAFT-llama-3-2-1B-eval2/data/train-00000-of-00001.parquet` | `52485d1ce1c8758cdec2ce174f4af82ae61e777c879c39a599791b3f8146acca` | 802,977 |
+
+In each set the 150 rows hold 146 questions: one asked three times and two asked twice.
+`faithfulness` has no score on 3 rows of the base set and 8 of the fine-tuned one; the other two
+scores are on every row.
+
+**What a rebuild gives.** Given the source stores and the two URLs, `make.py` reproduces all four
+files byte for byte (pandas 3.0.6, pyarrow 25.0.1). The digests in `SHA256SUMS` are of the files
+as committed.
+
+**Checks made.** Every string in the four files is one of three generated shapes: a row id (16 hex
+characters, a colon and digits), a fact id (`F-` and 12 hex characters) or a question hash (`q-`
+and 16 hex characters); no other text is present. Every string was also scanned for key-like
+material (`sk-…`, `AKIA…`, GitHub tokens, `bearer …`, `api_key`, `password`, `secret`,
+`authorization`, `token`), home-directory paths, the machine owner's name and email addresses:
+no hit.
+
+**What each cannot express.** The memory pair has one run per case, recall scores that are 0 or
+1, and missing scores on one version only; it cannot produce a flag or a mixed outcome. The
+public pair has continuous scores, missing scores on both versions and three repeated questions,
+so a few cases carry more than one run; none has enough runs to be flagged on its own. Neither
+pair is a designed experiment with repeats. CSV text cells, an `@experiment` file with the user's
+own columns, a missing case value and every refusal are built in the tests
+(`tests/ingest/test_ragas.py`), and Ragas's own output is read once in lane J
+(`tests/ingest/test_ragas_package.py`).
