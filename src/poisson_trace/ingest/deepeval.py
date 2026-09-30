@@ -38,9 +38,12 @@ _GZIP = b"\x1f\x8b"
 
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--metric", metavar="NAME", help="the metric's name, as the file has it")
+    parser.add_argument(
+        "--metric", required=True, metavar="NAME", help="the metric's name, as the file has it"
+    )
     parser.add_argument(
         "--cut",
+        required=True,
         metavar="recorded|X",
         help="recorded: DeepEval's own decision for the metric; or a number, with its side",
     )
@@ -48,18 +51,15 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--above", action="store_true", help="a score over the cut missed it")
     parser.add_argument(
         "--case",
+        required=True,
+        choices=_CASES,
         metavar="name|input|position",
-        help="what identifies a test case across the two versions; no default",
+        help="what identifies a test case across the two versions",
     )
 
 
 def _cut(ns: argparse.Namespace) -> Cut | None:
     """The declared cut, or None for DeepEval's recorded decision."""
-    if ns.cut is None:
-        raise Refusal(
-            "--cut is required and has no default: recorded for DeepEval's own decision, or "
-            "a number with --below or --above"
-        )
     if ns.cut == "recorded":
         if ns.below or ns.above:
             raise Refusal(
@@ -195,16 +195,7 @@ def _started(first: Path) -> tuple[str, str]:
 
 
 def read(ns: argparse.Namespace) -> Run:
-    if ns.metric is None or ns.metric == "":
-        raise Refusal("--metric is required: the metric's name, as the file has it")
     cut = _cut(ns)
-    if ns.case is None:
-        raise Refusal(
-            "--case is required and has no default: name, input or position says what "
-            "identifies a test case across the two versions"
-        )
-    if ns.case not in _CASES:
-        raise Refusal(f"--case takes name, input or position, not {ns.case}")
     paths = [Path(f) for f in ns.files]
     files, read_in = [], []
     for path in paths:
