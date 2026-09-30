@@ -121,8 +121,8 @@ def _summary(run: Run, written: Any, store: str) -> dict[str, Any]:
         "no_outcome": dict(written.no_outcome),
         "counts": dict(run.counts),
         "next": (
-            f"poisson-trace fix-check {written.run} OTHER --store {store} --event {MISSED} "
-            "--inputs all --max-mde X"
+            f"poisson-trace fix-check OLD NEW --store {store} --event {MISSED} --inputs all "
+            f"--max-mde X  # {written.run} is OLD or NEW"
         ),
     }
 
@@ -156,9 +156,9 @@ def _markdown(d: Mapping[str, Any]) -> str:
         + (" · ".join(f"{reason} {n}" for reason, n in none.items()) if none else "0"),
         *[f"- {label}: {n}" for label, n in d["counts"].items()],
         "",
-        "In the command below, OTHER is the other version's run, imported into the same "
-        "store, and the older version goes first. X is the largest limit of detection you "
-        "accept, as a share: 0.05 is five points.",
+        "In the command below, OLD and NEW are this run and the other version's run, "
+        "imported into the same store, the older version first. X is the largest limit of "
+        "detection you accept, as a share: 0.05 is five points.",
         "",
         f"next: {d['next']}",
         "",
