@@ -656,19 +656,25 @@ does not use that fact (the header says *unpaired* whenever the runs share a `ru
 and `fix-check` matches nothing by seed on purpose. The per-kind bands of `where` come from a
 seeded bootstrap (`--boot 1000 --seed 0` by default), not a closed-form variance. Looking
 after every few runs and stopping when the line reads well is not covered by the stated
-confidence, and no report can see it. No fixture here is a changed agent at a size that
-reads *different: the new version failed less*; that line is exercised on synthetic runs
-only.
+confidence, and no report can see it. No store among the fixtures is a changed agent at a
+size that reads *different: the new version failed less*; on stored runs that line is
+exercised on synthetic ones only. It is read on real data through the Ragas import alone,
+on two pairs of score tables (`docs/integrations/ragas.md`).
 
 ## Results from other tools
 
 `poisson-trace-import` reads the result files another tool already wrote and writes them as
 one new run of a store in Prove's format, one import per version. `fix-check` and `changes`
 then read the two runs like any stored run. You declare the metric, the cut with its side
-and what identifies a case; nothing has a default. No prompt or answer text is kept.
+and what identifies a case; nothing has a default. No prompt or answer text is kept, with
+one exception that is yours to choose: the Ragas reader keeps the value of the column you
+name as the case, as written when it is short, so name an id column and not the question.
 
 - [DeepEval](docs/integrations/deepeval.md): DeepEval's saved test runs, one metric per
   import, with a worked example on the HumanEval pair written through DeepEval.
+- [Ragas](docs/integrations/ragas.md): the score table saved from Ragas, as CSV, JSON Lines,
+  JSON or Parquet, one score column per import, with a worked example on a published base
+  and fine-tuned pair and one on a score Ragas could not give.
 
 ## What Trace does not read
 
@@ -688,10 +694,11 @@ ruff check .
 mypy --strict src
 ```
 
-The suite holds 98 invariants as 344 tests: the 36 of `where` and `compare` as 100, the 34
-of `fix-check` and `changes` as 124 and its two display rules as 3, and the 26 of
-`poisson-trace-import` and its DeepEval reader as 117. One of the 344 runs DeepEval itself,
-installed from PyPI, and is left out unless asked for (`python -m pytest -m lane_j`). The
+The suite holds 108 invariants as 424 tests: the 36 of `where` and `compare` as 100, the 34
+of `fix-check` and `changes` as 124 and its two display rules as 3, the 26 of
+`poisson-trace-import` and its DeepEval reader as 117, and the 10 of its Ragas reader as 80.
+Four of the 424 run DeepEval or Ragas itself, installed from PyPI, and are left out unless
+asked for (`python -m pytest -m lane_j`). The
 oracles are lifelines, scipy, full enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks the fixtures
 (`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).
 
