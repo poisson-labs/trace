@@ -26,10 +26,13 @@ from datetime import UTC, datetime
 from importlib import import_module
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from poisson_trace.ingest.cut import MISSED
 from poisson_trace.ingest.rows import Refusal, Run
+
+if TYPE_CHECKING:
+    from poisson_trace.ingest.writer import Written
 
 READERS: tuple[str, ...] = ("deepeval", "ragas", "langsmith", "otel", "lemma")
 SCHEMA = "poisson-trace.import/1"
@@ -50,6 +53,7 @@ def _present() -> tuple[str, ...]:
 def _build_parser(present: Sequence[str]) -> tuple[_Parser, dict[str, _Further]]:
     parser = _Parser(
         prog="poisson-trace-import",
+        allow_abbrev=False,
         description=(
             "Read the result files another tool already wrote and write them as one new run "
             "of a store in Prove's format, for Poisson Trace's verbs to read. One import is "
@@ -60,7 +64,8 @@ def _build_parser(present: Sequence[str]) -> tuple[_Parser, dict[str, _Further]]
     further: dict[str, _Further] = {}
     for name in present:
         module = import_module(f"{__package__}.{name}")
-        sub = tools.add_parser(name, help=(module.__doc__ or name).strip().splitlines()[0])
+        about = (module.__doc__ or name).strip().splitlines()[0]
+        sub = tools.add_parser(name, help=about, allow_abbrev=False)
         sub.add_argument("files", nargs="+", metavar="FILE", help="a result file; repeatable")
         sub.add_argument("--store", required=True, metavar="ROOT", help="the root of the store")
         sub.add_argument("--run", required=True, metavar="NAME", help="the new run's name")
@@ -72,7 +77,8 @@ def _build_parser(present: Sequence[str]) -> tuple[_Parser, dict[str, _Further]]
         sub.add_argument("--json", action="store_true", help="print the summary as JSON")
         module.add_arguments(sub)
         for extra, (add, run) in getattr(module, "FURTHER", {}).items():
-            add(tools.add_parser(extra, help=(run.__doc__ or extra).strip().splitlines()[0]))
+            about = (run.__doc__ or extra).strip().splitlines()[0]
+            add(tools.add_parser(extra, help=about, allow_abbrev=False))
             further[extra] = run
     return parser, further
 
@@ -101,7 +107,7 @@ def _zone(started: str) -> tuple[str, str]:
     return local.strftime("%Z"), f"UTC{offset[:3]}:{offset[3:5]}"
 
 
-def _summary(run: Run, written: Any, store: str) -> dict[str, Any]:
+def _summary(run: Run, written: Written, store: str) -> dict[str, Any]:
     started: dict[str, Any] = {"at": run.started, "from": run.started_from}
     if run.started_from == "file name":
         name, offset = _zone(run.started)
