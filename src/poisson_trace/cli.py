@@ -108,19 +108,21 @@ def _build_parser() -> _Parser:
     return parser
 
 
-def _check_prove() -> str | None:
+def _check_prove(does: str = "Poisson Trace reads Prove's stored runs") -> str | None:
+    """The refusal, or None with ``proofload`` importable at the pinned version. ``does`` is
+    what the command does through it, as the sentence's opening words."""
     try:
         import proofload
     except ImportError:
         return (
-            f"Poisson Trace reads Prove's stored runs through the proofload package "
+            f"{does} through the proofload package "
             f"(version {PROVE_VERSION}), which is not importable here; install it from a "
             f"checkout with `{_INSTALL}`."
         )
     found = getattr(proofload, "__version__", None)
     if found != PROVE_VERSION:
         return (
-            f"Poisson Trace reads Prove's stored runs through proofload {PROVE_VERSION} and "
+            f"{does} through proofload {PROVE_VERSION} and "
             f"found proofload {found}; install that version from a checkout with "
             f"`{_INSTALL}`."
         )

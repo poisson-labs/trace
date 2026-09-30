@@ -30,6 +30,7 @@ dev = ["pytest", "hypothesis", "mypy", "ruff", "lifelines"]
 
 [project.scripts]
 poisson-trace = "poisson_trace.cli:main"
+poisson-trace-import = "poisson_trace.ingest.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/poisson-labs/trace"
