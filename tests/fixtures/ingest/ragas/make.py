@@ -11,11 +11,12 @@ gzipped as it is, with a fixed gzip header (no name, mtime 0). The source stores
 so they are named on the command line and not here.
 
 **The public pair** (``rag-base.jsonl``, ``rag-raft.jsonl``). Two result sets published on
-Hugging Face, each the table ``to_pandas()`` gives for 150 questions. They carry no licence, so
-only a hash of each question and the three score columns are kept: ``case`` is ``q-`` and the
-first 16 hex characters of the SHA-256 of ``user_input``; ``faithfulness``,
-``answer_relevancy`` and ``answer_correctness`` are copied. The two Parquet files are read by
-URL at the commits pinned below and refused unless their SHA-256 is the one pinned.
+Hugging Face, each the table ``to_pandas()`` gives for 150 rows (146 questions). They carry no
+licence, so only a hash of each question and the three score columns are kept: ``case`` is ``q-``
+and the first 16 hex characters of the SHA-256 of ``user_input``; ``faithfulness``,
+``answer_relevancy`` and ``answer_correctness`` are written by pandas's JSON writer at its
+default ten decimal digits. The two Parquet files are read by URL at the commits pinned below and
+refused unless their SHA-256 is the one pinned.
 
 Steps, because the rows are read through Prove and scored by Ragas, and the two need not share
 an environment:

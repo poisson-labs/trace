@@ -252,8 +252,10 @@ version that made them is not stated. Neither set carries a licence (each datase
 schema and nothing else), so the fixture keeps a hash of each question and the three scores, and
 no question, context, answer or reference text: `case` is `q-` and the first 16 hex characters of
 the SHA-256 of `user_input`'s UTF-8 bytes; `faithfulness`, `answer_relevancy` and
-`answer_correctness` are copied as published. `make.py` reads each Parquet file by URL at the
-commit above and refuses it unless its sha256 is the one pinned:
+`answer_correctness` are the published values as pandas's JSON writer renders them, at its default
+ten decimal digits: the largest change from a published value is 5e-11, and no outcome at any cut
+the tests use moves. `make.py` reads each Parquet file by URL at the commit above and refuses it
+unless its sha256 is the one pinned:
 
 ```
 python tests/fixtures/ingest/ragas/make.py pair WORK tests/fixtures/ingest/ragas   # pandas and pyarrow; reads two URLs
