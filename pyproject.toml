@@ -30,6 +30,7 @@ dev = ["pytest", "hypothesis", "mypy", "ruff", "lifelines"]
 
 [project.scripts]
 poisson-trace = "poisson_trace.cli:main"
+poisson-trace-import = "poisson_trace.ingest.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/poisson-labs/trace"
@@ -60,3 +61,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = ["-m", "not lane_j"]
+markers = [
+    "lane_j: runs DeepEval itself at the pinned version, installed from PyPI; deselected unless -m lane_j",
+]

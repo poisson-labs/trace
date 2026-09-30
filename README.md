@@ -660,6 +660,16 @@ confidence, and no report can see it. No fixture here is a changed agent at a si
 reads *different: the new version failed less*; that line is exercised on synthetic runs
 only.
 
+## Results from other tools
+
+`poisson-trace-import` reads the result files another tool already wrote and writes them as
+one new run of a store in Prove's format, one import per version. `fix-check` and `changes`
+then read the two runs like any stored run. You declare the metric, the cut with its side
+and what identifies a case; nothing has a default. No prompt or answer text is kept.
+
+- [DeepEval](docs/integrations/deepeval.md): DeepEval's saved test runs, one metric per
+  import, with a worked example on the HumanEval pair written through DeepEval.
+
 ## What Trace does not read
 
 Trace reads runs Prove stored. Prove already converts OpenTelemetry spans and LiteLLM logs
@@ -678,9 +688,11 @@ ruff check .
 mypy --strict src
 ```
 
-The suite holds 70 invariants as 224 tests: the 36 of `where` and `compare` as 100, and the
-34 of `fix-check` and `changes` as 124. The oracles are lifelines, scipy, full enumeration in
-exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks the fixtures
+The suite holds 98 invariants as 344 tests: the 36 of `where` and `compare` as 100, the 34
+of `fix-check` and `changes` as 124 and its two display rules as 3, and the 26 of
+`poisson-trace-import` and its DeepEval reader as 117. One of the 344 runs DeepEval itself,
+installed from PyPI, and is left out unless asked for (`python -m pytest -m lane_j`). The
+oracles are lifelines, scipy, full enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks the fixtures
 (`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).
 
 ## Licence

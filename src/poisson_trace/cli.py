@@ -108,19 +108,21 @@ def _build_parser() -> _Parser:
     return parser
 
 
-def _check_prove() -> str | None:
+def _check_prove(does: str = "Poisson Trace reads Prove's stored runs") -> str | None:
+    """The refusal, or None with ``proofload`` importable at the pinned version. ``does`` is
+    what the command does through it, as the sentence's opening words."""
     try:
         import proofload
     except ImportError:
         return (
-            f"Poisson Trace reads Prove's stored runs through the proofload package "
+            f"{does} through the proofload package "
             f"(version {PROVE_VERSION}), which is not importable here; install it from a "
             f"checkout with `{_INSTALL}`."
         )
     found = getattr(proofload, "__version__", None)
     if found != PROVE_VERSION:
         return (
-            f"Poisson Trace reads Prove's stored runs through proofload {PROVE_VERSION} and "
+            f"{does} through proofload {PROVE_VERSION} and "
             f"found proofload {found}; install that version from a checkout with "
             f"`{_INSTALL}`."
         )
@@ -706,7 +708,7 @@ def _fix_check(ns: argparse.Namespace) -> int:
     from proofload.store import Store
 
     from poisson_trace import paired
-    from poisson_trace.report import FixCheckReport, _points
+    from poisson_trace.report import FixCheckReport, _p_is, _points
 
     store = Store(ns.store)
     manifest_old, frame_old, tally_old = _load(store, ns.old, trace="none")
@@ -759,6 +761,11 @@ def _fix_check(ns: argparse.Namespace) -> int:
     by_p, moved, method = paired.by_input(counts, seed=ns.seed, draws=_DRAWS)
     drawn = method != "exact"
     share, again, kappa, within, pooled = paired.consistency(counts)
+    # with one run per input per version, no input was run twice on one version, and the
+    # only pairs of runs there are compare the versions, not a version with itself
+    one_run = all(c.runs_old == 1 and c.runs_new == 1 for c in counts)
+    if one_run:
+        again = kappa = math.nan
     drop = paired.detection_limit(counts, direction="drop", alpha=ns.alpha)
     rise = paired.detection_limit(counts, direction="rise", alpha=ns.alpha)
 
@@ -768,7 +775,7 @@ def _fix_check(ns: argparse.Namespace) -> int:
         direction, word = "failed more in new", "more"
     else:
         direction, word = "no direction", ""
-    p_text = f"{test.p:.3f}" if test.p >= 0.001 else f"{test.p:.2e}"
+    p_is = _p_is(test.p)
     # every failure gone, and every run failing, as shifts in failure share: the largest a
     # proportional change can be on these inputs
     weights = [c.runs_old * c.runs_new / (c.runs_old + c.runs_new) for c in counts]
@@ -781,12 +788,12 @@ def _fix_check(ns: argparse.Namespace) -> int:
         verdict, code = "different", 0
         verdict_line = (
             f"different: the new version failed {word} on these inputs (exact "
-            f"Cochran-Mantel-Haenszel, stratified by input, p = {p_text})"
+            f"Cochran-Mantel-Haenszel, stratified by input, {p_is})"
         )
     elif drop is not None and drop <= ns.max_mde:
         verdict, code = "no significant difference", 0
         verdict_line = (
-            f"no significant difference (p = {p_text}); could not have detected a drop in "
+            f"no significant difference ({p_is}); could not have detected a drop in "
             f"failure share below {limit_text} points"
         )
     else:
@@ -866,6 +873,7 @@ def _fix_check(ns: argparse.Namespace) -> int:
         "_verdict_line": verdict_line,
         "_event_notes": notes,
         "_top": ns.top,
+        "_one_run": one_run,
         "_largest": {"drop": largest_drop, "rise": 1.0 - largest_drop},
         "_disagree": variance is not None and ((test.p < ns.alpha) != excludes_zero),
         "_copies": [

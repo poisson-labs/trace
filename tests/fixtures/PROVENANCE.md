@@ -149,3 +149,52 @@ can never fire. The HumanEval pair is balanced and complete; it is the only real
 which a flag fires. Unbalanced inputs, rows without an outcome, copies and every left-out
 reason exist on the synthetic stores the tests build (`tests/fixcheck_support.py`,
 `tests/test_fix_check_cli.py`).
+
+## Added for the DeepEval import (2026-09-29)
+
+Two result files written by DeepEval itself, one per run of the HumanEval pair above, for the
+`poisson-trace-import deepeval` tests (`tests/ingest/`). They are not Prove stores: each is the
+file DeepEval's `evaluate()` wrote into its results folder, gzipped. The recipe is `make.py`
+beside them, in `ingest/deepeval/`.
+
+| Fixture | Made from | Test cases | Tests Passed met / missed | File DeepEval wrote | Its sha256 (before gzip) | Size gzipped |
+|---|---|---|---|---|---|---|
+| `ingest/deepeval/humaneval-a.json.gz` | `humaneval/20260905T185407Z-0313` | 10,496 | 9,158 / 1,338 | `test_run_20260929_143252.json`, 3,902,440 B | `8782a23fd56704d6f68cf0677e8ca5a2a7ece84e680ce900187f00fe2d1ce0e6` | 160,114 B |
+| `ingest/deepeval/humaneval-b.json.gz` | `humaneval/20260905T195009Z-18ac` | 10,496 | 9,109 / 1,387 | `test_run_20260929_143257.json`, 3,903,646 B | `81a8d2f3fed0c09fa42b8c581284d739d74f9fa10caa1b5035ff09bc62139bb2` | 159,847 B |
+
+**How.** DeepEval 4.2.6 (PyPI, Apache-2.0) in its own environment, with
+`DEEPEVAL_TELEMETRY_OPT_OUT=YES` and no model and no network call. Each stored row of the run,
+read through `proofload.store.Store` in the order `Store.read` returns (by config hash, then
+replicate index), became one `LLMTestCase`: `name` `<task_id>@<temperature>`, `input`
+`<task_id> at temperature <temperature>`, `actual_output` the stored outcome
+(`passed`, `failed_assertion` or `crashed`), `expected_output` `passed`. One custom metric,
+`Tests Passed` (DeepEval's documented `BaseMetric`), scored 1.0 when the stored outcome was
+`passed` and 0.0 otherwise, threshold 1.0, and DeepEval recorded its own `success` from that.
+`evaluate()` ran with `DEEPEVAL_RESULTS_FOLDER` set, printing, caching and async off, and wrote
+`test_run_<YYYYMMDD_HHMMSS>.json`. That file was gzipped as it is, level 9, with no name and
+mtime 0 in the gzip header:
+
+```
+python tests/fixtures/ingest/deepeval/make.py rows WORK        # with proofload importable
+python tests/fixtures/ingest/deepeval/make.py deepeval WORK    # with deepeval 4.2.6 importable
+python tests/fixtures/ingest/deepeval/make.py gzip WORK tests/fixtures/ingest/deepeval
+```
+
+**What a rebuild gives.** DeepEval records wall-clock timings (`runDuration`, per test case and
+per run) in the file, so a rebuild differs from the committed files in those values and in
+nothing else; `make.py compare A B` says so. The name DeepEval gives the file carries the
+local time of the machine that ran it, and is not kept. The digests in `SHA256SUMS` are of the
+gzipped files as committed.
+
+**Checks made.** Every string in both files was scanned for key-like material (`sk-…`,
+`sk-ant-…`, `AKIA…`, GitHub tokens, `bearer …`, `api_key`, `password`, `secret`,
+`authorization`, `token`), home-directory paths, the machine owner's name and email addresses:
+no hit. The only text is the case names above, the outcome words and the metric's name. Read
+back through the reader and Prove, each file gives the case counts of its source run, case by
+case (`tests/ingest/test_deepeval_fixture.py`).
+
+**What each cannot express.** One metric, no metric that raised, no conversational test case,
+one threshold, and names the user set. Every other shape (a wrapped file, a link-only file, a
+metric that raised, two metrics, positional names, a conversational case, differing
+thresholds) is built as a dictionary in the tests. No file is a changed agent: the pair is the
+same agent run twice.

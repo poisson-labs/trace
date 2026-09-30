@@ -42,6 +42,16 @@ def _p(p: float) -> str:
     return f"{p:.3f}" if p >= 0.001 else f"{p:.2e}"
 
 
+# The exact test's p can be smaller than a double can hold, where it reads 0. Below this
+# floor the fix check prints the floor as a bound and no figure.
+P_FLOOR = 1e-300
+
+
+def _p_is(p: float) -> str:
+    """``p = 0.036``, or ``p < 1e-300`` for a p below the floor."""
+    return f"p < {P_FLOOR:g}" if p < P_FLOOR else f"p = {_p(p)}"
+
+
 def _g(x: float) -> str:
     return f"{x:g}"
 
@@ -118,6 +128,10 @@ FLAGS_CAPTION = (
 )
 NO_INTERVAL = "no interval: Sato's variance is not positive on these counts"
 DISAGREE = "the interval and the test disagree; the line above follows the test"
+ONE_RUN = (
+    "consistency cannot be measured with one run per input per version: it takes two or more "
+    "runs of an input on one version to see whether a failure repeats"
+)
 COPIES = (
     "no input gave mixed outcomes across its repeats in the {arm} arm: the repeats may be "
     "copies of one another, and the by-input reading is the safer one"
@@ -547,7 +561,7 @@ class FixCheckReport:
             + ".",
             "",
             f"new failures: observed {t['observed_new']}, expected {_f(t['expected_new'])}, "
-            f"variance {_f(t['variance'])}; p = {_p(t['p'])}",
+            f"variance {_f(t['variance'])}; {_p_is(t['p'])}",
         ]
         caption = DIFFERENCE_CAPTION.format(level=_g(100.0 * (1.0 - t["alpha"])))
         if diff["variance"] is None:
@@ -572,6 +586,8 @@ class FixCheckReport:
 
     def _consistency_lines(self) -> list[str]:
         c = self.data["consistency"]
+        if self.data.get("_one_run"):
+            return [f"failure share {_f(c['failure_share'])}", ONE_RUN]
         kappa = c["kappa"]
         lines = [
             f"failure share {_f(c['failure_share'])} · fails again {_f(c['fails_again'])} · "
