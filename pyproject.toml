@@ -56,12 +56,12 @@ files = ["src"]
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["pandas", "pandas.*", "scipy", "scipy.*"]
+module = ["pandas", "pandas.*", "pyarrow", "pyarrow.*", "scipy", "scipy.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-m", "not lane_j"]
 markers = [
-    "lane_j: runs DeepEval itself at the pinned version, installed from PyPI; deselected unless -m lane_j",
+    "lane_j: runs another tool itself (DeepEval, Ragas) at its pinned version, installed from PyPI; deselected unless -m lane_j",
 ]

@@ -770,3 +770,7 @@ fd922bacbd2b44839a6d57c7bb997d95cd00a0419e40d540c8601548390f7c8e  ./tau2/2026091
 99372c78184c30adc34cbf889aa58743853bed4d34e975cda553a8c37613ff5d  ./tau2/20260917T140219Z-2b2d/manifest.json
 81a50f22e5f14af4093c6e3bb07bb55a658913cae3fcb7ec72372cf9189909d9  ./ingest/deepeval/humaneval-a.json.gz
 c5577283c078591bd8cf719d1ebea95fcdcd75d018e5ccbadff629cc56bf2464  ./ingest/deepeval/humaneval-b.json.gz
+5db1ffe7673f0f7a18b321746fab65f667d675e5e6568feb4b7abf84ff61b792  ./ingest/ragas/memory-causal.jsonl.gz
+df7d32356ccfa57013a21da2c7c3cca884004c94fdecb61686d52621acb901e4  ./ingest/ragas/memory-strong.jsonl.gz
+48e8afe8ab3913ab7a0126124bc4eb67357a626c3e78bd7ad2428bae0cfee19f  ./ingest/ragas/rag-base.jsonl
+5f5a986fade2bf12531e50e72c3f0532734a5882e18b8bb5bf6304c133975fe7  ./ingest/ragas/rag-raft.jsonl

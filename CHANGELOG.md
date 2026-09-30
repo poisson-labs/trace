@@ -16,8 +16,8 @@ with Benjamini–Hochberg; and, wherever the line is *too small to tell*, how ma
 inputs would settle it.
 
 Results from other tools: `poisson-trace-import` reads the files a tool already wrote and
-writes one new run per version, for `fix-check` and `changes` to compare. The first reader
-is DeepEval's.
+writes one new run per version, for `fix-check` and `changes` to compare. The readers are
+DeepEval's and Ragas's.
 
 - `poisson-trace where RUN --store ROOT --event NAME`: the survival curve over step index
   with a plain Greenwood 95% band, the median step, the cumulative incidence by kind of
@@ -74,7 +74,8 @@ is DeepEval's.
   refused; nothing is added to a run. A score becomes the outcome `met` or `missed` at a cut
   the user declares with its side, and a score equal to the cut met it. Rows that share a
   case are repeats of it, in the order read. No prompt, answer or reason text is written,
-  and span attributes that Prove lists as content are dropped before a span is stored. The
+  but for the value of the column a user names as the case to the Ragas reader (below), and
+  span attributes that Prove lists as content are dropped before a span is stored. The
   summary prints the files with their digests, the rules as declared, the start time and
   where it came from, the counts, and the Trace command to run next; `--json` prints
   `poisson-trace.import/1`. A refusal is one sentence, exit 1, with nothing written.
@@ -89,3 +90,17 @@ is DeepEval's.
   `consistency.fails_again` and `consistency.kappa` are then `null`.
 - Two more fixtures: the HumanEval pair as two result files written by DeepEval 4.2.6, with
   the recipe beside them, provenance and checksums.
+- `poisson-trace-import ragas … --metric COLUMN --cut X (--below | --above) --case-column
+  COLUMN`: reads the score table a team saves from Ragas's `to_pandas()`, or an
+  `@experiment` file, as CSV, JSON Lines, JSON or Parquet, told by the file's extension,
+  with `.gz` read on the first three (`docs/integrations/ragas.md`); one score column per
+  import. A cell that is empty, `NaN`, `null` or not a number is a row with no outcome,
+  never a zero. Rows that share a case value are repeats of that case. Only the two named
+  columns are kept: the score, and the case as written when it is at most 80 printable
+  characters and as a digest otherwise. A named column the file lacks is refused with the
+  file's columns listed, and a JSON Lines file with a line that is not an object is refused
+  whole, as is a `.gz` that cannot be read. Nothing imports Ragas; tested on tables written
+  by Ragas 0.4.3.
+- Four more fixtures: two pairs of Ragas score tables, one from a stored memory-retrieval
+  experiment scored by Ragas 0.4.3 and one a published base and fine-tuned pair reduced to
+  question hashes and scores, with the recipe beside them, provenance and checksums.
