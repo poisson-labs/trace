@@ -395,7 +395,7 @@ over the 670 rows Ragas scored, against 0.458 over 1,800.
   reads well is not covered by the confidence printed.
 - With one run per case per version, no single case can be flagged and the consistency of
   failures cannot be measured, and consistency stays unmeasured while fewer than half the
-  cases have been run more than once on a version. Repeats fix both.
+  cases compared have been run more than once on a version. Repeats fix both.
 - It does not add to a run. A run name the store already holds is refused.
 - A store the importer wrote is for Trace's verbs. Prove's own `diff` pairs rows by seed,
   and a score table records none.
