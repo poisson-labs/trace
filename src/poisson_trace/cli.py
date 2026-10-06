@@ -764,7 +764,12 @@ def _fix_check(ns: argparse.Namespace) -> int:
     # with one run per input per version, no input was run twice on one version, and the
     # only pairs of runs there are compare the versions, not a version with itself
     one_run = all(c.runs_old == 1 and c.runs_new == 1 for c in counts)
-    if one_run:
+    # an input repeats when one version holds two or more of its runs with an outcome; where
+    # fewer than half the compared inputs repeat, most pairs of runs of one input still set
+    # the two versions side by side rather than a version beside itself
+    repeating = sum(1 for c in counts if c.runs_old >= 2 or c.runs_new >= 2)
+    few_repeat = 0 < 2 * repeating < len(counts)
+    if one_run or few_repeat:
         again = kappa = math.nan
     drop = paired.detection_limit(counts, direction="drop", alpha=ns.alpha)
     rise = paired.detection_limit(counts, direction="rise", alpha=ns.alpha)
@@ -874,6 +879,7 @@ def _fix_check(ns: argparse.Namespace) -> int:
         "_event_notes": notes,
         "_top": ns.top,
         "_one_run": one_run,
+        "_few_repeat": (repeating, len(counts)) if few_repeat else None,
         "_largest": {"drop": largest_drop, "rise": 1.0 - largest_drop},
         "_disagree": variance is not None and ((test.p < ns.alpha) != excludes_zero),
         "_copies": [
