@@ -178,8 +178,8 @@ by input: p = 0.636 (sign-flip over the 68 inputs that moved, 100,000 draws, see
 
 ## Consistency
 
-failure share 0.344 · fails again 0.291 · κ -0.080 · within-input variance 0.245 against pooled 0.226
-a comparison that ignored the inputs would need 1/(1 − κ) = 0.93 times the runs
+failure share 0.344
+consistency cannot be measured with 3 of 137 inputs run more than once on a version: it takes at least half the inputs run two or more times on a version to see whether a failure repeats
 
 ## What it could not have detected
 
@@ -206,12 +206,9 @@ share of misses smaller than 15.9 points, and 10 was asked for, so it cannot say
 faithfulness moved. It says what would: each question three times per version, or 356
 questions.
 
-The Consistency block of this report rests on three questions. Three of the 137 questions
-compared were asked more than once, and Trace prints a κ, and the line under it, whenever
-any input has more than one run on a version. The other 134 have one run per version, and
-for them its figures set the base model's run beside the fine-tuned model's. So the κ of
--0.080 and the 0.93 say mostly how far the two models miss the same questions, not how
-consistently either one fails. Do not plan a design from them.
+The Consistency block prints no κ because only three of the 137 questions compared were
+asked more than once on a version: on the other 134 the only pairs of runs set the base
+model beside the fine-tuned one, not a model beside itself.
 
 The same two files at the same cut, on the other two scores:
 
@@ -397,7 +394,8 @@ over the 670 rows Ragas scored, against 0.458 over 1,800.
 - It does not choose a cut. Trying several cuts or several scores and keeping the one that
   reads well is not covered by the confidence printed.
 - With one run per case per version, no single case can be flagged and the consistency of
-  failures cannot be measured. Repeats fix both.
+  failures cannot be measured, and consistency stays unmeasured while fewer than half the
+  cases have been run more than once on a version. Repeats fix both.
 - It does not add to a run. A run name the store already holds is refused.
 - A store the importer wrote is for Trace's verbs. Prove's own `diff` pairs rows by seed,
   and a score table records none.
