@@ -6,7 +6,8 @@ Three ways a gzip file is damaged, each raising its own error in Python's gzip m
 compressed stream that cannot be inflated (``zlib.error``, the case ruling 13 names), a checksum
 that does not match (``gzip.BadGzipFile``) and a file cut short (``EOFError``). The damaged file
 is the second of two, so that the refusal has to name it and the first file's rows are not
-written.
+written. The reader knows gzip by a file's first two bytes, not by its name, and the fix leaves
+that as it is.
 """
 
 from __future__ import annotations
@@ -17,7 +18,9 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-from support import IMPORT_MAIN, deepeval_argv, refused, run_doc, run_import, run_python, save, scored, tree
+from support import (
+    IMPORT_MAIN, deepeval_argv, read_rows, refused, run_doc, run_import, run_python, save, scored, tree,
+)
 
 
 def _stream(raw: bytes) -> bytes:
@@ -81,12 +84,34 @@ def test_id13_a_damaged_gzip_file_is_refused_in_one_line_and_nothing_is_written(
 def test_id13_the_refusal_carries_no_traceback_and_no_text_of_the_library(
     tmp_path: Path, kind: str
 ) -> None:
-    """Through the command as a process, so that anything that reaches stderr is seen."""
+    """Through the command as a process, so that anything that reaches stderr is seen, and with
+    the files given by relative paths, as a user in that folder would give them."""
     good, damaged, library = _files(tmp_path, kind)
     root = tmp_path / "store"
-    r = run_python(IMPORT_MAIN, deepeval_argv([good, damaged], root, "v1"))
+    argv = deepeval_argv([Path(good.name), Path(damaged.name)], Path("store"), "v1")
+    r = run_python(IMPORT_MAIN, argv, cwd=tmp_path)
     refused(r)
+    assert damaged.name in r.err and str(damaged) not in r.err and good.name not in r.err, r.err
     assert "Traceback" not in r.err, r.err
     assert library not in r.err, r.err
-    assert "zlib" not in r.err.lower() and "BadGzipFile" not in r.err, r.err
+    for name in ("zlib", "BadGzipFile", "EOFError"):
+        assert name.lower() not in r.err.lower(), r.err
     assert not root.exists() or tree(root) == {}, tree(root)
+
+
+def test_id13_gzip_is_known_by_its_first_bytes_not_by_its_name(tmp_path: Path) -> None:
+    """Unchanged by the fix: plain JSON named .json.gz and gzip named .json both import, to the
+    rows of the same file saved as it is named."""
+    doc = run_doc(scored("x", [0.9, 0.1, 0.6]))
+    named = {
+        "plain": save(tmp_path / "plain.json", doc),
+        "plain named gz": save(tmp_path / "plain-named.json.gz", doc),
+        "gzip named json": save(tmp_path / "gzip-named.json", doc, gz=True),
+    }
+    root = tmp_path / "store"
+    rows = {}
+    for i, (what, path) in enumerate(named.items()):
+        r = run_import(deepeval_argv(path, root, f"v{i}", extra=("--started", "2025-09-05T00:00:00Z")))
+        assert r.code == 0, (what, r.text)
+        rows[what] = [(x["case"], x["outcome"]) for x in read_rows(root, f"v{i}")]
+    assert rows["plain named gz"] == rows["plain"] == rows["gzip named json"], rows

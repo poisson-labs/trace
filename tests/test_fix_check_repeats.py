@@ -20,7 +20,7 @@ from typing import Any
 import pytest
 
 from conftest import FIXTURES, Row, build_store, norm
-from fixcheck_support import PILOT, fix_check
+from fixcheck_support import CONSISTENCY_KEYS, FIX_KEYS, INPUTS_KEYS, PILOT, SPEC_CANNOT_SAY, fix_check
 
 # spec section 4.2, as amended for TR73; {k} and {m} print as the header prints its counts
 FEW = (
@@ -79,13 +79,13 @@ def _block(out: str) -> list[str]:
     return [line for line in out[start:end].splitlines()[1:] if line.strip()]
 
 
-def _check(root: Path) -> tuple[list[str], dict[str, Any]]:
-    """The Consistency block and the JSON, from one store."""
+def _check(root: Path, *, full: bool = False) -> Any:
+    """The Consistency block and the JSON, from one store; with ``full``, the markdown too."""
     r = fix_check(root, "a", "b", ("fail",), "--inputs", "all", "--max-mde", "0.5")
     assert r.code in (0, 2), r.text
     j = fix_check(root, "a", "b", ("fail",), "--inputs", "all", "--max-mde", "0.5", "--json")
     assert j.code == r.code, j.text
-    return _block(r.out), j.json()
+    return (_block(r.out), j.json(), r.out) if full else (_block(r.out), j.json())
 
 
 def _suppressed(block: list[str], d: dict[str, Any], k: int, m: int) -> None:
@@ -108,27 +108,34 @@ def _printed(block: list[str], d: dict[str, Any]) -> None:
     ], block
 
 
-def _consistency_from_rows(d: dict[str, Any]) -> tuple[float, ...]:
-    from poisson_trace.paired import Counts, consistency
+def _counts(d: dict[str, Any]) -> list[Any]:
+    from poisson_trace.paired import Counts
 
-    counts = [
+    return [
         Counts(r["config_hash"], r["failed_a"], r["runs_a"], r["failed_b"], r["runs_b"])
         for r in d["changes"]["rows"]
     ]
-    return consistency(counts)
 
 
 def test_tr73_two_of_ten_inputs_repeat_the_block_prints_no_kappa_and_the_json_keeps_the_rest(
     tmp_path: Path,
 ) -> None:
-    block, d = _check(_store(tmp_path, _design(10, 2)))
+    block, d, text = _check(_store(tmp_path, _design(10, 2)), full=True)
     assert d["inputs"]["compared"] == 10
     _suppressed(block, d, 2, 10)
-    share, _, _, within, pooled = _consistency_from_rows(d)
+    from poisson_trace.paired import consistency, paired_test
+
+    share, _, _, within, pooled = consistency(_counts(d))
     c = d["consistency"]
     assert (c["failure_share"], c["within"], c["pooled"]) == (
         pytest.approx(share, abs=1e-12), pytest.approx(within, abs=1e-12), pytest.approx(pooled, abs=1e-12))
-    assert isinstance(d["test"]["p"], float)
+    assert d["test"]["p"] == pytest.approx(paired_test(_counts(d)).p, rel=1e-12)
+    # the JSON keeps its shape (TR61), and the design is named in the Consistency block alone
+    assert tuple(d) == FIX_KEYS
+    assert set(c) == CONSISTENCY_KEYS and set(d["inputs"]) == INPUTS_KEYS
+    assert tuple(d["cannot_say"]) == SPEC_CANNOT_SAY
+    outside = text.replace("\n".join(block), "")
+    assert "run more than once" not in outside and "cannot be measured" not in outside
 
 
 @pytest.mark.parametrize(
@@ -207,8 +214,9 @@ def test_tr73_few_repeats_with_no_failure_or_every_run_failing_still_names_the_d
     tmp_path: Path, outcome: str, share: str
 ) -> None:
     """κ is undefined here whatever the design (Session A ruling 3 of 2026-09-29); the design's
-    sentence prints, and not the dash line. The event has to be one a run carries, so one input
-    the new version does not carry fails, and is left out."""
+    sentence prints, and not the dash line. "No failure" is among the compared inputs: the event
+    has to be one a run carries, so one input the new version does not carry fails, and is left
+    out."""
     design: list[tuple[Arm, Arm]] = [([outcome, outcome], [outcome, outcome])]
     design += [([outcome], [outcome]) for _ in range(4)]
     design.append((["fail"], None))
