@@ -14,6 +14,7 @@ import hashlib
 import json
 import math
 import re
+import zlib
 from collections import Counter
 from collections.abc import Mapping
 from datetime import UTC, datetime
@@ -86,10 +87,18 @@ def _load(path: Path) -> tuple[bytes, Any]:
         raw = path.read_bytes()
     except OSError as e:
         raise Refusal(f"{path} could not be read: {e.strerror or e}") from e
+    body = raw
+    if raw.startswith(_GZIP):
+        try:
+            body = gzip.decompress(raw)
+        except (OSError, EOFError, zlib.error):
+            # a stream that cannot be inflated, a checksum that does not match, a file cut short
+            raise Refusal(
+                f"{path} is a gzip file that cannot be read: it is damaged or cut short"
+            ) from None
     try:
-        body = gzip.decompress(raw) if raw.startswith(_GZIP) else raw
         return raw, json.loads(body.decode("utf-8"))
-    except (OSError, EOFError, ValueError):
+    except ValueError:
         raise Refusal(f"{path} is not a DeepEval test run: it is not JSON") from None
 
 
