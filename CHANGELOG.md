@@ -104,3 +104,13 @@ DeepEval's and Ragas's.
 - Four more fixtures: two pairs of Ragas score tables, one from a stored memory-retrieval
   experiment scored by Ragas 0.4.3 and one a published base and fine-tuned pair reduced to
   question hashes and scores, with the recipe beside them, provenance and checksums.
+- `fix-check` prints no κ where fewer than half the compared inputs were run more than once
+  on a version, an input counting when either version holds two or more of its runs with an
+  outcome: its consistency block then prints the failure share and says how many of the
+  compared inputs repeat. In `--json`, `consistency.fails_again` and `consistency.kappa` are
+  `null` and the other figures stay as computed. One run per input per version keeps its own
+  sentence, and a design where at least half the inputs repeat prints as before.
+- A DeepEval file that begins as gzip and cannot be read, because its stream cannot be
+  inflated, its checksum does not match or it is cut short, is refused in one line that
+  names the file: *FILE is a gzip file that cannot be read: it is damaged or cut short*.
+  Nothing is written, and no text of the library reaches the line.

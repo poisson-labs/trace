@@ -132,6 +132,11 @@ ONE_RUN = (
     "consistency cannot be measured with one run per input per version: it takes two or more "
     "runs of an input on one version to see whether a failure repeats"
 )
+FEW_REPEAT = (
+    "consistency cannot be measured with {repeating} of {compared} inputs run more than once on "
+    "a version: it takes at least half the inputs run two or more times on a version to see "
+    "whether a failure repeats"
+)
 COPIES = (
     "no input gave mixed outcomes across its repeats in the {arm} arm: the repeats may be "
     "copies of one another, and the by-input reading is the safer one"
@@ -588,6 +593,11 @@ class FixCheckReport:
         c = self.data["consistency"]
         if self.data.get("_one_run"):
             return [f"failure share {_f(c['failure_share'])}", ONE_RUN]
+        few = self.data.get("_few_repeat")
+        if few is not None:
+            repeating, compared = few
+            sentence = FEW_REPEAT.format(repeating=repeating, compared=compared)
+            return [f"failure share {_f(c['failure_share'])}", sentence]
         kappa = c["kappa"]
         lines = [
             f"failure share {_f(c['failure_share'])} · fails again {_f(c['fails_again'])} · "
