@@ -196,14 +196,18 @@ def test_tr11_no_death_in_either_run_is_refused_and_where_still_prints(two_run_s
                                         "excluded": {"no trace": 0, "unreadable trace": 0, "no leaf span": 0, "no outcome, not a timeout": 0}}
 
 
-def test_tr11_every_refusal_exits_one_with_one_sentence_including_argument_errors() -> None:
+def test_tr11_every_refusal_is_one_sentence_and_an_argument_error_exits_two() -> None:
+    # R17: the command line is wrong, so exit 2 (the shared exit-code table); still one sentence
     for argv in (
         ["where", TAU2_A, "--store", str(TAU2)],                       # no --event
         ["where", TAU2_A, "--event", "unsolved"],                      # no --store
         ["where", TAU2_A, "--store", str(TAU2), "--event", "unsolved", "--by", "wall"],
-        ["compare", TAU2_A, TAU2_B, "--store", str(TAU2), "--event", "unsolved"],  # no ceiling
     ):
-        _one_sentence(run_cli(argv))
+        result = run_cli(argv)
+        assert len([line for line in result.text.splitlines() if line.strip()]) == 1, result.text
+        assert result.code == 2
+    # the missing ceiling stays the command's own refusal, exit 1
+    _one_sentence(run_cli(["compare", TAU2_A, TAU2_B, "--store", str(TAU2), "--event", "unsolved"]))
 
 
 # ---------- TR23 ----------
@@ -223,7 +227,7 @@ def test_tr23_the_three_verdict_rows(two_run_store) -> None:  # type: ignore[no-
     nj = compare(same, "a", "b", ["fail"], 100.0, "--json").json()["comparison"]
     assert nj["verdict"] == "no significant difference" and nj["p"] >= 0.05 and nj["mde_hazard_ratio"] <= 100.0
     t = compare(same, "a", "b", ["fail"], 1.3)
-    assert t.code == 2, t.text
+    assert t.code == 0, t.text  # R17: a result exits 0, too small to tell included
     assert "too small to tell" in t.out and "could not have detected a hazard ratio below" in t.out and "1.3" in t.out
     tj = compare(same, "a", "b", ["fail"], 1.3, "--json").json()["comparison"]
     assert tj["verdict"] == "too small to tell" and tj["mde_hazard_ratio"] > 1.3 and tj["max_mde_hr"] == 1.3

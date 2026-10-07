@@ -453,7 +453,7 @@ FROZEN = {
     "conftest.py": "8f541f1c75a6219f00cc3188870907d625f309fc31c5c34dd17c0f206f975962",
     "fixcheck_support.py": "f8f9cc3c54221db654c8c6da24945efe6e1b9282b59668b110235c4da4235cc7",
     "test_changes.py": "e41d94f97999a0af4f0f0da582a8ca769562f9e496eff5920f4856c5e531cf03",
-    "test_cli.py": "74624f0dfce1960c4c2368873aaa95d8568d59eb698a34d189ebba0b4c64f13a",
+    "test_cli.py": "95647f819fb85e50a0f5c1ada995ba3bd7c600960c04bc7efd5a74751f4bc149",
     "test_clock.py": "298568af543464a27a9ebd0e9ab65bc80ba1401149684179cbc7f2c35b9186da",
     "test_fix_check_cli.py": "bc04dd0768ade0997e45083130bed7c984577a1d174a98abed64063324787c7e",
     "test_fix_check_golden.py": "3fa8a0889f7e7958cde93095a08ce6e7b56ef1905068ebe5e714d240284fa73b",

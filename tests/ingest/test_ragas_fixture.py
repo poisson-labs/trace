@@ -220,7 +220,7 @@ def test_ir8_fix_check_on_precision_reads_no_significant_difference_on_670_cases
     assert d["limits"]["drop"] == pytest.approx(0.017, abs=1e-3)
     assert d["verdict"] == "no significant difference"
     # the header says how many cases were left out, and why, before the line that states the result
-    left = re.search(r"left out 1130 \(no outcome on the old version 1130", text)
+    left = re.search(r"left out 1,130 \(no outcome on the old version 1,130", text)  # R18: counts with separators
     line = text.find("no significant difference")
     assert left is not None and 0 <= left.start() < line, text
 

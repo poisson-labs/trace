@@ -90,7 +90,7 @@ def _check(root: Path, *, full: bool = False) -> Any:
 
 def _suppressed(block: list[str], d: dict[str, Any], k: int, m: int) -> None:
     c = d["consistency"]
-    assert block == [f"failure share {c['failure_share']:.3f}", FEW.format(k=k, m=m)], block
+    assert block == [f"failure share {c['failure_share']:.3f}", FEW.format(k=f"{k:,}", m=f"{m:,}")], block  # R18: counts with separators
     assert c["fails_again"] is None and c["kappa"] is None, c
 
 
