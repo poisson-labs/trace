@@ -90,7 +90,7 @@ def _check(root: Path, *, full: bool = False) -> Any:
 
 def _suppressed(block: list[str], d: dict[str, Any], k: int, m: int) -> None:
     c = d["consistency"]
-    assert block == [f"failure share {c['failure_share']:.3f}", FEW.format(k=k, m=m)], block
+    assert block == [f"failure share {c['failure_share']:.3f}", FEW.format(k=f"{k:,}", m=f"{m:,}")], block  # R18: counts with separators
     assert c["fails_again"] is None and c["kappa"] is None, c
 
 
@@ -248,7 +248,7 @@ def test_tr73_the_public_ragas_pair_on_faithfulness_prints_no_kappa(tmp_path: Pa
     argv = ("--inputs", "all", "--max-mde", "0.10")
     r = fix_check(root, "rag-base", "rag-raft", ("missed",), *argv)
     d = fix_check(root, "rag-base", "rag-raft", ("missed",), *argv, "--json").json()
-    assert r.code == 2, r.text
+    assert r.code == 0, r.text  # R17: a result exits 0, too small to tell included
     assert d["inputs"]["compared"] == 137
     _suppressed(_block(r.out), d, 3, 137)
     c = d["consistency"]

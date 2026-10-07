@@ -1,5 +1,58 @@
 # Changelog
 
+## Unreleased
+
+Both commands, `poisson-trace` and `poisson-trace-import`, now keep the command-line look
+written down in `docs/cli-look.md`, which every Poisson Labs tool follows.
+
+- **The exit codes changed.** 0: the result is printed, whatever it says, so *too small to
+  tell* now exits 0 where it exited 2. 1: refused, with nothing written, as before; a value
+  the command checks itself (`--max-mde 1.5`, `--inputs some`, `--boot 0`) is refused this way.
+  2: the command line is wrong (no verb, an unknown verb or option, a flag missing, a value
+  outside an option's listed choices or not a number where one is asked, a word too many),
+  where it exited 1. 3: a failure after work started, or an unexpected one. 130: interrupted. A script that waited for exit 2 on *too small to
+  tell* reads the verdict from `--json` instead.
+- Every refusal and every mistake in the command line is one line on stderr that starts
+  `error:`, with nothing on stdout, under `--json` too. No refusal carries a library's own
+  error text or a value printed the way Python prints it; a value is in double quotes or
+  bare.
+- `--help` and `--version` work without Prove: Prove is checked once the command line is
+  read, and a command that needs it, without it or at another version, names the install
+  command `pip install git+https://github.com/poisson-labs/prove` and the version it found.
+- `--version` prints one line: `poisson-trace 0.1.0 (poisson-prove 0.0.1, Python 3.11.7)`,
+  with Prove's version as installed, or `poisson-prove not installed`.
+- `python -m poisson_trace` is the same command as `poisson-trace`.
+- `--seed` below 0 is refused, and `--boot` above 1,000,000; a store that cannot be read, a
+  name too long for the system and a `--started` outside the years 1 to 9999 are refused in
+  one line, where each ended in a traceback.
+- Every help gives a description, every option with its default or "no default", and an
+  example. `--max-mde` and `--max-mde-hr` show as required in the usage line; a missing one
+  is still refused in one line, exit 1.
+- Options may come before or after the verb, and before or after the import's tool. An
+  option cut short (`--ev` for `--event`) is refused in `poisson-trace` as it already was in
+  `poisson-trace-import`.
+- A store that is not there, an empty folder or a plain file given as `--store` is refused
+  as *no store at PATH*, instead of as an unknown run.
+- `where --svg FILE` refuses, before any work, a folder that is not there or cannot be
+  written, a path that is a folder, and a file (or a link) that is already there unless
+  `--force` is given; `--force` without `--svg` is refused. When it writes, the report ends with `  wrote  FILE`; with `--json` stdout stays
+  one document. The SVG is written as UTF-8 whatever the locale.
+- An unexpected failure prints one line naming its type and
+  `~/.cache/poisson-trace/errors.log`, where the details are added to what the log holds;
+  `--debug`, before or after the verb, prints them on stderr too.
+- Ctrl-C prints `stopped  interrupted; nothing was written` and exits 130. An import stopped
+  while it writes leaves its run marked partial and says so, naming the run and the store
+  whose folder to remove before importing it again; a run of that name is still refused
+  until then.
+- A stdout that cannot encode the report's glyphs (`·`, `–`, `α`, `χ²`, `κ`) gets the same
+  report spelt in ASCII, line for line; the JSON is the same bytes on any stdout. A reader
+  that goes away (`| head`) ends the command quietly.
+- Every count of 1,000 or more prints with thousands separators (`rows 10,496`), in every
+  report, the import's summary, refusals and the SVG, the bootstrap's `B = 1,000` included;
+  the JSON keeps plain numbers. The two figures under `docs/figures/` are re-drawn for it.
+- The README and the two integration pages give the install line above, and their example
+  outputs are re-run.
+
 ## 0.1.0 — 2026-10-01
 
 First release, three parts. The first two read Prove's stored runs; the third writes a

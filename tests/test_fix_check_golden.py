@@ -26,7 +26,7 @@ def _json(result, code):  # type: ignore[no-untyped-def]
 
 
 def test_tr66_tau2_pair_all_inputs() -> None:
-    d = _json(fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.10", "--json"), 2)
+    d = _json(fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.10", "--json"), 0)  # R17
     assert (d["inputs"]["compared"], d["inputs"]["informative"], d["inputs"]["selected"]) == (50, 29, 50)
     assert sum(d["inputs"]["left_out"].values()) == 0
     assert (d["rows"]["old"]["failed"], d["rows"]["old"]["runs"]) == (110, 200)
@@ -64,7 +64,7 @@ def test_tr66_tau2_pair_all_inputs() -> None:
 
 def test_tr67_tau2_pair_compare_guidance() -> None:
     tight = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.3, "--json")
-    g = _json(tight, 2)["comparison"]["guidance"]
+    g = _json(tight, 0)["comparison"]["guidance"]  # R17
     assert (g["deaths"], g["runs"], g["inputs"], g["repeats"]) == (457, 824, 103, 9)
     assert g["accepts_at"] == pytest.approx(1.457, abs=1e-12)
     assert _json(compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.5, "--json"), 0)["comparison"]["guidance"] is None
@@ -79,7 +79,7 @@ def _pilot(*extra: str):  # type: ignore[no-untyped-def]
 
 
 def test_tr68_the_real_before_and_after() -> None:
-    d = _json(_pilot("--json"), 2)
+    d = _json(_pilot("--json"), 0)  # R17
     assert (d["inputs"]["selected"], d["inputs"]["compared"]) == (37, 6)
     assert d["inputs"]["left_out"]["not re-run on the new version"] == 31
     assert sum(d["inputs"]["left_out"].values()) == 31
@@ -116,7 +116,7 @@ def test_tr68_the_real_before_and_after() -> None:
     (TAU2_B, 20, -0.200, 0.1600, 0.416831),
 ])
 def test_tr68_the_pilot_against_all_ten_tasks(old: str, failed: int, points: float, p: float, limit: float) -> None:
-    d = _json(fix_check(TAU2, old, PILOT, TAU2_EVENTS, *ALL, "--max-mde", "0.20", "--json"), 2)
+    d = _json(fix_check(TAU2, old, PILOT, TAU2_EVENTS, *ALL, "--max-mde", "0.20", "--json"), 0)  # R17
     assert d["inputs"]["compared"] == 10
     assert (d["rows"]["old"]["failed"], d["rows"]["old"]["runs"]) == (failed, 40)
     assert (d["rows"]["new"]["failed"], d["rows"]["new"]["runs"]) == (3, 10)

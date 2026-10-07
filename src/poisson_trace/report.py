@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from xml.sax.saxutils import escape
 
+from poisson_trace.look import count
+
 CANNOT_SAY: tuple[str, ...] = (
     "The step index is where the run stopped, not why. A run that died at a tool step may "
     "have gone wrong three steps earlier.",
@@ -36,6 +38,11 @@ MDE_LINE = (
 
 def _f(x: float | None, places: int = 3) -> str:
     return "–" if x is None else f"{x:.{places}f}"
+
+
+def _expected(x: float) -> str:
+    """An expected count: three decimals, with thousands separators as counts have."""
+    return f"{x:,.3f}"
 
 
 def _p(p: float) -> str:
@@ -68,13 +75,13 @@ def _header_lines(run: Mapping[str, Any], events: Sequence[str]) -> list[str]:
     tally = run["tally"]
     placement = run["placement"]
     excluded = placement["excluded"]
-    cap = "no cap" if run["cap"] is None else f"cap: {run['cap']} spans"
+    cap = "no cap" if run["cap"] is None else f"cap: {count(run['cap'])} spans"
     lines = [
         f"- run: {run['run_id']} · target: {run['target_id']} · t_unit: {run['t_unit']} · "
         f"status: {run['status']} · {cap}",
         "- Prove's tally: "
         + " · ".join(
-            f"{label} {tally[key]}"
+            f"{label} {count(tally[key])}"
             for label, key in (
                 ("rows", "rows"),
                 ("with outcome", "with_outcome"),
@@ -86,12 +93,12 @@ def _header_lines(run: Mapping[str, Any], events: Sequence[str]) -> list[str]:
         ),
         "- placement: "
         + " · ".join(
-            f"{label} {placement[label]}"
+            f"{label} {count(placement[label])}"
             for label in ("placed", "died", "ended", "timed out", "capped")
         )
-        + f" · excluded {sum(excluded.values())}"
+        + f" · excluded {count(sum(excluded.values()))}"
         + (
-            " (" + "; ".join(f"{reason} {n}" for reason, n in excluded.items() if n) + ")"
+            " (" + "; ".join(f"{reason} {count(n)}" for reason, n in excluded.items() if n) + ")"
             if any(excluded.values())
             else ""
         ),
@@ -160,7 +167,7 @@ def _sig(x: float) -> str:
 
 
 def _count(n: int, word: str) -> str:
-    return f"{n} {word}" if n == 1 else f"{n} {word}s"
+    return f"{count(n)} {word}" if n == 1 else f"{count(n)} {word}s"
 
 
 def _gap(seconds: float) -> str:
@@ -168,12 +175,12 @@ def _gap(seconds: float) -> str:
     if seconds < 60.0:
         return f"{int(seconds)} s"
     hours, minutes = divmod(int(seconds // 60), 60)
-    return f"{hours} h {minutes} min" if hours else f"{minutes} min"
+    return f"{count(hours)} h {minutes} min" if hours else f"{minutes} min"
 
 
 def _tally_line(label: str, tally: Mapping[str, Any]) -> str:
     return f"- Prove's tally ({label}): " + " · ".join(
-        f"{name} {tally[key]}"
+        f"{name} {count(tally[key])}"
         for name, key in (
             ("rows", "rows"),
             ("with outcome", "with_outcome"),
@@ -190,7 +197,7 @@ def _run_lines(label: str, run: Mapping[str, Any]) -> list[str]:
     return [
         f"- {label}: {run['run_id']} · target: {run['target_id']} · status: {run['status']} · "
         f"started: {run['created_at']} · declared repeats: "
-        f"{'not recorded' if declared is None else declared}",
+        f"{'not recorded' if declared is None else count(declared)}",
         _tally_line(label, run["tally"]),
     ]
 
@@ -207,9 +214,9 @@ def _flag_lines(block: Mapping[str, Any], top: int, first: str, second: str) -> 
     lines = [
         FLAGS_CAPTION.format(
             alpha=_g(block["alpha"]),
-            tested=tested,
+            tested=count(tested),
             input_word="input" if tested == 1 else "inputs",
-            flagged=block["flagged"],
+            flagged=count(block["flagged"]),
         )
         + ".",
         "",
@@ -223,13 +230,18 @@ def _flag_lines(block: Mapping[str, Any], top: int, first: str, second: str) -> 
     for r in shown:
         flag = "–" if r["flag"] is None else r["flag"][: -len("B")] + second
         lines.append(
-            f"| {_config_cell(r['config'])} | {r['failed_a']}/{r['runs_a']} | "
-            f"{r['failed_b']}/{r['runs_b']} | {_points(r['change'], signed=True, places=1)} "
-            f"points | {_p(r['p'])} | {_p(r['q'])} | {flag} | "
+            f"| {_config_cell(r['config'])} | {count(r['failed_a'])}/{count(r['runs_a'])} | "
+            f"{count(r['failed_b'])}/{count(r['runs_b'])} | "
+            f"{_points(r['change'], signed=True, places=1)} points | "
+            f"{_p(r['p'])} | {_p(r['q'])} | {flag} | "
             f"{_points(r['limit_rise'], places=1)} points |"
         )
     if len(shown) < tested:
-        lines += ["", f"{len(shown)} of {tested} inputs shown, by ascending p; --json lists all."]
+        lines += [
+            "",
+            f"{count(len(shown))} of {count(tested)} inputs shown, by ascending p; "
+            "--json lists all.",
+        ]
     lone = (
         f"A lone changed input is flagged only if its p is below α / M = "
         f"{_sig(block['lone_threshold'])}, and the smallest p an input of this design can give "
@@ -242,10 +254,10 @@ def _flag_lines(block: Mapping[str, Any], top: int, first: str, second: str) -> 
     else:
         lone += (
             "a lone changed input cannot be flagged; at least "
-            f"{block['together']} inputs would have to flip completely together"
+            f"{count(block['together'])} inputs would have to flip completely together"
         )
     lone += (
-        f"; a lone complete flip needs {block['lone_flip_repeats']} repeats per arm. "
+        f"; a lone complete flip needs {count(block['lone_flip_repeats'])} repeats per arm. "
         "An input with no flag is not an input that did not change."
     )
     return lines + ["", lone]
@@ -273,27 +285,28 @@ class WhereReport:
         lines += ["| step | at risk | died | S | 95% band |", "|---|---|---|---|---|"]
         for row in d["curve"]:
             lines.append(
-                f"| {row['step']} | {row['at_risk']} | {row['died']} | {_f(row['survival'])} | "
+                f"| {count(row['step'])} | {count(row['at_risk'])} | {count(row['died'])} | "
+                f"{_f(row['survival'])} | "
                 f"{_band(row['lo'], row['hi'])} |"
             )
         if not d["curve"]:
             lines.append("| – | – | 0 | 1.000 | 1.000 – 1.000 |")
         lines.append("")
         median = d["median_step"]
-        lines.append(f"median step: {'not reached' if median is None else median}")
+        lines.append(f"median step: {'not reached' if median is None else count(median)}")
         for row in d["at"]:
             lines.append(
-                f"S({row['step']}) = {_f(row['survival'])} ({_band(row['lo'], row['hi'])})"
+                f"S({count(row['step'])}) = {_f(row['survival'])} ({_band(row['lo'], row['hi'])})"
             )
         boot = d["bootstrap"]
         lines += ["", f"## Where they die, by {by_label}", ""]
-        lines += [AJ_CAPTION.format(b=boot["b"], seed=boot["seed"]) + ".", ""]
+        lines += [AJ_CAPTION.format(b=count(boot["b"]), seed=boot["seed"]) + ".", ""]
         last = d["curve"][-1]["step"] if d["curve"] else None
-        at_label = f"F at step {last}" if last is not None else "F"
+        at_label = f"F at step {count(last)}" if last is not None else "F"
         lines += [f"| {cause_word} | deaths | {at_label} | 95% band |", "|---|---|---|---|"]
         for row in d["causes"]:
             lines.append(
-                f"| {row['cause']} | {row['deaths']} | {_f(row['f'])} | "
+                f"| {row['cause']} | {count(row['deaths'])} | {_f(row['f'])} | "
                 f"{_band(row['lo'], row['hi'])} |"
             )
         if not d["causes"]:
@@ -322,9 +335,11 @@ class WhereReport:
         ]
         for name in declared["declared_steps"]:
             flag = "never reached" if name in never else ""
-            lines.append(f"| {name} | {reached.get(name, 0)} of {placed} | {flag} |")
+            lines.append(f"| {name} | {count(reached.get(name, 0))} of {count(placed)} | {flag} |")
         for name in declared["undeclared_steps"]:
-            lines.append(f"| {name} | {reached.get(name, 0)} of {placed} | undeclared |")
+            lines.append(
+                f"| {name} | {count(reached.get(name, 0))} of {count(placed)} | undeclared |"
+            )
         return lines
 
     def to_json(self) -> str:
@@ -361,10 +376,10 @@ class CompareReport:
         salt = " (the runs share a run_salt)" if d.get("_same_salt") else ""
         lines.append(
             LOGRANK_CAPTION.format(
-                cells=c["cells"],
+                cells=count(c["cells"]),
                 cell_word="cell" if c["cells"] == 1 else "cells",
-                a_only=c["excluded_cells"]["a_only"],
-                b_only=c["excluded_cells"]["b_only"],
+                a_only=count(c["excluded_cells"]["a_only"]),
+                b_only=count(c["excluded_cells"]["b_only"]),
                 salt=salt,
                 alpha=_g(c["alpha"]),
             )
@@ -373,12 +388,12 @@ class CompareReport:
         lines += ["", "| arm | placed | died | observed | expected |", "|---|---|---|---|---|"]
         deaths = c["observed_a"] + d["_observed_b"]
         lines.append(
-            f"| A (before) | {a['placement']['placed']} | {a['placement']['died']} | "
-            f"{_g(c['observed_a'])} | {_f(c['expected_a'])} |"
+            f"| A (before) | {count(a['placement']['placed'])} | {count(a['placement']['died'])} | "
+            f"{count(c['observed_a'])} | {_expected(c['expected_a'])} |"
         )
         lines.append(
-            f"| B (after) | {b['placement']['placed']} | {b['placement']['died']} | "
-            f"{_g(d['_observed_b'])} | {_f(deaths - c['expected_a'])} |"
+            f"| B (after) | {count(b['placement']['placed'])} | {count(b['placement']['died'])} | "
+            f"{count(d['_observed_b'])} | {_expected(deaths - c['expected_a'])} |"
         )
         lines += [
             "",
@@ -388,7 +403,7 @@ class CompareReport:
         ]
         for row in d["at"]:
             lines.append(
-                f"S_B({row['step']}) − S_A({row['step']}) = {_f(row['diff'])} "
+                f"S_B({count(row['step'])}) − S_A({count(row['step'])}) = {_f(row['diff'])} "
                 f"({_f(row['lo'])} – {_f(row['hi'])}, Wald 95%)"
             )
         lines += ["", f"### Per {cause_word}", ""]
@@ -401,7 +416,7 @@ class CompareReport:
         ]
         for row in d["per_cause"]:
             lines.append(
-                f"| {row['cause']} | {row['deaths_a']} | {row['deaths_b']} | "
+                f"| {row['cause']} | {count(row['deaths_a'])} | {count(row['deaths_b'])} | "
                 f"{_f(row['statistic'])} | {_p(row['p'])} | {_p(row['q'])} | "
                 f"{_f(row['mde_hazard_ratio'])} |"
             )
@@ -410,7 +425,7 @@ class CompareReport:
             MDE_LINE.format(
                 mde=_f(c["mde_hazard_ratio"]),
                 alpha=_g(c["alpha"]),
-                deaths=d["_deaths_common"],
+                deaths=count(d["_deaths_common"]),
                 share=_f(d["_share_a"]),
             ),
             "",
@@ -433,11 +448,12 @@ class CompareReport:
             lines.append(f"- no number of deaths reaches a hazard ratio of {asked}")
         else:
             lines += [
-                f"- deaths: {g['deaths']} would bring the detectable hazard ratio to {asked}; "
-                f"this design has {d['_deaths_common']}",
-                f"- runs: {g['runs']} placed runs at the present share of deaths, which is "
-                f"{g['inputs']} inputs at the present repeats, or {g['repeats']} repeats per "
-                f"arm on these {c['cells']}; this design has {d['_placed_common']} placed runs",
+                f"- deaths: {count(g['deaths'])} would bring the detectable hazard ratio to "
+                f"{asked}; this design has {count(d['_deaths_common'])}",
+                f"- runs: {count(g['runs'])} placed runs at the present share of deaths, which is "
+                f"{count(g['inputs'])} inputs at the present repeats, or {count(g['repeats'])} "
+                f"repeats per arm on these {count(c['cells'])}; this design has "
+                f"{count(d['_placed_common'])} placed runs",
             ]
         if g["accepts_at"] is not None:
             lines.append(
@@ -504,27 +520,27 @@ class FixCheckReport:
                 f"{inputs['failing_from']}"
             )
         left = inputs["left_out"]
-        reasons = "; ".join(f"{reason} {n}" for reason, n in left.items() if n)
+        reasons = "; ".join(f"{reason} {count(n)}" for reason, n in left.items() if n)
         lines.append(
-            f"- inputs: {rule} · selected {inputs['selected']} · compared "
-            f"{inputs['compared']} · left out {sum(left.values())}"
+            f"- inputs: {rule} · selected {count(inputs['selected'])} · compared "
+            f"{count(inputs['compared'])} · left out {count(sum(left.values()))}"
             + (f" ({reasons})" if reasons else "")
         )
         lines.append(
             "- rows used: "
             + " · ".join(
-                f"{arm} {rows[arm]['runs']} (timed out {rows[arm]['timed_out']}, no outcome "
-                f"{rows[arm]['no_outcome']})"
+                f"{arm} {count(rows[arm]['runs'])} (timed out {count(rows[arm]['timed_out'])}, "
+                f"no outcome {count(rows[arm]['no_outcome'])})"
                 for arm in ("old", "new")
             )
         )
         lines.append(
             "- inputs short of the declared repeats: "
-            f"old {rows['old']['short']} · new {rows['new']['short']}"
+            f"old {count(rows['old']['short'])} · new {count(rows['new']['short'])}"
         )
         lines.append(
             "- inputs with mixed outcomes across their repeats: "
-            f"old {rows['old']['mixed']} · new {rows['new']['mixed']}"
+            f"old {count(rows['old']['mixed'])} · new {count(rows['new']['mixed'])}"
         )
         lines += [f"- {COPIES.format(arm=arm)}" for arm in d.get("_copies", [])]
         return lines
@@ -541,7 +557,7 @@ class FixCheckReport:
             r = d["rows"][arm]
             stayed = d["control"][f"{arm}_did_not_fail_share"]
             lines.append(
-                f"| {arm} | {r['runs']} | {r['failed']} | {_percent(1.0 - stayed)} | "
+                f"| {arm} | {count(r['runs'])} | {count(r['failed'])} | {_percent(1.0 - stayed)} | "
                 f"{_percent(stayed)} |"
             )
         lines += [
@@ -558,15 +574,15 @@ class FixCheckReport:
         inputs = d["inputs"]
         lines = [
             CMH_CAPTION.format(
-                inputs=inputs["compared"],
+                inputs=count(inputs["compared"]),
                 input_word="input" if inputs["compared"] == 1 else "inputs",
-                informative=inputs["informative"],
+                informative=count(inputs["informative"]),
                 alpha=_g(t["alpha"]),
             )
             + ".",
             "",
-            f"new failures: observed {t['observed_new']}, expected {_f(t['expected_new'])}, "
-            f"variance {_f(t['variance'])}; {_p_is(t['p'])}",
+            f"new failures: observed {count(t['observed_new'])}, expected "
+            f"{_expected(t['expected_new'])}, variance {_f(t['variance'])}; {_p_is(t['p'])}",
         ]
         caption = DIFFERENCE_CAPTION.format(level=_g(100.0 * (1.0 - t["alpha"])))
         if diff["variance"] is None:
@@ -582,7 +598,7 @@ class FixCheckReport:
         if by["method"] == "exact":
             how = "exact"
         else:
-            how = f"{by['draws']:,} draws, seed = {by['seed']}"
+            how = f"{count(by['draws'])} draws, seed = {by['seed']}"
         lines.append(
             f"by input: p = {_p(by['p'])} (sign-flip over the {_count(by['moved'], 'input')} "
             f"that moved, {how}); not part of the line below"
@@ -596,7 +612,7 @@ class FixCheckReport:
         few = self.data.get("_few_repeat")
         if few is not None:
             repeating, compared = few
-            sentence = FEW_REPEAT.format(repeating=repeating, compared=compared)
+            sentence = FEW_REPEAT.format(repeating=count(repeating), compared=count(compared))
             return [f"failure share {_f(c['failure_share'])}", sentence]
         kappa = c["kappa"]
         lines = [
@@ -641,14 +657,14 @@ class FixCheckReport:
             lines.append(f"- no number of repeats on these inputs reaches {asked} points")
         else:
             lines.append(
-                f"- repeats: {g['repeats']} per arm on these {_count(compared, 'input')} would "
-                f"bring the limit to {asked} points"
+                f"- repeats: {count(g['repeats'])} per arm on these "
+                f"{_count(compared, 'input')} would bring the limit to {asked} points"
             )
         if g["inputs"] is None:
             lines.append(f"- no number of inputs at the present repeats reaches {asked} points")
         else:
             lines.append(
-                f"- inputs: {g['inputs']} inputs like these, at the present repeats, would "
+                f"- inputs: {count(g['inputs'])} inputs like these, at the present repeats, would "
                 "do the same"
             )
         if g["accepts_at"] is None:
@@ -693,9 +709,9 @@ class ChangesReport:
         held = d.get("_inputs")
         if held is not None:
             lines.append(
-                f"- inputs: A carries {held['a']}, B carries {held['b']} · compared "
-                f"{d['tested']}, each with an outcome in both runs · in A only "
-                f"{held['a_only']} · in B only {held['b_only']}"
+                f"- inputs: A carries {count(held['a'])}, B carries {count(held['b'])} · compared "
+                f"{count(d['tested'])}, each with an outcome in both runs · in A only "
+                f"{count(held['a_only'])} · in B only {count(held['b_only'])}"
             )
         lines += ["", "## Inputs that changed", ""]
         lines += _flag_lines(d, d.get("_top", 10), "A", "B")
@@ -778,10 +794,10 @@ def _render_svg(report: WhereReport) -> str:
         f"{escape(run['run_id'])} · {escape(run['target_id'])}</text>"
     )
     parts.append(
-        f'<text x="{_PAD_L}" y="40" fill="{_INK2}">placed {placement["placed"]} · '
-        f"died {placement['died']} · ended {placement['ended']} · "
-        f"timed out {placement['timed out']} · capped {placement['capped']} · "
-        f"excluded {sum(placement['excluded'].values())} · "
+        f'<text x="{_PAD_L}" y="40" fill="{_INK2}">placed {count(placement["placed"])} · '
+        f"died {count(placement['died'])} · ended {count(placement['ended'])} · "
+        f"timed out {count(placement['timed out'])} · capped {count(placement['capped'])} · "
+        f"excluded {count(sum(placement['excluded'].values()))} · "
         f"events: {escape(', '.join(d['events']))}</text>"
     )
     for y0, h, sy, ylabel in (
@@ -806,7 +822,7 @@ def _render_svg(report: WhereReport) -> str:
             )
             parts.append(
                 f'<text x="{xx:.1f}" y="{y0 + h + 17}" fill="{_INK2}" '
-                f'text-anchor="middle">{tick}</text>'
+                f'text-anchor="middle">{count(tick)}</text>'
             )
         parts.append(
             f'<line x1="{_PAD_L}" y1="{y0 + h}" x2="{_W - _PAD_R}" y2="{y0 + h}" '
@@ -840,7 +856,7 @@ def _render_svg(report: WhereReport) -> str:
         )
         parts.append(
             f'<text x="{sx(median) + 6:.1f}" y="{sy_top(0.5) - 6:.1f}" fill="{_INK2}">'
-            f"median step {median}</text>"
+            f"median step {count(median)}</text>"
         )
     # one polyline per cause, and its bootstrap band at the last death step
     steps = [r["step"] for r in curve]
@@ -864,14 +880,14 @@ def _render_svg(report: WhereReport) -> str:
             f'<rect x="{legend_x}" y="{_LEGEND_Y - 9}" width="10" height="10" rx="2" '
             f'fill="{colour}"/>'
         )
-        label = f"{row['cause']} · {row['deaths']} deaths · F = {row['f']:.3f}"
+        label = f"{row['cause']} · {count(row['deaths'])} deaths · F = {row['f']:.3f}"
         parts.append(
             f'<text x="{legend_x + 15}" y="{_LEGEND_Y}" fill="{_INK}">{escape(label)}</text>'
         )
         legend_x += 15 + 7 * len(label) + 20
     parts.append(
         f'<text x="{_PAD_L}" y="{_BOT_Y - 8}" fill="{_INK}">'
-        f"{escape(AJ_CAPTION.format(b=boot['b'], seed=boot['seed']))}</text>"
+        f"{escape(AJ_CAPTION.format(b=count(boot['b']), seed=boot['seed']))}</text>"
     )
     parts.append(
         f'<text x="{_PAD_L}" y="{_H - 10}" fill="{_INK2}">Poisson Trace · Prove '

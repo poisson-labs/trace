@@ -23,8 +23,21 @@ from typing import Any
 
 from poisson_trace.ingest.cut import MET, MISSED, Cut
 from poisson_trace.ingest.rows import Refusal, Row, Run, case_id, digest_id
+from poisson_trace.look import why
 
 ENVELOPES: tuple[str, ...] = ("test run", "wrapped test run")
+
+DESCRIPTION = """\
+Read DeepEval's saved test runs (the results-folder file test_run_<time>.json,
+.deepeval/.latest_run_full.json or .deepeval/.latest_test_run.json, as .json or .json.gz) and
+write one metric of them as one new run, at DeepEval's recorded decision or at a cut you
+declare. Test cases that share a case within one import are its repeats. No text of a test
+case is kept. Nothing has a default but the start time.
+"""
+EXAMPLE = (
+    "poisson-trace-import deepeval results/test_run_20260905_185407.json \\\n"
+    '      --store trace-store --run before --metric "Tests Passed" --cut recorded --case name'
+)
 
 TOOL = "deepeval"
 NO_SCORE = "no score"
@@ -40,13 +53,17 @@ _GZIP = b"\x1f\x8b"
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
-        "--metric", required=True, metavar="NAME", help="the metric's name, as the file has it"
+        "--metric",
+        required=True,
+        metavar="NAME",
+        help="the metric's name, as the file has it (no default)",
     )
     parser.add_argument(
         "--cut",
         required=True,
         metavar="recorded|X",
-        help="recorded: DeepEval's own decision for the metric; or a number, with its side",
+        help="recorded: DeepEval's own decision for the metric; or a number, with its side "
+        "(no default)",
     )
     parser.add_argument("--below", action="store_true", help="a score under the cut missed it")
     parser.add_argument("--above", action="store_true", help="a score over the cut missed it")
@@ -55,7 +72,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         required=True,
         choices=_CASES,
         metavar="name|input|position",
-        help="what identifies a test case across the two versions",
+        help="what identifies a test case across the two versions (no default)",
     )
 
 
@@ -86,7 +103,7 @@ def _load(path: Path) -> tuple[bytes, Any]:
     try:
         raw = path.read_bytes()
     except OSError as e:
-        raise Refusal(f"{path} could not be read: {e.strerror or e}") from e
+        raise Refusal(f"{path} could not be read: {why(e)}") from e
     body = raw
     if raw.startswith(_GZIP):
         try:
