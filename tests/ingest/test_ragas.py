@@ -576,11 +576,22 @@ MALFORMED = {
 }
 
 
+# R17: a flag missing, or a value outside its choices, is a wrong command line: exit 2, one line,
+# nothing on stdout and nothing written
+WRONG_COMMAND_LINE = {"no --metric", "no --cut", "no --case-column", "a side with no number"}
+
+
+def _wrong_command_line(r) -> None:  # type: ignore[no-untyped-def]
+    assert r.code == 2, r.text
+    assert r.out.strip() == "", r.out
+    assert len([line for line in r.err.splitlines() if line.strip()]) == 1, r.err
+
+
 @pytest.mark.parametrize("what", list(MALFORMED))
 def test_ir5_a_missing_or_malformed_rule_is_refused(tmp_path: Path, what: str) -> None:
     f = _base(tmp_path)
     root = tmp_path / "store"
-    refused(run_import(ragas_argv(f, root, **MALFORMED[what])))
+    (_wrong_command_line if what in WRONG_COMMAND_LINE else refused)(run_import(ragas_argv(f, root, **MALFORMED[what])))
     _nothing_under(root)
     _ok(ragas_argv(f, root))
 

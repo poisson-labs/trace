@@ -264,7 +264,7 @@ def test_ir9_fix_check_on_faithfulness_is_too_small_to_tell(
 ) -> None:
     root, _ = public
     code, d, text = _fix_check(root, "rag-base-faithfulness", "rag-raft-faithfulness", "0.10")
-    assert code == 2, text
+    assert code == 0, text  # R17: a result exits 0, too small to tell included
     assert (d["inputs"]["selected"], d["inputs"]["compared"]) == (146, 137)
     assert {k: v for k, v in d["inputs"]["left_out"].items() if v} == {
         "no outcome on the old version": 3,

@@ -413,7 +413,8 @@ def test_tr41_refusals_are_one_sentence_and_exit_one(store70: Path) -> None:
     one_sentence(fix_check(store70, "old", "new", ["fail"], "--failing-from", "nope", *MAX))
     one_sentence(changes(store70, "old", "nope", ["fail"]))
     one_sentence(changes(store70, "old", "new", ["nope"]))
-    one_sentence(changes(store70, "old", "new", []))
+    no_event = changes(store70, "old", "new", [])  # R17: no --event is a wrong command line, exit 2
+    assert no_event.code == 2 and len([line for line in no_event.text.splitlines() if line.strip()]) == 1, no_event.text
 
 
 def _sub(code: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
@@ -523,8 +524,8 @@ EXPECT = {
     "less": ("different", "failed less in new", 0, "different: the new version failed less on these inputs"),
     "more": ("different", "failed more in new", 0, "different: the new version failed more on these inputs"),
     "nsd": ("no significant difference", None, 0, "could not have detected a drop in failure share below"),
-    "small": ("too small to tell", None, 2, "too small to tell: could not have detected a drop in failure share below"),
-    "nolimit": ("too small to tell", None, 2, "too small to tell:"),
+    "small": ("too small to tell", None, 0, "too small to tell: could not have detected a drop in failure share below"),  # R17
+    "nolimit": ("too small to tell", None, 0, "too small to tell:"),  # R17
 }
 
 
@@ -620,7 +621,7 @@ def test_tr55_the_suggested_ceiling_is_accepted() -> None:
         (TAU2, TAU2_B, PILOT, TAU2_EVENTS, "--failing-from", TAU2_A),
     ):
         tight = fix_check(*argv, "--max-mde", "0.1", "--json")
-        assert tight.code == 2, tight.text
+        assert tight.code == 0, tight.text  # R17: a result exits 0, too small to tell included
         g = tight.json()["guidance"]
         again = fix_check(*argv, "--max-mde", repr(g["accepts_at"]), "--json")
         assert again.code == 0, again.text
@@ -637,7 +638,7 @@ def test_tr56_compare_guidance_and_the_pointer_line(two_run_store) -> None:  # t
     root = two_run_store(deaths_rows(list(range(2, 12))) + deaths_rows([12, 13, 14], died=False, start_rep=20),
                          deaths_rows(list(range(3, 11)) + [4, 6]) )
     tight = compare(root, "a", "b", ["fail"], 1.3, "--json")
-    assert tight.code == 2, tight.text
+    assert tight.code == 0, tight.text  # R17: a result exits 0, too small to tell included
     d = tight.json()
     c = d["comparison"]
     g = c["guidance"]
@@ -659,7 +660,7 @@ def test_tr56_compare_guidance_and_the_pointer_line(two_run_store) -> None:  # t
 def test_tr56_compare_accepts_at_rounds_up(two_run_store) -> None:  # type: ignore[no-untyped-def]
     root = two_run_store(deaths_rows(list(range(2, 13))), deaths_rows(list(range(3, 14))))  # 22 deaths, share 1/2
     d = compare(root, "a", "b", ["fail"], 1.3, "--json")
-    assert d.code == 2, d.text
+    assert d.code == 0, d.text  # R17: a result exits 0, too small to tell included
     c = d.json()["comparison"]
     assert c["mde_hazard_ratio"] == pytest.approx(3.302236, abs=1e-6)  # rounds down at three decimals
     assert c["guidance"]["accepts_at"] == pytest.approx(3.303, abs=1e-12)
@@ -675,7 +676,7 @@ def test_tr56_compare_guidance_is_null_unless_too_small_to_tell(two_run_store) -
     loose = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.5, "--json")
     assert loose.code == 0 and loose.json()["comparison"]["guidance"] is None
     tight = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.3)
-    assert tight.code == 2 and "--max-mde-hr 1.457" in tight.out
+    assert tight.code == 0 and "--max-mde-hr 1.457" in tight.out  # R17: a result exits 0, too small to tell included
     assert set(compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.3, "--json").json()["comparison"]["guidance"]) == {
         "deaths", "runs", "inputs", "repeats", "accepts_at"}
 
@@ -707,7 +708,7 @@ def test_tr61_the_json_keys_bytes_and_numbers() -> None:
     assert d["events"] == ["unsolved"]
     assert "NaN" not in a.out and "Infinity" not in a.out
     tight = fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.10", "--json")
-    assert tight.code == 2 and tuple(tight.json()) == FIX_KEYS and set(tight.json()["guidance"]) == GUIDANCE_KEYS
+    assert tight.code == 0 and tuple(tight.json()) == FIX_KEYS and set(tight.json()["guidance"]) == GUIDANCE_KEYS
 
 
 def test_tr61_json_is_one_object_and_nothing_else(store70: Path) -> None:
@@ -751,7 +752,7 @@ def test_tr63_no_banned_word_in_any_output(tmp_path: Path, two_run_store) -> Non
     outputs.append(ok(changes(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS)).out)
     outputs.append(ok(changes(HUMANEVAL, HE_A, HE_B, HE_EVENTS)).out)
     tight = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.3)
-    assert tight.code == 2 and "--max-mde-hr 1.457" in tight.out
+    assert tight.code == 0 and "--max-mde-hr 1.457" in tight.out  # R17: a result exits 0, too small to tell included
     outputs.append(tight.out)
     outputs.append(compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.5).out)
     different = two_run_store(deaths_rows(list(range(1, 21))), deaths_rows(list(range(21, 41))))

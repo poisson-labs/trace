@@ -76,7 +76,7 @@ def test_tr33_golden_tau2_b() -> None:
 
 def test_tr34_golden_comparison() -> None:
     tight = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.3, "--json")
-    assert tight.code == 2, tight.text
+    assert tight.code == 0, tight.text  # R17: a result exits 0, too small to tell included
     c = tight.json()["comparison"]
     assert c["cells"] == 50
     assert c["excluded_cells"] == {"a_only": 0, "b_only": 0}
@@ -89,7 +89,7 @@ def test_tr34_golden_comparison() -> None:
     assert c["verdict"] == "too small to tell"
     assert "earlier in B" in c["direction"]
     md_tight = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.3)
-    assert md_tight.code == 2 and "too small to tell" in md_tight.out
+    assert md_tight.code == 0 and "too small to tell" in md_tight.out  # R17: a result exits 0, too small to tell included
     assert "unpaired" in md_tight.out
     loose = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.5)
     assert loose.code == 0, loose.text
