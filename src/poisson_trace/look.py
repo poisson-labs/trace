@@ -9,13 +9,13 @@ Standard library only. Every line a command prints goes through ``out`` or ``err
 from __future__ import annotations
 
 import argparse
+import ast
 import contextlib
 import os
 import re
 import shlex
 import sys
 import traceback
-import unicodedata
 from collections.abc import Callable, Collection, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -49,7 +49,14 @@ class Failed(Exception):
 def count(n: float) -> str:
     """A count with thousands separators: ``10,496``. A whole number held as a float prints
     as the whole number."""
+    if isinstance(n, int):
+        return f"{n:,}"
     return f"{int(n):,}" if float(n).is_integer() else f"{n:,}"
+
+
+def shown(value: str) -> str:
+    """A value the user gave, as an error line shows it: as it is, or ``""`` when empty."""
+    return value if value else '""'
 
 
 # ---------- writing ----------
@@ -70,10 +77,9 @@ _SPELT = {
 
 
 def _spelt(ch: str) -> str:
-    if ch in _SPELT:
-        return _SPELT[ch]
-    folded = "".join(c for c in unicodedata.normalize("NFKD", ch) if not unicodedata.combining(c))
-    return folded if folded and folded.isascii() else "?"
+    """A report glyph in its ASCII spelling; any other character, such as one in a name the
+    user chose, as an escape, so that it never reads as another name."""
+    return _SPELT.get(ch) or ch.encode("ascii", "backslashreplace").decode("ascii")
 
 
 def fit(text: str, encoding: str | None) -> str:
@@ -98,7 +104,10 @@ def _encodes(text: str, encoding: str) -> bool:
 
 def _write(stream: TextIO, text: str) -> None:
     """Write and flush. A reader that has gone away (a closed pipe) ends the output quietly:
-    the stream is pointed at the null device, so nothing more fails, then or at exit."""
+    the stream is pointed at the null device, so nothing more fails, then or at exit. A stream
+    that is closed (None) takes nothing."""
+    if stream is None:
+        return
     try:
         stream.write(fit(text, getattr(stream, "encoding", None)))
         stream.flush()
@@ -142,8 +151,7 @@ def version_line() -> str:
     except ImportError:
         prove = "poisson-prove not installed"
     else:
-        found = getattr(proofload, "__version__", None)
-        prove = "poisson-prove " + (found if isinstance(found, str) else "of no version")
+        prove = "poisson-prove " + (_found(proofload) or "of no version")
     python = ".".join(str(n) for n in sys.version_info[:3])
     return f"poisson-trace {poisson_trace.__version__} ({prove}, Python {python})\n"
 
@@ -158,21 +166,32 @@ def prove_refusal(does: str) -> str | None:
             f"{does} through Prove (the proofload package, version {PROVE_VERSION}), which is "
             f"not installed here; install it with {INSTALL_PROVE}"
         )
-    found = getattr(proofload, "__version__", None)
+    found = _found(proofload)
     if found != PROVE_VERSION:
         return (
             f"{does} through Prove (the proofload package, version {PROVE_VERSION}) and found "
-            f"proofload {found or 'of no version'}; install the version it reads with "
+            f"{f'proofload {found}' if found else 'a proofload that states no version'}; "
+            "install the version it reads with "
             f"{INSTALL_PROVE}"
         )
     return None
+
+
+def _found(module: Any) -> str | None:
+    """The version a module states, or None when it states none as text."""
+    found = getattr(module, "__version__", None)
+    return found if isinstance(found, str) and found else None
 
 
 # ---------- the errors log ----------
 
 
 def errors_log_path() -> Path:
-    return Path.home() / ".cache" / "poisson-trace" / "errors.log"
+    """The log under the home folder; a home that is not an absolute path has no log."""
+    home = Path.home()
+    if not home.is_absolute():
+        raise RuntimeError("no home folder")
+    return home / ".cache" / "poisson-trace" / "errors.log"
 
 
 def _shown(path: Path) -> str:
@@ -264,15 +283,36 @@ def _unexpected(session: Session, e: Exception) -> None:
 # ---------- the argument parser ----------
 
 
+# a string as Python prints it: in single quotes, or in double quotes when it holds one
+_LITERAL = re.compile(r"'(?:[^'\\\n]|\\.)*'" + r'|"(?:[^"\\\n]|\\.)*"')
+
+
+def _literal(text: str) -> str | None:
+    try:
+        value = ast.literal_eval(text)
+    except (ValueError, SyntaxError):
+        return None
+    return value if isinstance(value, str) else None
+
+
 def _quotes(message: str) -> str:
     """Argparse's message with its values in double quotes and its lists of choices bare, never
-    in Python's single quotes."""
+    as Python prints a string."""
+
+    def bare(m: re.Match[str]) -> str:
+        value = _literal(m.group(0))
+        return m.group(0) if value is None else value
+
+    def quoted(m: re.Match[str]) -> str:
+        value = _literal(m.group(0))
+        return m.group(0) if value is None else f'"{value}"'
+
     message = re.sub(
         r"\(choose from ([^)]*)\)",
-        lambda m: "(choose from " + m.group(1).replace("'", "") + ")",
+        lambda m: "(choose from " + _LITERAL.sub(bare, m.group(1)) + ")",
         message,
     )
-    return re.sub(r"'([^'\n]*)'", r'"\1"', message)
+    return _LITERAL.sub(quoted, message)
 
 
 class Parser(argparse.ArgumentParser):
@@ -330,12 +370,33 @@ def takes_value(parsers: Sequence[argparse.ArgumentParser]) -> set[str]:
     }
 
 
+def options(parsers: Sequence[argparse.ArgumentParser]) -> set[str]:
+    """Every option string the parsers know."""
+    return {o for parser in parsers for action in parser._actions for o in action.option_strings}
+
+
+def asks(args: Sequence[str], valued: Collection[str], option: str) -> bool:
+    """Whether the command line gives ``option`` anywhere as an option, not as a value."""
+    i = 0
+    while i < len(args) and args[i] != "--":
+        if args[i] == option:
+            return True
+        i += 2 if args[i] in valued else 1
+    return False
+
+
 def verb_first(
-    args: Sequence[str], valued: Collection[str], kept: Collection[str]
+    args: Sequence[str],
+    valued: Collection[str],
+    kept: Collection[str],
+    known: Collection[str],
+    prog: str,
 ) -> tuple[list[str], int | None]:
     """The command line with the options written before the verb moved after it, and the
     verb's place, or None when there is no verb. An option's value is never taken for the
-    verb; the options in ``kept`` (the command's own, such as ``--help``) stay before it."""
+    verb; the options in ``kept`` (the command's own, such as ``--version``) stay before it. An
+    option before the verb that none of the parsers knows, an abbreviation among them, is a
+    wrong command line: what follows it cannot be told for its value or the verb."""
     head: list[str] = []
     moved: list[str] = []
     i = 0
@@ -345,6 +406,8 @@ def verb_first(
             break
         if word.startswith("-") and word != "-":
             name = word.split("=", 1)[0]
+            if name not in known:
+                raise Usage(f"unrecognized arguments: {word}; see {prog} --help")
             where = head if name in kept else moved
             where.append(word)
             if "=" not in word and name in valued and i + 1 < len(args):

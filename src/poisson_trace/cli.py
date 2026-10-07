@@ -23,6 +23,8 @@ from poisson_trace.look import count
 
 # The by-input reading's seeded sign assignments, when there are too many to enumerate.
 _DRAWS = 100_000
+# The most bootstrap resamples where takes: a thousand times the default.
+_MOST_BOOT = 1_000_000
 _DOES = "Poisson Trace reads stored runs"
 _VERBS = ("where", "compare", "fix-check", "changes")
 _NAMED = "where, compare, fix-check and changes"
@@ -36,10 +38,10 @@ class _Refusal(Exception):
 
 
 _ABOUT = """\
-Poisson Trace reads the runs Prove has stored and says where in the workflow they died, and
-whether a change made them fail less. A store is the folder Prove writes its runs into; a run
-is one stored sweep, and its episodes are its rows. Every number prints with what the runs
-could not have detected.
+Poisson Trace reads the runs Prove has stored and says where in the workflow their episodes
+died, and whether a change made them fail less. A store is the folder Prove writes its runs
+into; a run is one stored sweep, and its episodes are its rows. Every number prints with what
+the runs could not have detected.
 
 Results another tool wrote (DeepEval, Ragas) are read in with poisson-trace-import.
 """
@@ -84,7 +86,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             choices=("kind", "step"),
             default="kind",
             metavar="kind|step",
-            help="label the step a run died at by the kind of its last step, or by the "
+            help="label the step an episode died at by the kind of its last step, or by the "
             "nearest declared step name (default: kind)",
         )
         p.add_argument(
@@ -108,7 +110,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
 
     where = verbs.add_parser(
         "where",
-        help="where in the workflow the runs of one stored run died",
+        help="where in the workflow the episodes of one stored run died",
         description=(
             "The survival curve of one stored run over step index: the share of its episodes\n"
             "still going at each step, the median step, and where the ones that died stopped,\n"
@@ -277,15 +279,19 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 def _main(session: look.Session) -> int:
     parser, verbs = _build_parser()
-    args, at = look.verb_first(session.argv, look.takes_value(list(verbs.values())), _KEPT)
+    parsers = [parser, *verbs.values()]
+    valued = look.takes_value(parsers)
+    if look.asks(session.argv, valued, "--version"):
+        look.out(look.version_line())
+        return look.DONE
+    args, at = look.verb_first(
+        session.argv, valued, _KEPT, look.options(parsers), "poisson-trace"
+    )
     if at is not None and args[at] not in verbs:
         raise look.Usage(
             f'"{args[at]}" is not a verb; the verbs are {_NAMED}; see poisson-trace --help'
         )
     ns = parser.parse_args(args)
-    if ns.version:
-        look.out(look.version_line())
-        return look.DONE
     if ns.verb is None:
         raise look.Usage(f"no verb was given; the verbs are {_NAMED}; see poisson-trace --help")
     session.debug = ns.debug
@@ -303,8 +309,15 @@ def _main(session: look.Session) -> int:
 
 
 def _validate(ns: argparse.Namespace) -> None:
-    if ns.verb == "where" and ns.boot < 1:
-        raise _Refusal("--boot must be at least 1")
+    if ns.verb == "where":
+        if not 1 <= ns.boot <= _MOST_BOOT:
+            raise _Refusal(f"--boot takes 1 to {count(_MOST_BOOT)} resamples, not {ns.boot}")
+        if ns.svg == "":
+            raise _Refusal("--svg takes the name of the file to write")
+        if ns.force and ns.svg is None:
+            raise _Refusal("--force applies to --svg and was given without it")
+    if ns.verb in ("where", "fix-check") and ns.seed < 0:
+        raise _Refusal(f"--seed takes 0 or more, not {ns.seed}")
     if ns.verb == "compare":
         if ns.max_mde_hr is None:
             raise _Refusal(
@@ -366,9 +379,14 @@ def _open(path: str) -> tuple[Any, list[str]]:
     from proofload.store import Store
 
     store = Store(path)
-    held = store.runs()
+    try:
+        held = store.runs()
+    except OSError as e:
+        raise _Refusal(f"cannot read the store at {look.shown(path)} ({look.why(e)})") from e
     if not held:
-        raise _Refusal(f"no store at {path} (no folder under it holds a run Prove stored)")
+        raise _Refusal(
+            f"no store at {look.shown(path)} (no folder under it holds a run Prove stored)"
+        )
     return store, held
 
 
@@ -377,7 +395,7 @@ def _load(
 ) -> tuple[Any, Any, Any]:
     """``(manifest, frame, tally)`` for ``run``, or a refusal naming the runs the store holds."""
     if run not in held:
-        raise _Refusal(f"unknown run {run}; the store holds: {', '.join(held)}")
+        raise _Refusal(f"unknown run {look.shown(run)}; the store holds: {', '.join(held)}")
     try:
         return (
             store.manifest(run),
@@ -525,8 +543,17 @@ def _where(ns: argparse.Namespace) -> int:
 def _check_svg(path: str, force: bool) -> None:
     """Refuse, before any work, an SVG path that cannot be written or would replace a file
     without --force."""
+    try:
+        _refuse_svg(path, force)
+    except OSError as e:
+        raise _Refusal(f"cannot write {path} ({look.why(e)})") from e
+
+
+def _refuse_svg(path: str, force: bool) -> None:
     target = Path(path)
     folder = target.parent
+    # a link counts as there, even when what it points to is not
+    there = target.exists() or target.is_symlink()
     if target.is_dir():
         raise _Refusal(f"cannot write {path}: it is a folder")
     if not folder.is_dir():
@@ -534,7 +561,7 @@ def _check_svg(path: str, force: bool) -> None:
         raise _Refusal(f"cannot write {path}: the folder {folder} {what}")
     if not os.access(folder, os.W_OK):
         raise _Refusal(f"cannot write {path}: the folder {folder} cannot be written to")
-    if target.exists() and not force:
+    if there and not force:
         raise _Refusal(f"{path} exists; add --force to replace it")
     if target.exists() and not os.access(target, os.W_OK):
         raise _Refusal(f"cannot write {path}: the file cannot be written to")
@@ -1138,3 +1165,7 @@ def _changes(ns: argparse.Namespace) -> int:
     look.out(report.to_json() if ns.json else report.to_markdown())
     return look.DONE
 
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -108,7 +108,14 @@ def write(run: Run, root: Path) -> Written:
     if run.started_from not in STARTED_FROM:
         raise Refusal(f"the start time's source is one of {', '.join(STARTED_FROM)}")
     store = Store(root)
-    if run.name in store.runs() or (Path(root) / run.name).exists():
+    try:
+        held = run.name in store.runs() or (Path(root) / run.name).exists()
+    except OSError as e:
+        raise Refusal(
+            f"the store at {root} cannot take a run named {run.name} ({why(e)}); nothing was "
+            "written"
+        ) from e
+    if held:
         raise Refusal(
             f"the store at {root} already holds a run named {run.name}; an import writes a "
             "new run and never adds to one, so give this one another name"

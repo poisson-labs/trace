@@ -140,7 +140,11 @@ def _started(text: str) -> str:
             f"--started {text} carries no zone; end it with Z for UTC or with an offset such "
             "as +02:00"
         )
-    return at.astimezone(UTC).isoformat().replace("+00:00", "Z")
+    try:
+        utc = at.astimezone(UTC)
+    except OverflowError:
+        raise Refusal(f"--started {text} falls outside the years 1 to 9999 in UTC") from None
+    return utc.isoformat().replace("+00:00", "Z")
 
 
 def _zone(started: str) -> tuple[str, str]:
@@ -223,15 +227,20 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _main(session: look.Session) -> int:
     present = _present()
     parser, subs, further = _build_parser(present)
-    args, at = look.verb_first(session.argv, look.takes_value(list(subs.values())), _KEPT)
-    if at is not None and args[at] not in subs:
-        raise Refusal(
-            f"unknown tool {args[at]}; this install reads: {', '.join(subs) or 'nothing'}"
-        )
-    ns = parser.parse_args(args)
-    if ns.version:
+    parsers = [parser, *subs.values()]
+    valued = look.takes_value(parsers)
+    if look.asks(session.argv, valued, "--version"):
         look.out(look.version_line())
         return look.DONE
+    args, at = look.verb_first(
+        session.argv, valued, _KEPT, look.options(parsers), "poisson-trace-import"
+    )
+    if at is not None and args[at] not in subs:
+        raise Refusal(
+            f"unknown tool {look.shown(args[at])}; this install reads: "
+            f"{', '.join(subs) or 'nothing'}"
+        )
+    ns = parser.parse_args(args)
     if ns.tool is None:
         raise look.Usage(
             f"no tool was given; this install reads: {', '.join(subs) or 'nothing'}; "
@@ -244,7 +253,11 @@ def _main(session: look.Session) -> int:
     if ns.tool in further:
         return further[ns.tool](ns)
     store = Path(ns.store)
-    held = (store / ns.run).exists()
+    try:
+        held = (store / ns.run).exists()
+    except OSError:
+        # a name the system cannot look up is never this import's to call partial
+        held = True
     session.stopped = lambda: _stopped(store, ns.run, held)
     given = None if ns.started is None else _started(ns.started)
     run: Run = import_module(f"{__package__}.{ns.tool}").read(ns)
@@ -273,8 +286,12 @@ def _stopped(store: Path, name: str, held: bool) -> str:
     from poisson_trace.ingest.writer import status
 
     if status(store, name) == "complete":
-        return f"stopped  interrupted after the run {name} was written whole to {store}"
+        return f"stopped  interrupted: the run {name} was written whole to {store}"
     return (
         f"stopped  interrupted: the run {name} is partial; remove its folder in {store} "
         "before importing it again"
     )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

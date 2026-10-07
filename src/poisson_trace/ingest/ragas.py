@@ -34,8 +34,8 @@ FORMATS: tuple[str, ...] = ("csv", "jsonl", "json", "parquet")
 DESCRIPTION = """\
 Read the per-row score table saved from Ragas (.csv, .jsonl, .json as a list of objects, each
 also as .gz, or .parquet, told by the extension) and write one score column of it, at a cut you
-declare, as one new run. Each row is one run of a case; rows that share the case column's value
-are its repeats. No other column is kept. Nothing has a default but the start time.
+declare, as one new run. Each row is one result for a case; rows that share the case column's
+value are its repeats. No other column is kept. Nothing has a default but the start time.
 """
 EXAMPLE = (
     "poisson-trace-import ragas base-scores.jsonl --store trace-store --run base \\\n"
