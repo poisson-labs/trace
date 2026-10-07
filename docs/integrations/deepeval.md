@@ -12,7 +12,7 @@ the metric is ours.
 
 ```
 pip install poisson-trace
-pip install proofload==0.0.1
+pip install git+https://github.com/poisson-labs/prove
 ```
 
 Nothing here imports DeepEval. Tested on files written by DeepEval 4.2.6.
@@ -97,11 +97,11 @@ poisson-trace-import deepeval tests/fixtures/ingest/deepeval/humaneval-a.json.gz
 - file: humaneval-a.json.gz · sha256 81a50f22e5f14af4093c6e3bb07bb55a658913cae3fcb7ec72372cf9189909d9
 - declared: metric Tests Passed · cut recorded · case name
 - started: 2026-09-05T18:54:07Z · from: given
-- rows 10496 · cases 328 · repeats of a case: smallest 32, largest 32
-- outcomes: met 9158 · missed 1338
+- rows 10,496 · cases 328 · repeats of a case: smallest 32, largest 32
+- outcomes: met 9,158 · missed 1,338
 - rows with no outcome: 0
 - without this metric: 0
-- recorded threshold 1.0: 10496
+- recorded threshold 1.0: 10,496
 
 In the command below, OLD and NEW are this run and the other version's run, imported into the same store, the older version first. X is the largest limit of detection you accept, as a share: 0.05 is five points.
 
@@ -124,11 +124,11 @@ poisson-trace-import deepeval tests/fixtures/ingest/deepeval/humaneval-b.json.gz
 - file: humaneval-b.json.gz · sha256 c5577283c078591bd8cf719d1ebea95fcdcd75d018e5ccbadff629cc56bf2464
 - declared: metric Tests Passed · cut recorded · case name
 - started: 2026-09-05T19:50:09Z · from: given
-- rows 10496 · cases 328 · repeats of a case: smallest 32, largest 32
-- outcomes: met 9109 · missed 1387
+- rows 10,496 · cases 328 · repeats of a case: smallest 32, largest 32
+- outcomes: met 9,109 · missed 1,387
 - rows with no outcome: 0
 - without this metric: 0
-- recorded threshold 1.0: 10496
+- recorded threshold 1.0: 10,496
 ```
 
 <!-- command -->
@@ -144,13 +144,13 @@ poisson-trace fix-check humaneval-a humaneval-b --store ./store --event missed \
 ## Runs
 
 - old: humaneval-a · target: import/deepeval · status: complete · started: 2026-09-05T18:54:07Z · declared repeats: not recorded
-- Prove's tally (old): rows 10496 · with outcome 10496 · no outcome 0 · timed out 0 · infra 0 · other 0
+- Prove's tally (old): rows 10,496 · with outcome 10,496 · no outcome 0 · timed out 0 · infra 0 · other 0
 - new: humaneval-b · target: import/deepeval · status: complete · started: 2026-09-05T19:50:09Z · declared repeats: not recorded
-- Prove's tally (new): rows 10496 · with outcome 10496 · no outcome 0 · timed out 0 · infra 0 · other 0
+- Prove's tally (new): rows 10,496 · with outcome 10,496 · no outcome 0 · timed out 0 · infra 0 · other 0
 - the two runs started 56 min apart
 - events: missed
 - inputs: every input either run carries · selected 328 · compared 328 · left out 0
-- rows used: old 10496 (timed out 0, no outcome 0) · new 10496 (timed out 0, no outcome 0)
+- rows used: old 10,496 (timed out 0, no outcome 0) · new 10,496 (timed out 0, no outcome 0)
 - inputs short of the declared repeats: old 0 · new 0
 - inputs with mixed outcomes across their repeats: old 54 · new 48
 
@@ -160,8 +160,8 @@ The old version, re-run on the same inputs with nothing changed.
 
 | version | runs | failed | failure share | did not fail on re-run |
 |---|---|---|---|---|
-| old | 10496 | 1338 | 12.7% | 87.3% |
-| new | 10496 | 1387 | 13.2% | 86.8% |
+| old | 10,496 | 1,338 | 12.7% | 87.3% |
+| new | 10,496 | 1,387 | 13.2% | 86.8% |
 
 Re-running these inputs and counting the runs that did not fail would have read 87.3% on the old version, where nothing changed.
 
@@ -169,7 +169,7 @@ Re-running these inputs and counting the runs that did not fail would have read 
 
 exact conditional Cochran-Mantel-Haenszel test, stratified by input over 328 inputs (58 informative), two-sided; α = 0.05.
 
-new failures: observed 1387, expected 1362.500, variance 131.139; p = 0.036
+new failures: observed 1,387, expected 1,362.500, variance 131.139; p = 0.036
 difference: +0.47 points, new minus old (+0.04 to +0.90; Mantel-Haenszel weights; interval: Sato variance, large-sample, 95%)
 by input: p = 0.127 (sign-flip over the 47 inputs that moved, 100,000 draws, seed = 0); not part of the line below
 

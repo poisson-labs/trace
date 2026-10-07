@@ -31,16 +31,17 @@ nothing, phones nowhere.
 
 ## Install
 
-Prove is not yet public, so it is installed from a checkout and is not a declared
+Prove is not yet on PyPI, so it is installed from its repository and is not a declared
 dependency of this package:
 
 ```
 pip install poisson-trace
-pip install -e /path/to/prove
+pip install git+https://github.com/poisson-labs/prove
 ```
 
-Nobody outside Poisson Labs can run Trace until Prove is public. The command refuses at
-start, in one sentence, when the `proofload` package is missing or is not version 0.0.1.
+Nobody outside Poisson Labs can run Trace until Prove is public. `--help` and `--version`
+work without it; a command that reads runs refuses, in one line that names the install
+command above, when the `proofload` package is missing or is not version 0.0.1.
 
 From a clone of this repository, with the same two lines:
 
@@ -49,7 +50,7 @@ git clone https://github.com/poisson-labs/trace
 cd trace
 python -m venv .venv && . .venv/bin/activate
 pip install .
-pip install -e /path/to/prove
+pip install git+https://github.com/poisson-labs/prove
 poisson-trace where 20260925T234602Z-3ea0 --store tests/fixtures/cs --event unresolved
 ```
 
@@ -61,7 +62,7 @@ the outcomes that count as a failure:
 ```
 poisson-trace where RUN --store ROOT --event NAME [--event NAME ...]
                    [--by kind|step] [--at STEP ...] [--boot B] [--seed S]
-                   [--svg FILE] [--json]
+                   [--svg FILE [--force]] [--json]
 
 poisson-trace compare A B --store ROOT --event NAME [--event NAME ...] --max-mde-hr X
                      [--by kind|step] [--at STEP ...] [--alpha A] [--json]
@@ -80,8 +81,18 @@ poisson-trace changes A B --store ROOT --event NAME [--event NAME ...]
   the runs do carry.
 - `--json` prints the structure (`poisson-trace.where/1`, `.compare/1`, `.fix-check/1` or
   `.changes/1`) and nothing else. It is byte-identical across invocations on equal inputs.
-- Exit codes: 0 report printed; 1 refusal (one sentence); 2 *too small to tell* (`compare`
-  and `fix-check`).
+- Options may come before or after the verb. An option cut short (`--ev` for `--event`) is
+  refused rather than guessed.
+- A refusal or a mistake in the command line is one line on stderr that starts `error:`, and
+  nothing on stdout. `--help` on the command and on each verb gives a description, every
+  option with its default and an example; `--version` prints the versions of Trace, Prove and
+  Python. `python -m poisson_trace` is the same command.
+- Exit codes, the same in every Poisson Labs tool ([`docs/cli-look.md`](docs/cli-look.md)):
+  0 the report is printed, whatever it says, *too small to tell* included; 1 refused, nothing
+  written; 2 the command line is wrong; 3 a failure after work started, or an unexpected one;
+  130 interrupted (Ctrl-C prints a `stopped` line).
+- An unexpected failure prints one line naming `~/.cache/poisson-trace/errors.log`, where the
+  details are added; `--debug` prints them on stderr too.
 
 For `where` and `compare`:
 
@@ -89,7 +100,9 @@ For `where` and `compare`:
   `tool`, `retrieval`, `db`, `http`, `agent`, `other`); `--by step` labels it by the
   nearest declared step name.
 - `--at STEP` adds a row reading the curve at that step; repeatable.
-- `--svg FILE` writes the curve as an SVG, the one file `where` writes.
+- `--svg FILE` writes the curve as an SVG, the one file `where` writes, and the report ends
+  with a line saying so. A file that is already there is refused unless `--force` is given,
+  and a folder that is not there or cannot be written is refused before any work.
 - `--max-mde-hr` is the largest minimum detectable hazard ratio you will accept; it has no
   default, because the tool supplies no number of its own.
 
@@ -194,7 +207,7 @@ beside them), four failure outcomes.
 ```
 poisson-trace where 20260925T234602Z-3ea0 --store tests/fixtures/cs \
   --event forbidden_action --event unresolved --event max_turns --event app_error \
-  --at 20 --at 40 --svg docs/figures/cs-record.svg
+  --at 20 --at 40 --svg docs/figures/cs-record.svg --force
 ```
 
 <!-- output exit=0 -->
@@ -228,7 +241,7 @@ S(40) = 0.721 (0.484 – 0.959)
 
 ## Where they die, by kind of step
 
-Aalen–Johansen cumulative incidence; band: bootstrap 95%, B = 1000, seed = 0.
+Aalen–Johansen cumulative incidence; band: bootstrap 95%, B = 1,000, seed = 0.
 
 | kind | deaths | F at step 58 | 95% band |
 |---|---|---|---|
@@ -243,6 +256,7 @@ sum of F = 1 − S = 0.784 (1 − 0.216)
 - Timed-out and capped runs are censored at their last recorded step. If they would have died soon after, the curve is optimistic by that much; the header counts them.
 - Excluded rows are not on the curve; the header counts them by reason.
 - On one run, this is a description. Only a comparison of two stored runs on the same cells says whether anything moved, and only within what it could not have detected.
+  wrote  docs/figures/cs-record.svg
 ```
 
 Seven of 24 runs died, four at a model call and three at a guardrail agent. The Greenwood
@@ -250,7 +264,7 @@ band at step 40 spans a quarter of the axis and the bootstrap bands on the two k
 most of `[0, 1]`: 24 episodes is a description, and the report says so.
 
 [`docs/figures/cs-record.svg`](docs/figures/cs-record.svg) is the `--svg` output of that
-command.
+command (`--force` because the clone already holds it).
 
 ### Two runs: the same agent twice, nothing changed
 
@@ -267,7 +281,7 @@ poisson-trace compare 20260915T210140Z-4847 20260915T211148Z-965d --store tests/
   --event unsolved --max-mde-hr 1.3 --at 10 --at 20 --at 30
 ```
 
-<!-- output exit=2 -->
+<!-- output exit=0 -->
 ```
 # Poisson Trace · compare · 20260915T210140Z-4847 (before) and 20260915T211148Z-965d (after)
 
@@ -330,9 +344,9 @@ For the share of runs that fail, input by input, and the inputs that changed: po
 - On one run, this is a description. Only a comparison of two stored runs on the same cells says whether anything moved, and only within what it could not have detected.
 ```
 
-It exits 2, and the guidance says what would settle it: 457 deaths, which is 824 placed
-runs, 103 inputs at 4 repeats or 9 repeats per arm on these 50. With the ceiling the report
-offers,
+It exits 0, as every printed result does, and the guidance says what would settle it: 457
+deaths, which is 824 placed runs, 103 inputs at 4 repeats or 9 repeats per arm on these 50.
+With the ceiling the report offers,
 
 <!-- command -->
 ```
@@ -347,8 +361,8 @@ the same numbers end
 **no significant difference (p = 0.521); could not have detected a hazard ratio below 1.457**
 ```
 
-and exit 0, with no guidance block. That pair of lines is the point: the same agent run
-twice, 400 episodes, and the design could still not have seen a 40% change in the hazard.
+with no guidance block. That pair of lines is the point: the same agent run twice, 400
+episodes, and the design could still not have seen a 40% change in the hazard.
 
 ### A real before and after: the patched pilot
 
@@ -364,7 +378,7 @@ poisson-trace fix-check 20260915T211148Z-965d 20260917T140219Z-2b2d --store test
   --event unsolved --failing-from 20260915T210140Z-4847 --max-mde 0.20
 ```
 
-<!-- output exit=2 -->
+<!-- output exit=0 -->
 ```
 # Poisson Trace · fix check · 20260915T211148Z-965d (old) and 20260917T140219Z-2b2d (new)
 
@@ -447,14 +461,14 @@ A lone changed input is flagged only if its p is below α / M = 0.00833, and the
 - The detection limit and the run counts are computed from these runs' own failure rates, which are estimates. They are a guide to the next design, not a promise about it.
 ```
 
-It exits 2. Counting re-runs reads "3 of 6 failing inputs now succeed". The control says a
+Counting re-runs reads "3 of 6 failing inputs now succeed". The control says a
 quarter of the old version's runs on those inputs did too, with nothing changed, and the
 design cannot tell the patch from that: it could not have detected a drop smaller than 64.3
 points, and the interval runs from a 60.1-point drop to a 10.1-point rise. The guidance
 says what would settle a 20-point question: 16 repeats per arm on these 6 inputs, or 55
 inputs like these. The pilot was ten runs and was never meant to settle anything.
 
-Naming the selecting run as the old arm is refused, in one sentence and with exit 1:
+Naming the selecting run as the old arm is refused, in one line on stderr and with exit 1:
 
 <!-- command -->
 ```
@@ -464,7 +478,7 @@ poisson-trace fix-check 20260915T211148Z-965d 20260917T140219Z-2b2d --store test
 
 <!-- output exit=1 -->
 ```
-the selecting run 20260915T211148Z-965d is also the old arm; both arms must be fresh re-runs, because the selecting run's failures on these inputs are there by selection
+error: the selecting run 20260915T211148Z-965d is also the old arm; both arms must be fresh re-runs, because the selecting run's failures on these inputs are there by selection
 ```
 
 ### The inputs that changed: HumanEval/129
@@ -486,9 +500,9 @@ poisson-trace changes 20260905T185407Z-0313 20260905T195009Z-18ac --store tests/
 ## Runs
 
 - A: 20260905T185407Z-0313 · target: golden-pilot/gpt-4o-mini-2024-07-18@v0 · status: complete · started: 2026-09-05T18:54:08.373078Z · declared repeats: 32
-- Prove's tally (A): rows 10496 · with outcome 10496 · no outcome 0 · timed out 0 · infra 0 · other 0
+- Prove's tally (A): rows 10,496 · with outcome 10,496 · no outcome 0 · timed out 0 · infra 0 · other 0
 - B: 20260905T195009Z-18ac · target: golden-pilot/gpt-4o-mini-2024-07-18@v0 · status: complete · started: 2026-09-05T19:50:10.199374Z · declared repeats: 32
-- Prove's tally (B): rows 10496 · with outcome 10496 · no outcome 0 · timed out 0 · infra 0 · other 0
+- Prove's tally (B): rows 10,496 · with outcome 10,496 · no outcome 0 · timed out 0 · infra 0 · other 0
 - the two runs started 56 min apart
 - events: crashed, failed_assertion
 - inputs: A carries 328, B carries 328 · compared 328, each with an outcome in both runs · in A only 0 · in B only 0
@@ -532,7 +546,7 @@ poisson-trace fix-check 20260905T185407Z-0313 20260905T195009Z-18ac --store test
 
 exact conditional Cochran-Mantel-Haenszel test, stratified by input over 328 inputs (58 informative), two-sided; α = 0.05.
 
-new failures: observed 1387, expected 1362.500, variance 131.139; p = 0.036
+new failures: observed 1,387, expected 1,362.500, variance 131.139; p = 0.036
 difference: +0.47 points, new minus old (+0.04 to +0.90; Mantel-Haenszel weights; interval: Sato variance, large-sample, 95%)
 by input: p = 0.127 (sign-flip over the 47 inputs that moved, 100,000 draws, seed = 0); not part of the line below
 ```
@@ -559,7 +573,7 @@ poisson-trace fix-check 20260915T210140Z-4847 20260915T211148Z-965d --store test
   --event unsolved --inputs all --max-mde 0.10
 ```
 
-<!-- excerpt exit=2 -->
+<!-- excerpt exit=0 -->
 ```
 ## Consistency
 
@@ -588,9 +602,9 @@ Failures on these tasks are consistent (an input that failed once fails again 79
 time), so comparing inside each input needs fewer than half the runs a pooled comparison
 would. Even so, 200 runs per arm could not have detected a drop smaller than 11.1 points.
 With `--max-mde 0.1109`, the ceiling the report offers, the same numbers read *no
-significant difference* and exit 0. The per-input table of the same report ends
+significant difference*. The per-input table of the same report ends
 
-<!-- excerpt exit=2 -->
+<!-- excerpt exit=0 -->
 ```
 A lone changed input is flagged only if its p is below α / M = 0.001, and the smallest p an input of this design can give is 0.0286: a lone changed input cannot be flagged; at least 29 inputs would have to flip completely together; a lone complete flip needs 7 repeats per arm. An input with no flag is not an input that did not change.
 ```
@@ -690,19 +704,21 @@ controlled re-run on the same inputs says whether a change moved anything.
 
 ```
 pip install -e '.[dev]'
-pip install -e /path/to/prove
+pip install git+https://github.com/poisson-labs/prove
 python -m pytest
 ruff check .
 mypy --strict src
 ```
 
-The suite holds 108 invariants as 424 tests: the 36 of `where` and `compare` as 100, the 34
-of `fix-check` and `changes` as 124 and its two display rules as 3, the 26 of
-`poisson-trace-import` and its DeepEval reader as 117, and the 10 of its Ragas reader as 80.
-Four of the 424 run DeepEval or Ragas itself, installed from PyPI, and are left out unless
-asked for (`python -m pytest -m lane_j`). The
-oracles are lifelines, scipy, full enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks the fixtures
-(`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).
+The suite holds 625 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
+(3 of them its display rules), 124 for `poisson-trace-import` and its DeepEval reader, 80 for
+its Ragas reader, and 178 that hold both commands to the shared command-line look
+([`docs/cli-look.md`](docs/cli-look.md)): the exit codes, the `error:` lines, the help and
+`--version`, options before or after the verb, the ASCII fallback, a closed pipe and plain
+words. Four of the 625 run DeepEval or Ragas itself, installed from PyPI, and are left out
+unless asked for (`python -m pytest -m lane_j`). The oracles are lifelines, scipy, full
+enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks
+the fixtures (`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).
 
 ## Licence
 

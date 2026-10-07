@@ -9,7 +9,7 @@ Poisson Trace reads the score table you saved. It runs no metric and calls no mo
 
 ```
 pip install poisson-trace
-pip install proofload==0.0.1
+pip install git+https://github.com/poisson-labs/prove
 ```
 
 Nothing here imports Ragas. Tested on tables written by Ragas 0.4.3.
@@ -140,7 +140,7 @@ poisson-trace fix-check rag-base-faithfulness rag-raft-faithfulness --store ./st
   --event missed --inputs all --max-mde 0.10 --top 0
 ```
 
-<!-- excerpt exit=2 -->
+<!-- excerpt exit=0 -->
 ```
 # Poisson Trace · fix check · rag-base-faithfulness (old) and rag-raft-faithfulness (new)
 
@@ -199,7 +199,6 @@ proportional change on every input, 80% power, α = 0.05, continuity-corrected n
 
 The report goes on with a note on its guidance, the inputs that changed (no question has
 enough runs to be flagged) and its block *What this cannot say*, left out here for length.
-The command exits 2.
 
 Mean faithfulness rose from 0.550 to 0.566. The run could not have detected a drop in the
 share of misses smaller than 15.9 points, and 10 was asked for, so it cannot say whether
@@ -329,9 +328,9 @@ poisson-trace-import ragas tests/fixtures/ingest/ragas/memory-causal.jsonl.gz \
 
 <!-- excerpt exit=0 -->
 ```
-- rows 1800 · cases 1800 · repeats of a case: smallest 1, largest 1
+- rows 1,800 · cases 1,800 · repeats of a case: smallest 1, largest 1
 - outcomes: met 331 · missed 339
-- rows with no outcome: no score 1130
+- rows with no outcome: no score 1,130
 ```
 
 <!-- command -->
@@ -343,7 +342,7 @@ poisson-trace-import ragas tests/fixtures/ingest/ragas/memory-strong.jsonl.gz \
 
 <!-- excerpt exit=0 -->
 ```
-- rows 1800 · cases 1800 · repeats of a case: smallest 1, largest 1
+- rows 1,800 · cases 1,800 · repeats of a case: smallest 1, largest 1
 - outcomes: met 900 · missed 900
 - rows with no outcome: 0
 ```
@@ -356,7 +355,7 @@ poisson-trace fix-check memory-causal-precision memory-strong-precision --store 
 
 <!-- excerpt exit=0 -->
 ```
-- inputs: every input either run carries · selected 1800 · compared 670 · left out 1130 (no outcome on the old version 1130)
+- inputs: every input either run carries · selected 1,800 · compared 670 · left out 1,130 (no outcome on the old version 1,130)
 ```
 
 <!-- excerpt exit=0 -->
