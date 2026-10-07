@@ -6,8 +6,9 @@
 - An SVG into a folder that cannot be written is refused before any work: exit 1, nothing on
   stdout. The wrong build finds out at the write, after the report is computed (exit 3).
 - An import stopped by Ctrl-C under a run name the store already held has written nothing, and
-  says so. The wrong build tells the partial run from the folder alone, and tells the user to
-  remove the folder of a run that was whole before the import began.
+  says so as an import stopped before writing does. The wrong builds tell what was left from the
+  run's folder: one tells the user to remove the folder of a run that was whole before the import
+  began, the other that the import wrote it whole.
 - An errors log that cannot be written still leaves the details where the user can read them,
   as continuation lines on stderr, and exits 3. The wrong build appends without a guard and
   ends in the traceback the log was for.
@@ -67,9 +68,10 @@ def test_ctrl_c_under_a_name_the_store_held_says_nothing_was_written(tmp_path: P
 
     monkeypatch.setattr(reader, "read", stop)
     result = trace_import(deepeval_import(store, "v1"))
-    assert result.code == 130, result.text
+    fresh = trace_import(deepeval_import(store, "v2"))
+    assert result.code == fresh.code == 130, result.text
     first = result.lines("out")[0]
-    assert first.startswith("stopped  ") and "remove" not in first and "partial" not in first, first
+    assert first.startswith("stopped  ") and first == fresh.lines("out")[0], (first, fresh.out)
     assert sorted((p.relative_to(store), p.stat().st_mtime_ns) for p in store.rglob("*")) == before
     assert Store(store).manifest("v1").status == "complete"
 

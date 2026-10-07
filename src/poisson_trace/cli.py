@@ -26,8 +26,9 @@ _DRAWS = 100_000
 _DOES = "Poisson Trace reads stored runs"
 _VERBS = ("where", "compare", "fix-check", "changes")
 _NAMED = "where, compare, fix-check and changes"
-# the command's own options, which stay where they are written
-_KEPT = ("-h", "--help", "--version")
+# the command's own option, which stays where it is written; --help before a verb is that
+# verb's help, as every other option before a verb is that verb's
+_KEPT = ("--version",)
 
 
 class _Refusal(Exception):
@@ -48,7 +49,7 @@ def _example(*commands: str) -> str:
     return "examples:\n" + "".join(f"  {command}\n" for command in commands)
 
 
-_STORE_HELP = "the folder Prove stored the runs in, such as proofload-runs (no default)"
+_STORE_HELP = "the folder Prove stored the runs in (no default)"
 
 
 def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:

@@ -44,8 +44,9 @@ SCHEMA = "poisson-trace.import/1"
 
 _DOES = "poisson-trace-import writes runs"
 _Further = Callable[[argparse.Namespace], int]
-# the command's own options, which stay where they are written
-_KEPT = ("-h", "--help", "--version")
+# the command's own option, which stays where it is written; --help before a tool is that
+# tool's help, as every other option before a tool is that tool's
+_KEPT = ("--version",)
 
 _ABOUT = """\
 Read the result files another tool already wrote and write them as one new run of a store in
