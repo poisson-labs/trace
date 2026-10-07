@@ -1,158 +1,315 @@
 """The console script: ``poisson-trace where``, ``compare``, ``fix-check`` and ``changes``.
 
-``proofload`` is imported inside ``main`` and nowhere at module level, so the check that it is
-present and at the pinned version runs first and reports in one sentence.
+The command line is read first, so ``--help`` and ``--version`` need nothing installed; the
+check that ``proofload`` is present at the version this package reads runs next, and
+``proofload`` is imported inside the verbs and nowhere at module level. Every line printed,
+every refusal and every exit code is the look's (``look.py``, ``docs/cli-look.md``).
 """
 
 from __future__ import annotations
 
 import argparse
 import math
+import os
 import sys
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-PROVE_VERSION = "0.0.1"
+from poisson_trace import look
+from poisson_trace.look import count
+
 # The by-input reading's seeded sign assignments, when there are too many to enumerate.
 _DRAWS = 100_000
-_INSTALL = "pip install -e /path/to/prove"
+_DOES = "Poisson Trace reads stored runs"
+_VERBS = ("where", "compare", "fix-check", "changes")
+_NAMED = "where, compare, fix-check and changes"
+# the command's own options, which stay where they are written
+_KEPT = ("-h", "--help", "--version")
 
 
 class _Refusal(Exception):
     """One sentence, exit 1."""
 
 
-class _Parser(argparse.ArgumentParser):
-    def error(self, message: str) -> Any:
-        raise _Refusal(f"argument error: {message}")
+_ABOUT = """\
+Poisson Trace reads the runs Prove has stored and says where in the workflow they died, and
+whether a change made them fail less. A store is the folder Prove writes its runs into; a run
+is one stored sweep, and its episodes are its rows. Every number prints with what the runs
+could not have detected.
+
+Results another tool wrote (DeepEval, Ragas) are read in with poisson-trace-import.
+"""
 
 
-def _build_parser() -> _Parser:
-    parser = _Parser(prog="poisson-trace", description="Where in the workflow runs die.")
-    verbs = parser.add_subparsers(
-        dest="verb", required=True, metavar="where|compare|fix-check|changes"
+def _example(*commands: str) -> str:
+    return "examples:\n" + "".join(f"  {command}\n" for command in commands)
+
+
+_STORE_HELP = "the folder Prove stored the runs in, such as proofload-runs (no default)"
+
+
+def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
+    parser = look.Parser(
+        prog="poisson-trace",
+        description=_ABOUT,
+        epilog=_example(
+            "poisson-trace where latest --store proofload-runs --event unsolved --at 20",
+            "poisson-trace fix-check previous latest --store proofload-runs --event unsolved \\",
+            "    --inputs all --max-mde 0.2",
+        ),
     )
+    parser.add_argument(
+        "--version", action="store_true", help="print the versions of Trace, Prove and Python"
+    )
+    parser.add_argument("--debug", action="store_true", help=argparse.SUPPRESS)
+    verbs = parser.add_subparsers(dest="verb", metavar="VERB", title="verbs")
 
-    def common(p: argparse.ArgumentParser) -> None:
-        p.add_argument("--store", required=True, help="the root of a Prove store")
+    def common(p: argparse.ArgumentParser, died: str) -> None:
+        p.add_argument("--store", required=True, metavar="ROOT", help=_STORE_HELP)
         p.add_argument(
             "--event",
             action="append",
             required=True,
             metavar="NAME",
-            help="an outcome that counts as a death; repeatable",
+            help=f"an outcome that counts as {died}; repeatable (no default)",
         )
-        p.add_argument("--by", choices=("kind", "step"), default="kind")
+
+    def where_and_compare(p: argparse.ArgumentParser) -> None:
+        p.add_argument(
+            "--by",
+            choices=("kind", "step"),
+            default="kind",
+            metavar="kind|step",
+            help="label the step a run died at by the kind of its last step, or by the "
+            "nearest declared step name (default: kind)",
+        )
         p.add_argument(
             "--at",
             action="append",
             type=int,
             default=[],
             metavar="STEP",
-            help="a step to report the curve at; repeatable",
+            help="a step to read the curve at; repeatable (no default)",
         )
-        p.add_argument("--json", action="store_true", help="print the JSON structure only")
 
-    where = verbs.add_parser("where", help="the survival curve over step index for one run")
-    where.add_argument("run")
-    common(where)
-    where.add_argument("--boot", type=int, default=1000, metavar="B")
-    where.add_argument("--seed", type=int, default=0, metavar="S")
-    where.add_argument("--svg", metavar="FILE", help="write the curve as an SVG file")
+    def tail(p: argparse.ArgumentParser) -> None:
+        p.add_argument(
+            "--json", action="store_true", help="print the JSON structure instead of the report"
+        )
+        p.add_argument(
+            "--debug",
+            action="store_true",
+            help="on an unexpected failure, print its details on stderr as well as in the log",
+        )
 
-    compare = verbs.add_parser("compare", help="a before (A) and an after (B), compared")
-    compare.add_argument("a")
-    compare.add_argument("b")
-    common(compare)
-    compare.add_argument(
+    where = verbs.add_parser(
+        "where",
+        help="where in the workflow the runs of one stored run died",
+        description=(
+            "The survival curve of one stored run over step index: the share of its episodes\n"
+            "still going at each step, the median step, and where the ones that died stopped,\n"
+            "by kind of step. An episode died when its outcome is one of the --event names;\n"
+            "episodes that ended otherwise, timed out or hit the capture cap are censored."
+        ),
+        epilog=_example(
+            "poisson-trace where latest --store proofload-runs --event unsolved --at 20",
+        ),
+    )
+    where.add_argument("run", metavar="RUN", help="the stored run, by its name in the store")
+    common(where, "a death")
+    where_and_compare(where)
+    where.add_argument(
+        "--boot",
+        type=int,
+        default=1000,
+        metavar="B",
+        help="bootstrap resamples for the bands by kind of step (default: 1000)",
+    )
+    where.add_argument(
+        "--seed", type=int, default=0, metavar="S", help="the bootstrap's seed (default: 0)"
+    )
+    where.add_argument(
+        "--svg",
+        metavar="FILE",
+        help="also write the curve as an SVG file; a file that exists is refused without "
+        "--force (no default)",
+    )
+    where.add_argument("--force", action="store_true", help="let --svg replace a file that exists")
+    tail(where)
+
+    compare = verbs.add_parser(
+        "compare",
+        help="a before (A) and an after (B), compared",
+        description=(
+            "Two stored runs, a before (A) and an after (B), compared: the log-rank test\n"
+            "stratified by config cell over the cells both runs carry, the direction, the\n"
+            "smallest hazard ratio the design could have detected, and one of three lines:\n"
+            "different, no significant difference, or too small to tell. --max-mde-hr is the\n"
+            "largest detectable hazard ratio you accept, and it has no default."
+        ),
+        epilog=_example(
+            "poisson-trace compare previous latest --store proofload-runs --event unsolved \\",
+            "    --max-mde-hr 1.5",
+        ),
+    )
+    compare.add_argument("a", metavar="A", help="the run before the change")
+    compare.add_argument("b", metavar="B", help="the run after the change")
+    common(compare, "a death")
+    where_and_compare(compare)
+    ceiling = compare.add_argument(
         "--max-mde-hr",
         type=float,
-        required=True,
         metavar="X",
-        help="the largest minimum detectable hazard ratio the comparison is allowed",
+        help="the largest minimum detectable hazard ratio you accept, such as 1.5 "
+        "(no default)",
     )
-    compare.add_argument("--alpha", type=float, default=0.05, metavar="A")
+    compare.show_required(ceiling)
+    compare.add_argument(
+        "--alpha", type=float, default=0.05, metavar="A", help="the test's level (default: 0.05)"
+    )
+    tail(compare)
 
     def paired(p: argparse.ArgumentParser) -> None:
-        p.add_argument("--store", required=True, help="the root of a Prove store")
+        common(p, "a failure")
         p.add_argument(
-            "--event",
-            action="append",
-            required=True,
-            metavar="NAME",
-            help="an outcome that counts as a failure; repeatable",
+            "--alpha",
+            type=float,
+            default=0.05,
+            metavar="A",
+            help="the tests' level (default: 0.05)",
         )
-        p.add_argument("--alpha", type=float, default=0.05, metavar="A")
-        p.add_argument("--top", type=int, default=10, metavar="N")
-        p.add_argument("--json", action="store_true", help="print the JSON structure only")
+        p.add_argument(
+            "--top",
+            type=int,
+            default=10,
+            metavar="N",
+            help="the inputs the report's table shows; every flagged input shows, whatever N "
+            "is, and --json lists all (default: 10)",
+        )
 
     fix = verbs.add_parser(
-        "fix-check", help="an old and a new version re-run on the same inputs, compared"
+        "fix-check",
+        help="an old and a new version re-run on the same inputs, compared",
+        description=(
+            "An old and a new version, each re-run on the same inputs, compared input by input\n"
+            "with the old version as the control: how often the old version failed again with\n"
+            "nothing changed, the exact stratified test, the difference with its interval, the\n"
+            "smallest change the design could have detected, and one of three lines: different,\n"
+            "no significant difference, or too small to tell. An input is one config cell of the\n"
+            "sweep. Which inputs are compared has no default (--failing-from or --inputs all),\n"
+            "and neither has --max-mde."
+        ),
+        epilog=_example(
+            "poisson-trace fix-check previous latest --store proofload-runs --event unsolved \\",
+            "    --inputs all --max-mde 0.2",
+        ),
     )
-    fix.add_argument("old")
-    fix.add_argument("new")
+    fix.add_argument("old", metavar="OLD", help="the old version's run")
+    fix.add_argument("new", metavar="NEW", help="the new version's run")
     paired(fix)
-    fix.add_argument("--failing-from", metavar="RUN")
-    fix.add_argument("--min-failures", type=int, metavar="M")
-    fix.add_argument("--inputs", metavar="all")
-    fix.add_argument("--max-mde", type=float, metavar="X")
-    fix.add_argument("--seed", type=int, default=0, metavar="S")
+    fix.add_argument(
+        "--failing-from",
+        metavar="RUN",
+        help="compare the inputs that failed in RUN, a third run that is neither OLD nor NEW "
+        "(no default)",
+    )
+    fix.add_argument(
+        "--min-failures",
+        type=int,
+        metavar="M",
+        help="with --failing-from, the failures an input needs in RUN to be compared "
+        "(default: 1)",
+    )
+    fix.add_argument(
+        "--inputs",
+        metavar="all",
+        help="all: compare every input either run carries (no default)",
+    )
+    limit = fix.add_argument(
+        "--max-mde",
+        type=float,
+        metavar="X",
+        help="the largest detection limit you accept, as a share of failures: 0.2 is twenty "
+        "points (no default)",
+    )
+    fix.show_required(limit)
+    fix.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        metavar="S",
+        help="the seed of the by-input reading's draws (default: 0)",
+    )
+    tail(fix)
 
-    changes = verbs.add_parser("changes", help="the inputs whose failure share moved")
-    changes.add_argument("a")
-    changes.add_argument("b")
+    changes = verbs.add_parser(
+        "changes",
+        help="the inputs whose failure share moved between two runs",
+        description=(
+            "Lists the inputs whose failure share moved between two runs, each with Fisher's\n"
+            "exact test and a Benjamini-Hochberg correction across the inputs, and says which\n"
+            "changes this design could not have flagged. An input is one config cell."
+        ),
+        epilog=_example(
+            "poisson-trace changes previous latest --store proofload-runs --event unsolved",
+        ),
+    )
+    changes.add_argument("a", metavar="A", help="the first run")
+    changes.add_argument("b", metavar="B", help="the second run")
     paired(changes)
-    return parser
-
-
-def _check_prove(does: str = "Poisson Trace reads Prove's stored runs") -> str | None:
-    """The refusal, or None with ``proofload`` importable at the pinned version. ``does`` is
-    what the command does through it, as the sentence's opening words."""
-    try:
-        import proofload
-    except ImportError:
-        return (
-            f"{does} through the proofload package "
-            f"(version {PROVE_VERSION}), which is not importable here; install it from a "
-            f"checkout with `{_INSTALL}`."
-        )
-    found = getattr(proofload, "__version__", None)
-    if found != PROVE_VERSION:
-        return (
-            f"{does} through proofload {PROVE_VERSION} and "
-            f"found proofload {found}; install that version from a checkout with "
-            f"`{_INSTALL}`."
-        )
-    return None
+    tail(changes)
+    return parser, {
+        "where": where,
+        "compare": compare,
+        "fix-check": fix,
+        "changes": changes,
+    }
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    line = _check_prove()
-    if line is not None:
-        sys.stderr.write(line + "\n")
-        return 1
-    try:
-        ns = _build_parser().parse_args(argv)
-        _validate(ns)
-        if ns.verb == "where":
-            return _where(ns)
-        if ns.verb == "compare":
-            return _compare(ns)
-        if ns.verb == "fix-check":
-            return _fix_check(ns)
-        return _changes(ns)
-    except _Refusal as e:
-        sys.stderr.write(str(e) + "\n")
-        return 1
+    args = list(sys.argv[1:] if argv is None else argv)
+    return look.run("poisson-trace", args, _main, (_Refusal,))
+
+
+def _main(session: look.Session) -> int:
+    parser, verbs = _build_parser()
+    args, at = look.verb_first(session.argv, look.takes_value(list(verbs.values())), _KEPT)
+    if at is not None and args[at] not in verbs:
+        raise look.Usage(
+            f'"{args[at]}" is not a verb; the verbs are {_NAMED}; see poisson-trace --help'
+        )
+    ns = parser.parse_args(args)
+    if ns.version:
+        look.out(look.version_line())
+        return look.DONE
+    if ns.verb is None:
+        raise look.Usage(f"no verb was given; the verbs are {_NAMED}; see poisson-trace --help")
+    session.debug = ns.debug
+    refusal = look.prove_refusal(_DOES)
+    if refusal is not None:
+        raise _Refusal(refusal)
+    _validate(ns)
+    verb: Callable[[argparse.Namespace], int] = {
+        "where": _where,
+        "compare": _compare,
+        "fix-check": _fix_check,
+        "changes": _changes,
+    }[ns.verb]
+    return verb(ns)
 
 
 def _validate(ns: argparse.Namespace) -> None:
     if ns.verb == "where" and ns.boot < 1:
         raise _Refusal("--boot must be at least 1")
     if ns.verb == "compare":
+        if ns.max_mde_hr is None:
+            raise _Refusal(
+                "--max-mde-hr is required: the largest minimum detectable hazard ratio you "
+                "accept, such as 1.5; it has no default"
+            )
         if not 0.0 < ns.alpha < 1.0:
             raise _Refusal("--alpha must be strictly between 0 and 1")
         if not ns.max_mde_hr > 0.0:
@@ -202,12 +359,24 @@ def _validate_fix_check(ns: argparse.Namespace) -> None:
 # ---------- reading through Prove ----------
 
 
-def _load(store: Any, run: str, *, trace: str = "envelope") -> tuple[Any, Any, Any]:
+def _open(path: str) -> tuple[Any, list[str]]:
+    """The store and the runs it holds, or a refusal when no folder under the path holds a run
+    Prove stored: a path that is not there, an empty folder and a plain file alike."""
+    from proofload.store import Store
+
+    store = Store(path)
+    held = store.runs()
+    if not held:
+        raise _Refusal(f"no store at {path} (no folder under it holds a run Prove stored)")
+    return store, held
+
+
+def _load(
+    store: Any, held: Sequence[str], run: str, *, trace: str = "envelope"
+) -> tuple[Any, Any, Any]:
     """``(manifest, frame, tally)`` for ``run``, or a refusal naming the runs the store holds."""
-    runs = store.runs()
-    if run not in runs:
-        held = ", ".join(runs) if runs else "no runs"
-        raise _Refusal(f"unknown run {run}; the store holds: {held}")
+    if run not in held:
+        raise _Refusal(f"unknown run {run}; the store holds: {', '.join(held)}")
     try:
         return (
             store.manifest(run),
@@ -215,7 +384,7 @@ def _load(store: Any, run: str, *, trace: str = "envelope") -> tuple[Any, Any, A
             store.tally(run),
         )
     except Exception as e:
-        raise _Refusal(f"run {run} could not be read through Prove: {e}") from e
+        raise _Refusal(f"Prove could not read the run {run} ({look.why(e)})") from e
 
 
 def _outcomes(frame: Any) -> set[str]:
@@ -262,14 +431,15 @@ def _arrays(placement: Any) -> tuple[Any, Any, Any]:
 def _where(ns: argparse.Namespace) -> int:
     import proofload
     from proofload.steps import declaration_check
-    from proofload.store import Store
 
     from poisson_trace.clock import _reached_by, place
     from poisson_trace.report import CANNOT_SAY, WhereReport
     from poisson_trace.survival import _band, aalen_johansen, bootstrap_band, kaplan_meier
 
-    store = Store(ns.store)
-    manifest, frame, tally = _load(store, ns.run)
+    if ns.svg is not None:
+        _check_svg(ns.svg, ns.force)
+    store, held = _open(ns.store)
+    manifest, frame, tally = _load(store, held, ns.run)
     events = frozenset(ns.event)
     present = _outcomes(frame)
     missing = sorted(events - present)
@@ -342,14 +512,40 @@ def _where(ns: argparse.Namespace) -> int:
         last_step=int(index.max()) if len(index) else 0,
         incidence={k: [float(x) for x in aj.incidence[k]] for k in causes},
     )
+    text = report.to_json() if ns.json else report.to_markdown()
     if ns.svg is not None:
         _write_svg(ns.svg, report.to_svg())
-    sys.stdout.write(report.to_json() if ns.json else report.to_markdown())
-    return 0
+        if not ns.json:
+            text += f"  wrote  {ns.svg}\n"
+    look.out(text)
+    return look.DONE
+
+
+def _check_svg(path: str, force: bool) -> None:
+    """Refuse, before any work, an SVG path that cannot be written or would replace a file
+    without --force."""
+    target = Path(path)
+    folder = target.parent
+    if target.is_dir():
+        raise _Refusal(f"cannot write {path}: it is a folder")
+    if not folder.is_dir():
+        what = "is not a folder" if folder.exists() else "does not exist"
+        raise _Refusal(f"cannot write {path}: the folder {folder} {what}")
+    if not os.access(folder, os.W_OK):
+        raise _Refusal(f"cannot write {path}: the folder {folder} cannot be written to")
+    if target.exists() and not force:
+        raise _Refusal(f"{path} exists; add --force to replace it")
+    if target.exists() and not os.access(target, os.W_OK):
+        raise _Refusal(f"cannot write {path}: the file cannot be written to")
 
 
 def _write_svg(path: str, text: str) -> None:
-    Path(path).write_text(text)
+    try:
+        Path(path).write_text(text, encoding="utf-8")
+    except OSError as e:
+        raise look.Failed(
+            f"could not write {path} ({look.why(e)}); the report was not printed"
+        ) from e
 
 
 # ---------- compare ----------
@@ -358,7 +554,6 @@ def _write_svg(path: str, text: str) -> None:
 def _compare(ns: argparse.Namespace) -> int:
     import numpy as np
     import proofload
-    from proofload.store import Store
 
     from poisson_trace.clock import place
     from poisson_trace.report import CANNOT_SAY, CompareReport
@@ -369,9 +564,9 @@ def _compare(ns: argparse.Namespace) -> int:
         mde_hazard_ratio,
     )
 
-    store = Store(ns.store)
-    manifest_a, frame_a, tally_a = _load(store, ns.a)
-    manifest_b, frame_b, tally_b = _load(store, ns.b)
+    store, held = _open(ns.store)
+    manifest_a, frame_a, tally_a = _load(store, held, ns.a)
+    manifest_b, frame_b, tally_b = _load(store, held, ns.b)
     events = frozenset(ns.event)
     out_a, out_b = _outcomes(frame_a), _outcomes(frame_b)
     present = out_a | out_b
@@ -421,19 +616,19 @@ def _compare(ns: argparse.Namespace) -> int:
         in_b = "neither earlier nor later"
     p_text = f"{lr.p:.3f}" if lr.p >= 0.001 else f"{lr.p:.2e}"
     if lr.p < ns.alpha:
-        verdict, code = "different", 0
+        verdict = "different"
         verdict_line = (
             f"different: runs die {in_b} in B (after) than in A (before) "
             f"(log-rank, stratified by cell, p = {p_text})"
         )
     elif mde <= ns.max_mde_hr:
-        verdict, code = "no significant difference", 0
+        verdict = "no significant difference"
         verdict_line = (
             f"no significant difference (p = {p_text}); could not have detected a hazard "
             f"ratio below {mde:.3f}"
         )
     else:
-        verdict, code = "too small to tell", 2
+        verdict = "too small to tell"
         verdict_line = (
             f"too small to tell: could not have detected a hazard ratio below {mde:.3f}, "
             f"and {ns.max_mde_hr:g} was asked for"
@@ -522,8 +717,8 @@ def _compare(ns: argparse.Namespace) -> int:
         "_placed_common": len(common_a) + len(common_b),
     }
     report = CompareReport(data=data)
-    sys.stdout.write(report.to_json() if ns.json else report.to_markdown())
-    return code
+    look.out(report.to_json() if ns.json else report.to_markdown())
+    return look.DONE
 
 
 def _compare_guidance(
@@ -615,7 +810,12 @@ def _started(run: str, manifest: Any) -> datetime:
     try:
         return datetime.fromisoformat(manifest.created_at)
     except (TypeError, ValueError) as e:
-        raise _Refusal(f"run {run} carries no readable start time: {e}") from e
+        held = manifest.created_at
+        shown = f' ("{held}")' if isinstance(held, str) else ""
+        raise _Refusal(
+            f"the run {run} carries no readable start time{shown}, so the gap between the two "
+            "runs cannot be told"
+        ) from e
 
 
 def _check_events(
@@ -705,20 +905,19 @@ def _number(x: float) -> float | None:
 
 def _fix_check(ns: argparse.Namespace) -> int:
     import proofload
-    from proofload.store import Store
 
     from poisson_trace import paired
     from poisson_trace.report import FixCheckReport, _p_is, _points
 
-    store = Store(ns.store)
-    manifest_old, frame_old, tally_old = _load(store, ns.old, trace="none")
-    manifest_new, frame_new, tally_new = _load(store, ns.new, trace="none")
+    store, held = _open(ns.store)
+    manifest_old, frame_old, tally_old = _load(store, held, ns.old, trace="none")
+    manifest_new, frame_new, tally_new = _load(store, held, ns.new, trace="none")
     events = frozenset(ns.event)
     notes = _check_events(events, frame_old, frame_new, "old", "new")
     arm_old, arm_new = _by_input(frame_old, events), _by_input(frame_new, events)
     if ns.failing_from is not None:
         min_failures = 1 if ns.min_failures is None else ns.min_failures
-        _, frame_sel, _ = _load(store, ns.failing_from, trace="none")
+        _, frame_sel, _ = _load(store, held, ns.failing_from, trace="none")
         selected = sorted(
             h for h, row in _by_input(frame_sel, events).items() if row.failed >= min_failures
         )
@@ -741,9 +940,9 @@ def _fix_check(ns: argparse.Namespace) -> int:
         else:
             compared.append(h)
     if not compared:
-        reasons = "; ".join(f"{reason} {n}" for reason, n in left_out.items() if n)
+        reasons = "; ".join(f"{reason} {count(n)}" for reason, n in left_out.items() if n)
         raise _Refusal(
-            f"no input is left to compare: {len(selected)} selected"
+            f"no input is left to compare: {count(len(selected))} selected"
             + (f", left out: {reasons}" if reasons else "")
         )
     counts = [
@@ -790,19 +989,19 @@ def _fix_check(ns: argparse.Namespace) -> int:
     limit_text = None if drop is None else _points(drop)
     guidance = None
     if test.p < ns.alpha and points != 0:
-        verdict, code = "different", 0
+        verdict = "different"
         verdict_line = (
             f"different: the new version failed {word} on these inputs (exact "
             f"Cochran-Mantel-Haenszel, stratified by input, {p_is})"
         )
     elif drop is not None and drop <= ns.max_mde:
-        verdict, code = "no significant difference", 0
+        verdict = "no significant difference"
         verdict_line = (
             f"no significant difference ({p_is}); could not have detected a drop in "
             f"failure share below {limit_text} points"
         )
     else:
-        verdict, code = "too small to tell", 2
+        verdict = "too small to tell"
         if drop is None:
             verdict_line = (
                 "too small to tell: could not have detected a drop in failure share below or "
@@ -889,20 +1088,19 @@ def _fix_check(ns: argparse.Namespace) -> int:
         ],
     }
     report = FixCheckReport(data=data)
-    sys.stdout.write(report.to_json() if ns.json else report.to_markdown())
-    return code
+    look.out(report.to_json() if ns.json else report.to_markdown())
+    return look.DONE
 
 
 def _changes(ns: argparse.Namespace) -> int:
     import proofload
-    from proofload.store import Store
 
     from poisson_trace import paired
     from poisson_trace.report import ChangesReport
 
-    store = Store(ns.store)
-    manifest_a, frame_a, tally_a = _load(store, ns.a, trace="none")
-    manifest_b, frame_b, tally_b = _load(store, ns.b, trace="none")
+    store, held = _open(ns.store)
+    manifest_a, frame_a, tally_a = _load(store, held, ns.a, trace="none")
+    manifest_b, frame_b, tally_b = _load(store, held, ns.b, trace="none")
     events = frozenset(ns.event)
     notes = _check_events(events, frame_a, frame_b, "A", "B")
     arm_a, arm_b = _by_input(frame_a, events), _by_input(frame_b, events)
@@ -936,9 +1134,6 @@ def _changes(ns: argparse.Namespace) -> int:
         },
     }
     report = ChangesReport(data=data)
-    sys.stdout.write(report.to_json() if ns.json else report.to_markdown())
-    return 0
+    look.out(report.to_json() if ns.json else report.to_markdown())
+    return look.DONE
 
-
-if __name__ == "__main__":
-    raise SystemExit(main())

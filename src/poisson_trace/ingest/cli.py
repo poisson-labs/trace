@@ -2,17 +2,20 @@
 
 ``poisson-trace-import TOOL FILE [FILE ...] --store ROOT --run NAME`` reads the files with
 the tool's reader, writes one new run through the writer, and prints a summary that ends with
-the Trace command to run next. A refusal is one sentence on stderr, exit 1, nothing written.
+the Trace command to run next. Options may come before or after the tool. A refusal is one
+``error:`` line on stderr, exit 1, nothing written; a wrong command line exits 2; Ctrl-C and an
+unexpected failure follow the look (``poisson_trace.look``).
 
 The readers are found from ``READERS`` by presence: a module that is not in the install is
 not in ``--help`` and its name is refused. A reader module defines ``add_arguments(parser)``
-and ``read(ns) -> Run``. It may also define ``FURTHER``, a mapping from one further command
-name to ``(add_arguments, run)`` with ``run(ns) -> int``, for a command that writes no store
-and takes its own flags.
+and ``read(ns) -> Run``, and may define ``DESCRIPTION`` (its help's paragraph) and ``EXAMPLE``
+(a command its help and the import's show). It may also define ``FURTHER``, a mapping from one
+further command name to ``(add_arguments, run)`` with ``run(ns) -> int``, for a command that
+writes no store and takes its own flags.
 
-``proofload`` is imported by the writer alone, and the writer is imported inside ``main``
-after the check that ``proofload`` is present at the pinned version, so the check runs before
-any file is opened.
+``proofload`` is imported by the writer alone, and the writer is imported after the check that
+``proofload`` is present at the version this package reads, which runs once the command line
+is read and before any file is opened.
 """
 
 from __future__ import annotations
@@ -28,8 +31,10 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from poisson_trace import look
 from poisson_trace.ingest.cut import MISSED
 from poisson_trace.ingest.rows import Refusal, Run
+from poisson_trace.look import count
 
 if TYPE_CHECKING:
     from poisson_trace.ingest.writer import Written
@@ -37,50 +42,87 @@ if TYPE_CHECKING:
 READERS: tuple[str, ...] = ("deepeval", "ragas", "langsmith", "otel", "lemma")
 SCHEMA = "poisson-trace.import/1"
 
-_DOES = "poisson-trace-import writes a store in Prove's format"
+_DOES = "poisson-trace-import writes runs"
 _Further = Callable[[argparse.Namespace], int]
+# the command's own options, which stay where they are written
+_KEPT = ("-h", "--help", "--version")
 
-
-class _Parser(argparse.ArgumentParser):
-    def error(self, message: str) -> Any:
-        raise Refusal(f"argument error: {message}")
+_ABOUT = """\
+Read the result files another tool already wrote and write them as one new run of a store in
+Prove's format, for Poisson Trace's verbs to read. One import is one version: import the old
+version and the new one into the same store, then compare them with poisson-trace fix-check.
+A store is the folder Prove keeps runs in; a case is one test case or question of the tool's
+files, and the rows that share a case are its repeats.
+"""
 
 
 def _present() -> tuple[str, ...]:
     return tuple(name for name in READERS if find_spec(f"{__package__}.{name}") is not None)
 
 
-def _build_parser(present: Sequence[str]) -> tuple[_Parser, dict[str, _Further]]:
-    parser = _Parser(
-        prog="poisson-trace-import",
-        allow_abbrev=False,
-        description=(
-            "Read the result files another tool already wrote and write them as one new run "
-            "of a store in Prove's format, for Poisson Trace's verbs to read. One import is "
-            "one version."
-        ),
+def _examples(commands: Sequence[str]) -> str | None:
+    return "examples:\n" + "".join(f"  {c}\n" for c in commands) if commands else None
+
+
+def _build_parser(
+    present: Sequence[str],
+) -> tuple[look.Parser, dict[str, look.Parser], dict[str, _Further]]:
+    modules = {name: import_module(f"{__package__}.{name}") for name in present}
+    shown = [module.EXAMPLE for module in modules.values() if hasattr(module, "EXAMPLE")]
+    parser = look.Parser(prog="poisson-trace-import", description=_ABOUT, epilog=_examples(shown))
+    parser.add_argument(
+        "--version", action="store_true", help="print the versions of Trace, Prove and Python"
     )
-    tools = parser.add_subparsers(dest="tool", required=True, metavar="TOOL")
+    parser.add_argument("--debug", action="store_true", help=argparse.SUPPRESS)
+    tools = parser.add_subparsers(dest="tool", metavar="TOOL", title="tools")
+    subs: dict[str, look.Parser] = {}
     further: dict[str, _Further] = {}
-    for name in present:
-        module = import_module(f"{__package__}.{name}")
+    for name, module in modules.items():
         about = (module.__doc__ or name).strip().splitlines()[0]
-        sub = tools.add_parser(name, help=about, allow_abbrev=False)
-        sub.add_argument("files", nargs="+", metavar="FILE", help="a result file; repeatable")
-        sub.add_argument("--store", required=True, metavar="ROOT", help="the root of the store")
-        sub.add_argument("--run", required=True, metavar="NAME", help="the new run's name")
+        example = getattr(module, "EXAMPLE", None)
+        sub = tools.add_parser(
+            name,
+            help=about,
+            description=getattr(module, "DESCRIPTION", about),
+            epilog=_examples([example] if example else []),
+        )
+        sub.add_argument(
+            "files", nargs="+", metavar="FILE", help="a result file of the tool's; repeatable"
+        )
+        sub.add_argument(
+            "--store",
+            required=True,
+            metavar="ROOT",
+            help="the store to write the run into, made if it is not there (no default)",
+        )
+        sub.add_argument(
+            "--run",
+            required=True,
+            metavar="NAME",
+            help="the new run's name, which the store must not hold yet (no default)",
+        )
         sub.add_argument(
             "--started",
             metavar="ISO-8601",
-            help="when this version's run started, with its zone; else read from the files",
+            help="when this version's run started, with its zone, such as "
+            "2026-09-05T18:54:07Z (default: read from the files)",
         )
-        sub.add_argument("--json", action="store_true", help="print the summary as JSON")
+        sub.add_argument(
+            "--json", action="store_true", help="print the summary as JSON instead of text"
+        )
+        sub.add_argument(
+            "--debug",
+            action="store_true",
+            help="on an unexpected failure, print its details on stderr as well as in the log",
+        )
         module.add_arguments(sub)
+        subs[name] = sub
         for extra, (add, run) in getattr(module, "FURTHER", {}).items():
             about = (run.__doc__ or extra).strip().splitlines()[0]
-            add(tools.add_parser(extra, help=about, allow_abbrev=False))
+            subs[extra] = tools.add_parser(extra, help=about, description=about)
+            add(subs[extra])
             further[extra] = run
-    return parser, further
+    return parser, subs, further
 
 
 def _started(text: str) -> str:
@@ -90,7 +132,7 @@ def _started(text: str) -> str:
         at = datetime.fromisoformat(text)
     except ValueError:
         raise Refusal(
-            f"--started takes an ISO-8601 time such as 2026-09-05T18:54:07Z, not {text!r}"
+            f'--started takes an ISO-8601 time such as 2026-09-05T18:54:07Z, not "{text}"'
         ) from None
     if at.tzinfo is None or at.utcoffset() is None:
         raise Refusal(
@@ -155,12 +197,12 @@ def _markdown(d: Mapping[str, Any]) -> str:
         *[f"- file: {f['name']} · sha256 {f['sha256']}" for f in d["files"]],
         "- declared: " + " · ".join(f"{k} {_value(v)}" for k, v in d["declared"].items()),
         f"- started: {started['at']} · from: {source}",
-        f"- rows {d['rows']} · cases {d['cases']} · repeats of a case: smallest "
-        f"{d['repeats']['min']}, largest {d['repeats']['max']}",
-        "- outcomes: " + " · ".join(f"{word} {n}" for word, n in d["outcomes"].items()),
+        f"- rows {count(d['rows'])} · cases {count(d['cases'])} · repeats of a case: smallest "
+        f"{count(d['repeats']['min'])}, largest {count(d['repeats']['max'])}",
+        "- outcomes: " + " · ".join(f"{word} {count(n)}" for word, n in d["outcomes"].items()),
         "- rows with no outcome: "
-        + (" · ".join(f"{reason} {n}" for reason, n in none.items()) if none else "0"),
-        *[f"- {label}: {n}" for label, n in d["counts"].items()],
+        + (" · ".join(f"{reason} {count(n)}" for reason, n in none.items()) if none else "0"),
+        *[f"- {label}: {count(n)}" for label, n in d["counts"].items()],
         "",
         "In the command below, OLD and NEW are this run and the other version's run, "
         "imported into the same store, the older version first. X is the largest limit of "
@@ -173,46 +215,65 @@ def _markdown(d: Mapping[str, Any]) -> str:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    from poisson_trace.cli import _check_prove
-
-    line = _check_prove(_DOES)
-    if line is not None:
-        sys.stderr.write(line + "\n")
-        return 1
     args = list(sys.argv[1:] if argv is None else argv)
-    try:
-        present = _present()
-        parser, further = _build_parser(present)
-        if args and not args[0].startswith("-") and args[0] not in (*present, *further):
-            raise Refusal(
-                f"unknown tool {args[0]}; this install reads: "
-                f"{', '.join((*present, *further)) or 'nothing'}"
-            )
-        ns = parser.parse_args(args)
-        if ns.tool in further:
-            return further[ns.tool](ns)
-        given = None if ns.started is None else _started(ns.started)
-        run: Run = import_module(f"{__package__}.{ns.tool}").read(ns)
-        if given is not None:
-            run = replace(run, started=given, started_from="given")
-        if not run.rows:
-            raise Refusal("no row was read from the files, so there is no run to write")
-        if all(row.outcome is None for row in run.rows):
-            raise Refusal(
-                f"none of the {len(run.rows)} rows read has an outcome, so there is nothing "
-                "to compare and no run was written"
-            )
-        from poisson_trace.ingest.writer import write
+    return look.run("poisson-trace-import", args, _main, (Refusal,))
 
-        written = write(run, Path(ns.store))
-    except Refusal as e:
-        sys.stderr.write(" ".join(str(e).split()) + "\n")
-        return 1
+
+def _main(session: look.Session) -> int:
+    present = _present()
+    parser, subs, further = _build_parser(present)
+    args, at = look.verb_first(session.argv, look.takes_value(list(subs.values())), _KEPT)
+    if at is not None and args[at] not in subs:
+        raise Refusal(
+            f"unknown tool {args[at]}; this install reads: {', '.join(subs) or 'nothing'}"
+        )
+    ns = parser.parse_args(args)
+    if ns.version:
+        look.out(look.version_line())
+        return look.DONE
+    if ns.tool is None:
+        raise look.Usage(
+            f"no tool was given; this install reads: {', '.join(subs) or 'nothing'}; "
+            "see poisson-trace-import --help"
+        )
+    session.debug = bool(getattr(ns, "debug", False))
+    refusal = look.prove_refusal(_DOES)
+    if refusal is not None:
+        raise Refusal(refusal)
+    if ns.tool in further:
+        return further[ns.tool](ns)
+    store = Path(ns.store)
+    held = (store / ns.run).exists()
+    session.stopped = lambda: _stopped(store, ns.run, held)
+    given = None if ns.started is None else _started(ns.started)
+    run: Run = import_module(f"{__package__}.{ns.tool}").read(ns)
+    if given is not None:
+        run = replace(run, started=given, started_from="given")
+    if not run.rows:
+        raise Refusal("no row was read from the files, so there is no run to write")
+    if all(row.outcome is None for row in run.rows):
+        raise Refusal(
+            f"none of the {count(len(run.rows))} rows read has an outcome, so there is nothing "
+            "to compare and no run was written"
+        )
+    from poisson_trace.ingest.writer import write
+
+    written = write(run, store)
     data = _summary(run, written, str(ns.store))
-    text = json.dumps(data, indent=2, allow_nan=False) + "\n" if ns.json else _markdown(data)
-    sys.stdout.write(text)
-    return 0
+    look.out(json.dumps(data, indent=2, allow_nan=False) + "\n" if ns.json else _markdown(data))
+    return look.DONE
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+def _stopped(store: Path, name: str, held: bool) -> str:
+    """The line Ctrl-C prints: what the interrupted import left in the store. A folder of that
+    name that was there before the import began is never this import's."""
+    if held or not (store / name).exists():
+        return look.NOTHING_WRITTEN
+    from poisson_trace.ingest.writer import status
+
+    if status(store, name) == "complete":
+        return f"stopped  interrupted after the run {name} was written whole to {store}"
+    return (
+        f"stopped  interrupted: the run {name} is partial; remove its folder in {store} "
+        "before importing it again"
+    )

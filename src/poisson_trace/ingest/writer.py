@@ -20,6 +20,7 @@ from proofload.trace import CONTENT_KEYS, OBSERVATION_KEYS, Trace, from_otel
 import poisson_trace
 from poisson_trace.ingest.cut import MET, MISSED
 from poisson_trace.ingest.rows import STARTED_FROM, Refusal, Row, Run
+from poisson_trace.look import why
 
 
 @dataclass(frozen=True)
@@ -95,6 +96,14 @@ def _record(run: str, row: Row, repeat: int) -> EpisodeRecord:
     )
 
 
+def status(root: Path, name: str) -> str | None:
+    """The status Prove records for a run of the store, or None when it cannot be read."""
+    try:
+        return Store(root).manifest(name).status
+    except Exception:
+        return None
+
+
 def write(run: Run, root: Path) -> Written:
     if run.started_from not in STARTED_FROM:
         raise Refusal(f"the start time's source is one of {', '.join(STARTED_FROM)}")
@@ -111,7 +120,7 @@ def write(run: Run, root: Path) -> Written:
             records.append(_record(run.name, row, seen[row.case]))
             seen[row.case] += 1
     except (TypeError, ValueError) as e:
-        raise Refusal(f"a row could not be written as Prove stores it: {e}") from e
+        raise Refusal(f"a row could not be written as Prove stores it ({why(e)})") from e
     manifest = RunManifest(
         run_id=run.name,
         target_id=f"import/{run.tool}",
@@ -133,14 +142,18 @@ def write(run: Run, root: Path) -> Written:
     try:
         store.create_run(manifest)
     except Exception as e:
-        raise Refusal(f"the run {run.name} could not be created in the store: {e}") from e
+        raise Refusal(
+            f"Prove could not create the run {run.name} in {root} ({why(e)}); nothing was written"
+        ) from e
     try:
         store.append(run.name, records)
         store.mark_complete(run.name)
     except Exception as e:
         # the run directory is this call's own: it did not exist when the call began
         shutil.rmtree(Path(root) / run.name, ignore_errors=True)
-        raise Refusal(f"the run {run.name} could not be written: {e}") from e
+        raise Refusal(
+            f"Prove could not write the run {run.name} into {root} ({why(e)}); nothing was kept"
+        ) from e
     outcomes = Counter(row.outcome for row in run.rows if row.outcome is not None)
     words = [MET, MISSED, *sorted(o for o in outcomes if o not in (MET, MISSED))]
     no_outcome = Counter(str(row.error) for row in run.rows if row.outcome is None)

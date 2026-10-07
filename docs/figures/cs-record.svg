@@ -65,6 +65,6 @@
 <line x1="728.6" y1="584.0" x2="728.6" y2="418.5" stroke="#1baf7a" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
 <rect x="281" y="623" width="10" height="10" rx="2" fill="#1baf7a"/>
 <text x="296" y="632" fill="#0b0b0b">agent · 3 deaths · F = 0.441</text>
-<text x="64" y="386" fill="#0b0b0b">Aalen–Johansen cumulative incidence; band: bootstrap 95%, B = 1000, seed = 0</text>
+<text x="64" y="386" fill="#0b0b0b">Aalen–Johansen cumulative incidence; band: bootstrap 95%, B = 1,000, seed = 0</text>
 <text x="64" y="662" fill="#52514e">Poisson Trace · Prove 0.0.1 · leaf span index</text>
 </svg>

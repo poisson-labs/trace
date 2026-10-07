@@ -27,8 +27,20 @@ from typing import Any
 
 from poisson_trace.ingest.cut import Cut
 from poisson_trace.ingest.rows import Refusal, Row, Run, case_id
+from poisson_trace.look import why
 
 FORMATS: tuple[str, ...] = ("csv", "jsonl", "json", "parquet")
+
+DESCRIPTION = """\
+Read the per-row score table saved from Ragas (.csv, .jsonl, .json as a list of objects, each
+also as .gz, or .parquet, told by the extension) and write one score column of it, at a cut you
+declare, as one new run. Each row is one run of a case; rows that share the case column's value
+are its repeats. No other column is kept. Nothing has a default but the start time.
+"""
+EXAMPLE = (
+    "poisson-trace-import ragas base-scores.jsonl --store trace-store --run base \\\n"
+    "      --metric faithfulness --cut 0.5 --below --case-column question_id"
+)
 
 TOOL = "ragas"
 NO_SCORE = "no score"
@@ -46,13 +58,17 @@ _Pair = tuple[Any, Any]
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
-        "--metric", required=True, metavar="COLUMN", help="the column that holds the score"
+        "--metric",
+        required=True,
+        metavar="COLUMN",
+        help="the column that holds the score (no default)",
     )
     parser.add_argument(
         "--cut",
         required=True,
         metavar="X",
-        help="the cut, a number, with its side; a Ragas table records no threshold",
+        help="the cut, a number, with its side; a Ragas table records no threshold "
+        "(no default)",
     )
     parser.add_argument("--below", action="store_true", help="a score under the cut missed it")
     parser.add_argument("--above", action="store_true", help="a score over the cut missed it")
@@ -60,7 +76,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         "--case-column",
         required=True,
         metavar="COLUMN",
-        help="the column that identifies a case across the two versions",
+        help="the column that identifies a case across the two versions (no default)",
     )
 
 
@@ -104,7 +120,7 @@ def _bytes(path: Path) -> tuple[bytes, float]:
     try:
         return path.read_bytes(), path.stat().st_mtime
     except OSError as e:
-        raise Refusal(f"{path} could not be read: {e.strerror or e}") from e
+        raise Refusal(f"{path} could not be read: {why(e)}") from e
 
 
 def _not_a_table(path: Path, fmt: str, why: str) -> Refusal:
@@ -145,8 +161,8 @@ def _csv(path: Path, body: bytes, wanted: tuple[str, str]) -> list[_Pair]:
     limit = csv.field_size_limit(_CELL_LIMIT)
     try:
         lines = [line for line in source if line and (len(line) > 1 or line[0].strip())]
-    except csv.Error as e:
-        raise _not_a_table(path, "csv", f"line {source.line_num}: {e}") from None
+    except csv.Error:
+        raise _not_a_table(path, "csv", f"line {source.line_num} cannot be read as CSV") from None
     finally:
         csv.field_size_limit(limit)
     if not lines:
