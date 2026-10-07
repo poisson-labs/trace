@@ -6,10 +6,11 @@ Both commands, `poisson-trace` and `poisson-trace-import`, now keep the command-
 written down in `docs/cli-look.md`, which every Poisson Labs tool follows.
 
 - **The exit codes changed.** 0: the result is printed, whatever it says, so *too small to
-  tell* now exits 0 where it exited 2. 1: refused, with nothing written. 2: the command line
-  is wrong (no verb, an unknown verb or option, a flag missing, a value outside its choices
-  or not a number, a word too many), where it exited 1. 3: a failure after work started, or
-  an unexpected one. 130: interrupted. A script that waited for exit 2 on *too small to
+  tell* now exits 0 where it exited 2. 1: refused, with nothing written, as before; a value
+  the command checks itself (`--max-mde 1.5`, `--inputs some`, `--boot 0`) is refused this way.
+  2: the command line is wrong (no verb, an unknown verb or option, a flag missing, a value
+  outside an option's listed choices or not a number where one is asked, a word too many),
+  where it exited 1. 3: a failure after work started, or an unexpected one. 130: interrupted. A script that waited for exit 2 on *too small to
   tell* reads the verdict from `--json` instead.
 - Every refusal and every mistake in the command line is one line on stderr that starts
   `error:`, with nothing on stdout, under `--json` too. No refusal carries a library's own
@@ -21,6 +22,9 @@ written down in `docs/cli-look.md`, which every Poisson Labs tool follows.
 - `--version` prints one line: `poisson-trace 0.1.0 (poisson-prove 0.0.1, Python 3.11.7)`,
   with Prove's version as installed, or `poisson-prove not installed`.
 - `python -m poisson_trace` is the same command as `poisson-trace`.
+- `--seed` below 0 is refused, and `--boot` above 1,000,000; a store that cannot be read, a
+  name too long for the system and a `--started` outside the years 1 to 9999 are refused in
+  one line, where each ended in a traceback.
 - Every help gives a description, every option with its default or "no default", and an
   example. `--max-mde` and `--max-mde-hr` show as required in the usage line; a missing one
   is still refused in one line, exit 1.
@@ -30,8 +34,8 @@ written down in `docs/cli-look.md`, which every Poisson Labs tool follows.
 - A store that is not there, an empty folder or a plain file given as `--store` is refused
   as *no store at PATH*, instead of as an unknown run.
 - `where --svg FILE` refuses, before any work, a folder that is not there or cannot be
-  written, a path that is a folder, and a file that is already there unless `--force` is
-  given. When it writes, the report ends with `  wrote  FILE`; with `--json` stdout stays
+  written, a path that is a folder, and a file (or a link) that is already there unless
+  `--force` is given; `--force` without `--svg` is refused. When it writes, the report ends with `  wrote  FILE`; with `--json` stdout stays
   one document. The SVG is written as UTF-8 whatever the locale.
 - An unexpected failure prints one line naming its type and
   `~/.cache/poisson-trace/errors.log`, where the details are added to what the log holds;

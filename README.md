@@ -710,14 +710,14 @@ ruff check .
 mypy --strict src
 ```
 
-The suite holds 625 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
+The suite holds 631 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
 (3 of them its display rules), 124 for `poisson-trace-import` and its DeepEval reader, 80 for
-its Ragas reader, and 178 that hold both commands to the shared command-line look
+its Ragas reader, and 184 that hold both commands to the shared command-line look
 ([`docs/cli-look.md`](docs/cli-look.md)): the exit codes, the `error:` lines, the help and
 `--version`, options before or after the verb, the ASCII fallback, a closed pipe and plain
-words. Four of the 625 run DeepEval or Ragas itself, installed from PyPI, and are left out
-unless asked for (`python -m pytest -m lane_j`). The oracles are lifelines, scipy, full
-enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks
+words. Four of the 631 run DeepEval or Ragas itself, installed from PyPI, and are left out
+unless asked for (`python -m pytest -m lane_j`). The figures the tests check against come
+from lifelines, scipy, full enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks
 the fixtures (`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).
 
 ## Licence
