@@ -58,17 +58,20 @@ SPEC_CANNOT_SAY = (
 )
 
 # spec section 4.3, top level in order; nested objects as key sets
+# the verdict and its sentence after the schema, next last; run_name beside run_id (spec
+# sections 9.4 and 5.2, rule L9)
 FIX_KEYS = (
-    "schema", "prove", "runs", "gap_seconds", "events", "inputs", "rows", "control", "test",
-    "difference", "by_input", "consistency", "limits", "verdict", "direction", "guidance",
-    "changes", "cannot_say",
+    "schema", "verdict", "sentence", "prove", "runs", "gap_seconds", "events", "inputs", "rows",
+    "control", "test", "difference", "by_input", "consistency", "limits", "direction", "guidance",
+    "changes", "cannot_say", "next",
 )
 CHANGES_KEYS = (
-    "schema", "prove", "runs", "events", "tested", "flagged", "alpha", "lone_threshold",
-    "smallest_attainable_p", "together", "lone_flip_repeats", "rows", "cannot_say",
+    "schema", "verdict", "sentence", "prove", "runs", "events", "tested", "flagged", "alpha",
+    "lone_threshold", "smallest_attainable_p", "together", "lone_flip_repeats", "rows",
+    "cannot_say", "next",
 )
-CHANGES_BLOCK_KEYS = CHANGES_KEYS[4:]
-HEADER_KEYS = {"run_id", "target_id", "status", "created_at", "declared_repeats", "tally"}
+CHANGES_BLOCK_KEYS = CHANGES_KEYS[6:-1]
+HEADER_KEYS = {"run_id", "run_name", "target_id", "status", "created_at", "declared_repeats", "tally"}
 INPUTS_KEYS = {"rule", "failing_from", "min_failures", "selected", "compared", "informative", "left_out"}
 ROWS_KEYS = {"runs", "failed", "timed_out", "no_outcome", "short", "mixed"}
 CONTROL_KEYS = {"old_did_not_fail_share", "new_did_not_fail_share"}

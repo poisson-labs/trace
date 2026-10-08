@@ -40,12 +40,14 @@ CANNOT_SAY = (
     "cells says whether anything moved, and only within what it could not have detected.",
 )
 
+# the verdict and its sentence after the schema, next last (spec section 9.4, rule L9)
 WHERE_KEYS = (
-    "schema", "prove", "run", "events", "clock", "curve", "median_step", "at", "causes",
-    "bootstrap", "declared", "cannot_say",
+    "schema", "verdict", "sentence", "prove", "run", "events", "clock", "curve", "median_step",
+    "at", "causes", "bootstrap", "declared", "cannot_say", "next",
 )
 COMPARE_KEYS = (
-    "schema", "prove", "runs", "events", "clock", "at", "comparison", "per_cause", "cannot_say",
+    "schema", "verdict", "sentence", "prove", "runs", "events", "clock", "at", "comparison",
+    "per_cause", "cannot_say", "next",
 )
 
 
