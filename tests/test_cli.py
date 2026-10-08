@@ -26,7 +26,8 @@ def src_files() -> list[Path]:
 
 def _one_sentence(result) -> None:  # type: ignore[no-untyped-def]
     lines = [line for line in result.text.splitlines() if line.strip()]
-    assert len(lines) == 1, result.text
+    # one sentence, and the command to run under it on its own next: lines (rule 4)
+    assert lines and all(line.startswith("  next: ") for line in lines[1:]), result.text
     assert result.code == 1
 
 
@@ -209,7 +210,8 @@ def test_tr11_every_refusal_is_one_sentence_and_an_argument_error_exits_two() ->
         ["where", TAU2_A, "--store", str(TAU2), "--event", "unsolved", "--by", "wall"],
     ):
         result = run_cli(argv)
-        assert len([line for line in result.text.splitlines() if line.strip()]) == 1, result.text
+        lines = [line for line in result.text.splitlines() if line.strip()]
+        assert lines and all(line.startswith("  next: ") for line in lines[1:]), result.text
         assert result.code == 2
     # the missing ceiling stays the command's own refusal, exit 1
     _one_sentence(run_cli(["compare", TAU2_A, TAU2_B, "--store", str(TAU2), "--event", "unsolved"]))
@@ -266,9 +268,9 @@ def test_tr31_refuses_before_the_store_when_prove_is_unimportable(argv) -> None:
     proc = _run(code, dict(os.environ))
     assert proc.returncode == 1, proc.stderr + proc.stdout
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
-    assert len(lines) == 1, proc.stdout + proc.stderr
-    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "pip install" in lines[0]
-    assert "no-such-store" not in lines[0]
+    assert lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
+    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "pip install" in " ".join(lines)
+    assert "no-such-store" not in " ".join(lines)
 
 
 @pytest.mark.parametrize("argv", CALLS)
@@ -282,8 +284,8 @@ def test_tr31_refuses_on_the_wrong_prove_version(tmp_path: Path, argv) -> None: 
     proc = _run(code, env)
     assert proc.returncode == 1, proc.stderr + proc.stdout
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
-    assert len(lines) == 1, proc.stdout + proc.stderr
-    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "9.9.9" in lines[0] and "pip install" in lines[0]
+    assert lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
+    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "9.9.9" in lines[0] and "pip install" in " ".join(lines)
 
 
 def test_tr31_prints_no_such_line_when_prove_is_present() -> None:

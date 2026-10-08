@@ -109,7 +109,8 @@ def changes(store: Path | str, a: str, b: str, events: Sequence[str], *extra: st
 def one_sentence(result: CliResult) -> None:
     lines = [line for line in result.text.splitlines() if line.strip()]
     assert result.code == 1, result.text
-    assert len(lines) == 1, result.text
+    # one sentence, and the command to run under it on its own next: lines (rule 4)
+    assert lines and all(line.startswith("  next: ") for line in lines[1:]), result.text
 
 
 def ok(result: CliResult) -> CliResult:

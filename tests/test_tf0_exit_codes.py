@@ -40,7 +40,7 @@ def _usage(result: Ran) -> None:
     assert result.code == 2, result.text
     assert result.out == "", result.out
     lines = result.lines()
-    assert len(lines) == 1 and lines[0].startswith("error: "), result.err
+    assert lines and lines[0].startswith("error: ") and all(line.startswith("  next: ") for line in lines[1:]), result.err
 
 
 TRACE_USAGE = {

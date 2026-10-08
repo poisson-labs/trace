@@ -584,7 +584,8 @@ WRONG_COMMAND_LINE = {"no --metric", "no --cut", "no --case-column", "a side wit
 def _wrong_command_line(r) -> None:  # type: ignore[no-untyped-def]
     assert r.code == 2, r.text
     assert r.out.strip() == "", r.out
-    assert len([line for line in r.err.splitlines() if line.strip()]) == 1, r.err
+    lines = [line for line in r.err.splitlines() if line.strip()]
+    assert lines and all(line.startswith("  next: ") for line in lines[1:]), r.err
 
 
 @pytest.mark.parametrize("what", list(MALFORMED))

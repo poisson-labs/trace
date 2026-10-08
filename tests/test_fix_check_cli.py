@@ -417,7 +417,8 @@ def test_tr41_refusals_are_one_sentence_and_exit_one(store70: Path) -> None:
     one_sentence(changes(store70, "old", "nope", ["fail"]))
     one_sentence(changes(store70, "old", "new", ["nope"]))
     no_event = changes(store70, "old", "new", [])  # R17: no --event is a wrong command line, exit 2
-    assert no_event.code == 2 and len([line for line in no_event.text.splitlines() if line.strip()]) == 1, no_event.text
+    no_event_lines = [line for line in no_event.text.splitlines() if line.strip()]
+    assert no_event.code == 2 and no_event_lines and all(line.startswith("  next: ") for line in no_event_lines[1:]), no_event.text
 
 
 def _sub(code: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
@@ -436,8 +437,8 @@ def test_tr41_without_prove_both_verbs_refuse_before_the_store(argv) -> None:  #
     code = f"import sys; sys.modules['proofload'] = None; from poisson_trace.cli import main; sys.exit(main({argv!r}))"
     proc = _sub(code, dict(os.environ))
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
-    assert proc.returncode == 1 and len(lines) == 1, proc.stdout + proc.stderr
-    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "no-such-store" not in lines[0]
+    assert proc.returncode == 1 and lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
+    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "no-such-store" not in " ".join(lines)
 
 
 @pytest.mark.parametrize("argv", NEW_CALLS)
@@ -450,7 +451,7 @@ def test_tr41_on_the_wrong_prove_both_verbs_refuse(tmp_path: Path, argv) -> None
     env["PYTHONPATH"] = str(tmp_path / "fake") + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     proc = _sub(f"import sys; from poisson_trace.cli import main; sys.exit(main({argv!r}))", env)
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
-    assert proc.returncode == 1 and len(lines) == 1, proc.stdout + proc.stderr
+    assert proc.returncode == 1 and lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
     assert "9.9.9" in lines[0] and "0.0.1" in lines[0]
 
 
