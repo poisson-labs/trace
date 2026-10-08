@@ -209,6 +209,9 @@ def test_tr37_the_same_numbers_on_runs_whose_traces_are_all_null(tmp_path: Path)
     without = _json(fix_check(bare, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.12", "--json"))
     with_traces.pop("prove")
     without.pop("prove")
+    # next: carries the store's path, as prove does
+    with_traces.pop("next")
+    without.pop("next")
     assert with_traces == without
 
 
