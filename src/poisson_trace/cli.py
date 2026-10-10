@@ -1655,12 +1655,12 @@ _NAMED_INPUTS = 3
 
 
 def _input_words(config: Any) -> str:
-    """An input as a sentence names it: each key and its value, never as JSON."""
+    """An input as a sentence names it, never as JSON: its first key and value, then each
+    further one after "at" (``task_id HumanEval/129 at temperature 0.7``)."""
     if not isinstance(config, Mapping) or not config:
         return str(config)
-    return ", ".join(
-        f"{k} {v if isinstance(v, str) else json.dumps(v)}" for k, v in config.items()
-    )
+    pairs = [f"{k} {v if isinstance(v, str) else json.dumps(v)}" for k, v in config.items()]
+    return " at ".join(pairs)
 
 
 def _changes_sentence(data: Mapping[str, Any]) -> str:

@@ -802,7 +802,7 @@ def _render_svg(report: WhereReport) -> str:
     placement = run["placement"]
     parts.append(
         f'<text x="{_PAD_L}" y="22" fill="{_INK}" font-size="14" font-weight="600">'
-        f"{escape(_named(run))} · {escape(run['target_id'])}</text>"
+        f"{escape(_name(run))} · {escape(run['target_id'])}</text>"
     )
     parts.append(
         f'<text x="{_PAD_L}" y="40" fill="{_INK2}">placed {count(placement["placed"])} · '
