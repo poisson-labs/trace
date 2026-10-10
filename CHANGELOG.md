@@ -16,8 +16,8 @@ id.
 - **`poisson-trace name RUN NAME`** gives a run a name of yours, kept in `trace-names.toml`
   at the store's root; no run's own files change, and deleting the file loses nothing but
   the names. `name RUN --forget` takes it back; `name --list` shows each name of yours with
-  the name its run has from its manifest. A name is at most 80 characters on one line, and
-  cannot be a name another run answers to, a run's id, `latest`, `previous`, or begin
+  the name its run has from its manifest. A name is at most 80 characters of text on one
+  line, with no control character but the tab, and cannot be a name another run answers to, a run's id, `latest`, `previous`, or begin
   `latest:`, `previous:`, `#` or a dash.
 - **Every verb takes a run by any of its words**: a name of yours, a name from the
   manifest, `latest` and `previous` (the newest complete runs), `latest:TARGET` and
@@ -44,8 +44,12 @@ id.
 - The import refuses, before Prove is asked anything and with nothing written, a run name
   that is not a folder name (empty, `.`, `..`, a slash, a backslash, over 80 characters), and
   a name no command could give back: `latest`, `previous`, `latest:…`, `previous:…`, `#…`, a
-  space at either end, two lines, a first dash, or a name another run of the store answers
-  to. Its summary opens with its verdict line.
+  space at either end, two lines, a first dash, the names file's own name, or a name another
+  run of the store answers to. Its summary opens with its verdict line.
+- A run Prove cannot read, or whose start it cannot read, is left out of the names and the
+  listing with a note, and stops nothing else; the rows of one run that cannot be read leave
+  the listing of the others whole. A names file entry that cannot be a name, or a second name
+  for one run, is refused by every verb with the command that takes it back.
 - Ctrl-C under `--json` prints one JSON document, verdict `stopped`.
 - The README and the two integration pages name runs by name and are re-run; the figures
   under `docs/figures/` carry the run's name.

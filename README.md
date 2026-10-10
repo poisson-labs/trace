@@ -103,7 +103,8 @@ poisson-trace changes A B --store ROOT --event NAME [--event NAME ...]
   the report, and a `next:` line with the command to run next. A `next:` command names runs
   by name and carries the `--store` and `--event` given; what it lacks is a ceiling, which is
   yours to choose. A report names each run by its name, and gives its id once for the record.
-- `--store` is required; there is no default store. `--event` is required and repeatable;
+- `--store` is required; there is no default store. `--event` is required and repeatable
+  (on `runs` it is optional);
   the union of the names is "died" for `where` and `compare` and "failed" for `fix-check`
   and `changes`. A name no stored row carries is refused, and the refusal lists the outcomes
   the runs do carry.
@@ -760,14 +761,14 @@ ruff check .
 mypy --strict src
 ```
 
-The suite holds 933 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
+The suite holds 945 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
 (3 of them its display rules), 124 for `poisson-trace-import` and its DeepEval reader, 80 for
 its Ragas reader, 184 that hold both commands to the shared command-line look
 ([`docs/cli-look.md`](docs/cli-look.md)): the exit codes, the `error:` lines, the help and
 `--version`, options before or after the verb, the ASCII fallback, a closed pipe and plain
-words; and 302 for names and runs: the names file, the name every run has, the words a verb
+words; and 314 for names and runs: the names file, the name every run has, the words a verb
 takes for a run, `runs` and `name`, the verdict line and `next:`, and the import's run names.
-Four of the 933 run DeepEval or Ragas itself, installed from PyPI, and are left out
+Four of the 945 run DeepEval or Ragas itself, installed from PyPI, and are left out
 unless asked for (`python -m pytest -m lane_j`). The figures the tests check against come
 from lifelines, scipy, full enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks
 the fixtures (`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).
