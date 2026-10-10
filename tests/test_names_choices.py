@@ -20,6 +20,9 @@ plausible wrong build would harm a user.
   traces and refuses those two runs whatever ceiling is given.
 - Ctrl-C under ``--json`` stops an import with one JSON document, verdict ``stopped``. The
   wrong build prints the stopped line as text, and stdout is not JSON.
+- A name holding a line separator a terminal or a listing breaks at (U+2028, U+2029) is
+  refused as a name of two lines. The wrong build checks the newline and the control
+  characters alone, and takes it, so the listing and next: lines break in two.
 - A names file whose value is a number is refused even when the number is a run's id (an
   import named with digits). The wrong build reads the number as text, which the frozen
   test's number cannot show: it names no run, so the file is refused as stale either way.
@@ -137,3 +140,10 @@ def test_a_number_in_the_names_file_is_refused_even_when_it_is_a_runs_id(tmp_pat
     for argv in (["runs", "--store", str(store)], ["where", "old", "--store", str(store), "--event", "missed"]):
         line = refused(trace(argv))
         assert NAMES_FILE in line, line
+
+
+@pytest.mark.parametrize("separator", ["\u2028", "\u2029"], ids=["line separator", "paragraph separator"])
+def test_a_name_holding_a_line_separator_is_refused(tmp_path: Path, separator: str) -> None:
+    store = tau2_copy(tmp_path)
+    refused(name(store, T_B, f"one{separator}two"))
+    assert not (store / NAMES_FILE).exists()
