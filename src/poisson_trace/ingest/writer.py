@@ -21,6 +21,7 @@ import poisson_trace
 from poisson_trace.ingest.cut import MET, MISSED
 from poisson_trace.ingest.rows import STARTED_FROM, Refusal, Row, Run
 from poisson_trace.look import why
+from poisson_trace.names import taken
 
 
 @dataclass(frozen=True)
@@ -109,7 +110,8 @@ def write(run: Run, root: Path) -> Written:
         raise Refusal(f"the start time's source is one of {', '.join(STARTED_FROM)}")
     store = Store(root)
     try:
-        held = run.name in store.runs() or (Path(root) / run.name).exists()
+        stored = store.runs()
+        held = run.name in stored or (Path(root) / run.name).exists()
     except OSError as e:
         raise Refusal(
             f"the store at {root} cannot take a run named {run.name} ({why(e)}); nothing was "
@@ -120,6 +122,10 @@ def write(run: Run, root: Path) -> Written:
             f"the store at {root} already holds a run named {run.name}; an import writes a "
             "new run and never adds to one, so give this one another name"
         )
+    # the import's name is the word for its run, so no other run may answer to it
+    in_use = taken(store, stored, Path(root), run.name) if stored else None
+    if in_use is not None:
+        raise Refusal(in_use)
     seen: Counter[str] = Counter()
     records = []
     try:
