@@ -20,6 +20,9 @@ plausible wrong build would harm a user.
   traces and refuses those two runs whatever ceiling is given.
 - Ctrl-C under ``--json`` stops an import with one JSON document, verdict ``stopped``. The
   wrong build prints the stopped line as text, and stdout is not JSON.
+- A names file whose value is a number is refused even when the number is a run's id (an
+  import named with digits). The wrong build reads the number as text, which the frozen
+  test's number cannot show: it names no run, so the file is refused as stale either way.
 """
 
 from __future__ import annotations
@@ -124,3 +127,13 @@ def test_ctrl_c_under_json_stops_an_import_with_one_json_document(tmp_path: Path
     assert list(doc)[:3] == ["schema", "verdict", "sentence"], doc
     assert (doc["schema"], doc["verdict"]) == ("poisson-trace.import/1", "stopped")
     assert "he-a" in doc["sentence"], doc
+
+
+def test_a_number_in_the_names_file_is_refused_even_when_it_is_a_runs_id(tmp_path: Path) -> None:
+    store = tmp_path / "store"
+    assert import_he(store, "20260915").code == 0
+    # written by hand: name writes every value as a string
+    (store / NAMES_FILE).write_text('version = 1\n\n[names]\n"old" = 20260915\n', encoding="utf-8")
+    for argv in (["runs", "--store", str(store)], ["where", "old", "--store", str(store), "--event", "missed"]):
+        line = refused(trace(argv))
+        assert NAMES_FILE in line, line
