@@ -192,7 +192,8 @@ def _summary(run: Run, written: Written, store: str) -> dict[str, Any]:
         "no_outcome": dict(written.no_outcome),
         "counts": dict(run.counts),
         "next": (
-            f"poisson-trace fix-check OLD NEW --store {store} --event {MISSED} --inputs all "
+            f"poisson-trace fix-check OLD NEW {look.option('--store', store)} --event {MISSED} "
+            "--inputs all "
             f"--max-mde X  # {written.run} is OLD or NEW"
         ),
     }

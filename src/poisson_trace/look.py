@@ -16,6 +16,7 @@ import re
 import shlex
 import sys
 import traceback
+import unicodedata
 from collections.abc import Callable, Collection, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -139,10 +140,21 @@ def err(text: str) -> None:
     _write(sys.stderr, text)
 
 
+def _visible(ch: str) -> str:
+    """A character of an error line as a terminal shows it: a control character a user typed
+    (an escape, a bell) written as its escape, never acted on; a tab as itself."""
+    if ch != "\t" and unicodedata.category(ch) in ("Cc", "Cs"):
+        return ch.encode("unicode_escape", "backslashreplace").decode("ascii")
+    return ch
+
+
 def error(sentence: str, nexts: Sequence[str] = ()) -> None:
     """``error: <sentence>`` on stderr, as one line, and each command to run next on its own
     ``  next:`` line under it."""
-    err("error: " + " ".join(sentence.split()) + "\n")
+    # one line: a line break inside it (a value the user gave, a wrapped string) reads as a
+    # space; every other space is kept, so a name with two spaces is shown as it is
+    line = " ".join(sentence.splitlines())
+    err("error: " + "".join(_visible(ch) for ch in line) + "\n")
     for command in nexts:
         err(f"  next: {command}\n")
 
@@ -167,6 +179,12 @@ def word(text: str) -> str:
         if piece:
             parts.append('"' + re.sub(r'(["\\$`])', r"\\\1", piece) + '"')
     return "".join(parts) or '""'
+
+
+def option(flag: str, value: str) -> str:
+    """An option and its value for a command line: joined by ``=`` when the value opens with a
+    dash, which a command line would otherwise read as an option of its own."""
+    return f"{flag}={word(value)}" if value.startswith("-") else f"{flag} {word(value)}"
 
 
 def command(*words: str) -> str:
@@ -250,7 +268,8 @@ def _append_errors_log(path: Path, entry: str) -> bool:
     written."""
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "a", encoding="utf-8") as errors_log:
+        # a value the command line could not read as text is kept escaped, never refused
+        with open(path, "a", encoding="utf-8", errors="backslashreplace") as errors_log:
             errors_log.write(entry)
     except OSError:
         return False

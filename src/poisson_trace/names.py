@@ -22,6 +22,7 @@ import contextlib
 import os
 import re
 import tomllib
+import unicodedata
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
@@ -53,16 +54,25 @@ def reserved(text: str) -> bool:
     return text in ("latest", "previous") or text.startswith(("latest:", "previous:", "#"))
 
 
+def _unwritable(ch: str) -> bool:
+    """A character a name never holds: a control character other than the tab, which a
+    terminal acts on rather than shows, or half of a character that is not text (a byte a
+    command line could not read as UTF-8)."""
+    return ch != "\t" and unicodedata.category(ch) in ("Cc", "Cs")
+
+
 def unfit(text: str) -> str | None:
     """Why ``text``, already trimmed, cannot be a name, or None when it can: a name is not
-    empty, is one line of at most 80 characters, is not a word a verb reads before any name,
-    and does not open with a dash, which a command line reads as an option."""
+    empty, is one line of at most 80 characters of text, is not a word a verb reads before any
+    name, and does not open with a dash, which a command line reads as an option."""
     if not text:
         return "a name is not empty"
     if len(text) > LONGEST:
         return f"a name is at most {LONGEST} characters, and this one has {look.count(len(text))}"
     if any(ch in _BREAKS for ch in text):
         return "a name is one line"
+    if any(_unwritable(ch) for ch in text):
+        return "a name holds no control character and nothing that is not text"
     if text in ("latest", "previous"):
         which = "newest" if text == "latest" else "second newest"
         return f'"{text}" is the word for the {which} complete run'
@@ -93,6 +103,8 @@ def import_name_refusal(text: str) -> str | None:
     hole = folder_hole(text)
     if hole is not None:
         return hole
+    if text in (NAMES_FILE, NAMES_FILE + ".partial"):
+        return f'"{text}" is the name of the file that holds the names of yours in a store'
     if text != text.strip():
         return (
             f'"{text}" has a space at one end, and every word a verb takes is read trimmed, so '
@@ -159,12 +171,13 @@ def _line_of(e: tomllib.TOMLDecodeError) -> str:
     return f" (line {found.group(1)})" if found else ""
 
 
-def read_names_file(root: Path, shown: str) -> dict[str, str]:
-    """The names a user gave, trimmed, mapped to the ids they name; empty when the store has
-    no names file. A file that is not a names file is refused, naming it."""
+def read_names_file(root: Path, shown: str) -> tuple[dict[str, str], dict[str, str]]:
+    """The names a user gave, trimmed, mapped to the ids they name, empty when the store has
+    no names file; and the names among them that cannot be names, each with why. A file that
+    is not a names file is refused, naming it."""
     path = root / NAMES_FILE
     if not path.exists() and not path.is_symlink():
-        return {}
+        return {}, {}
 
     def damaged(why: str, *nexts: str) -> Damaged:
         return Damaged(f"{shown} is not a names file: {why}", *nexts)
@@ -181,6 +194,8 @@ def read_names_file(root: Path, shown: str) -> dict[str, str]:
         doc = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
         raise damaged(f"it is not TOML{_line_of(e)}") from None
+    except RecursionError:
+        raise damaged("it is not TOML a reader can follow: it nests too deep") from None
     for key, value in doc.items():
         if key not in ("version", "names"):
             what = "table" if isinstance(value, dict) else "setting"
@@ -188,13 +203,16 @@ def read_names_file(root: Path, shown: str) -> dict[str, str]:
     version = doc.get("version")
     if version is None:
         raise damaged("it has no version line, version = 1")
-    if version != 1 or isinstance(version, bool):
+    if type(version) is not int:
+        raise damaged("its version is not the whole number 1")
+    if version != 1:
         raise damaged(f"it is version {version}, and this Trace reads version 1")
     table = doc.get("names", {})
     if not isinstance(table, dict):
         raise damaged("its names are not a [names] table")
     entries: dict[str, str] = {}
     given: dict[str, str] = {}
+    unfit_names: dict[str, str] = {}
     for key, value in table.items():
         if not isinstance(value, str):
             raise damaged(f'the name "{key}" is given a value that is not a run id in quotes')
@@ -205,10 +223,10 @@ def read_names_file(root: Path, shown: str) -> dict[str, str]:
             )
         why = unfit(trimmed)
         if why is not None:
-            raise damaged(f'"{key}" cannot be a name: {why}')
+            unfit_names[trimmed] = why
         given[trimmed] = key
         entries[trimmed] = value
-    return entries
+    return entries, unfit_names
 
 
 # ---------- the runs of a store, named ----------
@@ -229,9 +247,10 @@ def _started(created_at: Any) -> datetime | None:
         return None
     try:
         at = datetime.fromisoformat(created_at)
-    except ValueError:
+        return at.replace(tzinfo=UTC) if at.tzinfo is None else at.astimezone(UTC)
+    except (ValueError, OverflowError):
+        # not a time, or one that falls outside the years 1 to 9999 once it is read as UTC
         return None
-    return at.replace(tzinfo=UTC) if at.tzinfo is None else at.astimezone(UTC)
 
 
 def target_of(target_id: str) -> str:
@@ -283,12 +302,20 @@ class Index:
     unreadable: list[str] = field(default_factory=list)  # runs Prove could not read
     words: dict[str, set[str]] = field(default_factory=dict)
     doubled: dict[str, list[str]] = field(default_factory=dict)  # a run given two names
+    unfit: dict[str, str] = field(default_factory=dict)  # names that cannot be names, and why
 
     def damage(self) -> Damaged | None:
-        """The refusal a file with a stale entry, or with two names for one run, gets from
-        every verb but ``name``, which can take such an entry back."""
+        """The refusal a file with a stale entry, a name that cannot be one or two names for
+        one run gets from every verb but ``name``, which can take such an entry back."""
         if self.stale:
             return self.stale_refusal()
+        if self.unfit:
+            name, why = next(iter(sorted(self.unfit.items())))
+            shown = name if not any(ch in _BREAKS for ch in name) else name.splitlines()[0] + " …"
+            return Damaged(
+                f'{self.names_shown()} holds "{shown}", which cannot be a name: {why}',
+                *(self.forget(n) for n in sorted(self.unfit) if not any(c in _BREAKS for c in n)),
+            )
         if self.doubled:
             run_id, names = next(iter(sorted(self.doubled.items())))
             return Damaged(
@@ -311,11 +338,17 @@ class Index:
     def resolve(self, given: str) -> Named:
         """The one run ``given`` names, or a refusal; never a guess."""
         text = given.strip()
+        if reserved(text) and self.unreadable:
+            unread = ", ".join(self.unreadable)
+            look.err(
+                f"note: latest, previous and the numbers leave out what Prove could not read: "
+                f"the record or the start time of {unread}\n"
+            )
         if text in ("latest", "previous"):
             return self._newest(text, None)
         for form in ("latest", "previous"):
             if text.startswith(form + ":"):
-                return self._newest(form, text[len(form) + 1 :])
+                return self._newest(form, text[len(form) + 1 :].strip())
         if text.startswith("#"):
             return self._numbered(text)
         hits = self.words.get(text, set())
@@ -360,8 +393,14 @@ class Index:
         rank = 0 if form == "latest" else 1
         if len(pool) > rank:
             return pool[rank]
+        if target is not None and "/" in target:
+            raise look.Refused(
+                f'{form}:TARGET takes the target as names show it, up to its first "/": '
+                f'"{target_of(target)}", not "{target}"',
+                self.listing(),
+            )
         if target is not None and not any(r.target == target for r in self.runs):
-            targets = sorted({r.target for r in self.runs})
+            targets = sorted({f'"{r.target}"' for r in self.runs})
             raise look.Refused(
                 f'no run of this store has the target "{target}"; its targets are '
                 f"{', '.join(targets)}",
@@ -379,23 +418,33 @@ class Index:
     def _numbered(self, text: str) -> Named:
         digits = text[1:]
         complete = self.complete
-        if not re.fullmatch(r"[1-9][0-9]*", digits):
+        if not re.fullmatch(r"[1-9][0-9]*", digits, flags=re.ASCII):
             raise look.Refused(
                 f'"{text}" is not a row of poisson-trace runs: a row is # and a number from 1',
                 self.listing(),
             )
-        n = int(digits)
-        if n > len(complete):
+        # a number longer than the count of rows is past the last row, however long it is
+        if len(digits) > len(str(len(complete))) or int(digits) > len(complete):
+            shown = text if len(digits) <= 12 else f"#{digits[:6]}…"
             raise look.Refused(
-                f"there is no run #{n}: the store holds {look.count(len(complete))} complete "
+                f"there is no run {shown}: the store holds {look.count(len(complete))} complete "
                 f"{'run' if len(complete) == 1 else 'runs'}",
                 self.listing(),
             )
-        return complete[n - 1]
+        return complete[int(digits) - 1]
 
     def listing(self, *extra: str) -> str:
         """The command that lists this store's runs."""
-        return look.command("poisson-trace", "runs", "--store", look.word(self.store), *extra)
+        return look.command("poisson-trace", "runs", look.option("--store", self.store), *extra)
+
+    def word_for(self, run: Named) -> str:
+        """The word a command gives for ``run``: its name when that reaches it alone; else its
+        number, or its id, which always does. Two runs can come to answer to one name when a
+        name of yours or an import's name was given before a run with that computed name was
+        stored."""
+        if self.holder(run.name) == {run.run_id}:
+            return run.name
+        return f"#{run.number}" if run.number is not None else run.run_id
 
     # ---------- what the names file allows ----------
 
@@ -404,16 +453,19 @@ class Index:
         return set(self.words.get(text, set()))
 
     def stale_refusal(self) -> Damaged:
-        shown = ", ".join(f'"{n}" for the run {r}' for n, r in sorted(self.stale.items()))
+        shown = ", ".join(f'"{n}" for the run "{r}"' for n, r in sorted(self.stale.items()))
         return Damaged(
             f"{self.names_shown()} names {shown}, which the store does not hold",
             *(self.forget(n) for n in sorted(self.stale)),
         )
 
     def forget(self, name: str) -> str:
-        return look.command(
-            "poisson-trace", "name", look.word(name), "--forget", "--store", look.word(self.store)
-        )
+        """The command that takes back the name of yours ``name``; one a command line would read
+        as an option comes after ``--``."""
+        store = look.option("--store", self.store)
+        if name.startswith("-"):
+            return look.command("poisson-trace", "name", "--forget", store, "--", look.word(name))
+        return look.command("poisson-trace", "name", look.word(name), "--forget", store)
 
     def names_shown(self) -> str:
         return shown_file(self.store)
@@ -429,7 +481,7 @@ def index(store: Any, held: Sequence[str], shown: str, *, lenient: bool = False)
     named. A damaged names file is refused; so are an entry for a run the store does not hold
     and two names for one run, unless ``lenient`` (``name``, which can take either back)."""
     root = Path(shown)
-    entries = read_names_file(root, shown_file(shown))
+    entries, unfit_names = read_names_file(root, shown_file(shown))
     runs: list[Named] = []
     unreadable: list[str] = []
     for run_id in held:
@@ -459,7 +511,7 @@ def index(store: Any, held: Sequence[str], shown: str, *, lenient: bool = False)
     computed: dict[str, str] = {}
     letters: dict[tuple[str, str], int] = {}
     for run in runs:
-        if run.imported:
+        if run.imported or not _nameable(run.target):
             continue
         day = run.started.strftime("%Y-%m-%d")
         n = letters.get((run.target, day), 0)
@@ -469,9 +521,10 @@ def index(store: Any, held: Sequence[str], shown: str, *, lenient: bool = False)
     stale = {n: r for n, r in entries.items() if r not in ids and r not in unreadable}
     mine: dict[str, list[str]] = {}
     for name, run_id in entries.items():
-        mine.setdefault(run_id, []).append(name)
+        if name not in unfit_names:
+            mine.setdefault(run_id, []).append(name)
     doubled = {r: sorted(n) for r, n in mine.items() if len(n) > 1}
-    checked = Index(shown, root, [], entries, stale, doubled=doubled)
+    checked = Index(shown, root, [], entries, stale, doubled=doubled, unfit=unfit_names)
     damage = checked.damage()
     if damage is not None and not lenient:
         raise damage
@@ -505,11 +558,23 @@ def index(store: Any, held: Sequence[str], shown: str, *, lenient: bool = False)
         if run.computed is not None:
             add(run.computed, run.run_id)
     for name, run_id in entries.items():
-        if run_id in ids:
+        if run_id in ids and name not in unfit_names:
             add(name, run_id)
     for run_id in unreadable:
         add(run_id, run_id)
-    return Index(shown, root, numbered, entries, stale, unreadable, words, doubled)
+    return Index(shown, root, numbered, entries, stale, unreadable, words, doubled, unfit_names)
+
+
+def _nameable(target: str) -> bool:
+    """Whether a name built on ``target`` could be given back to a verb: one with nothing at
+    either end, no control character, and none of the words a verb reads first. A run whose
+    target is not goes by its id."""
+    return (
+        bool(target)
+        and target == target.strip()
+        and "\t" not in target
+        and unfit(f"{target} 2026-01-01 a") is None
+    )
 
 
 def taken(store: Any, held: Iterable[str], root: Path, name: str) -> str | None:

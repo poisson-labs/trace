@@ -16,7 +16,7 @@ import os
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -49,8 +49,9 @@ the runs could not have detected.
 
 A run is named by a name you gave it with poisson-trace name; by the name it has from its
 manifest, the record Prove keeps of it (its target, the day it started in UTC and a letter, such
-as "tau2-airline 2026-09-15 a"); by latest or previous; by its number in the runs listing
-("#3"); or by its full id.
+as "tau2-airline 2026-09-15 a"); by latest or previous, the newest complete runs, or
+latest:TARGET and previous:TARGET, a target's ("latest:tau2-airline"); by its number in the
+runs listing ("#3"); or by its full id.
 
 Results another tool wrote (DeepEval, Ragas) are read in with poisson-trace-import.
 """
@@ -525,16 +526,18 @@ def _two(index: Any, first: str, second: str, labels: tuple[str, str]) -> tuple[
 
 def _flags(ns: argparse.Namespace) -> list[str]:
     """``--store`` and each ``--event`` as given, for a next command to carry."""
-    words = ["--store", look.word(ns.store)]
+    words = [look.option("--store", ns.store)]
     for event in dict.fromkeys(ns.event or ()):
-        words += ["--event", look.word(event)]
+        words.append(look.option("--event", event))
     return words
 
 
-def _next(verb: str, runs: Sequence[Any], ns: argparse.Namespace, *extra: str) -> str:
-    return look.command(
-        "poisson-trace", verb, *(look.word(r.name) for r in runs), *_flags(ns), *extra
-    )
+def _next(
+    index: Any, verb: str, runs: Sequence[Any], ns: argparse.Namespace, *extra: str
+) -> str:
+    """A next command: the runs by the words that reach them, the store and the events given."""
+    words = (look.word(index.word_for(r)) for r in runs)
+    return look.command("poisson-trace", verb, *words, *_flags(ns), *extra)
 
 
 def _enveloped(
@@ -636,17 +639,25 @@ def _runs(ns: argparse.Namespace) -> int:
     if index.unreadable:
         unread = _plural(len(index.unreadable), "run", "runs")
         look.err(
-            f"note: Prove could not read the record of {unread} of this store, not listed: "
+            f"note: Prove could not read the record or the start time of {unread} of this store, "
+            "not listed: "
             f"{', '.join(index.unreadable)}\n"
         )
     rows = []
     carried: set[str] = set()
+    read: list[Any] = []
     for run in listed:
         try:
             tally = store.tally(run.run_id)
             frame = store.read(run.run_id, meta=False, trace="envelope")
         except Exception as e:
-            raise _Refusal(f"Prove could not read the run {run.shown()} ({look.why(e)})") from e
+            # one run whose rows cannot be read leaves the listing of the others whole
+            look.err(
+                f"note: Prove could not read the rows of {run.shown()} ({look.why(e)}), "
+                "not listed\n"
+            )
+            continue
+        read.append(run)
         outcomes = [o for o in frame["outcome"] if not _no_value(o)]
         carried.update(outcomes)
         rows.append(
@@ -684,7 +695,7 @@ def _runs(ns: argparse.Namespace) -> int:
     if traced is None:
         following = look.command("poisson-trace", "fix-check", "--help")
     else:
-        following = _next("where", (traced,), ns)
+        following = _next(index, "where", (traced,), ns)
     if ns.json:
         doc = {
             "schema": "poisson-trace.runs/1",
@@ -698,7 +709,7 @@ def _runs(ns: argparse.Namespace) -> int:
         return look.DONE
     hidden = 0 if ns.all else total - len(complete)
     older = 0 if ns.all else max(0, len(complete) - _LISTED)
-    lines = _runs_table(rows, [_utc_minute(run) for run in listed])
+    lines = _runs_table(rows, [_utc_minute(run) for run in read])
     if older:
         lines.append(
             f"  {_plural(older, 'older complete run is', 'older complete runs are')} not listed; "
@@ -709,8 +720,8 @@ def _runs(ns: argparse.Namespace) -> int:
             f"  {_plural(hidden, 'partial run is', 'partial runs are')} not listed; "
             "--all lists them"
         )
-    report = "\n".join(lines) + "\n" if lines else ""
-    look.out(f"ok  {sentence}\n\n{report}\nnext: {following}\n")
+    report = "\n".join(lines) + "\n\n" if lines else ""
+    look.out(f"ok  {sentence}\n\n{report}next: {following}\n")
     return look.DONE
 
 
@@ -787,6 +798,11 @@ def _name(ns: argparse.Namespace) -> int:
     if damage is not None:
         raise damage
     run = index.resolve(ns.run)
+    if run.status == "unreadable":
+        raise _Refusal(
+            f"Prove could not read the record or the start time of the run {run.run_id}, so it "
+            "cannot be named; it is reached by its id"
+        )
     new = ns.new.strip()
     why = names.unfit(new)
     if why is not None:
@@ -816,7 +832,9 @@ def _name_list(index: Any, shown: str, listing: str) -> int:
     cells = []
     for name in sorted(entries):
         run = index.by_id(entries[name])
-        if run is None:
+        if run is None and entries[name] in index.unreadable:
+            own = "its record cannot be read"
+        elif run is None:
             own = "not in this store"
         else:
             own = run.computed or run.run_id
@@ -923,10 +941,10 @@ def _where(ns: argparse.Namespace) -> int:
     if before is None:
         following = look.command("poisson-trace", "fix-check", "--help")
     elif traced:
-        following = _next("compare", (before, run), ns)
+        following = _next(index, "compare", (before, run), ns)
     else:
         # compare reads traces, and this run has none: the fix check reads its outcomes
-        following = _next("fix-check", (before, run), ns, "--inputs", "all")
+        following = _next(index, "fix-check", (before, run), ns, "--inputs", "all")
     report = WhereReport(
         data=data,
         last_step=int(index_steps.max()) if len(index_steps) else 0,
@@ -1033,7 +1051,8 @@ def _compare(ns: argparse.Namespace) -> int:
     )
 
     store, index = _named(ns)
-    run_a, run_b = _two(index, ns.a, ns.b, ("A", "B"))
+    # compare has never refused one run given twice; it reads the runs the words reach
+    run_a, run_b = index.resolve(ns.a), index.resolve(ns.b)
     manifest_a, frame_a, tally_a = _load(store, run_a)
     manifest_b, frame_b, tally_b = _load(store, run_b)
     events = frozenset(ns.event)
@@ -1186,7 +1205,7 @@ def _compare(ns: argparse.Namespace) -> int:
         "_event_notes": notes,
         "_placed_common": len(common_a) + len(common_b),
     }
-    following = _next("fix-check", (run_a, run_b), ns, "--inputs", "all")
+    following = _next(index, "fix-check", (run_a, run_b), ns, "--inputs", "all")
     if ns.json:
         look.out(CompareReport(data=_enveloped(data, verdict, sentence, following)).to_json())
     else:
@@ -1283,7 +1302,9 @@ def _paired_header(run: Any, manifest: Any, tally: Any) -> dict[str, Any]:
 
 def _started(run: Any, manifest: Any) -> datetime:
     try:
-        return datetime.fromisoformat(manifest.created_at)
+        at = datetime.fromisoformat(manifest.created_at)
+        # a start with no zone is read as UTC, as Prove writes every start and as names read it
+        return at.replace(tzinfo=UTC) if at.tzinfo is None else at
     except (TypeError, ValueError) as e:
         held = manifest.created_at
         shown = f' ("{held}")' if isinstance(held, str) else ""
@@ -1572,7 +1593,7 @@ def _fix_check(ns: argparse.Namespace) -> int:
             if all(held[h].runs >= 2 and not 0 < held[h].failed < held[h].runs for h in compared)
         ],
     }
-    following = _fix_check_next(ns, run_old, run_new, guidance, len(compared))
+    following = _fix_check_next(index, ns, run_old, run_new, guidance, len(compared))
     if ns.json:
         look.out(FixCheckReport(data=_enveloped(data, verdict, sentence, following)).to_json())
     else:
@@ -1582,12 +1603,17 @@ def _fix_check(ns: argparse.Namespace) -> int:
 
 
 def _fix_check_next(
-    ns: argparse.Namespace, old: Any, new: Any, guidance: Mapping[str, Any] | None, inputs: int
+    index: Any,
+    ns: argparse.Namespace,
+    old: Any,
+    new: Any,
+    guidance: Mapping[str, Any] | None,
+    inputs: int,
 ) -> str:
     """Too small to tell: the repeats or the inputs the guidance gives, then the fix check
     again. Otherwise the inputs that moved, on the same two runs."""
     if guidance is None:
-        return _next("changes", (old, new), ns)
+        return _next(index, "changes", (old, new), ns)
     again = "then poisson-trace fix-check again"
     if guidance["repeats"] is not None:
         return (
@@ -1642,7 +1668,7 @@ def _changes(ns: argparse.Namespace) -> int:
         },
     }
     sentence = _changes_sentence(data)
-    following = _next("fix-check", (run_a, run_b), ns, "--inputs", "all")
+    following = _next(index, "fix-check", (run_a, run_b), ns, "--inputs", "all")
     if ns.json:
         look.out(ChangesReport(data=_enveloped(data, "ok", sentence, following)).to_json())
     else:
