@@ -2,6 +2,56 @@
 
 ## Unreleased
 
+### Names and runs
+
+Every stored run now has a name a person can read and type, and no command asks for a run's
+id.
+
+- **Every run has a name.** A run with no name of yours is named from its manifest: its
+  target up to the first `/`, the day it started in UTC and a letter in start order among
+  that target's runs that day (`tau2-airline 2026-09-15 a`, `… b`, past `z` `aa`, `ab`). A run
+  written by `poisson-trace-import` is named by the name it was imported under. These names
+  are worked out from the store each time, never stored, so they are the same on every
+  machine that holds the same store.
+- **`poisson-trace name RUN NAME`** gives a run a name of yours, kept in `trace-names.toml`
+  at the store's root; no run's own files change, and deleting the file loses nothing but
+  the names. `name RUN --forget` takes it back; `name --list` shows each name of yours with
+  the name its run has from its manifest. A name is at most 80 characters on one line, and
+  cannot be a name another run answers to, a run's id, `latest`, `previous`, or begin
+  `latest:`, `previous:`, `#` or a dash.
+- **Every verb takes a run by any of its words**: a name of yours, a name from the
+  manifest, `latest` and `previous` (the newest complete runs), `latest:TARGET` and
+  `previous:TARGET`, `#N` (row N of `poisson-trace runs`) or the full id. A word that reaches
+  no run is refused with the store's runs listed by name; a word that reaches two runs is
+  refused, never guessed; a part of an id is not taken.
+- **`poisson-trace runs`** lists a store's runs, newest first: number, name, rows, how many
+  failed for the `--event` names given, whether any row carries a trace, when it started
+  (UTC) and its status. Partial runs and runs past the newest 50 are listed with `--all`.
+  `--json` prints `poisson-trace.runs/1`.
+- **The result comes first.** Every verb's first line is its verdict line (`ok`,
+  *different*, *no significant difference* or *too small to tell*, then the sentence), then
+  a blank line and the report, which keeps its bold line; every verb ends with a `next:`
+  line, the command to run next, naming runs by name and carrying the `--store` and
+  `--event` given. `where` and `changes` gain a verdict, `ok`.
+- **Reports name runs by name**: the title by name, each run's line by name with its id
+  once (`tau2-airline 2026-09-15 a (20260915T210140Z-4847)`), the selecting run of a fix
+  check by name, the SVG by name. The JSON opens with `schema`, `verdict` and `sentence`,
+  ends with `next`, and carries `run_name` right after each `run_id`; no key is removed.
+- **A refusal's command goes on its own line**, `  next:`, where there is one to give: the
+  store's listing under a run it does not hold, the verb's help under a mistake in the
+  command line, the forget command under a name for a run the store no longer holds, the
+  install line when Prove is missing.
+- The import refuses, before Prove is asked anything and with nothing written, a run name
+  that is not a folder name (empty, `.`, `..`, a slash, a backslash, over 80 characters), and
+  a name no command could give back: `latest`, `previous`, `latest:…`, `previous:…`, `#…`, a
+  space at either end, two lines, a first dash, or a name another run of the store answers
+  to. Its summary opens with its verdict line.
+- Ctrl-C under `--json` prints one JSON document, verdict `stopped`.
+- The README and the two integration pages name runs by name and are re-run; the figures
+  under `docs/figures/` carry the run's name.
+
+### The command-line look
+
 Both commands, `poisson-trace` and `poisson-trace-import`, now keep the command-line look
 written down in `docs/cli-look.md`, which every Poisson Labs tool follows.
 
@@ -13,7 +63,8 @@ written down in `docs/cli-look.md`, which every Poisson Labs tool follows.
   where it exited 1. 3: a failure after work started, or an unexpected one. 130: interrupted. A script that waited for exit 2 on *too small to
   tell* reads the verdict from `--json` instead.
 - Every refusal and every mistake in the command line is one line on stderr that starts
-  `error:`, with nothing on stdout, under `--json` too. No refusal carries a library's own
+  `error:`, with nothing on stdout, under `--json` too, and the command to run instead on a
+  `  next:` line under it where there is one. No refusal carries a library's own
   error text or a value printed the way Python prints it; a value is in double quotes or
   bare.
 - `--help` and `--version` work without Prove: Prove is checked once the command line is
@@ -35,8 +86,8 @@ written down in `docs/cli-look.md`, which every Poisson Labs tool follows.
   as *no store at PATH*, instead of as an unknown run.
 - `where --svg FILE` refuses, before any work, a folder that is not there or cannot be
   written, a path that is a folder, and a file (or a link) that is already there unless
-  `--force` is given; `--force` without `--svg` is refused. When it writes, the report ends with `  wrote  FILE`; with `--json` stdout stays
-  one document. The SVG is written as UTF-8 whatever the locale.
+  `--force` is given; `--force` without `--svg` is refused. When it writes, the line under the verdict line is `  wrote  FILE`; with `--json`
+  stdout stays one document. The SVG is written as UTF-8 whatever the locale.
 - An unexpected failure prints one line naming its type and
   `~/.cache/poisson-trace/errors.log`, where the details are added to what the log holds;
   `--debug`, before or after the verb, prints them on stderr too.

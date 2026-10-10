@@ -51,7 +51,8 @@ cd trace
 python -m venv .venv && . .venv/bin/activate
 pip install .
 pip install git+https://github.com/poisson-labs/prove
-poisson-trace where 20260925T234602Z-3ea0 --store tests/fixtures/cs --event unresolved
+poisson-trace runs --store tests/fixtures/cs --event unresolved
+poisson-trace where "cs_agents 2026-09-25 a" --store tests/fixtures/cs --event unresolved
 ```
 
 ## Use
@@ -60,6 +61,12 @@ Point Trace at a Prove store (the directory that holds one `manifest.json` per r
 the outcomes that count as a failure:
 
 ```
+poisson-trace runs --store ROOT [--event NAME ...] [--all] [--json]
+
+poisson-trace name RUN NAME --store ROOT
+poisson-trace name RUN --forget --store ROOT
+poisson-trace name --list --store ROOT
+
 poisson-trace where RUN --store ROOT --event NAME [--event NAME ...]
                    [--by kind|step] [--at STEP ...] [--boot B] [--seed S]
                    [--svg FILE [--force]] [--json]
@@ -75,22 +82,47 @@ poisson-trace changes A B --store ROOT --event NAME [--event NAME ...]
                      [--alpha A] [--top N] [--json]
 ```
 
+- Every run has a name. A run you have not named is named from its manifest: its target up
+  to the first `/`, the day it started (UTC) and a letter in start order among the runs of
+  that target that day, such as `tau2-airline 2026-09-15 a`. A run written by
+  `poisson-trace-import` is named by the name it was imported under. `name` gives a run a
+  name of yours, kept in `trace-names.toml` at the store's root, the one file Trace writes in
+  a store; no run's own files change, and `name RUN --forget` takes the name back.
+- Wherever a verb takes a run (`RUN`, `A`, `B`, `OLD`, `NEW`, `--failing-from`), it takes a
+  name of yours, a name from the manifest, `latest` or `previous` (the newest and second
+  newest complete runs), `latest:TARGET` or `previous:TARGET` (the same among one target's
+  runs), `#N` (row N of `runs`; a shell needs it quoted, `"#3"`) or the full run id. A word
+  that reaches no run, or two, is refused, never guessed; a part of an id is not a name.
+- `runs` lists a store's runs, newest first: each complete run's number and name, its rows,
+  how many of them failed for the `--event` names given, whether any row carries a trace
+  (`where` and `compare` read traces; `fix-check` and `changes` do not need them), when it
+  started (UTC) and its status. It lists the newest 50 complete runs; `--all` lists partial
+  runs and older ones too.
+- Every verb prints its verdict line first, the verdict word (`ok`, or one of *different*,
+  *no significant difference* and *too small to tell*) and its sentence, then a blank line,
+  the report, and a `next:` line with the command to run next. A `next:` command names runs
+  by name and carries the `--store` and `--event` given; what it lacks is a ceiling, which is
+  yours to choose. A report names each run by its name, and gives its id once for the record.
 - `--store` is required; there is no default store. `--event` is required and repeatable;
   the union of the names is "died" for `where` and `compare` and "failed" for `fix-check`
   and `changes`. A name no stored row carries is refused, and the refusal lists the outcomes
   the runs do carry.
-- `--json` prints the structure (`poisson-trace.where/1`, `.compare/1`, `.fix-check/1` or
-  `.changes/1`) and nothing else. It is byte-identical across invocations on equal inputs.
+- `--json` prints the structure (`poisson-trace.runs/1`, `.where/1`, `.compare/1`,
+  `.fix-check/1` or `.changes/1`) and nothing else. It opens with `schema`, `verdict` and
+  `sentence`, the verdict line's two parts, ends with `next`, and carries `run_name` beside
+  each `run_id`. It is byte-identical across invocations on equal inputs.
 - Options may come before or after the verb. An option cut short (`--ev` for `--event`) is
   refused rather than guessed.
 - A refusal or a mistake in the command line is one line on stderr that starts `error:`, and
-  nothing on stdout. `--help` on the command and on each verb gives a description, every
-  option with its default and an example; `--version` prints the versions of Trace, Prove and
-  Python. `python -m poisson_trace` is the same command.
+  nothing on stdout; where there is a command that moves you on (the listing of the store's
+  runs, the verb's help, the install line), it follows on a line of its own, `  next:`.
+  `--help` on the command and on each verb gives a description, every option with its
+  default and an example; `--version` prints the versions of Trace, Prove and Python.
+  `python -m poisson_trace` is the same command.
 - Exit codes, the same in every Poisson Labs tool ([`docs/cli-look.md`](docs/cli-look.md)):
   0 the report is printed, whatever it says, *too small to tell* included; 1 refused, nothing
   written; 2 the command line is wrong; 3 a failure after work started, or an unexpected one;
-  130 interrupted (Ctrl-C prints a `stopped` line).
+  130 interrupted (Ctrl-C prints a `stopped` line, as one JSON document under `--json`).
 - An unexpected failure prints one line naming `~/.cache/poisson-trace/errors.log`, where the
   details are added; `--debug` prints them on stderr too.
 
@@ -100,8 +132,8 @@ For `where` and `compare`:
   `tool`, `retrieval`, `db`, `http`, `agent`, `other`); `--by step` labels it by the
   nearest declared step name.
 - `--at STEP` adds a row reading the curve at that step; repeatable.
-- `--svg FILE` writes the curve as an SVG, the one file `where` writes, and the report ends
-  with a line saying so. A file that is already there is refused unless `--force` is given,
+- `--svg FILE` writes the curve as an SVG, the one file `where` writes, and the line under
+  the verdict line says so. A file that is already there is refused unless `--force` is given,
   and a folder that is not there or cannot be written is refused before any work.
 - `--max-mde-hr` is the largest minimum detectable hazard ratio you will accept; it has no
   default, because the tool supplies no number of its own.
@@ -205,18 +237,21 @@ beside them), four failure outcomes.
 
 <!-- command -->
 ```
-poisson-trace where 20260925T234602Z-3ea0 --store tests/fixtures/cs \
+poisson-trace where "cs_agents 2026-09-25 a" --store tests/fixtures/cs \
   --event forbidden_action --event unresolved --event max_turns --event app_error \
   --at 20 --at 40 --svg docs/figures/cs-record.svg --force
 ```
 
 <!-- output exit=0 -->
 ```
-# Poisson Trace · where runs die · 20260925T234602Z-3ea0
+ok  7 of 24 placed episodes died, 4 at a model call and 3 at an agent step; median step 50
+  wrote  docs/figures/cs-record.svg
+
+# Poisson Trace · where runs die · cs_agents 2026-09-25 a
 
 ## Run
 
-- run: 20260925T234602Z-3ea0 · target: cs_agents/record · t_unit: turns · status: complete · no cap
+- run: cs_agents 2026-09-25 a (20260925T234602Z-3ea0) · target: cs_agents/record · t_unit: turns · status: complete · no cap
 - Prove's tally: rows 24 · with outcome 24 · no outcome 0 · timed out 0 · infra 0 · other 0
 - placement: placed 24 · died 7 · ended 17 · timed out 0 · capped 0 · excluded 0
 - events: app_error, forbidden_action, max_turns, unresolved
@@ -256,7 +291,8 @@ sum of F = 1 − S = 0.784 (1 − 0.216)
 - Timed-out and capped runs are censored at their last recorded step. If they would have died soon after, the curve is optimistic by that much; the header counts them.
 - Excluded rows are not on the curve; the header counts them by reason.
 - On one run, this is a description. Only a comparison of two stored runs on the same cells says whether anything moved, and only within what it could not have detected.
-  wrote  docs/figures/cs-record.svg
+
+next: poisson-trace fix-check --help
 ```
 
 Seven of 24 runs died, four at a model call and three at a guardrail agent. The Greenwood
@@ -277,24 +313,26 @@ an after, with a ceiling of 1.3 on the minimum detectable hazard ratio:
 
 <!-- command -->
 ```
-poisson-trace compare 20260915T210140Z-4847 20260915T211148Z-965d --store tests/fixtures/tau2 \
-  --event unsolved --max-mde-hr 1.3 --at 10 --at 20 --at 30
+poisson-trace compare "tau2-airline 2026-09-15 a" "tau2-airline 2026-09-15 b" \
+  --store tests/fixtures/tau2 --event unsolved --max-mde-hr 1.3 --at 10 --at 20 --at 30
 ```
 
 <!-- output exit=0 -->
 ```
-# Poisson Trace · compare · 20260915T210140Z-4847 (before) and 20260915T211148Z-965d (after)
+too small to tell  could not have detected a hazard ratio below 1.457, and 1.3 was asked for
+
+# Poisson Trace · compare · tau2-airline 2026-09-15 a (before) and tau2-airline 2026-09-15 b (after)
 
 ## Run A (before)
 
-- run: 20260915T210140Z-4847 · target: tau2-airline/gpt-4.1-mini-2025-04-14@v0 · t_unit: steps · status: complete · cap: 200 spans
+- run: tau2-airline 2026-09-15 a (20260915T210140Z-4847) · target: tau2-airline/gpt-4.1-mini-2025-04-14@v0 · t_unit: steps · status: complete · cap: 200 spans
 - Prove's tally: rows 200 · with outcome 200 · no outcome 0 · timed out 0 · infra 0 · other 0
 - placement: placed 200 · died 110 · ended 90 · timed out 0 · capped 0 · excluded 0
 - events: unsolved
 
 ## Run B (after)
 
-- run: 20260915T211148Z-965d · target: tau2-airline/gpt-4.1-mini-2025-04-14@v0 · t_unit: steps · status: complete · cap: 200 spans
+- run: tau2-airline 2026-09-15 b (20260915T211148Z-965d) · target: tau2-airline/gpt-4.1-mini-2025-04-14@v0 · t_unit: steps · status: complete · cap: 200 spans
 - Prove's tally: rows 200 · with outcome 200 · no outcome 0 · timed out 0 · infra 0 · other 0
 - placement: placed 200 · died 112 · ended 88 · timed out 0 · capped 0 · excluded 0
 - events: unsolved
@@ -342,6 +380,8 @@ For the share of runs that fail, input by input, and the inputs that changed: po
 - Timed-out and capped runs are censored at their last recorded step. If they would have died soon after, the curve is optimistic by that much; the header counts them.
 - Excluded rows are not on the curve; the header counts them by reason.
 - On one run, this is a description. Only a comparison of two stored runs on the same cells says whether anything moved, and only within what it could not have detected.
+
+next: poisson-trace fix-check "tau2-airline 2026-09-15 a" "tau2-airline 2026-09-15 b" --store tests/fixtures/tau2 --event unsolved --inputs all
 ```
 
 It exits 0, as every printed result does, and the guidance says what would settle it: 457
@@ -350,8 +390,8 @@ With the ceiling the report offers,
 
 <!-- command -->
 ```
-poisson-trace compare 20260915T210140Z-4847 20260915T211148Z-965d --store tests/fixtures/tau2 \
-  --event unsolved --max-mde-hr 1.457
+poisson-trace compare "tau2-airline 2026-09-15 a" "tau2-airline 2026-09-15 b" \
+  --store tests/fixtures/tau2 --event unsolved --max-mde-hr 1.457
 ```
 
 the same numbers end
@@ -369,28 +409,31 @@ episodes, and the design could still not have seen a 40% change in the hazard.
 `tests/fixtures/tau2` also holds a real change: the same agent with a guardrail patch
 (`tau2_pilot.rollout:rollout_patched`), run once on tasks 0 to 9 and stored with no capture.
 Ten runs is the size of check teams make. The tau2 pair gives the design its other two
-runs: the first run (`4847`) selects the inputs that failed, and the second (`965d`) is the
-old version re-run fresh on them.
+runs: the first (`tau2-airline 2026-09-15 a`) selects the inputs that failed, and the second
+(`tau2-airline 2026-09-15 b`) is the old version re-run fresh on them. The patched pilot is
+the store's newest run, so it is also `latest`, and the second is `previous`.
 
 <!-- command -->
 ```
-poisson-trace fix-check 20260915T211148Z-965d 20260917T140219Z-2b2d --store tests/fixtures/tau2 \
-  --event unsolved --failing-from 20260915T210140Z-4847 --max-mde 0.20
+poisson-trace fix-check previous latest --store tests/fixtures/tau2 --event unsolved \
+  --failing-from "tau2-airline 2026-09-15 a" --max-mde 0.20
 ```
 
 <!-- output exit=0 -->
 ```
-# Poisson Trace · fix check · 20260915T211148Z-965d (old) and 20260917T140219Z-2b2d (new)
+too small to tell  could not have detected a drop in failure share below 64.3 points, and 20 was asked for
+
+# Poisson Trace · fix check · tau2-airline 2026-09-15 b (old) and tau2-airline 2026-09-17 a (new)
 
 ## Runs
 
-- old: 20260915T211148Z-965d · target: tau2-airline/gpt-4.1-mini-2025-04-14@v0 · status: complete · started: 2026-09-15T21:11:49.277633Z · declared repeats: 4
+- old: tau2-airline 2026-09-15 b (20260915T211148Z-965d) · target: tau2-airline/gpt-4.1-mini-2025-04-14@v0 · status: complete · started: 2026-09-15T21:11:49.277633Z · declared repeats: 4
 - Prove's tally (old): rows 200 · with outcome 200 · no outcome 0 · timed out 0 · infra 0 · other 0
-- new: 20260917T140219Z-2b2d · target: tau2-airline/gpt-4.1-mini-2025-04-14@v0 · status: complete · started: 2026-09-17T14:02:21.184575Z · declared repeats: 1
+- new: tau2-airline 2026-09-17 a (20260917T140219Z-2b2d) · target: tau2-airline/gpt-4.1-mini-2025-04-14@v0 · status: complete · started: 2026-09-17T14:02:21.184575Z · declared repeats: 1
 - Prove's tally (new): rows 10 · with outcome 10 · no outcome 0 · timed out 0 · infra 0 · other 0
 - the two runs started 40 h 50 min apart
 - events: unsolved
-- inputs: inputs that failed at least 1 time in 20260915T210140Z-4847 · selected 37 · compared 6 · left out 31 (not re-run on the new version 31)
+- inputs: inputs that failed at least 1 time in tau2-airline 2026-09-15 a · selected 37 · compared 6 · left out 31 (not re-run on the new version 31)
 - rows used: old 24 (timed out 0, no outcome 0) · new 6 (timed out 0, no outcome 0)
 - inputs short of the declared repeats: old 0 · new 0
 - inputs with mixed outcomes across their repeats: old 4 · new 0
@@ -459,6 +502,8 @@ A lone changed input is flagged only if its p is below α / M = 0.00833, and the
 - Rows with no outcome are left out of both arms and counted in the header. A new version that times out where the old one failed does not show as a failure here.
 - Trace reads the runs it is given. If the inputs were chosen by the old arm's own outcomes, or the more favourable of several runs was handed over, the confidence printed does not hold.
 - The detection limit and the run counts are computed from these runs' own failure rates, which are estimates. They are a guide to the next design, not a promise about it.
+
+next: run 16 repeats per arm on these 6 inputs, then poisson-trace fix-check again
 ```
 
 Counting re-runs reads "3 of 6 failing inputs now succeed". The control says a
@@ -472,13 +517,13 @@ Naming the selecting run as the old arm is refused, in one line on stderr and wi
 
 <!-- command -->
 ```
-poisson-trace fix-check 20260915T211148Z-965d 20260917T140219Z-2b2d --store tests/fixtures/tau2 \
-  --event unsolved --failing-from 20260915T211148Z-965d --max-mde 0.20
+poisson-trace fix-check previous latest --store tests/fixtures/tau2 --event unsolved \
+  --failing-from "tau2-airline 2026-09-15 b" --max-mde 0.20
 ```
 
 <!-- output exit=1 -->
 ```
-error: the selecting run 20260915T211148Z-965d is also the old arm; both arms must be fresh re-runs, because the selecting run's failures on these inputs are there by selection
+error: the selecting run "tau2-airline 2026-09-15 b" (20260915T211148Z-965d) is also the old arm; both arms must be fresh re-runs, because the selecting run's failures on these inputs are there by selection
 ```
 
 ### The inputs that changed: HumanEval/129
@@ -489,19 +534,21 @@ changed by us between them.
 
 <!-- command -->
 ```
-poisson-trace changes 20260905T185407Z-0313 20260905T195009Z-18ac --store tests/fixtures/humaneval \
-  --event failed_assertion --event crashed --top 2
+poisson-trace changes "golden-pilot 2026-09-05 a" "golden-pilot 2026-09-05 b" \
+  --store tests/fixtures/humaneval --event failed_assertion --event crashed --top 2
 ```
 
 <!-- output exit=0 -->
 ```
-# Poisson Trace · changes · 20260905T185407Z-0313 (A) and 20260905T195009Z-18ac (B)
+ok  2 of 328 inputs changed: task_id HumanEval/129 at temperature 0.7 failed more in B; task_id HumanEval/129 at temperature 0.0 failed more in B
+
+# Poisson Trace · changes · golden-pilot 2026-09-05 a (A) and golden-pilot 2026-09-05 b (B)
 
 ## Runs
 
-- A: 20260905T185407Z-0313 · target: golden-pilot/gpt-4o-mini-2024-07-18@v0 · status: complete · started: 2026-09-05T18:54:08.373078Z · declared repeats: 32
+- A: golden-pilot 2026-09-05 a (20260905T185407Z-0313) · target: golden-pilot/gpt-4o-mini-2024-07-18@v0 · status: complete · started: 2026-09-05T18:54:08.373078Z · declared repeats: 32
 - Prove's tally (A): rows 10,496 · with outcome 10,496 · no outcome 0 · timed out 0 · infra 0 · other 0
-- B: 20260905T195009Z-18ac · target: golden-pilot/gpt-4o-mini-2024-07-18@v0 · status: complete · started: 2026-09-05T19:50:10.199374Z · declared repeats: 32
+- B: golden-pilot 2026-09-05 b (20260905T195009Z-18ac) · target: golden-pilot/gpt-4o-mini-2024-07-18@v0 · status: complete · started: 2026-09-05T19:50:10.199374Z · declared repeats: 32
 - Prove's tally (B): rows 10,496 · with outcome 10,496 · no outcome 0 · timed out 0 · infra 0 · other 0
 - the two runs started 56 min apart
 - events: crashed, failed_assertion
@@ -528,6 +575,8 @@ A lone changed input is flagged only if its p is below α / M = 0.000152, and th
 - Rows with no outcome are left out of both arms and counted in the header. A new version that times out where the old one failed does not show as a failure here.
 - Trace reads the runs it is given. If the inputs were chosen by the old arm's own outcomes, or the more favourable of several runs was handed over, the confidence printed does not hold.
 - The detection limit and the run counts are computed from these runs' own failure rates, which are estimates. They are a guide to the next design, not a promise about it.
+
+next: poisson-trace fix-check "golden-pilot 2026-09-05 a" "golden-pilot 2026-09-05 b" --store tests/fixtures/humaneval --event failed_assertion --event crashed --inputs all
 ```
 
 Two of 328 inputs are flagged, both HumanEval/129, and nothing else. Prove's own `diff`
@@ -536,8 +585,9 @@ and q. One problem broke between the two runs, on an agent nobody touched. `fix-
 
 <!-- command -->
 ```
-poisson-trace fix-check 20260905T185407Z-0313 20260905T195009Z-18ac --store tests/fixtures/humaneval \
-  --event failed_assertion --event crashed --inputs all --max-mde 0.05
+poisson-trace fix-check "golden-pilot 2026-09-05 a" "golden-pilot 2026-09-05 b" \
+  --store tests/fixtures/humaneval --event failed_assertion --event crashed --inputs all \
+  --max-mde 0.05
 ```
 
 <!-- excerpt exit=0 -->
@@ -569,8 +619,8 @@ moved by 10 points:
 
 <!-- command -->
 ```
-poisson-trace fix-check 20260915T210140Z-4847 20260915T211148Z-965d --store tests/fixtures/tau2 \
-  --event unsolved --inputs all --max-mde 0.10
+poisson-trace fix-check "tau2-airline 2026-09-15 a" "tau2-airline 2026-09-15 b" \
+  --store tests/fixtures/tau2 --event unsolved --inputs all --max-mde 0.10
 ```
 
 <!-- excerpt exit=0 -->
@@ -710,12 +760,14 @@ ruff check .
 mypy --strict src
 ```
 
-The suite holds 631 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
+The suite holds 933 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
 (3 of them its display rules), 124 for `poisson-trace-import` and its DeepEval reader, 80 for
-its Ragas reader, and 184 that hold both commands to the shared command-line look
+its Ragas reader, 184 that hold both commands to the shared command-line look
 ([`docs/cli-look.md`](docs/cli-look.md)): the exit codes, the `error:` lines, the help and
 `--version`, options before or after the verb, the ASCII fallback, a closed pipe and plain
-words. Four of the 631 run DeepEval or Ragas itself, installed from PyPI, and are left out
+words; and 302 for names and runs: the names file, the name every run has, the words a verb
+takes for a run, `runs` and `name`, the verdict line and `next:`, and the import's run names.
+Four of the 933 run DeepEval or Ragas itself, installed from PyPI, and are left out
 unless asked for (`python -m pytest -m lane_j`). The figures the tests check against come
 from lifelines, scipy, full enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks
 the fixtures (`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).
