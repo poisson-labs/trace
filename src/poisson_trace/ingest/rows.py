@@ -17,7 +17,11 @@ _OWN_ID = 80
 
 
 class Refusal(Exception):
-    """One sentence, exit 1, nothing written."""
+    """One sentence, exit 1, nothing written; under it, the commands to run next, if any."""
+
+    def __init__(self, sentence: str, *nexts: str) -> None:
+        super().__init__(sentence)
+        self.nexts = nexts
 
 
 @dataclass(frozen=True)

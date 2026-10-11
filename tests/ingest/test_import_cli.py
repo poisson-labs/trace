@@ -450,12 +450,12 @@ def test_ic14_changes_reads_the_counts_the_rows_hold(tmp_path: Path) -> None:
 
 
 FROZEN = {
-    "conftest.py": "8f541f1c75a6219f00cc3188870907d625f309fc31c5c34dd17c0f206f975962",
-    "fixcheck_support.py": "f8f9cc3c54221db654c8c6da24945efe6e1b9282b59668b110235c4da4235cc7",
+    "conftest.py": "8e1c607fb68eefcc1136d8d8f83499a00e0ce50c56c09ed9d6edfcc6240e70ff",
+    "fixcheck_support.py": "995b657e14edc88500b126c7ea3a1debdadd59c17a20e1fef1b83f52a64cb0cf",
     "test_changes.py": "e41d94f97999a0af4f0f0da582a8ca769562f9e496eff5920f4856c5e531cf03",
-    "test_cli.py": "87742172dd0494360b90976420052c2ee45c9a7bcbff06cbbe8003464476bc0b",
+    "test_cli.py": "57c37ed308f9e35bd889afb0db2c2a90f73f174a99a189538cb4096154ea1693",
     "test_clock.py": "298568af543464a27a9ebd0e9ab65bc80ba1401149684179cbc7f2c35b9186da",
-    "test_fix_check_cli.py": "381173112489b612bc5cbdb9da037ba34b30495be59ee93d0b9f8791666838c1",
+    "test_fix_check_cli.py": "d0f80bba6d18d054992995eb6ad9bd2b1f4f559eae455edbbc891d302158a77d",
     "test_fix_check_golden.py": "64df819c30cecd3201d160f608a62a091213472ea3ef00cf17545ce2d318862d",
     "test_golden.py": "185fb329331102f395b689f8a53f7a285842568b8bde3a290b9d282ec62a7efd",
     "test_paired.py": "638d78c064f92e4fd0030c738c597f4244c2bf8fa1c298944ef3c5008d0c9c06",

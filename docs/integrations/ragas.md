@@ -97,6 +97,8 @@ poisson-trace-import ragas tests/fixtures/ingest/ragas/rag-base.jsonl \
 
 <!-- output exit=0 -->
 ```
+ok  wrote run rag-base-faithfulness to ./store: 150 rows, 146 cases, 1 to 3 repeats; met 95, missed 52, 3 with no outcome
+
 # Poisson Trace · import · rag-base-faithfulness
 
 - run written: rag-base-faithfulness · store: ./store

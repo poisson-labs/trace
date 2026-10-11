@@ -90,6 +90,8 @@ poisson-trace-import deepeval tests/fixtures/ingest/deepeval/humaneval-a.json.gz
 
 <!-- output exit=0 -->
 ```
+ok  wrote run humaneval-a to ./store: 10,496 rows, 328 cases, 32 repeats each; met 9,158, missed 1,338
+
 # Poisson Trace · import · humaneval-a
 
 - run written: humaneval-a · store: ./store

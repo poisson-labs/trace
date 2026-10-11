@@ -16,6 +16,7 @@ import re
 import shlex
 import sys
 import traceback
+import unicodedata
 from collections.abc import Callable, Collection, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -35,8 +36,21 @@ INSTALL_PROVE = "pip install git+https://github.com/poisson-labs/prove"
 NOTHING_WRITTEN = "stopped  interrupted; nothing was written"
 
 
-class Usage(Exception):
+class _Said(Exception):
+    """One sentence, and under it the commands that move the user on, if there are any: each
+    printed on its own ``  next:`` line (the look's rule 4)."""
+
+    def __init__(self, sentence: str, *nexts: str) -> None:
+        super().__init__(sentence)
+        self.nexts = nexts
+
+
+class Usage(_Said):
     """The command line is wrong: one ``error:`` line, exit 2."""
+
+
+class Refused(_Said):
+    """A refusal: one ``error:`` line, exit 1, nothing written."""
 
 
 class Failed(Exception):
@@ -126,9 +140,56 @@ def err(text: str) -> None:
     _write(sys.stderr, text)
 
 
-def error(sentence: str) -> None:
-    """``error: <sentence>`` on stderr, as one line."""
-    err("error: " + " ".join(sentence.split()) + "\n")
+def _visible(ch: str) -> str:
+    """A character of an error line as a terminal shows it: a control character a user typed
+    (an escape, a bell) written as its escape, never acted on; a tab as itself."""
+    if ch != "\t" and unicodedata.category(ch) in ("Cc", "Cs"):
+        return ch.encode("unicode_escape", "backslashreplace").decode("ascii")
+    return ch
+
+
+def error(sentence: str, nexts: Sequence[str] = ()) -> None:
+    """``error: <sentence>`` on stderr, as one line, and each command to run next on its own
+    ``  next:`` line under it."""
+    # one line: a line break inside it (a value the user gave, a wrapped string) reads as a
+    # space; every other space is kept, so a name with two spaces is shown as it is
+    line = " ".join(sentence.splitlines())
+    err("error: " + "".join(_visible(ch) for ch in line) + "\n")
+    for command in nexts:
+        err(f"  next: {command}\n")
+
+
+# ---------- commands a user can copy ----------
+
+# the characters a shell reads as themselves in a word
+_PLAIN = re.compile(r"[A-Za-z0-9_./:@%+=,-]+")
+
+
+def word(text: str) -> str:
+    """``text`` as one word a POSIX shell (sh, bash, zsh) reads back exactly: bare when every
+    character is read as itself, else in double quotes with the four characters a shell reads
+    inside them (``"``, ``\\``, ``$`` and the backquote) escaped. A ``!``, which an interactive
+    shell may expand even inside double quotes, is written outside them, escaped."""
+    if _PLAIN.fullmatch(text) and not text.startswith(("-", "=")):
+        return text
+    parts = []
+    for i, piece in enumerate(text.split("!")):
+        if i:
+            parts.append("\\!")
+        if piece:
+            parts.append('"' + re.sub(r'(["\\$`])', r"\\\1", piece) + '"')
+    return "".join(parts) or '""'
+
+
+def option(flag: str, value: str) -> str:
+    """An option and its value for a command line: joined by ``=`` when the value opens with a
+    dash, which a command line would otherwise read as an option of its own."""
+    return f"{flag}={word(value)}" if value.startswith("-") else f"{flag} {word(value)}"
+
+
+def command(*words: str) -> str:
+    """A command line from words already quoted with ``word`` where they need it."""
+    return " ".join(words)
 
 
 def why(e: BaseException) -> str:
@@ -207,7 +268,8 @@ def _append_errors_log(path: Path, entry: str) -> bool:
     written."""
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "a", encoding="utf-8") as errors_log:
+        # a value the command line could not read as text is kept escaped, never refused
+        with open(path, "a", encoding="utf-8", errors="backslashreplace") as errors_log:
             errors_log.write(entry)
     except OSError:
         return False
@@ -227,6 +289,8 @@ class Session:
     argv: Sequence[str]
     debug: bool = False
     stopped: Callable[[], str] = field(default=lambda: NOTHING_WRITTEN)
+    # under --json, the stopped line as the verb's JSON document, so that stdout stays one
+    render: Callable[[str], str] | None = None
 
 
 def run(
@@ -242,16 +306,20 @@ def run(
     try:
         return body(session)
     except Usage as e:
-        error(str(e))
+        error(str(e), e.nexts)
         return USAGE
+    except Refused as e:
+        error(str(e), e.nexts)
+        return REFUSED
     except refusals as e:
-        error(str(e))
+        error(str(e), getattr(e, "nexts", ()))
         return REFUSED
     except Failed as e:
         error(str(e))
         return FAILED
     except KeyboardInterrupt:
-        out(session.stopped() + "\n")
+        line = session.stopped()
+        out(line + "\n" if session.render is None else session.render(line))
         return INTERRUPTED
     except Exception as e:
         _unexpected(session, e)
@@ -352,7 +420,7 @@ class Parser(argparse.ArgumentParser):
             return super().format_help()
 
     def error(self, message: str) -> NoReturn:
-        raise Usage(f"{_quotes(message)}; see {self.prog} --help")
+        raise Usage(_quotes(message), f"{self.prog} --help")
 
     def _print_message(self, message: str, file: Any = None) -> None:
         if message:
@@ -407,6 +475,8 @@ def verb_first(
         if word.startswith("-") and word != "-":
             name = word.split("=", 1)[0]
             if name not in known:
+                # one line, the command inside it: a test of the look's own holds this case to
+                # a single line (a next line here waits on a ruling)
                 raise Usage(f"unrecognized arguments: {word}; see {prog} --help")
             where = head if name in kept else moved
             where.append(word)

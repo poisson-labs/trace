@@ -26,7 +26,8 @@ def src_files() -> list[Path]:
 
 def _one_sentence(result) -> None:  # type: ignore[no-untyped-def]
     lines = [line for line in result.text.splitlines() if line.strip()]
-    assert len(lines) == 1, result.text
+    # one sentence, and the command to run under it on its own next: lines (rule 4)
+    assert lines and all(line.startswith("  next: ") for line in lines[1:]), result.text
     assert result.code == 1
 
 
@@ -93,6 +94,8 @@ def test_tr9_src_writes_nothing_but_the_svg_and_the_json(synth) -> None:  # type
             # the errors log's appender (the shared look's rule 4): a function named for it,
             # which opens its file to append (mode "a" or "at") and nothing else
             in_log = any("errors_log" in f for f in fns)
+            # R18: the names file's writer, a function named for it (name writes trace-names.toml)
+            in_names = any("names_file" in f for f in fns)
             if name.endswith("to_parquet"):
                 raise AssertionError(f"{path.name}:{call.lineno}: to_parquet")
             if name == "open" or name.endswith(".open"):
@@ -102,9 +105,9 @@ def test_tr9_src_writes_nothing_but_the_svg_and_the_json(synth) -> None:  # type
                 for kw in call.keywords:
                     if kw.arg == "mode" and isinstance(kw.value, ast.Constant):
                         mode = str(kw.value.value)
-                assert not set(mode) & set("wax+") or in_svg or (in_log and mode in ("a", "at")), f"{path.name}:{call.lineno}: open for writing outside the svg writer and the errors log"
+                assert not set(mode) & set("wax+") or in_svg or (in_names and mode in ("w", "wt", "x", "xt")) or (in_log and mode in ("a", "at")), f"{path.name}:{call.lineno}: open for writing outside the svg writer, the names file's writer and the errors log"
             if name.endswith("write_text") or name.endswith("write_bytes"):
-                assert in_svg, f"{path.name}:{call.lineno}: a write outside the svg writer"
+                assert in_svg or in_names, f"{path.name}:{call.lineno}: a write outside the svg writer and the names file's writer"
             if name in ("json.dump", "json.dumps") or name.endswith(".dump"):
                 assert path.name in ("report.py", "cli.py"), f"{path.name}:{call.lineno}: json.dump outside the printers"
 
@@ -207,7 +210,8 @@ def test_tr11_every_refusal_is_one_sentence_and_an_argument_error_exits_two() ->
         ["where", TAU2_A, "--store", str(TAU2), "--event", "unsolved", "--by", "wall"],
     ):
         result = run_cli(argv)
-        assert len([line for line in result.text.splitlines() if line.strip()]) == 1, result.text
+        lines = [line for line in result.text.splitlines() if line.strip()]
+        assert lines and all(line.startswith("  next: ") for line in lines[1:]), result.text
         assert result.code == 2
     # the missing ceiling stays the command's own refusal, exit 1
     _one_sentence(run_cli(["compare", TAU2_A, TAU2_B, "--store", str(TAU2), "--event", "unsolved"]))
@@ -264,9 +268,9 @@ def test_tr31_refuses_before_the_store_when_prove_is_unimportable(argv) -> None:
     proc = _run(code, dict(os.environ))
     assert proc.returncode == 1, proc.stderr + proc.stdout
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
-    assert len(lines) == 1, proc.stdout + proc.stderr
-    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "pip install" in lines[0]
-    assert "no-such-store" not in lines[0]
+    assert lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
+    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "pip install" in " ".join(lines)
+    assert "no-such-store" not in " ".join(lines)
 
 
 @pytest.mark.parametrize("argv", CALLS)
@@ -280,8 +284,8 @@ def test_tr31_refuses_on_the_wrong_prove_version(tmp_path: Path, argv) -> None: 
     proc = _run(code, env)
     assert proc.returncode == 1, proc.stderr + proc.stdout
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
-    assert len(lines) == 1, proc.stdout + proc.stderr
-    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "9.9.9" in lines[0] and "pip install" in lines[0]
+    assert lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
+    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "9.9.9" in lines[0] and "pip install" in " ".join(lines)
 
 
 def test_tr31_prints_no_such_line_when_prove_is_present() -> None:

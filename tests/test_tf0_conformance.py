@@ -7,7 +7,9 @@ mistakes section and the paths that ended in a traceback) is held to the rules a
 the exit code is in the table and is the one the invocation calls for; no traceback; stderr is
 ``error:`` and ``note:`` lines and their two-space continuations; a refusal or a wrong command
 line prints nothing on stdout; nothing a user reads holds a Python representation of a value;
-``--json`` is one strict document with ``schema`` first; a ``next:`` line closes stdout.
+``--json`` is one strict document with ``schema`` first; a ``next:`` line closes stdout. And the
+two clauses TF1 builds (spec section 9.2): a result's first stdout line is its verdict line, and
+``--json`` opens ``schema``, ``verdict``, ``sentence``.
 
 ``docs/cli-look.md`` is the written standard: its sixteen rules in order and the exit-code table
 the commands keep."""
@@ -19,7 +21,7 @@ import re
 
 import pytest
 
-from tf0_support import CLI_LOOK, EXIT_CODES, REPR, Item, Ran, chdir, corpus, doc_exit_codes, prepare, run_item, stderr_shape
+from tf0_support import CLI_LOOK, EXIT_CODES, REPR, VERDICT_LINE, Item, Ran, chdir, corpus, doc_exit_codes, prepare, run_item, stderr_shape
 
 CORPUS = corpus()
 
@@ -61,6 +63,12 @@ def _held(item: Item, result: Ran) -> list[str]:
         else:
             if not isinstance(doc, dict) or next(iter(doc), None) != "schema":
                 broken.append("--json does not open with schema")
+            elif list(doc)[:3] != ["schema", "verdict", "sentence"]:
+                broken.append("--json does not open with schema, verdict and sentence")
+    if item.kind == "report" and result.code == 0 and "--json" not in item.argv:
+        first = result.lines("out")[:1]
+        if not first or not VERDICT_LINE.match(first[0]):
+            broken.append("the first stdout line is not a verdict line")
     lines = result.lines("out")
     nexts = [i for i, line in enumerate(lines) if line.startswith("next:")]
     if nexts and nexts != [len(lines) - 1]:

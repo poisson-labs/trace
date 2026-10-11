@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="672" viewBox="0 0 760 672" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12">
 <rect x="0" y="0" width="760" height="672" fill="#fcfcfb"/>
-<text x="64" y="22" fill="#0b0b0b" font-size="14" font-weight="600">20260925T234602Z-3ea0 · cs_agents/record</text>
+<text x="64" y="22" fill="#0b0b0b" font-size="14" font-weight="600">cs_agents 2026-09-25 a · cs_agents/record</text>
 <text x="64" y="40" fill="#52514e">placed 24 · died 7 · ended 17 · timed out 0 · capped 0 · excluded 0 · events: app_error, forbidden_action, max_turns, unresolved</text>
 <line x1="64" y1="326.0" x2="736" y2="326.0" stroke="#e5e4e0" stroke-width="1"/>
 <text x="56" y="330.0" fill="#52514e" text-anchor="end">0</text>

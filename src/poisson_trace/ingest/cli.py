@@ -35,6 +35,7 @@ from poisson_trace import look
 from poisson_trace.ingest.cut import MISSED
 from poisson_trace.ingest.rows import Refusal, Run
 from poisson_trace.look import count
+from poisson_trace.names import import_name_refusal
 
 if TYPE_CHECKING:
     from poisson_trace.ingest.writer import Written
@@ -154,6 +155,21 @@ def _zone(started: str) -> tuple[str, str]:
     return local.strftime("%Z"), f"UTC{offset[:3]}:{offset[3:5]}"
 
 
+def _sentence(written: Written, store: str) -> str:
+    """The run, the store, the rows, the cases and their repeats, and the outcomes."""
+    low, high = written.repeats_min, written.repeats_max
+    repeats = f"{count(low)} repeats each"
+    if low != high:
+        repeats = f"{count(low)} to {count(high)} repeats"
+    outcomes = ", ".join(f"{word} {count(n)}" for word, n in written.outcomes.items())
+    none = sum(written.no_outcome.values())
+    no_outcome = f", {count(none)} with no outcome" if none else ""
+    return (
+        f"wrote run {written.run} to {store}: {count(written.rows)} rows, "
+        f"{count(written.cases)} cases, {repeats}; {outcomes}{no_outcome}"
+    )
+
+
 def _summary(run: Run, written: Written, store: str) -> dict[str, Any]:
     started: dict[str, Any] = {"at": run.started, "from": run.started_from}
     if run.started_from == "file name":
@@ -161,6 +177,8 @@ def _summary(run: Run, written: Written, store: str) -> dict[str, Any]:
         started["zone"] = {"name": name, "offset": offset}
     return {
         "schema": SCHEMA,
+        "verdict": "ok",
+        "sentence": _sentence(written, store),
         "run": written.run,
         "store": store,
         "tool": run.tool,
@@ -174,7 +192,8 @@ def _summary(run: Run, written: Written, store: str) -> dict[str, Any]:
         "no_outcome": dict(written.no_outcome),
         "counts": dict(run.counts),
         "next": (
-            f"poisson-trace fix-check OLD NEW --store {store} --event {MISSED} --inputs all "
+            f"poisson-trace fix-check OLD NEW {look.option('--store', store)} --event {MISSED} "
+            "--inputs all "
             f"--max-mde X  # {written.run} is OLD or NEW"
         ),
     }
@@ -195,6 +214,8 @@ def _markdown(d: Mapping[str, Any]) -> str:
         )
     none = d["no_outcome"]
     lines = [
+        f"{d['verdict']}  {d['sentence']}",
+        "",
         f"# Poisson Trace · import · {d['run']}",
         "",
         f"- run written: {d['run']} · store: {d['store']}",
@@ -238,18 +259,28 @@ def _main(session: look.Session) -> int:
     if at is not None and args[at] not in subs:
         raise Refusal(
             f"unknown tool {look.shown(args[at])}; this install reads: "
-            f"{', '.join(subs) or 'nothing'}"
+            f"{', '.join(subs) or 'nothing'}",
+            "poisson-trace-import --help",
         )
-    ns = parser.parse_args(args)
+    ns, extra = parser.parse_known_args(args)
     if ns.tool is None:
         raise look.Usage(
-            f"no tool was given; this install reads: {', '.join(subs) or 'nothing'}; "
-            "see poisson-trace-import --help"
+            f"no tool was given; this install reads: {', '.join(subs) or 'nothing'}",
+            "poisson-trace-import --help",
         )
+    if extra:
+        subs[ns.tool].error(f"unrecognized arguments: {' '.join(extra)}")
     session.debug = bool(getattr(ns, "debug", False))
+    if getattr(ns, "json", False):
+        session.render = _stopped_json
+    if ns.tool not in further:
+        # a run's name is its folder and the word for it: checked before Prove is asked anything
+        hole = import_name_refusal(ns.run)
+        if hole is not None:
+            raise Refusal(hole)
     refusal = look.prove_refusal(_DOES)
     if refusal is not None:
-        raise Refusal(refusal)
+        raise Refusal(refusal, look.INSTALL_PROVE)
     if ns.tool in further:
         return further[ns.tool](ns)
     store = Path(ns.store)
@@ -276,6 +307,13 @@ def _main(session: look.Session) -> int:
     data = _summary(run, written, str(ns.store))
     look.out(json.dumps(data, indent=2, allow_nan=False) + "\n" if ns.json else _markdown(data))
     return look.DONE
+
+
+def _stopped_json(line: str) -> str:
+    """The stopped line as the import's JSON document: stdout stays one document."""
+    verdict, _, sentence = line.partition("  ")
+    doc = {"schema": SCHEMA, "verdict": verdict, "sentence": sentence, "next": None}
+    return json.dumps(doc, indent=2) + "\n"
 
 
 def _stopped(store: Path, name: str, held: bool) -> str:

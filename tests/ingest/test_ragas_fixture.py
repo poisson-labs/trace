@@ -221,7 +221,7 @@ def test_ir8_fix_check_on_precision_reads_no_significant_difference_on_670_cases
     assert d["verdict"] == "no significant difference"
     # the header says how many cases were left out, and why, before the line that states the result
     left = re.search(r"left out 1,130 \(no outcome on the old version 1,130", text)  # R18: counts with separators
-    line = text.find("no significant difference")
+    line = text.find("**no significant difference")  # the result line inside the report; the verdict line opens stdout
     assert left is not None and 0 <= left.start() < line, text
 
 

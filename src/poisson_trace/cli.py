@@ -1,4 +1,5 @@
-"""The console script: ``poisson-trace where``, ``compare``, ``fix-check`` and ``changes``.
+"""The console script: ``poisson-trace runs``, ``name``, ``where``, ``compare``, ``fix-check``
+and ``changes``.
 
 The command line is read first, so ``--help`` and ``--version`` need nothing installed; the
 check that ``proofload`` is present at the version this package reads runs next, and
@@ -9,12 +10,13 @@ every refusal and every exit code is the look's (``look.py``, ``docs/cli-look.md
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -26,15 +28,17 @@ _DRAWS = 100_000
 # The most bootstrap resamples where takes: a thousand times the default.
 _MOST_BOOT = 1_000_000
 _DOES = "Poisson Trace reads stored runs"
-_VERBS = ("where", "compare", "fix-check", "changes")
-_NAMED = "where, compare, fix-check and changes"
+_VERBS = ("runs", "name", "where", "compare", "fix-check", "changes")
+_NAMED = "runs, name, where, compare, fix-check and changes"
+# the complete runs the listing shows, newest first, before it says how many more there are
+_LISTED = 50
 # the command's own option, which stays where it is written; --help before a verb is that
 # verb's help, as every other option before a verb is that verb's
 _KEPT = ("--version",)
 
 
-class _Refusal(Exception):
-    """One sentence, exit 1."""
+class _Refusal(look.Refused):
+    """One sentence, exit 1, and the commands to run next under it, if any."""
 
 
 _ABOUT = """\
@@ -42,6 +46,12 @@ Poisson Trace reads the runs Prove has stored and says where in the workflow the
 died, and whether a change made them fail less. A store is the folder Prove writes its runs
 into; a run is one stored sweep, and its episodes are its rows. Every number prints with what
 the runs could not have detected.
+
+A run is named by a name you gave it with poisson-trace name; by the name it has from its
+manifest, the record Prove keeps of it (its target, the day it started in UTC and a letter, such
+as "tau2-airline 2026-09-15 a"); by latest or previous, the newest complete runs, or
+latest:TARGET and previous:TARGET, a target's ("latest:tau2-airline"); by its number in the
+runs listing ("#3"); or by its full id.
 
 Results another tool wrote (DeepEval, Ragas) are read in with poisson-trace-import.
 """
@@ -52,6 +62,7 @@ def _example(*commands: str) -> str:
 
 
 _STORE_HELP = "the folder Prove stored the runs in (no default)"
+_RUN_HELP = "by its name, latest, previous or its number in the runs listing (\"#3\")"
 
 
 def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
@@ -59,7 +70,8 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         prog="poisson-trace",
         description=_ABOUT,
         epilog=_example(
-            "poisson-trace where latest --store proofload-runs --event unsolved --at 20",
+            "poisson-trace runs --store proofload-runs --event unsolved",
+            "poisson-trace where previous --store proofload-runs --event unsolved --at 20",
             "poisson-trace fix-check previous latest --store proofload-runs --event unsolved \\",
             "    --inputs all --max-mde 0.2",
         ),
@@ -69,6 +81,56 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
     )
     parser.add_argument("--debug", action="store_true", help=argparse.SUPPRESS)
     verbs = parser.add_subparsers(dest="verb", metavar="VERB", title="verbs")
+
+    runs = verbs.add_parser(
+        "runs",
+        help="the runs of a store, newest first, with their names and numbers",
+        description=(
+            "Lists the runs of a store, newest first: each complete run's number, its name, its\n"
+            "rows, how many of them failed for the --event names, whether any row carries a\n"
+            "trace (where and compare read traces; fix-check and changes do not need them), when\n"
+            "it started (UTC) and its status. The newest 50 complete runs are listed. A run's\n"
+            "number, such as \"#1\", names it to every verb."
+        ),
+        epilog=_example("poisson-trace runs --store proofload-runs --event unsolved"),
+    )
+    runs.add_argument("--store", required=True, metavar="ROOT", help=_STORE_HELP)
+    runs.add_argument(
+        "--event",
+        action="append",
+        metavar="NAME",
+        help="an outcome that counts as a failure in the failed column; repeatable (default: "
+        "none, and the column is not counted)",
+    )
+    runs.add_argument(
+        "--all",
+        action="store_true",
+        help="list every run, partial runs and those past the newest 50 included",
+    )
+
+    name = verbs.add_parser(
+        "name",
+        help="give a stored run a name of yours, take it back, or list the names",
+        description=(
+            "Gives a stored run a name of yours, which every verb then takes for the run and\n"
+            "every report shows. The names are kept in trace-names.toml at the store's root; no\n"
+            "run's own files change. --forget takes a name back, and the run goes by the name it\n"
+            "has from its manifest again. --list shows the names of yours."
+        ),
+        epilog=_example(
+            'poisson-trace name previous "tau2 old re-run" --store proofload-runs',
+            "poisson-trace name --list --store proofload-runs",
+        ),
+    )
+    name.add_argument("run", nargs="?", metavar="RUN", help=f"the run to name, {_RUN_HELP}")
+    name.add_argument(
+        "new", nargs="?", metavar="NAME", help="the name to give it, at most 80 characters"
+    )
+    name.add_argument("--store", required=True, metavar="ROOT", help=_STORE_HELP)
+    name.add_argument(
+        "--forget", action="store_true", help="take back the name of yours that RUN has"
+    )
+    name.add_argument("--list", action="store_true", help="list the names of yours")
 
     def common(p: argparse.ArgumentParser, died: str) -> None:
         p.add_argument("--store", required=True, metavar="ROOT", help=_STORE_HELP)
@@ -118,10 +180,10 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "episodes that ended otherwise, timed out or hit the capture cap are censored."
         ),
         epilog=_example(
-            "poisson-trace where latest --store proofload-runs --event unsolved --at 20",
+            "poisson-trace where previous --store proofload-runs --event unsolved --at 20",
         ),
     )
-    where.add_argument("run", metavar="RUN", help="the stored run, by its name in the store")
+    where.add_argument("run", metavar="RUN", help=f"the stored run, {_RUN_HELP}")
     common(where, "a death")
     where_and_compare(where)
     where.add_argument(
@@ -154,11 +216,11 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "largest detectable hazard ratio you accept, and it has no default."
         ),
         epilog=_example(
-            "poisson-trace compare previous latest --store proofload-runs --event unsolved \\",
+            'poisson-trace compare "#3" previous --store proofload-runs --event unsolved \\',
             "    --max-mde-hr 1.5",
         ),
     )
-    compare.add_argument("a", metavar="A", help="the run before the change")
+    compare.add_argument("a", metavar="A", help=f"the run before the change, {_RUN_HELP}")
     compare.add_argument("b", metavar="B", help="the run after the change")
     common(compare, "a death")
     where_and_compare(compare)
@@ -210,7 +272,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "    --inputs all --max-mde 0.2",
         ),
     )
-    fix.add_argument("old", metavar="OLD", help="the old version's run")
+    fix.add_argument("old", metavar="OLD", help=f"the old version's run, {_RUN_HELP}")
     fix.add_argument("new", metavar="NEW", help="the new version's run")
     paired(fix)
     fix.add_argument(
@@ -260,11 +322,19 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "poisson-trace changes previous latest --store proofload-runs --event unsolved",
         ),
     )
-    changes.add_argument("a", metavar="A", help="the first run")
+    changes.add_argument("a", metavar="A", help=f"the first run, {_RUN_HELP}")
     changes.add_argument("b", metavar="B", help="the second run")
     paired(changes)
     tail(changes)
+    tail(runs)
+    name.add_argument(
+        "--debug",
+        action="store_true",
+        help="on an unexpected failure, print its details on stderr as well as in the log",
+    )
     return parser, {
+        "runs": runs,
+        "name": name,
         "where": where,
         "compare": compare,
         "fix-check": fix,
@@ -289,23 +359,56 @@ def _main(session: look.Session) -> int:
     )
     if at is not None and args[at] not in verbs:
         raise look.Usage(
-            f'"{args[at]}" is not a verb; the verbs are {_NAMED}; see poisson-trace --help'
+            f'"{args[at]}" is not a verb; the verbs are {_NAMED}', "poisson-trace --help"
         )
-    ns = parser.parse_args(args)
+    ns, extra = parser.parse_known_args(args)
     if ns.verb is None:
-        raise look.Usage(f"no verb was given; the verbs are {_NAMED}; see poisson-trace --help")
+        raise look.Usage(f"no verb was given; the verbs are {_NAMED}", "poisson-trace --help")
+    if extra:
+        verbs[ns.verb].error(f"unrecognized arguments: {' '.join(extra)}")
+    if ns.verb == "name":
+        _name_line(ns)
     session.debug = ns.debug
+    if getattr(ns, "json", False):
+        schema = f"poisson-trace.{ns.verb}/1"
+        session.render = lambda line: _stopped_json(schema, line)
     refusal = look.prove_refusal(_DOES)
     if refusal is not None:
-        raise _Refusal(refusal)
+        raise _Refusal(refusal, look.INSTALL_PROVE)
     _validate(ns)
     verb: Callable[[argparse.Namespace], int] = {
+        "runs": _runs,
+        "name": _name,
         "where": _where,
         "compare": _compare,
         "fix-check": _fix_check,
         "changes": _changes,
     }[ns.verb]
     return verb(ns)
+
+
+def _stopped_json(schema: str, line: str) -> str:
+    """The stopped line as the verb's JSON document: stdout stays one document."""
+    verdict, _, sentence = line.partition("  ")
+    doc = {"schema": schema, "verdict": verdict, "sentence": sentence, "next": None}
+    return json.dumps(doc, indent=2) + "\n"
+
+
+def _name_line(ns: argparse.Namespace) -> None:
+    """``name`` says one whole thing: a run and a name, a run and --forget, or --list alone."""
+    usage = "poisson-trace name --help"
+    if ns.list:
+        if ns.run is not None or ns.forget:
+            raise look.Usage("--list takes no run and no --forget", usage)
+        return
+    if ns.run is None:
+        raise look.Usage(
+            "name takes a run and a name, a run and --forget, or --list", usage
+        )
+    if ns.forget and ns.new is not None:
+        raise look.Usage("--forget takes the run alone, without a new name", usage)
+    if not ns.forget and ns.new is None:
+        raise look.Usage(f'no name was given for the run "{ns.run}"', usage)
 
 
 def _validate(ns: argparse.Namespace) -> None:
@@ -390,32 +493,95 @@ def _open(path: str) -> tuple[Any, list[str]]:
     return store, held
 
 
-def _load(
-    store: Any, held: Sequence[str], run: str, *, trace: str = "envelope"
-) -> tuple[Any, Any, Any]:
-    """``(manifest, frame, tally)`` for ``run``, or a refusal naming the runs the store holds."""
-    if run not in held:
-        raise _Refusal(f"unknown run {look.shown(run)}; the store holds: {', '.join(held)}")
+def _named(ns: argparse.Namespace, *, lenient: bool = False) -> tuple[Any, Any]:
+    """The store and its runs, each with its name: a store that is not there, a names file
+    that is not one and an entry for a run the store lacks are refused."""
+    from poisson_trace import names
+
+    store, held = _open(ns.store)
+    return store, names.index(store, held, ns.store, lenient=lenient)
+
+
+def _load(store: Any, run: Any, *, trace: str = "envelope") -> tuple[Any, Any, Any]:
+    """``(manifest, frame, tally)`` for a run the words given reached."""
     try:
         return (
-            store.manifest(run),
-            store.read(run, meta=False, trace=trace),
-            store.tally(run),
+            store.manifest(run.run_id),
+            store.read(run.run_id, meta=False, trace=trace),
+            store.tally(run.run_id),
         )
     except Exception as e:
-        raise _Refusal(f"Prove could not read the run {run} ({look.why(e)})") from e
+        raise _Refusal(f"Prove could not read the run {run.shown()} ({look.why(e)})") from e
+
+
+def _two(index: Any, first: str, second: str, labels: tuple[str, str]) -> tuple[Any, Any]:
+    """The two runs two words reach, refused when they are one run."""
+    a, b = index.resolve(first), index.resolve(second)
+    if a.run_id == b.run_id:
+        raise _Refusal(
+            f"{labels[0]} and {labels[1]} are both {a.shown()}; the two runs compared must differ"
+        )
+    return a, b
+
+
+def _flags(ns: argparse.Namespace) -> list[str]:
+    """``--store`` and each ``--event`` as given, for a next command to carry."""
+    words = [look.option("--store", ns.store)]
+    for event in dict.fromkeys(ns.event or ()):
+        words.append(look.option("--event", event))
+    return words
+
+
+def _next(
+    index: Any, verb: str, runs: Sequence[Any], ns: argparse.Namespace, *extra: str
+) -> str:
+    """A next command: the runs by the words that reach them, the store and the events given."""
+    words = (look.word(index.word_for(r)) for r in runs)
+    return look.command("poisson-trace", verb, *words, *_flags(ns), *extra)
+
+
+def _enveloped(
+    data: Mapping[str, Any], verdict: str, sentence: str, following: str | None
+) -> dict[str, Any]:
+    """The verb's JSON in its order: the schema, the verdict and its sentence, every key the
+    verb had, and the next command last."""
+    head = {"schema": data["schema"], "verdict": verdict, "sentence": sentence}
+    rest = {k: v for k, v in data.items() if k != "schema"}
+    return {**head, **rest, "next": following}
+
+
+def _said(
+    verdict: str, sentence: str, report: str, following: str, wrote: str | None = None
+) -> str:
+    """The text: the verdict line, what was written, a blank line, the report and the next
+    command."""
+    head = f"{verdict}  {sentence}\n" + (f"  wrote  {wrote}\n" if wrote is not None else "")
+    return f"{head}\n{report}\nnext: {following}\n"
+
+
+def _run_before(index: Any, run: Any) -> Any | None:
+    """The complete run of the same target that started just before ``run``."""
+    order = list(reversed(index.runs))
+    at = next((i for i, r in enumerate(order) if r.run_id == run.run_id), None)
+    if at is None:
+        # a run whose start Prove's record does not give has no place in the order
+        return None
+    return next(
+        (r for r in reversed(order[:at]) if r.complete and r.target == run.target), None
+    )
 
 
 def _outcomes(frame: Any) -> set[str]:
     return {o for o in frame["outcome"] if o is not None}
 
 
-def _header(run: str, manifest: Any, placement: Any) -> dict[str, Any]:
+def _header(run: Any, manifest: Any, placement: Any) -> dict[str, Any]:
     from poisson_trace.clock import REASONS
 
     counts = {r: sum(1 for p in placement.rows if p.reason == r) for r in REASONS}
     return {
-        "run_id": run,
+        "run_id": run.run_id,
+        "run_name": run.name,
         "target_id": manifest.target_id,
         "t_unit": manifest.t_unit,
         "status": manifest.status,
@@ -444,6 +610,246 @@ def _arrays(placement: Any) -> tuple[Any, Any, Any]:
     return index, died, cause
 
 
+# ---------- runs ----------
+
+
+def _plural(n: int, one: str, many: str) -> str:
+    return f"{count(n)} {one if n == 1 else many}"
+
+
+def _utc_minute(run: Any) -> str:
+    return str(run.started.strftime("%Y-%m-%d %H:%M"))
+
+
+def _runs(ns: argparse.Namespace) -> int:
+    store, index = _named(ns)
+    events = list(dict.fromkeys(ns.event or ()))
+    complete = index.complete
+    if ns.all:
+        listed = list(index.runs)
+    else:
+        listed = [r for r in index.runs if r.complete and r.number <= _LISTED]
+    if not events:
+        look.err("note: no --event was given, so the failed column is not counted\n")
+    if ns.all and len(complete) > _LISTED:
+        look.err(
+            f"note: --all reads the rows of every one of the {count(len(index.runs))} runs, "
+            "which may take a while on a store this size\n"
+        )
+    if index.unreadable:
+        unread = _plural(len(index.unreadable), "run", "runs")
+        look.err(
+            f"note: Prove could not read the record or the start time of {unread} of this store, "
+            "not listed: "
+            f"{', '.join(index.unreadable)}\n"
+        )
+    rows = []
+    carried: set[str] = set()
+    read: list[Any] = []
+    for run in listed:
+        try:
+            tally = store.tally(run.run_id)
+            frame = store.read(run.run_id, meta=False, trace="envelope")
+        except Exception as e:
+            # one run whose rows cannot be read leaves the listing of the others whole
+            look.err(
+                f"note: Prove could not read the rows of {run.shown()} ({look.why(e)}), "
+                "not listed\n"
+            )
+            continue
+        read.append(run)
+        outcomes = [o for o in frame["outcome"] if not _no_value(o)]
+        carried.update(outcomes)
+        rows.append(
+            {
+                "number": run.number,
+                "name": run.name,
+                "run_id": run.run_id,
+                "named_by": run.named_by,
+                "rows": int(tally.rows),
+                "failed": sum(1 for o in outcomes if o in events) if events else None,
+                "traced": bool(frame["trace"].notna().any()) if len(frame) else False,
+                "created_at": run.created_at,
+                "status": run.status,
+                "target_id": run.target_id,
+                "backend": run.backend,
+            }
+        )
+    missing = [e for e in events if e not in carried]
+    if listed and len(missing) == len(events) and events:
+        raise _Refusal(
+            f"unknown event {', '.join(missing)}; the runs listed carry the outcomes: "
+            f"{', '.join(sorted(carried)) or 'none'}"
+        )
+    yours = sum(1 for r in index.runs if r.named_by == "you")
+    total = len(index.runs)
+    theirs = total - yours
+    sentence = (
+        f"{_plural(total, 'run', 'runs')} in {ns.store} (newest first); {count(yours)} named "
+        f"by you, {count(theirs)} named from {'its manifest' if theirs == 1 else 'their manifests'}"
+    )
+    traced = next(
+        (index.by_id(r["run_id"]) for r in rows if r["traced"] and r["status"] == "complete"),
+        None,
+    )
+    if traced is None:
+        following = look.command("poisson-trace", "fix-check", "--help")
+    else:
+        following = _next(index, "where", (traced,), ns)
+    if ns.json:
+        doc = {
+            "schema": "poisson-trace.runs/1",
+            "verdict": "ok",
+            "sentence": sentence,
+            "store": ns.store,
+            "runs": rows,
+            "next": following,
+        }
+        look.out(json.dumps(doc, indent=2, allow_nan=False) + "\n")
+        return look.DONE
+    hidden = 0 if ns.all else total - len(complete)
+    older = 0 if ns.all else max(0, len(complete) - _LISTED)
+    lines = _runs_table(rows, [_utc_minute(run) for run in read])
+    if older:
+        lines.append(
+            f"  {_plural(older, 'older complete run is', 'older complete runs are')} not listed; "
+            "--all lists them"
+        )
+    if hidden:
+        lines.append(
+            f"  {_plural(hidden, 'partial run is', 'partial runs are')} not listed; "
+            "--all lists them"
+        )
+    report = "\n".join(lines) + "\n\n" if lines else ""
+    look.out(f"ok  {sentence}\n\n{report}next: {following}\n")
+    return look.DONE
+
+
+def _runs_table(rows: Sequence[Mapping[str, Any]], started: Sequence[str]) -> list[str]:
+    """The listing's columns, numbers to the right; the start as UTC to the minute."""
+    if not rows:
+        return []
+    cells = [
+        (
+            "–" if r["number"] is None else str(r["number"]),
+            r["name"],
+            count(r["rows"]),
+            "–" if r["failed"] is None else count(r["failed"]),
+            "yes" if r["traced"] else "no",
+            at,
+            r["status"],
+        )
+        for r, at in zip(rows, started, strict=True)
+    ]
+    head = ("#", "name", "rows", "failed", "traces", "started", "status")
+    widths = [max(len(c[i]) for c in [head, *cells]) for i in range(len(head))]
+    right = (True, False, True, True, False, False, False)
+
+    def line(cell: Sequence[str]) -> str:
+        parts = [
+            c.rjust(w) if r else c.ljust(w) for c, w, r in zip(cell, widths, right, strict=True)
+        ]
+        return ("  " + "  ".join(parts)).rstrip()
+
+    return [line(head), *(line(c) for c in cells)]
+
+
+# ---------- name ----------
+
+
+def _name(ns: argparse.Namespace) -> int:
+    from poisson_trace import names
+
+    store, index = _named(ns, lenient=True)
+    shown = index.names_shown()
+    listing = index.listing()
+    if ns.list:
+        return _name_list(index, shown, listing)
+    given = ns.run.strip()
+    entries = dict(index.entries)
+    damage = index.damage()
+    if ns.forget:
+        if damage is not None and given in entries:
+            # an entry the file should not hold: this one name is taken back, and no other
+            held = entries.pop(given)
+            names.write_names_file(index.root, shown, entries)
+            where = "" if index.by_id(held) is not None else ", which this store does not hold"
+            look.out(
+                f'ok  forgot the name "{given}" of the run {held}{where}, in {shown}\n\n'
+                f"next: {listing}\n"
+            )
+            return look.DONE
+        if damage is not None:
+            raise damage
+        run = index.resolve(ns.run)
+        mine = [n for n, r in entries.items() if r == run.run_id]
+        if not mine:
+            whose = "the one it was imported under" if run.imported else "from its manifest"
+            raise _Refusal(f"{run.shown()} has no name of yours to forget; its name is {whose}")
+        for old in mine:
+            del entries[old]
+        names.write_names_file(index.root, shown, entries)
+        again = run.computed or run.run_id
+        look.out(
+            f'ok  forgot the name "{mine[0]}" of {run.run_id}, which is named "{again}" again, '
+            f"in {shown}\n\nnext: {listing}\n"
+        )
+        return look.DONE
+    if damage is not None:
+        raise damage
+    run = index.resolve(ns.run)
+    if run.status == "unreadable":
+        raise _Refusal(
+            f"Prove could not read the record or the start time of the run {run.run_id}, so it "
+            "cannot be named; it is reached by its id"
+        )
+    new = ns.new.strip()
+    why = names.unfit(new)
+    if why is not None:
+        raise _Refusal(f'"{new or ns.new}" cannot be a name: {why}')
+    if any(r.run_id == new for r in index.runs) or new in index.unreadable:
+        raise _Refusal(f'"{new}" cannot be a name: it is the id of a run of this store')
+    others = index.holder(new) - {run.run_id}
+    if others:
+        other = index.by_id(sorted(others)[0])
+        whose = other.shown() if other is not None else "another run"
+        raise _Refusal(f'"{new}" cannot be a name: {whose} answers to it already')
+    if entries.get(new) == run.run_id:
+        look.out(f'ok  {run.run_id} is named "{new}" already, in {shown}\n\nnext: {listing}\n')
+        return look.DONE
+    entries = {n: r for n, r in entries.items() if r != run.run_id}
+    entries[new] = run.run_id
+    names.write_names_file(index.root, shown, entries)
+    look.out(f'ok  named {run.run_id} "{new}" in {shown}\n\nnext: {listing}\n')
+    return look.DONE
+
+
+def _name_list(index: Any, shown: str, listing: str) -> int:
+    entries = index.entries
+    if not entries:
+        look.out(f"ok  no names of yours in {index.store}\n\nnext: {listing}\n")
+        return look.DONE
+    cells = []
+    for name in sorted(entries):
+        run = index.by_id(entries[name])
+        if run is None and entries[name] in index.unreadable:
+            own = "its record cannot be read"
+        elif run is None:
+            own = "not in this store"
+        else:
+            own = run.computed or run.run_id
+        cells.append((name, own, entries[name]))
+    head = ("name", "name from its manifest", "run")
+    widths = [max(len(c[i]) for c in [head, *cells]) for i in range(3)]
+    lines = [
+        ("  " + "  ".join(c.ljust(w) for c, w in zip(cell, widths, strict=True))).rstrip()
+        for cell in [head, *cells]
+    ]
+    sentence = f"{_plural(len(entries), 'name', 'names')} of yours in {shown}"
+    look.out(f"ok  {sentence}\n\n" + "\n".join(lines) + f"\n\nnext: {listing}\n")
+    return look.DONE
+
+
 # ---------- where ----------
 
 
@@ -457,8 +863,9 @@ def _where(ns: argparse.Namespace) -> int:
 
     if ns.svg is not None:
         _check_svg(ns.svg, ns.force)
-    store, held = _open(ns.store)
-    manifest, frame, tally = _load(store, held, ns.run)
+    store, index = _named(ns)
+    run = index.resolve(ns.run)
+    manifest, frame, tally = _load(store, run)
     events = frozenset(ns.event)
     present = _outcomes(frame)
     missing = sorted(events - present)
@@ -468,13 +875,15 @@ def _where(ns: argparse.Namespace) -> int:
             f"{', '.join(sorted(present)) or 'none'}"
         )
     placement = place(manifest, frame, tally, events=events, by=ns.by)
-    index, died, cause = _arrays(placement)
-    km = kaplan_meier(index, died)
+    index_steps, died, cause = _arrays(placement)
+    km = kaplan_meier(index_steps, died)
     causes = _ordered({p.cause for p in placement.rows if p.died})
-    aj = aalen_johansen(index, died, cause, causes)
+    aj = aalen_johansen(index_steps, died, cause, causes)
     last = [int(km.steps[-1])] if len(km.steps) else []
     bands = (
-        bootstrap_band(index, died, cause, causes, last, b=ns.boot, seed=ns.seed) if causes else {}
+        bootstrap_band(index_steps, died, cause, causes, last, b=ns.boot, seed=ns.seed)
+        if causes
+        else {}
     )
     curve = []
     for step, at_risk, deaths, s, var in zip(
@@ -512,7 +921,7 @@ def _where(ns: argparse.Namespace) -> int:
     data: dict[str, Any] = {
         "schema": "poisson-trace.where/1",
         "prove": {"version": proofload.__version__, "store": ns.store},
-        "run": _header(ns.run, manifest, placement),
+        "run": _header(run, manifest, placement),
         "events": sorted(events),
         "clock": {"unit": "leaf span index", "by": ns.by},
         "curve": curve,
@@ -526,18 +935,67 @@ def _where(ns: argparse.Namespace) -> int:
         data["declared"] = check.provenance()
         data["_reached"] = _reached_by(manifest, frame, events=events, by=ns.by)
     data["cannot_say"] = list(CANNOT_SAY)
+    traced = bool(frame["trace"].notna().any()) if len(frame) else False
+    sentence = _where_sentence(run, placement, cause_rows, km.median(), events, traced)
+    before = _run_before(index, run)
+    if before is None:
+        following = look.command("poisson-trace", "fix-check", "--help")
+    elif traced:
+        following = _next(index, "compare", (before, run), ns)
+    else:
+        # compare reads traces, and this run has none: the fix check reads its outcomes
+        following = _next(index, "fix-check", (before, run), ns, "--inputs", "all")
     report = WhereReport(
         data=data,
-        last_step=int(index.max()) if len(index) else 0,
+        last_step=int(index_steps.max()) if len(index_steps) else 0,
         incidence={k: [float(x) for x in aj.incidence[k]] for k in causes},
     )
-    text = report.to_json() if ns.json else report.to_markdown()
     if ns.svg is not None:
         _write_svg(ns.svg, report.to_svg())
-        if not ns.json:
-            text += f"  wrote  {ns.svg}\n"
-    look.out(text)
+    if ns.json:
+        look.out(WhereReport(data=_enveloped(data, "ok", sentence, following)).to_json())
+    else:
+        look.out(_said("ok", sentence, report.to_markdown(), following, ns.svg))
     return look.DONE
+
+
+# the kinds of step Prove records, as a sentence names the place an episode died
+_AT = {
+    "llm": "a model call",
+    "tool": "a tool call",
+    "retrieval": "a retrieval",
+    "db": "a database call",
+    "http": "an HTTP call",
+    "agent": "an agent step",
+    "other": "another kind of step",
+}
+
+
+def _and(items: Sequence[str]) -> str:
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def _where_sentence(
+    run: Any,
+    placement: Any,
+    causes: Sequence[Mapping[str, Any]],
+    median: float | None,
+    events: frozenset[str],
+    traced: bool,
+) -> str:
+    """The deaths, the placed episodes, the deaths by kind and the median; the episodes and
+    the events when none died; and no count for a run with no traces."""
+    if not traced:
+        how = f" (imported from {run.backend[len('import:'):]})" if run.imported else ""
+        return f"this run has no traces, so there is no curve{how}"
+    placed = len(placement.rows)
+    died = sum(1 for p in placement.rows if p.died)
+    episodes = "placed episode" if placed == 1 else "placed episodes"
+    if died == 0:
+        return f"none of {count(placed)} {episodes} died of {' or '.join(sorted(events))}"
+    where = _and([f"{count(c['deaths'])} at {_AT.get(c['cause'], c['cause'])}" for c in causes])
+    middle = "not reached" if median is None else count(median)
+    return f"{count(died)} of {count(placed)} {episodes} died, {where}; median step {middle}"
 
 
 def _check_svg(path: str, force: bool) -> None:
@@ -592,9 +1050,11 @@ def _compare(ns: argparse.Namespace) -> int:
         mde_hazard_ratio,
     )
 
-    store, held = _open(ns.store)
-    manifest_a, frame_a, tally_a = _load(store, held, ns.a)
-    manifest_b, frame_b, tally_b = _load(store, held, ns.b)
+    store, index = _named(ns)
+    # compare has never refused one run given twice; it reads the runs the words reach
+    run_a, run_b = index.resolve(ns.a), index.resolve(ns.b)
+    manifest_a, frame_a, tally_a = _load(store, run_a)
+    manifest_b, frame_b, tally_b = _load(store, run_b)
     events = frozenset(ns.event)
     out_a, out_b = _outcomes(frame_a), _outcomes(frame_b)
     present = out_a | out_b
@@ -645,22 +1105,23 @@ def _compare(ns: argparse.Namespace) -> int:
     p_text = f"{lr.p:.3f}" if lr.p >= 0.001 else f"{lr.p:.2e}"
     if lr.p < ns.alpha:
         verdict = "different"
-        verdict_line = (
-            f"different: runs die {in_b} in B (after) than in A (before) "
+        sentence = (
+            f"runs die {in_b} in B (after) than in A (before) "
             f"(log-rank, stratified by cell, p = {p_text})"
         )
+        verdict_line = f"different: {sentence}"
     elif mde <= ns.max_mde_hr:
         verdict = "no significant difference"
-        verdict_line = (
-            f"no significant difference (p = {p_text}); could not have detected a hazard "
-            f"ratio below {mde:.3f}"
-        )
+        limit = f"could not have detected a hazard ratio below {mde:.3f}"
+        sentence = f"p = {p_text}; {limit}"
+        verdict_line = f"no significant difference (p = {p_text}); {limit}"
     else:
         verdict = "too small to tell"
-        verdict_line = (
-            f"too small to tell: could not have detected a hazard ratio below {mde:.3f}, "
+        sentence = (
+            f"could not have detected a hazard ratio below {mde:.3f}, "
             f"and {ns.max_mde_hr:g} was asked for"
         )
+        verdict_line = f"too small to tell: {sentence}"
     guidance = None
     if verdict == "too small to tell":
         guidance = _compare_guidance(
@@ -712,8 +1173,8 @@ def _compare(ns: argparse.Namespace) -> int:
         "schema": "poisson-trace.compare/1",
         "prove": {"version": proofload.__version__, "store": ns.store},
         "runs": {
-            "a": _header(ns.a, manifest_a, placement_a),
-            "b": _header(ns.b, manifest_b, placement_b),
+            "a": _header(run_a, manifest_a, placement_a),
+            "b": _header(run_b, manifest_b, placement_b),
         },
         "events": sorted(events),
         "clock": {"unit": "leaf span index", "by": ns.by},
@@ -744,8 +1205,12 @@ def _compare(ns: argparse.Namespace) -> int:
         "_event_notes": notes,
         "_placed_common": len(common_a) + len(common_b),
     }
-    report = CompareReport(data=data)
-    look.out(report.to_json() if ns.json else report.to_markdown())
+    following = _next(index, "fix-check", (run_a, run_b), ns, "--inputs", "all")
+    if ns.json:
+        look.out(CompareReport(data=_enveloped(data, verdict, sentence, following)).to_json())
+    else:
+        markdown = CompareReport(data=data).to_markdown()
+        look.out(_said(verdict, sentence, markdown, following))
     return look.DONE
 
 
@@ -823,9 +1288,10 @@ def _declared_repeats(manifest: Any) -> int | None:
     return declared
 
 
-def _paired_header(run: str, manifest: Any, tally: Any) -> dict[str, Any]:
+def _paired_header(run: Any, manifest: Any, tally: Any) -> dict[str, Any]:
     return {
-        "run_id": run,
+        "run_id": run.run_id,
+        "run_name": run.name,
         "target_id": manifest.target_id,
         "status": manifest.status,
         "created_at": manifest.created_at,
@@ -834,15 +1300,17 @@ def _paired_header(run: str, manifest: Any, tally: Any) -> dict[str, Any]:
     }
 
 
-def _started(run: str, manifest: Any) -> datetime:
+def _started(run: Any, manifest: Any) -> datetime:
     try:
-        return datetime.fromisoformat(manifest.created_at)
+        at = datetime.fromisoformat(manifest.created_at)
+        # a start with no zone is read as UTC, as Prove writes every start and as names read it
+        return at.replace(tzinfo=UTC) if at.tzinfo is None else at
     except (TypeError, ValueError) as e:
         held = manifest.created_at
         shown = f' ("{held}")' if isinstance(held, str) else ""
         raise _Refusal(
-            f"the run {run} carries no readable start time{shown}, so the gap between the two "
-            "runs cannot be told"
+            f"the run {run.shown()} carries no readable start time{shown}, so the gap between "
+            "the two runs cannot be told"
         ) from e
 
 
@@ -937,19 +1405,28 @@ def _fix_check(ns: argparse.Namespace) -> int:
     from poisson_trace import paired
     from poisson_trace.report import FixCheckReport, _p_is, _points
 
-    store, held = _open(ns.store)
-    manifest_old, frame_old, tally_old = _load(store, held, ns.old, trace="none")
-    manifest_new, frame_new, tally_new = _load(store, held, ns.new, trace="none")
+    store, index = _named(ns)
+    run_old, run_new = _two(index, ns.old, ns.new, ("OLD", "NEW"))
+    selecting = None if ns.failing_from is None else index.resolve(ns.failing_from)
+    for arm, run in (("old", run_old), ("new", run_new)):
+        if selecting is not None and selecting.run_id == run.run_id:
+            raise _Refusal(
+                f"the selecting run {selecting.shown()} is also the {arm} arm; both arms must "
+                "be fresh re-runs, because the selecting run's failures on these inputs are "
+                "there by selection"
+            )
+    manifest_old, frame_old, tally_old = _load(store, run_old, trace="none")
+    manifest_new, frame_new, tally_new = _load(store, run_new, trace="none")
     events = frozenset(ns.event)
     notes = _check_events(events, frame_old, frame_new, "old", "new")
     arm_old, arm_new = _by_input(frame_old, events), _by_input(frame_new, events)
-    if ns.failing_from is not None:
+    if selecting is not None:
         min_failures = 1 if ns.min_failures is None else ns.min_failures
-        _, frame_sel, _ = _load(store, held, ns.failing_from, trace="none")
+        _, frame_sel, _ = _load(store, selecting, trace="none")
         selected = sorted(
             h for h, row in _by_input(frame_sel, events).items() if row.failed >= min_failures
         )
-        rule = {"rule": "failing-from", "failing_from": ns.failing_from}
+        rule = {"rule": "failing-from", "failing_from": selecting.run_id}
         rule["min_failures"] = min_failures
     else:
         selected = sorted(set(arm_old) | set(arm_new))
@@ -977,9 +1454,9 @@ def _fix_check(ns: argparse.Namespace) -> int:
         paired.Counts(h, arm_old[h].failed, arm_old[h].runs, arm_new[h].failed, arm_new[h].runs)
         for h in compared
     ]
-    header_old = _paired_header(ns.old, manifest_old, tally_old)
-    header_new = _paired_header(ns.new, manifest_new, tally_new)
-    gap = abs((_started(ns.new, manifest_new) - _started(ns.old, manifest_old)).total_seconds())
+    header_old = _paired_header(run_old, manifest_old, tally_old)
+    header_new = _paired_header(run_new, manifest_new, tally_new)
+    gap = abs((_started(run_new, manifest_new) - _started(run_old, manifest_old)).total_seconds())
     rows_old = _arm_rows(arm_old, compared, header_old["declared_repeats"])
     rows_new = _arm_rows(arm_new, compared, header_new["declared_repeats"])
 
@@ -1018,29 +1495,30 @@ def _fix_check(ns: argparse.Namespace) -> int:
     guidance = None
     if test.p < ns.alpha and points != 0:
         verdict = "different"
-        verdict_line = (
-            f"different: the new version failed {word} on these inputs (exact "
+        sentence = (
+            f"the new version failed {word} on these inputs (exact "
             f"Cochran-Mantel-Haenszel, stratified by input, {p_is})"
         )
+        verdict_line = f"different: {sentence}"
     elif drop is not None and drop <= ns.max_mde:
         verdict = "no significant difference"
-        verdict_line = (
-            f"no significant difference ({p_is}); could not have detected a drop in "
-            f"failure share below {limit_text} points"
-        )
+        limit = f"could not have detected a drop in failure share below {limit_text} points"
+        sentence = f"{p_is}; {limit}"
+        verdict_line = f"no significant difference ({p_is}); {limit}"
     else:
         verdict = "too small to tell"
         if drop is None:
-            verdict_line = (
-                "too small to tell: could not have detected a drop in failure share below or "
+            sentence = (
+                "could not have detected a drop in failure share below or "
                 f"at {_points(largest_drop)} points, which is every failure gone, and {asked} "
                 "was asked for"
             )
         else:
-            verdict_line = (
-                "too small to tell: could not have detected a drop in failure share below "
+            sentence = (
+                "could not have detected a drop in failure share below "
                 f"{limit_text} points, and {asked} was asked for"
             )
+        verdict_line = f"too small to tell: {sentence}"
         guidance = {
             "repeats": paired.repeats_needed(counts, ns.max_mde, alpha=ns.alpha),
             "inputs": paired.inputs_needed(counts, ns.max_mde, alpha=ns.alpha),
@@ -1097,12 +1575,12 @@ def _fix_check(ns: argparse.Namespace) -> int:
             "pooled": pooled,
         },
         "limits": {"drop": drop, "rise": rise, "power": 0.8, "max_mde": ns.max_mde},
-        "verdict": verdict,
         "direction": direction,
         "guidance": guidance,
         "changes": _changes_block(counts, configs, ns.alpha),
         "cannot_say": list(paired.CANNOT_SAY),
         "_verdict_line": verdict_line,
+        "_failing_from": None if selecting is None else selecting.name,
         "_event_notes": notes,
         "_top": ns.top,
         "_one_run": one_run,
@@ -1115,9 +1593,36 @@ def _fix_check(ns: argparse.Namespace) -> int:
             if all(held[h].runs >= 2 and not 0 < held[h].failed < held[h].runs for h in compared)
         ],
     }
-    report = FixCheckReport(data=data)
-    look.out(report.to_json() if ns.json else report.to_markdown())
+    following = _fix_check_next(index, ns, run_old, run_new, guidance, len(compared))
+    if ns.json:
+        look.out(FixCheckReport(data=_enveloped(data, verdict, sentence, following)).to_json())
+    else:
+        markdown = FixCheckReport(data=data).to_markdown()
+        look.out(_said(verdict, sentence, markdown, following))
     return look.DONE
+
+
+def _fix_check_next(
+    index: Any,
+    ns: argparse.Namespace,
+    old: Any,
+    new: Any,
+    guidance: Mapping[str, Any] | None,
+    inputs: int,
+) -> str:
+    """Too small to tell: the repeats or the inputs the guidance gives, then the fix check
+    again. Otherwise the inputs that moved, on the same two runs."""
+    if guidance is None:
+        return _next(index, "changes", (old, new), ns)
+    again = "then poisson-trace fix-check again"
+    if guidance["repeats"] is not None:
+        return (
+            f"run {count(guidance['repeats'])} repeats per arm on these {count(inputs)} "
+            f"{'input' if inputs == 1 else 'inputs'}, {again}"
+        )
+    if guidance["inputs"] is not None:
+        return f"run {count(guidance['inputs'])} inputs like these at the present repeats, {again}"
+    return look.command("poisson-trace", "fix-check", "--help")
 
 
 def _changes(ns: argparse.Namespace) -> int:
@@ -1126,9 +1631,10 @@ def _changes(ns: argparse.Namespace) -> int:
     from poisson_trace import paired
     from poisson_trace.report import ChangesReport
 
-    store, held = _open(ns.store)
-    manifest_a, frame_a, tally_a = _load(store, held, ns.a, trace="none")
-    manifest_b, frame_b, tally_b = _load(store, held, ns.b, trace="none")
+    store, index = _named(ns)
+    run_a, run_b = _two(index, ns.a, ns.b, ("A", "B"))
+    manifest_a, frame_a, tally_a = _load(store, run_a, trace="none")
+    manifest_b, frame_b, tally_b = _load(store, run_b, trace="none")
     events = frozenset(ns.event)
     notes = _check_events(events, frame_a, frame_b, "A", "B")
     arm_a, arm_b = _by_input(frame_a, events), _by_input(frame_b, events)
@@ -1141,13 +1647,13 @@ def _changes(ns: argparse.Namespace) -> int:
         paired.Counts(h, arm_a[h].failed, arm_a[h].runs, arm_b[h].failed, arm_b[h].runs)
         for h in compared
     ]
-    gap = abs((_started(ns.b, manifest_b) - _started(ns.a, manifest_a)).total_seconds())
+    gap = abs((_started(run_b, manifest_b) - _started(run_a, manifest_a)).total_seconds())
     data: dict[str, Any] = {
         "schema": "poisson-trace.changes/1",
         "prove": {"version": proofload.__version__, "store": ns.store},
         "runs": {
-            "a": _paired_header(ns.a, manifest_a, tally_a),
-            "b": _paired_header(ns.b, manifest_b, tally_b),
+            "a": _paired_header(run_a, manifest_a, tally_a),
+            "b": _paired_header(run_b, manifest_b, tally_b),
         },
         "events": sorted(events),
         **_changes_block(counts, {h: arm_a[h].config for h in compared}, ns.alpha),
@@ -1161,9 +1667,42 @@ def _changes(ns: argparse.Namespace) -> int:
             "b_only": len(set(arm_b) - set(arm_a)),
         },
     }
-    report = ChangesReport(data=data)
-    look.out(report.to_json() if ns.json else report.to_markdown())
+    sentence = _changes_sentence(data)
+    following = _next(index, "fix-check", (run_a, run_b), ns, "--inputs", "all")
+    if ns.json:
+        look.out(ChangesReport(data=_enveloped(data, "ok", sentence, following)).to_json())
+    else:
+        look.out(_said("ok", sentence, ChangesReport(data=data).to_markdown(), following))
     return look.DONE
+
+
+# the changed inputs a verdict line names before it says how many more there are
+_NAMED_INPUTS = 3
+
+
+def _input_words(config: Any) -> str:
+    """An input as a sentence names it, never as JSON: its first key and value, then each
+    further one after "at" (``task_id HumanEval/129 at temperature 0.7``)."""
+    if not isinstance(config, Mapping) or not config:
+        return str(config)
+    pairs = [f"{k} {v if isinstance(v, str) else json.dumps(v)}" for k, v in config.items()]
+    return " at ".join(pairs)
+
+
+def _changes_sentence(data: Mapping[str, Any]) -> str:
+    """How many inputs changed of those tested, and which, each with its direction."""
+    tested, flagged = data["tested"], data["flagged"]
+    inputs = "input" if tested == 1 else "inputs"
+    head = f"{count(flagged)} of {count(tested)} {inputs} changed"
+    rows = [r for r in data["rows"] if r["flag"] is not None]
+    if not rows:
+        if data["together"] == 1:
+            return head
+        return f"{head}; a lone change could not have been flagged on this design"
+    named = [f"{_input_words(r['config'])} {r['flag']}" for r in rows[:_NAMED_INPUTS]]
+    more = len(rows) - _NAMED_INPUTS
+    tail = f"; and {count(more)} more" if more > 0 else ""
+    return f"{head}: {'; '.join(named)}{tail}"
 
 
 

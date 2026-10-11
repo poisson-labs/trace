@@ -71,13 +71,24 @@ def _dumps(data: Mapping[str, Any]) -> str:
     return json.dumps(data, indent=2, allow_nan=False) + "\n"
 
 
+def _named(run: Mapping[str, Any]) -> str:
+    """A run as a report's header names it: its name, and its id once for the record."""
+    name, run_id = run.get("run_name", run["run_id"]), run["run_id"]
+    return run_id if name == run_id else f"{name} ({run_id})"
+
+
+def _name(run: Mapping[str, Any]) -> str:
+    """A run as every other line names it."""
+    return str(run.get("run_name", run["run_id"]))
+
+
 def _header_lines(run: Mapping[str, Any], events: Sequence[str]) -> list[str]:
     tally = run["tally"]
     placement = run["placement"]
     excluded = placement["excluded"]
     cap = "no cap" if run["cap"] is None else f"cap: {count(run['cap'])} spans"
     lines = [
-        f"- run: {run['run_id']} · target: {run['target_id']} · t_unit: {run['t_unit']} · "
+        f"- run: {_named(run)} · target: {run['target_id']} · t_unit: {run['t_unit']} · "
         f"status: {run['status']} · {cap}",
         "- Prove's tally: "
         + " · ".join(
@@ -195,7 +206,7 @@ def _tally_line(label: str, tally: Mapping[str, Any]) -> str:
 def _run_lines(label: str, run: Mapping[str, Any]) -> list[str]:
     declared = run["declared_repeats"]
     return [
-        f"- {label}: {run['run_id']} · target: {run['target_id']} · status: {run['status']} · "
+        f"- {label}: {_named(run)} · target: {run['target_id']} · status: {run['status']} · "
         f"started: {run['created_at']} · declared repeats: "
         f"{'not recorded' if declared is None else count(declared)}",
         _tally_line(label, run["tally"]),
@@ -279,7 +290,7 @@ class WhereReport:
         by = d["clock"]["by"]
         by_label = "kind of step" if by == "kind" else "step name"
         cause_word = "kind" if by == "kind" else "step"
-        lines = [f"# Poisson Trace · where runs die · {run['run_id']}", "", "## Run", ""]
+        lines = [f"# Poisson Trace · where runs die · {_name(run)}", "", "## Run", ""]
         lines += _header_lines(run, d["events"])
         lines += ["", "## Survival over step index", "", f"{KM_CAPTION}.", ""]
         lines += ["| step | at risk | died | S | 95% band |", "|---|---|---|---|---|"]
@@ -362,7 +373,7 @@ class CompareReport:
         cause_word = "kind" if by == "kind" else "step"
         a, b = runs["a"], runs["b"]
         lines = [
-            f"# Poisson Trace · compare · {a['run_id']} (before) and {b['run_id']} (after)",
+            f"# Poisson Trace · compare · {_name(a)} (before) and {_name(b)} (after)",
             "",
             "## Run A (before)",
             "",
@@ -481,7 +492,7 @@ class FixCheckReport:
         d = self.data
         old, new = d["runs"]["old"], d["runs"]["new"]
         lines = [
-            f"# Poisson Trace · fix check · {old['run_id']} (old) and {new['run_id']} (new)",
+            f"# Poisson Trace · fix check · {_name(old)} (old) and {_name(new)} (new)",
             "",
             "## Runs",
             "",
@@ -517,7 +528,7 @@ class FixCheckReport:
         else:
             rule = (
                 f"inputs that failed at least {_count(inputs['min_failures'], 'time')} in "
-                f"{inputs['failing_from']}"
+                f"{d.get('_failing_from') or inputs['failing_from']}"
             )
         left = inputs["left_out"]
         reasons = "; ".join(f"{reason} {count(n)}" for reason, n in left.items() if n)
@@ -696,7 +707,7 @@ class ChangesReport:
         d = self.data
         a, b = d["runs"]["a"], d["runs"]["b"]
         lines = [
-            f"# Poisson Trace · changes · {a['run_id']} (A) and {b['run_id']} (B)",
+            f"# Poisson Trace · changes · {_name(a)} (A) and {_name(b)} (B)",
             "",
             "## Runs",
             "",
@@ -791,7 +802,7 @@ def _render_svg(report: WhereReport) -> str:
     placement = run["placement"]
     parts.append(
         f'<text x="{_PAD_L}" y="22" fill="{_INK}" font-size="14" font-weight="600">'
-        f"{escape(run['run_id'])} · {escape(run['target_id'])}</text>"
+        f"{escape(_name(run))} · {escape(run['target_id'])}</text>"
     )
     parts.append(
         f'<text x="{_PAD_L}" y="40" fill="{_INK2}">placed {count(placement["placed"])} · '

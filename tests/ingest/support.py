@@ -104,11 +104,12 @@ def deepeval_argv(files: Sequence[Path] | Path, store: Path, run: str, *, metric
 
 
 def refused(result: Result) -> None:
-    """Exit 1, nothing on stdout, one line on stderr. No message words are matched."""
+    """Exit 1, nothing on stdout, one line on stderr and the command to run under it on its own
+    next: lines (rule 4). No message words are matched."""
     assert result.code == 1, result.text
     assert result.out.strip() == "", result.out
     lines = [line for line in result.err.splitlines() if line.strip()]
-    assert len(lines) == 1, result.err
+    assert lines and all(line.startswith("  next: ") for line in lines[1:]), result.err
 
 
 # ---------- the store ----------
