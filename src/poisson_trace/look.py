@@ -329,10 +329,7 @@ def run(
 def _unexpected(session: Session, e: Exception) -> None:
     details = "".join(traceback.format_exception(e))
     stamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    entry = (
-        f"--- {stamp} {version_line()}"
-        f"{shlex.join([session.tool, *session.argv])}\n{details}\n"
-    )
+    entry = f"--- {stamp} {version_line()}{shlex.join([session.tool, *session.argv])}\n{details}\n"
     try:
         path = errors_log_path()
     except RuntimeError:

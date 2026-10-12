@@ -62,7 +62,7 @@ def _example(*commands: str) -> str:
 
 
 _STORE_HELP = "the folder Prove stored the runs in (no default)"
-_RUN_HELP = "by its name, latest, previous or its number in the runs listing (\"#3\")"
+_RUN_HELP = 'by its name, latest, previous or its number in the runs listing ("#3")'
 
 
 def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
@@ -90,7 +90,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "rows, how many of them failed for the --event names, whether any row carries a\n"
             "trace (where and compare read traces; fix-check and changes do not need them), when\n"
             "it started (UTC) and its status. The newest 50 complete runs are listed. A run's\n"
-            "number, such as \"#1\", names it to every verb."
+            'number, such as "#1", names it to every verb.'
         ),
         epilog=_example("poisson-trace runs --store proofload-runs --event unsolved"),
     )
@@ -228,8 +228,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         "--max-mde-hr",
         type=float,
         metavar="X",
-        help="the largest minimum detectable hazard ratio you accept, such as 1.5 "
-        "(no default)",
+        help="the largest minimum detectable hazard ratio you accept, such as 1.5 (no default)",
     )
     compare.show_required(ceiling)
     compare.add_argument(
@@ -285,8 +284,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         "--min-failures",
         type=int,
         metavar="M",
-        help="with --failing-from, the failures an input needs in RUN to be compared "
-        "(default: 1)",
+        help="with --failing-from, the failures an input needs in RUN to be compared (default: 1)",
     )
     fix.add_argument(
         "--inputs",
@@ -354,9 +352,7 @@ def _main(session: look.Session) -> int:
     if look.asks(session.argv, valued, "--version"):
         look.out(look.version_line())
         return look.DONE
-    args, at = look.verb_first(
-        session.argv, valued, _KEPT, look.options(parsers), "poisson-trace"
-    )
+    args, at = look.verb_first(session.argv, valued, _KEPT, look.options(parsers), "poisson-trace")
     if at is not None and args[at] not in verbs:
         raise look.Usage(
             f'"{args[at]}" is not a verb; the verbs are {_NAMED}', "poisson-trace --help"
@@ -402,9 +398,7 @@ def _name_line(ns: argparse.Namespace) -> None:
             raise look.Usage("--list takes no run and no --forget", usage)
         return
     if ns.run is None:
-        raise look.Usage(
-            "name takes a run and a name, a run and --forget, or --list", usage
-        )
+        raise look.Usage("name takes a run and a name, a run and --forget, or --list", usage)
     if ns.forget and ns.new is not None:
         raise look.Usage("--forget takes the run alone, without a new name", usage)
     if not ns.forget and ns.new is None:
@@ -532,9 +526,7 @@ def _flags(ns: argparse.Namespace) -> list[str]:
     return words
 
 
-def _next(
-    index: Any, verb: str, runs: Sequence[Any], ns: argparse.Namespace, *extra: str
-) -> str:
+def _next(index: Any, verb: str, runs: Sequence[Any], ns: argparse.Namespace, *extra: str) -> str:
     """A next command: the runs by the words that reach them, the store and the events given."""
     words = (look.word(index.word_for(r)) for r in runs)
     return look.command("poisson-trace", verb, *words, *_flags(ns), *extra)
@@ -566,9 +558,7 @@ def _run_before(index: Any, run: Any) -> Any | None:
     if at is None:
         # a run whose start Prove's record does not give has no place in the order
         return None
-    return next(
-        (r for r in reversed(order[:at]) if r.complete and r.target == run.target), None
-    )
+    return next((r for r in reversed(order[:at]) if r.complete and r.target == run.target), None)
 
 
 def _outcomes(frame: Any) -> set[str]:
@@ -986,7 +976,7 @@ def _where_sentence(
     """The deaths, the placed episodes, the deaths by kind and the median; the episodes and
     the events when none died; and no count for a run with no traces."""
     if not traced:
-        how = f" (imported from {run.backend[len('import:'):]})" if run.imported else ""
+        how = f" (imported from {run.backend[len('import:') :]})" if run.imported else ""
         return f"this run has no traces, so there is no curve{how}"
     placed = len(placement.rows)
     died = sum(1 for p in placement.rows if p.died)
@@ -1703,7 +1693,6 @@ def _changes_sentence(data: Mapping[str, Any]) -> str:
     more = len(rows) - _NAMED_INPUTS
     tail = f"; and {count(more)} more" if more > 0 else ""
     return f"{head}: {'; '.join(named)}{tail}"
-
 
 
 if __name__ == "__main__":

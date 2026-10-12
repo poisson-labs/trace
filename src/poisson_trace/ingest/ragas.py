@@ -67,8 +67,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         "--cut",
         required=True,
         metavar="X",
-        help="the cut, a number, with its side; a Ragas table records no threshold "
-        "(no default)",
+        help="the cut, a number, with its side; a Ragas table records no threshold (no default)",
     )
     parser.add_argument("--below", action="store_true", help="a score under the cut missed it")
     parser.add_argument("--above", action="store_true", help="a score over the cut missed it")
