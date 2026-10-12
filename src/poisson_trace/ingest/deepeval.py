@@ -9,6 +9,7 @@ no text of a test case is kept: not its input, its outputs or a metric's reason.
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import gzip
 import hashlib
 import json
@@ -218,6 +219,32 @@ def _started(first: Path) -> tuple[str, str]:
         else:
             return _utc(local.astimezone()), "file name"
     return _utc(datetime.fromtimestamp(first.stat().st_mtime, UTC)), "file time"
+
+
+def looks_like(path: Path | str) -> str | None:
+    """One line describing ``path`` when it is a test run DeepEval saved that this reader reads,
+    else None; it never raises. DeepEval's are a results-folder file named ``test_run_*.json``
+    and the ``.latest_test_run.json`` it keeps in a ``.deepeval`` folder, holding a test run. A
+    ``.gz`` copy is read by the import and not offered here."""
+    try:
+        found = Path(path)
+        latest = found.name == ".latest_test_run.json" and found.parent.name == ".deepeval"
+        if not (latest or fnmatch.fnmatchcase(found.name, "test_run_*.json")):
+            return None
+        if not found.is_file():
+            return None
+        doc = json.loads(found.read_bytes().decode("utf-8"))
+        _, test_run = _test_run(found, doc)
+        entries = _entries(found, test_run)
+        metrics: dict[str, None] = {}
+        for _, test_case in entries:
+            for m in _metrics(found, test_case):
+                metrics[str(m.get("name"))] = None
+    except Exception:
+        return None
+    cases = f"{len(entries):,} test {'case' if len(entries) == 1 else 'cases'}"
+    carried = ", ".join(metrics) if metrics else "no metric"
+    return " ".join(f"a DeepEval test run of {cases}; metrics: {carried}".split())
 
 
 def read(ns: argparse.Namespace) -> Run:

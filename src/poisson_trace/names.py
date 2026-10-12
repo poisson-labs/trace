@@ -2,11 +2,12 @@
 manifest, and the words a verb takes for a run.
 
 ``trace-names.toml`` at the store root holds the names a user gave, written by ``poisson-trace
-name`` alone; no run's bytes change. A run with no entry is named from its manifest: the target
-up to its first ``/``, the day it started in UTC and a letter in start order among the runs that
-would otherwise share that name. A run an import wrote is named by the name it was imported
-under, which is its id. Names are computed each time, never stored, so they are the same on
-every machine that holds the same store.
+name`` alone; no run's bytes change. A run with no entry is named from its manifest, in the form
+the config's ``[names] from`` sets: ``target`` (the target up to its first ``/``, then the day it
+started in UTC), ``date`` (the day alone) or ``target-date`` (the target, the model, the day),
+then a letter in start order among the runs that would otherwise share that name. A run an
+import wrote is named by the name it was imported under, which is its id. Names are computed
+each time, never stored, so they are the same on every machine that holds the same store.
 
 A verb takes a run as ``latest``, ``previous``, ``latest:TARGET``, ``previous:TARGET``, ``#N``
 (row N of ``poisson-trace runs``), a name the user gave, a name from the manifest or the full
@@ -119,7 +120,7 @@ def import_name_refusal(text: str) -> str | None:
 # ---------- the names file ----------
 
 
-def _toml_string(text: str) -> str:
+def toml_string(text: str) -> str:
     """``text`` as a TOML basic string."""
     out = []
     for ch in text:
@@ -142,7 +143,7 @@ def names_file_text(entries: Mapping[str, str]) -> str:
     """The file, byte for byte: the comment, the version, a blank line and the names table,
     one entry per name, sorted by name."""
     lines = [HEADER, "version = 1", "", "[names]"]
-    lines += [f"{_toml_string(n)} = {_toml_string(entries[n])}" for n in sorted(entries)]
+    lines += [f"{toml_string(n)} = {toml_string(entries[n])}" for n in sorted(entries)]
     return "\n".join(lines) + "\n"
 
 
@@ -242,7 +243,9 @@ def _letters(n: int) -> str:
     return out
 
 
-def _started(created_at: Any) -> datetime | None:
+def started(created_at: Any) -> datetime | None:
+    """When a run started, in UTC, from its record's ``created_at``; None when that is not a
+    time a name can be given from."""
     if not isinstance(created_at, str):
         return None
     try:
@@ -303,6 +306,9 @@ class Index:
     words: dict[str, set[str]] = field(default_factory=dict)
     doubled: dict[str, list[str]] = field(default_factory=dict)  # a run given two names
     unfit: dict[str, str] = field(default_factory=dict)  # names that cannot be names, and why
+    # what a command carries to reach this store: --store as given, or nothing (and the config
+    # file named by flag) when the config gives it
+    carried: tuple[str, ...] | None = None
 
     def damage(self) -> Damaged | None:
         """The refusal a file with a stale entry, a name that cannot be one or two names for
@@ -433,9 +439,15 @@ class Index:
             )
         return complete[int(digits) - 1]
 
+    def reach(self) -> tuple[str, ...]:
+        """The words a command carries to read this store."""
+        if self.carried is not None:
+            return self.carried
+        return (look.option("--store", self.store),)
+
     def listing(self, *extra: str) -> str:
         """The command that lists this store's runs."""
-        return look.command("poisson-trace", "runs", look.option("--store", self.store), *extra)
+        return look.command("poisson-trace", "runs", *self.reach(), *extra)
 
     def word_for(self, run: Named) -> str:
         """The word a command gives for ``run``: its name when that reaches it alone; else its
@@ -462,10 +474,10 @@ class Index:
     def forget(self, name: str) -> str:
         """The command that takes back the name of yours ``name``; one a command line would read
         as an option comes after ``--``."""
-        store = look.option("--store", self.store)
+        store = self.reach()
         if name.startswith("-"):
-            return look.command("poisson-trace", "name", "--forget", store, "--", look.word(name))
-        return look.command("poisson-trace", "name", look.word(name), "--forget", store)
+            return look.command("poisson-trace", "name", "--forget", *store, "--", look.word(name))
+        return look.command("poisson-trace", "name", look.word(name), "--forget", *store)
 
     def names_shown(self) -> str:
         return shown_file(self.store)
@@ -476,10 +488,20 @@ def shown_file(store: str) -> str:
     return f"{store.rstrip('/') or '/'}/{NAMES_FILE}" if store else NAMES_FILE
 
 
-def index(store: Any, held: Sequence[str], shown: str, *, lenient: bool = False) -> Index:
+def index(
+    store: Any,
+    held: Sequence[str],
+    shown: str,
+    *,
+    lenient: bool = False,
+    form: str = "target",
+    carried: tuple[str, ...] | None = None,
+) -> Index:
     """The runs ``store`` (Prove's store at the path ``shown``, as the user typed it) holds,
-    named. A damaged names file is refused; so are an entry for a run the store does not hold
-    and two names for one run, unless ``lenient`` (``name``, which can take either back)."""
+    named, the names from the manifests in ``form`` (``target``, ``date`` or ``target-date``).
+    A damaged names file is refused; so are an entry for a run the store does not hold and two
+    names for one run, unless ``lenient`` (``name``, which can take either back). ``carried``
+    is what a command gives to reach the store, when that is not ``--store`` as typed."""
     root = Path(shown)
     entries, unfit_names = read_names_file(root, shown_file(shown))
     runs: list[Named] = []
@@ -490,8 +512,8 @@ def index(store: Any, held: Sequence[str], shown: str, *, lenient: bool = False)
         except Exception:
             unreadable.append(run_id)
             continue
-        started = _started(manifest.created_at)
-        if started is None:
+        started_at = started(manifest.created_at)
+        if started_at is None:
             unreadable.append(run_id)
             continue
         runs.append(
@@ -501,7 +523,7 @@ def index(store: Any, held: Sequence[str], shown: str, *, lenient: bool = False)
                 named_by="manifest",
                 computed=None,
                 created_at=manifest.created_at,
-                started=started,
+                started=started_at,
                 status=str(manifest.status),
                 target_id=str(manifest.target_id),
                 backend=str(manifest.backend),
@@ -509,14 +531,18 @@ def index(store: Any, held: Sequence[str], shown: str, *, lenient: bool = False)
         )
     runs.sort(key=lambda r: (r.started, r.run_id))
     computed: dict[str, str] = {}
-    letters: dict[tuple[str, str], int] = {}
+    letters: dict[str, int] = {}
     for run in runs:
-        if run.imported or not _nameable(run.target):
+        if run.imported:
+            continue
+        rest = _rest_of_name(run.target_id, form)
+        if rest is None:
             continue
         day = run.started.strftime("%Y-%m-%d")
-        n = letters.get((run.target, day), 0)
-        letters[(run.target, day)] = n + 1
-        computed[run.run_id] = f"{run.target} {day} {_letters(n)}"
+        head = f"{rest} {day}" if rest else day
+        n = letters.get(head, 0)
+        letters[head] = n + 1
+        computed[run.run_id] = f"{head} {_letters(n)}"
     ids = {r.run_id for r in runs}
     stale = {n: r for n, r in entries.items() if r not in ids and r not in unreadable}
     mine: dict[str, list[str]] = {}
@@ -524,7 +550,9 @@ def index(store: Any, held: Sequence[str], shown: str, *, lenient: bool = False)
         if name not in unfit_names:
             mine.setdefault(run_id, []).append(name)
     doubled = {r: sorted(n) for r, n in mine.items() if len(n) > 1}
-    checked = Index(shown, root, [], entries, stale, doubled=doubled, unfit=unfit_names)
+    checked = Index(
+        shown, root, [], entries, stale, doubled=doubled, unfit=unfit_names, carried=carried
+    )
     damage = checked.damage()
     if damage is not None and not lenient:
         raise damage
@@ -562,7 +590,40 @@ def index(store: Any, held: Sequence[str], shown: str, *, lenient: bool = False)
             add(name, run_id)
     for run_id in unreadable:
         add(run_id, run_id)
-    return Index(shown, root, numbered, entries, stale, unreadable, words, doubled, unfit_names)
+    return Index(
+        shown, root, numbered, entries, stale, unreadable, words, doubled, unfit_names, carried
+    )
+
+
+# a date stamp at the end of a model's name: gpt-4.1-mini-2025-04-14
+_STAMP = re.compile(r"-\d{4}-\d{2}-\d{2}$")
+
+
+def model_of(target_id: str) -> str | None:
+    """The model a target id names: after its first ``/``, up to an ``@``, without a date stamp
+    at its end (``tau2-airline/gpt-4.1-mini-2025-04-14@v0`` gives ``gpt-4.1-mini``); None when
+    it names none."""
+    if "/" not in target_id:
+        return None
+    model = _STAMP.sub("", target_id.split("/", 1)[1].split("@", 1)[0])
+    return model or None
+
+
+def _rest_of_name(target_id: str, form: str) -> str | None:
+    """What a name from the manifest holds before its day: the target (``target``), nothing
+    (``date``), or the target and the model (``target-date``; the target alone when the id names
+    no model). None when that could not be given back to a verb, and the run goes by its id."""
+    if form == "date":
+        return ""
+    rest = target_of(target_id)
+    model = model_of(target_id) if form == "target-date" else None
+    if not _nameable(rest):
+        return None
+    if model is not None:
+        rest = f"{rest} {model}"
+        if not _nameable(rest):
+            return None
+    return rest
 
 
 def _nameable(target: str) -> bool:
@@ -577,10 +638,12 @@ def _nameable(target: str) -> bool:
     )
 
 
-def taken(store: Any, held: Iterable[str], root: Path, name: str) -> str | None:
+def taken(
+    store: Any, held: Iterable[str], root: Path, name: str, form: str = "target"
+) -> str | None:
     """The refusal when an import named ``name`` would answer to a word another run of the
-    store already answers to, else None."""
-    found = index(store, list(held), str(root))
+    store already answers to, the names from the manifests in ``form``, else None."""
+    found = index(store, list(held), str(root), form=form)
     others = found.holder(name)
     if not others:
         return None

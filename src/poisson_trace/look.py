@@ -23,12 +23,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NoReturn, TextIO
 
-# the exit codes (docs/cli-look.md); 4 belongs to a check the user asks for, and no command
-# here has one yet
+# the exit codes (docs/cli-look.md); 4 belongs to a check the user asks for (doctor)
 DONE = 0
 REFUSED = 1
 USAGE = 2
 FAILED = 3
+CHECK_FAILED = 4
 INTERRUPTED = 130
 
 PROVE_VERSION = "0.0.1"
@@ -159,6 +159,24 @@ def error(sentence: str, nexts: Sequence[str] = ()) -> None:
         err(f"  next: {command}\n")
 
 
+# ---------- questions ----------
+
+
+class Unanswered(Refused):
+    """Stdin ended before a question was answered."""
+
+
+def ask(question: str) -> str:
+    """Print ``question`` on stderr and read one line of answer from stdin, trimmed. Stdin that
+    ends before a line is a refusal."""
+    err(question + " ")
+    line = sys.stdin.readline() if sys.stdin is not None else ""
+    if not line:
+        err("\n")
+        raise Unanswered("stdin ended before the question was answered; nothing was written")
+    return line.strip()
+
+
 # ---------- commands a user can copy ----------
 
 # the characters a shell reads as themselves in a word
@@ -219,23 +237,31 @@ def version_line() -> str:
 
 def prove_refusal(does: str) -> str | None:
     """The refusal when Prove is not importable at the version this package reads, else None.
-    ``does`` is what the command does through Prove, as the sentence's opening words."""
+    ``does`` is what the command does through Prove, as the sentence's opening words. The line
+    that installs it is the command to run next, under the sentence, and not in it."""
     try:
         import proofload
     except ImportError:
         return (
             f"{does} through Prove (the proofload package, version {PROVE_VERSION}), which is "
-            f"not installed here; install it with {INSTALL_PROVE}"
+            "not installed here"
         )
     found = _found(proofload)
     if found != PROVE_VERSION:
         return (
             f"{does} through Prove (the proofload package, version {PROVE_VERSION}) and found "
-            f"{f'proofload {found}' if found else 'a proofload that states no version'}; "
-            "install the version it reads with "
-            f"{INSTALL_PROVE}"
+            f"{f'proofload {found}' if found else 'a proofload that states no version'}"
         )
     return None
+
+
+def prove_found() -> str | None:
+    """The version of Prove this interpreter imports, or None when there is none."""
+    try:
+        import proofload
+    except ImportError:
+        return None
+    return _found(proofload)
 
 
 def _found(module: Any) -> str | None:
@@ -472,9 +498,7 @@ def verb_first(
         if word.startswith("-") and word != "-":
             name = word.split("=", 1)[0]
             if name not in known:
-                # one line, the command inside it: a test of the look's own holds this case to
-                # a single line (a next line here waits on a ruling)
-                raise Usage(f"unrecognized arguments: {word}; see {prog} --help")
+                raise Usage(f"unrecognized arguments: {word}", f"{prog} --help")
             where = head if name in kept else moved
             where.append(word)
             if "=" not in word and name in valued and i + 1 < len(args):

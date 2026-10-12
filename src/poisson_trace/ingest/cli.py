@@ -58,7 +58,8 @@ files, and the rows that share a case are its repeats.
 """
 
 
-def _present() -> tuple[str, ...]:
+def present() -> tuple[str, ...]:
+    """The readers whose modules are in the install, in the order ``READERS`` names them."""
     return tuple(name for name in READERS if find_spec(f"{__package__}.{name}") is not None)
 
 
@@ -93,9 +94,14 @@ def _build_parser(
         )
         sub.add_argument(
             "--store",
-            required=True,
             metavar="ROOT",
-            help="the store to write the run into, made if it is not there (no default)",
+            help="the store to write the run into, made if it is not there, or the name of a "
+            "store trace.toml names (default: the store trace.toml names)",
+        )
+        sub.add_argument(
+            "--config",
+            metavar="PATH",
+            help="the config file to read (default: trace.toml in the current folder, if any)",
         )
         sub.add_argument(
             "--run",
@@ -170,7 +176,7 @@ def _sentence(written: Written, store: str) -> str:
     )
 
 
-def _summary(run: Run, written: Written, store: str) -> dict[str, Any]:
+def _summary(run: Run, written: Written, store: str, reach: Sequence[str]) -> dict[str, Any]:
     started: dict[str, Any] = {"at": run.started, "from": run.started_from}
     if run.started_from == "file name":
         name, offset = _zone(run.started)
@@ -192,7 +198,7 @@ def _summary(run: Run, written: Written, store: str) -> dict[str, Any]:
         "no_outcome": dict(written.no_outcome),
         "counts": dict(run.counts),
         "next": (
-            f"poisson-trace fix-check OLD NEW {look.option('--store', store)} --event {MISSED} "
+            f"poisson-trace fix-check OLD NEW {' '.join([*reach, f'--event {MISSED}'])} "
             "--inputs all "
             f"--max-mde X  # {written.run} is OLD or NEW"
         ),
@@ -246,8 +252,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _main(session: look.Session) -> int:
-    present = _present()
-    parser, subs, further = _build_parser(present)
+    parser, subs, further = _build_parser(present())
     parsers = [parser, *subs.values()]
     valued = look.takes_value(parsers)
     if look.asks(session.argv, valued, "--version"):
@@ -273,7 +278,27 @@ def _main(session: look.Session) -> int:
     session.debug = bool(getattr(ns, "debug", False))
     if getattr(ns, "json", False):
         session.render = _stopped_json
+    form = "target"
     if ns.tool not in further:
+        from poisson_trace import config
+
+        settings = config.load(ns.config)
+        form = settings.names_from if settings is not None else "target"
+        typed = ns.store
+        if typed is not None and settings is not None and typed in settings.named:
+            ns.store = settings.named[typed]
+        elif typed is None and settings is not None:
+            ns.store = settings.store
+        if ns.store is None:
+            gives = (
+                "no trace.toml here gives one"
+                if settings is None
+                else f"{settings.shown} names none"
+            )
+            raise look.Usage(f"--store is required: {gives}", f"{subs[ns.tool].prog} --help")
+        # what the next command carries to reach the same store
+        reach = [look.option("--store", typed)] if typed is not None else []
+        reach += list(settings.flags()) if settings is not None else []
         # a run's name is its folder and the word for it: checked before Prove is asked anything
         hole = import_name_refusal(ns.run)
         if hole is not None:
@@ -303,8 +328,8 @@ def _main(session: look.Session) -> int:
         )
     from poisson_trace.ingest.writer import write
 
-    written = write(run, store)
-    data = _summary(run, written, str(ns.store))
+    written = write(run, store, form)
+    data = _summary(run, written, str(ns.store), reach)
     look.out(json.dumps(data, indent=2, allow_nan=False) + "\n" if ns.json else _markdown(data))
     return look.DONE
 
