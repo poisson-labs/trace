@@ -244,7 +244,7 @@ cd from-deepeval && poisson-trace init --yes --metric "Tests Passed" --cut recor
 <!-- excerpt exit=0 -->
 ```
 ok  wrote trace.toml and imported 1 run into trace-store, failures missed
-  names    1 run, named at import (test_run_20260905_185407); none named by you yet: poisson-trace name RUN "a name"
+  names    1 run, named at import (test_run_20260905_185407)
   prove    poisson-prove is installed at the version Trace reads
   import   poisson-trace-import deepeval results/test_run_20260905_185407.json --store trace-store --run test_run_20260905_185407 --metric "Tests Passed" --cut recorded --case name
   the same setup, without questions:

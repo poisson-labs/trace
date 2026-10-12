@@ -60,8 +60,9 @@ poisson-trace where "cs_agents 2026-09-25 a" --store tests/fixtures/cs --event u
 Run `poisson-trace init` in your project's folder. It finds the results already there (the
 stores Prove wrote, and result files DeepEval or Ragas wrote), asks what counts as a failure,
 and writes `trace.toml`, from which every verb then takes its store and its failures: the
-commands after it need neither `--store` nor `--event`. It runs nothing, spends nothing and
-writes under no store.
+commands after it need neither `--store` nor `--event`. It runs nothing and spends nothing,
+and it writes under no store but the runs of an import you agree to; it never writes
+`trace.toml` into a store or a run's folder.
 
 It searches the folder you run it in and the folders below it, six deep, breadth first and in
 name order, reading at most 10,000 entries (it says so when it stops short); it skips `.git`,
@@ -73,7 +74,8 @@ On a terminal it asks, on stderr, and reads your answers a line at a time:
 
 - **Which store**, when it finds several: `Which results do you want to start with? [1]`.
   The others can be added later with `poisson-trace init --add-store PATH`, which the summary
-  shows; a store added is named by its folder, and `--store NAME` then reaches it.
+  shows; a store added is named by its folder, and `--store NAME` then reaches it (added to a
+  config that names no store yet, it becomes the store every verb reads).
 - **What counts as a failure**: the outcomes the newest 20 runs carry, each with its count of
   episodes. The default, in brackets, is every outcome whose name is not a word for success
   (`solved`, `resolved`, `passed`, `met`, `ok`, `success`, `fixed`, `planned`, `cited`,
@@ -86,7 +88,11 @@ On a terminal it asks, on stderr, and reads your answers a line at a time:
   [DeepEval](docs/integrations/deepeval.md) and [Ragas](docs/integrations/ragas.md).
 
 Every question has a flag (`poisson-trace init --help` lists them), and `--yes` asks nothing,
-taking each answer from its flag or its default. Here it is on the tau2 fixture, copied into a
+taking each answer from its flag or its default. The import's questions have no default: with
+`--yes` and result files found, give the import's flags, or `--no-import` to write the config
+with no store. When both tools' files are found, `init` does not import them (one set of
+answers fits one tool); give `--no-import` and import each with `poisson-trace-import`. The
+listing comes first on stderr, so a refusal after it is the last lines there. Here it is on the tau2 fixture, copied into a
 folder of its own:
 
 <!-- command -->
@@ -199,8 +205,10 @@ error: typo.toml line 9: [events] "faild" is not a setting; did you mean "failed
 Python running Trace, the package and where it was imported from (with a note when that is
 outside the interpreter's environment, as an editable install is), Prove, the config and the
 stores it names, the names of yours, and the readers in the install. A line that fails ends
-with the command that mends it, and `next:` is the first of them; not ready exits 4. It fixes
-nothing and asks nothing.
+with the command that mends it, where one does (a config that is a folder, or runs that carry
+no outcome, say what is wrong instead), and `next:` is the first of them; not ready exits 4.
+A store named in `trace.toml` whose runs carry none of its failures is noted: give `--event`
+with `--store NAME` for it. It fixes nothing and asks nothing.
 
 <!-- command -->
 ```
@@ -940,16 +948,16 @@ ruff check .
 mypy --strict src
 ```
 
-The suite holds 1,202 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
+The suite holds 1,223 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
 (3 of them its display rules), 124 for `poisson-trace-import` and its DeepEval reader, 80 for
 its Ragas reader, 184 that hold both commands to the shared command-line look
 ([`docs/cli-look.md`](docs/cli-look.md)): the exit codes, the `error:` lines, the help and
 `--version`, options before or after the verb, the ASCII fallback, a closed pipe and plain
 words; 316 for names and runs: the names file, the name every run has, the words a verb
 takes for a run, `runs` and `name`, the verdict line and `next:`, and the import's run names;
-and 255 for the setup: `init`, `trace.toml` and how every verb reads it, the two further forms
+and 276 for the setup: `init`, `trace.toml` and how every verb reads it, the two further forms
 of a run's name, `doctor`, and the readers' `looks_like`.
-Four of the 1,202 run DeepEval or Ragas itself, installed from PyPI, and are left out
+Four of the 1,223 run DeepEval or Ragas itself, installed from PyPI, and are left out
 unless asked for (`python -m pytest -m lane_j`). The figures the tests check against come
 from lifelines, scipy, full enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks
 the fixtures (`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).

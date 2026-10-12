@@ -26,7 +26,10 @@ knows where their results are and what counts as a failure.
   writes the names form, and `--max-mde`, `--max-mde-hr` and `--fail-on` write `[check]`,
   only when given. A config there already is refused without `--force`, but for one with a
   store and no failures, which `init` completes. `--add-store PATH` adds a store to a config,
-  named by its folder, keeping every line. Without Prove, `init` refuses before it searches.
+  named by its folder (or as the store every verb reads, when the config names none), keeping
+  every line, and says when its runs carry none of the config's failures. `init` never writes
+  `trace.toml` into a store or a run's folder, and does not import when both tools' files are
+  found. Without Prove, `init` refuses before it searches.
   `--json` prints `poisson-trace.init/1`.
 - **`trace.toml`** is read by every verb and by `poisson-trace-import`, from the current
   folder or `--config PATH`, never from a folder above: the store and named stores (a path
@@ -43,7 +46,8 @@ knows where their results are and what counts as a failure.
 - **`poisson-trace doctor`** checks six things, one line each: the Python, the package and
   where it was imported from (a note when that is outside the interpreter's environment),
   Prove, the config and the stores it names, the names of yours, and the readers in the
-  install. A failing line ends with the command that mends it; not ready exits 4. It fixes
+  install. A failing line ends with the command that mends it, where one does;
+  not ready exits 4. It fixes
   nothing. `--json` prints `poisson-trace.doctor/1`.
 - **The readers say which files they read**: `looks_like(path)` on the DeepEval and Ragas
   readers gives the one line a listing shows, or nothing, and never raises.
