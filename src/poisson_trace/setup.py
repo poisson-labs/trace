@@ -269,7 +269,13 @@ def show(found: Found) -> Listed:
     score tables by file, numbered on across all of them."""
     stores: dict[int, FoundStore] = {}
     n = 0
-    width = max([len(s.path) for s in found.stores] + [len(f.path) for f in found.files] + [24])
+    folders: dict[str, list[FoundFile]] = {}
+    for f in found.files:
+        if f.reader == "deepeval":
+            folders.setdefault(f.folder, []).append(f)
+    tables = [f for f in found.files if f.reader != "deepeval"]
+    shown = [s.path for s in found.stores] + list(folders) + [f.path for f in tables]
+    width = max([len(p) for p in shown] + [24])
     if found.stopped:
         look.err(
             f"  looked at {count(ENTRIES)} entries under . and stopped; give --store PATH to "
@@ -281,10 +287,6 @@ def show(found: Found) -> Listed:
             n += 1
             stores[n] = s
             look.err(f"    {n}) {s.path.ljust(width)}  {store_line(s)}\n")
-    folders: dict[str, list[FoundFile]] = {}
-    for f in found.files:
-        if f.reader == "deepeval":
-            folders.setdefault(f.folder, []).append(f)
     if folders:
         heading = _plural(len(folders), "DeepEval results folder", "DeepEval results folders")
         look.err(f"  found {heading}:\n")
@@ -293,7 +295,6 @@ def show(found: Found) -> Listed:
             newest = max(_saved(f) for f in held)
             saved = _plural(len(held), "saved test run", "saved test runs")
             look.err(f"    {n}) {folder.ljust(width)}  {saved} · newest {newest}\n")
-    tables = [f for f in found.files if f.reader != "deepeval"]
     if tables:
         look.err(f"  found {_plural(len(tables), 'score table', 'score tables')}:\n")
         for f in tables:
@@ -979,17 +980,27 @@ def _store_said(name: str | None, path: str, runs: int) -> str:
 
 
 def _names_line(index: Any) -> str:
+    """The runs, how they are named, the newest names, and how to give one a name."""
     total = len(index.runs)
+    if total == 0:
+        return "no run whose record Prove can read"
     shown = [r.name for r in index.runs[:NAMES_SHOWN]]
     more = ", …" if total > NAMES_SHOWN else ""
-    mine = sum(1 for r in index.runs if r.named_by == "you")
-    if mine:
-        whose = f"{count(mine)} named by you, {count(total - mine)} from their manifests"
-        tail = ""
-    else:
-        whose = "named from its manifest" if total == 1 else "named from their manifests"
-        tail = '; none named by you yet: poisson-trace name RUN "a name"'
-    return f"{_plural(total, 'run', 'runs')}, {whose} ({', '.join(shown)}{more}){tail}"
+    imported = sum(1 for r in index.runs if r.imported and r.name == r.run_id)
+    yours = sum(1 for r in index.runs if r.named_by == "you") - imported
+    computed = total - yours - imported
+    manifests = "its manifest" if computed == 1 else "their manifests"
+    labels = (
+        ("named by you", yours),
+        ("named at import", imported),
+        (f"named from {manifests}", computed),
+    )
+    parts = [f"{count(n)} {label}" for label, n in labels if n]
+    if len(parts) == 1:
+        # one way for every run: said once, without its count
+        parts = [parts[0].split(" ", 1)[1]]
+    tail = "" if yours else '; none named by you yet: poisson-trace name RUN "a name"'
+    return f"{_plural(total, 'run', 'runs')}, {', '.join(parts)} ({', '.join(shown)}{more}){tail}"
 
 
 def _summary(
@@ -1107,7 +1118,9 @@ def add_store(ns: argparse.Namespace, path: Path, shown: str) -> Done:
     indexes = [_index(p, after.names_from)[1] for _, p in stores]
     held_runs = _plural(len(runs), "run", "runs")
     sentence = f"added the store {name} at {typed} ({held_runs}) to {held.shown}"
-    following = look.command("poisson-trace", "runs", "--store", look.word(name), *reach)
+    # the store added may not carry the failures the config names, which runs would refuse;
+    # doctor reads the config and every store it names
+    following = look.command("poisson-trace", "doctor", *reach)
     data = {
         "schema": "poisson-trace.init/1",
         "verdict": "ok",
