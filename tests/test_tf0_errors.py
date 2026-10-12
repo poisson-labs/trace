@@ -370,7 +370,9 @@ def test_tf0_10_a_command_that_needs_prove_names_the_install_line(tmp_path: Path
     argv = where_cs() if command == "trace" else ragas_import(store, "v1")
     result = run_sub(command, argv, prove=prove)
     line = _one_error(result)
-    assert INSTALL_PROVE in line and PLACEHOLDER_INSTALL not in result.text, line
+    # the install line once, alone on the next line under the error, not in the sentence too
+    assert INSTALL_PROVE not in line and PLACEHOLDER_INSTALL not in result.text, line
+    assert [ln for ln in result.lines() if INSTALL_PROVE in ln] == [f"  next: {INSTALL_PROVE}"], result.err
     if prove != "absent":
         assert prove in line, line
     assert not store.exists()

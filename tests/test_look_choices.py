@@ -129,13 +129,18 @@ def test_the_svg_is_written_as_utf_8_whatever_the_locale(tmp_path: Path) -> None
 
 
 def test_an_unknown_option_before_the_verb_or_the_tool_is_a_wrong_command_line(tmp_path: Path) -> None:
-    for result in (
-        trace(["--ev", "unresolved", "where", CS_RECORD, "--store", str(CS)]),
-        trace_import(["--sto", str(tmp_path / "store"), "ragas", str(RAGAS / "rag-base.jsonl"), "--run", "v1",
-                      "--metric", "faithfulness", "--cut", "0.5", "--below", "--case-column", "case"]),
+    for result, helps in (
+        (trace(["--ev", "unresolved", "where", CS_RECORD, "--store", str(CS)]), ("poisson-trace --help",)),
+        (trace_import(["--sto", str(tmp_path / "store"), "ragas", str(RAGAS / "rag-base.jsonl"), "--run", "v1",
+                       "--metric", "faithfulness", "--cut", "0.5", "--below", "--case-column", "case"]),
+         ("poisson-trace-import --help", "poisson-trace import --help")),
     ):
         assert result.code == 2 and result.out == "", result.text
-        assert len(result.lines()) == 1 and result.err.startswith("error: "), result.err
+        # one error line, then the command's help on its own next line, as every other wrong
+        # command line has it, and not inside the sentence
+        lines = result.lines()
+        assert len(lines) == 2 and lines[0].startswith("error: ") and "--help" not in lines[0], result.err
+        assert lines[1] in tuple(f"  next: {h}" for h in helps), result.err
     assert not (tmp_path / "store").exists()
 
 
