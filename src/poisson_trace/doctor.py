@@ -118,11 +118,19 @@ def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]
     path = config.path_of(given)
     shown = look.shown(given) if given is not None else config.CONFIG
     if not path.exists() and not path.is_symlink():
+        if not path.parent.is_dir():
+            # no command makes the folder; init would refuse to write there
+            said = f"no config file at {shown}, and the folder {path.parent} is not there"
+            return [_check("config", False, said, None), nothing]
         said = f"no config file at {shown}" if given is not None else f"no {shown} here"
         return [_check("config", False, said, init), nothing]
     try:
         held = config.load(given)
     except config.ConfigError as e:
+        if path.is_dir() or not path.is_file():
+            # init does not replace a folder or a pipe: it is the user's to move aside
+            line = f"{e}; move it aside, then run {init}"
+            return [_check("config", False, line, None), nothing]
         return [_check("config", False, str(e), again), nothing]
     assert held is not None
     events = held.events
@@ -162,18 +170,36 @@ def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]
             continue
         indexes.append((name, store_path, index))
         described.append(f"{_store_words(name, store_path)} ({_counted(index)})")
+    if held.store is None and not held.named:
+        line = (
+            f"{shown} names no store yet: make one with a Prove sweep, or import results another "
+            f"tool wrote (poisson-trace-import --help), then run {again}"
+        )
+        return [_check("config", False, line, again), _names(indexes)]
     if held.store is None:
         line = f"{shown} names no store every verb reads ([store] has no path)"
         return [_check("config", False, line, again), _names(indexes)]
-    said = f"{shown}: {'; '.join(described)}, {failures}"
-    if events is None:
-        return [_check("config", False, said, init), _names(indexes)]
-    first = indexes[0][2]
-    if not isinstance(first, names.Index):
-        return [_check("config", True, said), _names(indexes)]
     from poisson_trace.setup import newest_outcomes
 
+    notes = []
+    for name, store_path, index in indexes[1:]:
+        if events and isinstance(index, names.Index):
+            other = newest_outcomes(Store(store_path), index, quiet=True)
+            if not any(e in other.counts for e in events):
+                notes.append(
+                    f"store {name} carries none of the failures (give --event with --store {name})"
+                )
+    said = f"{shown}: {'; '.join(described)}, {failures}" + "".join(f"; {n}" for n in notes)
+    first = indexes[0][2]
+    if not isinstance(first, names.Index):
+        return [_check("config", events is not None, said, init), _names(indexes)]
     read = newest_outcomes(Store(held.store), first, quiet=True)
+    if events is None:
+        if not read.counts:
+            # no answer to the failure question exists: the runs carry no outcome
+            line = f"{said}; {read.whose} {read.carry} no outcome, so there is no failure to set"
+            return [_check("config", False, line, None), _names(indexes)]
+        return [_check("config", False, said, init), _names(indexes)]
     missing = [e for e in events if e not in read.counts]
     if missing:
         outcomes = ", ".join(sorted(read.counts)) or "none"
@@ -217,9 +243,10 @@ def _names(indexes: Sequence[tuple[str | None, str, Any]]) -> dict[str, Any]:
                 f"{index.names_shown()}: {_count_names(len(index.entries))}; every name resolves "
                 "to one run"
             )
+    if not indexes:
+        return _check("names", True, "no store to read names of yours from")
     if not lines:
-        first = indexes[0][1] if indexes else "the store"
-        return _check("names", True, f"{first}: no names of yours yet")
+        return _check("names", True, f"{indexes[0][1]}: no names of yours yet")
     return _check("names", True, "; ".join(lines))
 
 

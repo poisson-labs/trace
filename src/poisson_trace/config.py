@@ -109,6 +109,9 @@ def load(given: str | None) -> Config | None:
         raise ConfigError(f"no config file at {shown}")
     if path.is_dir():
         raise ConfigError(f"{shown} is a folder, not a config file")
+    if not path.is_file():
+        # a pipe or a device would be read without end, or not at all
+        raise ConfigError(f"{shown} is not a file a config can be read from")
     try:
         raw = path.read_bytes()
     except OSError as e:
@@ -176,12 +179,32 @@ def _lines(text: str) -> dict[tuple[str, ...], int]:
         key = table + _parts(setting.group(1))
         for at in range(len(table) + 1, len(key) + 1):
             found.setdefault(key[:at], n)
-        rest = setting.group(2)
-        for quote in ('"""', "'''"):
-            if rest.count(quote) % 2 == 1:
-                open_quote = quote
-                break
+        open_quote = _left_open(setting.group(2))
     return found
+
+
+def _left_open(rest: str) -> str | None:
+    """The quotes of a string of several lines that ``rest``, what follows a setting's ``=``,
+    opens and does not close on its line; None when it leaves none open. Strings on one line
+    and a comment are read as such, so the quotes inside them open nothing."""
+    at = 0
+    while at < len(rest):
+        if rest[at] == "#":
+            return None
+        quote = next((q for q in ('"""', "'''") if rest.startswith(q, at)), None)
+        if quote is not None:
+            end = rest.find(quote, at + 3)
+            if end < 0:
+                return quote
+            at = end + 3
+        elif rest[at] in "\"'":
+            mark, at = rest[at], at + 1
+            while at < len(rest) and rest[at] != mark:
+                at += 2 if mark == '"' and rest[at] == "\\" else 1
+            at += 1
+        else:
+            at += 1
+    return None
 
 
 def _edits(a: str, b: str) -> int:

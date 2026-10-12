@@ -615,7 +615,12 @@ def _init(session: look.Session, ns: argparse.Namespace) -> int:
     from poisson_trace import setup
 
     session.stopped = lambda: setup.STOPPED
-    done = setup.init(ns)
+
+    def written(line: str) -> None:
+        # once anything is on disk, Ctrl-C says what was kept
+        session.stopped = lambda: line
+
+    done = setup.init(ns, written)
     look.out(json.dumps(done.data, indent=2, allow_nan=False) + "\n" if ns.json else done.text)
     return look.DONE
 

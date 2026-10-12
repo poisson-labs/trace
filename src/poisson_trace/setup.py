@@ -316,7 +316,7 @@ def _store_question(listed: Listed) -> FoundStore:
         answer = look.ask(f"Which results do you want to start with? [{numbers[0]}]")
         if answer == "":
             return listed.stores[numbers[0]]
-        if answer.isdigit() and int(answer) in listed.stores:
+        if answer.isascii() and answer.isdigit() and int(answer) in listed.stores:
             return listed.stores[int(answer)]
         look.err(f"  answer with the number of a store: {_and([str(n) for n in numbers])}\n")
 
@@ -427,7 +427,7 @@ def _numbers(answer: str, last: int) -> list[int] | None:
     picked: list[int] = []
     for part in answer.split(","):
         part = part.strip()
-        if not part.isdigit() or not 1 <= int(part) <= last:
+        if not (part.isascii() and part.isdigit()) or not 1 <= int(part) <= last:
             return None
         if int(part) not in picked:
             picked.append(int(part))
@@ -733,14 +733,19 @@ def _sets(ns: argparse.Namespace, dests: Sequence[str]) -> list[str]:
     ]
 
 
-def init(ns: argparse.Namespace) -> Done:
+def _no_hook(line: str) -> None:
+    del line
+
+
+def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> Done:
     """The setup, the questions answered on a terminal or from the flags. Prove at the version
-    Trace reads is checked before this is called."""
+    Trace reads is checked before this is called. ``written`` is told, once anything is on
+    disk, the line Ctrl-C prints from then on."""
     _ceilings(ns)
     path = config.path_of(ns.config)
     shown = look.shown(ns.config) if ns.config is not None else config.CONFIG
     if ns.add_store is not None:
-        return add_store(ns, path, shown)
+        return add_store(ns, path, shown, written)
     answers = Answers.given(ns)
     terminal = not ns.yes
     if terminal and (sys.stdin is None or not sys.stdin.isatty()):
@@ -751,7 +756,8 @@ def init(ns: argparse.Namespace) -> Done:
         )
     held = _existing(ns, path, shown)
     if held is not None:
-        return _complete(ns, held, terminal)
+        return _complete(ns, held, terminal, written)
+    _not_in_a_store(path, shown)
     form = ns.names or "target"
     stores: list[tuple[str | None, str]] = []
     found: Found | None = None
@@ -759,7 +765,10 @@ def init(ns: argparse.Namespace) -> Done:
     imported: bool | None = ns.import_
     if ns.store:
         stores = _stores_given(ns.store)
-        look.err(f"Poisson Trace setup. This writes {shown} and runs nothing.\n\n")
+        look.err(
+            f"Poisson Trace setup. This writes {shown} and runs nothing. Ctrl-C stops without "
+            "writing.\n\n"
+        )
     else:
         if _here_is_home():
             raise Refused(
@@ -782,13 +791,21 @@ def init(ns: argparse.Namespace) -> Done:
             look.err(f"Using {first.path}, {which}.\n")
             stores = [(None, first.path)]
         elif found.files:
+            readers = list(dict.fromkeys(f.reader for f in found.files))
+            if len(readers) > 1 and imported is not False:
+                raise Refused(
+                    f"the result files found were written by {_and(readers)}, and init imports "
+                    "one tool's files with one set of answers; give --no-import to write the "
+                    "config with no store, then import each tool's files with "
+                    "poisson-trace-import",
+                    "poisson-trace-import --help",
+                )
             if imported is None:
                 imported = not terminal or _yes_no(
                     "No Prove store here, but these look like results another tool wrote. "
                     "Import them as runs Trace can read? [Y/n]"
                 )
             if imported:
-                readers = list(dict.fromkeys(f.reader for f in found.files))
                 answers = import_answers(readers, answers, terminal)
                 imports = read_imports(found.files, answers)
     imported_store = config.beside(path, IMPORTED_STORE)
@@ -802,9 +819,9 @@ def init(ns: argparse.Namespace) -> Done:
     else:
         events = []
     # every answer is in: nothing was written before this line
-    written = [(None, imported_store)] if imports else stores
+    setup = [(None, imported_store)] if imports else stores
     text = config.text_of(
-        [(name, config.written_path(path, p)) for name, p in written],
+        [(name, config.written_path(path, p)) for name, p in setup],
         events,
         max_mde=ns.max_mde,
         max_mde_hr=ns.max_mde_hr,
@@ -813,11 +830,16 @@ def init(ns: argparse.Namespace) -> Done:
     )
     config.parse(text, path, shown, given=ns.config is not None)
     _write(imports, Path(imported_store), form, path, shown, text)
+    if imports:
+        kept = f"{shown} and {_plural(len(imports), 'imported run', 'imported runs')} were"
+    else:
+        kept = f"{shown} was"
+    written(f"stopped  interrupted: {kept} written whole; poisson-trace doctor checks it")
     command = _command(ns, [] if imports else stores, events, imported, answers)
     others = []
     if found is not None and stores and not imports:
         others = [s for s in found.stores if s.path != stores[0][1]]
-    return _summary(ns, shown, written, form, events, command, others, imports, "wrote")
+    return _summary(ns, shown, setup, form, events, command, others, imports, "wrote")
 
 
 def _existing(ns: argparse.Namespace, path: Path, shown: str) -> config.Config | None:
@@ -850,25 +872,62 @@ def _existing(ns: argparse.Namespace, path: Path, shown: str) -> config.Config |
     )
 
 
+def _not_in_a_store(path: Path, shown: str) -> None:
+    """The config is never written into a store or a run's folder."""
+    from proofload.store import Store
+
+    folder = path.parent
+    try:
+        run = Store(folder.resolve().parent).manifest(folder.resolve().name)
+    except Exception:
+        run = None
+    if _held(str(folder)) or run is not None:
+        what = "a run Prove stored" if run is not None else "a store (it holds runs Prove stored)"
+        raise Refused(
+            f"{shown} would be written in {folder}, which is {what}, and init writes nothing "
+            "into a store; run it in the folder above, or give --config PATH outside it",
+            _HELP,
+        )
+
+
+def _storable(typed: str) -> str | None:
+    """Why the store at ``typed`` cannot be set up, or None: it holds no run, or no run whose
+    record Prove reads."""
+    held = _held(typed)
+    if not held:
+        return f"no store at {look.shown(typed)} (no folder under it holds a run Prove stored)"
+    if not _index(typed, "target")[1].runs:
+        return f"Prove reads the record of no run of the store at {look.shown(typed)}"
+    return None
+
+
+def store_name(typed: str) -> tuple[str, str | None]:
+    """The name a store is given by its folder, and why it cannot be, or None."""
+    name = Path(os.path.abspath(typed)).name
+    if not config.STORE_NAME.fullmatch(name):
+        return name, f'"{name}" is not a store name: {config.STORE_NAME_RULE}'
+    if name == "path":
+        return name, 'a store cannot be named "path", which [store] holds as its own setting'
+    return name, None
+
+
 def _stores_given(paths: Sequence[str]) -> list[tuple[str | None, str]]:
     """The stores --store names: the first unnamed, each other named by its folder."""
     stores: list[tuple[str | None, str]] = []
     for i, typed in enumerate(paths):
-        if not _held(typed):
-            raise Refused(
-                f"no store at {look.shown(typed)} (no folder under it holds a run Prove stored)",
-                _HELP,
-            )
+        why = _storable(typed)
+        if why is not None:
+            raise Refused(why, _HELP)
+        for _, earlier in stores:
+            with contextlib.suppress(OSError):
+                if os.path.samefile(earlier, typed):
+                    raise Refused(f"{earlier} and {typed} are one store, given twice", _HELP)
         if i == 0:
             stores.append((None, typed))
             continue
-        name = Path(os.path.abspath(typed)).name
-        if not config.STORE_NAME.fullmatch(name):
-            raise Refused(
-                f'the store at {typed} is named by its folder, and "{name}" is not a store name: '
-                f"{config.STORE_NAME_RULE}",
-                _HELP,
-            )
+        name, why = store_name(typed)
+        if why is not None:
+            raise Refused(f"the store at {typed} is named by its folder, and {why}", _HELP)
         if any(n == name for n, _ in stores):
             raise Refused(
                 f"two of the stores given would both be named {name}, by their folders", _HELP
@@ -877,29 +936,65 @@ def _stores_given(paths: Sequence[str]) -> list[tuple[str | None, str]]:
     return stores
 
 
-def _complete(ns: argparse.Namespace, held: config.Config, terminal: bool) -> Done:
-    """A config with a store and no failures: the failure question for its store, and
-    ``[events]`` added after what it holds, every other line kept."""
+def _complete(
+    ns: argparse.Namespace, held: config.Config, terminal: bool, written: Callable[[str], None]
+) -> Done:
+    """A config with a store and no failures: the failure question for its store, and the
+    failures added (in its ``[events]`` table when it has one, else after what it holds), every
+    other line kept."""
     assert held.store is not None
     look.err(
         f"Poisson Trace setup. {held.shown} names a store and no failures; this adds them and "
-        "keeps every other line.\n\n"
+        "keeps every other line. Ctrl-C stops without writing.\n\n"
     )
-    if not _held(held.store):
+    why = _storable(held.store)
+    if why is not None:
         raise Refused(
-            f"{held.shown} names the store {held.store}, and no folder under it holds a run "
-            "Prove stored; give --force to set up again",
-            _HELP,
+            f"{held.shown} names the store {held.store}: {why}; give --force to set up again", _HELP
         )
     store, index = _index(held.store, held.names_from)
     events = failures(newest_outcomes(store, index), ns.event or (), terminal)
+    verb = "left as it was"
     if events:
-        text = config.appended(held.text, config.events_block(events))
-        config.parse(text, held.path, held.shown, given=held.given)
-        config.write_config_file(held.path, held.shown, text)
+        config.write_config_file(held.path, held.shown, _with_events(held, events))
+        written(
+            f"stopped  interrupted: {held.shown} was written whole; poisson-trace doctor checks it"
+        )
+        verb = "completed"
     command = _command(ns, [], events, None, Answers())
     stores = [(n, p) for n, p in held.stores() if _held(p)]
-    return _summary(ns, held.shown, stores, held.names_from, events, command, [], [], "completed")
+    return _summary(ns, held.shown, stores, held.names_from, events, command, [], [], verb)
+
+
+# a table header for [events] on a line of its own
+_EVENTS_TABLE = re.compile(r"(?m)^[ \t]*\[[ \t]*events[ \t]*\][ \t]*(?:#[^\n]*)?(?:\n|$)")
+
+
+def _with_events(held: config.Config, events: Sequence[str]) -> str:
+    """The config's text with its failures added, every other line as it was: under its own
+    ``[events]`` header when it has one, else as a table after what it holds."""
+    line = config.events_block(events).split("\n", 1)[1]
+    for text in (
+        config.appended(held.text, config.events_block(events)),
+        *(
+            held.text[: m.end()]
+            + ("" if m.group(0).endswith("\n") else "\n")
+            + line
+            + held.text[m.end() :]
+            for m in [_EVENTS_TABLE.search(held.text)]
+            if m is not None
+        ),
+    ):
+        try:
+            config.parse(text, held.path, held.shown, given=held.given)
+        except config.ConfigError:
+            continue
+        return text
+    raise Refused(
+        f"{held.shown} sets [events] in a way the failures cannot be added to; write "
+        f"failed = [...] under [events] by hand, or give --force to set up again",
+        _HELP,
+    )
 
 
 def _decimal(value: float) -> str:
@@ -999,7 +1094,8 @@ def _names_line(index: Any) -> str:
     if len(parts) == 1:
         # one way for every run: said once, without its count
         parts = [parts[0].split(" ", 1)[1]]
-    tail = "" if yours else '; none named by you yet: poisson-trace name RUN "a name"'
+    mine = yours + imported
+    tail = "" if mine else '; none named by you yet: poisson-trace name RUN "a name"'
     return f"{_plural(total, 'run', 'runs')}, {', '.join(parts)} ({', '.join(shown)}{more}){tail}"
 
 
@@ -1026,6 +1122,8 @@ def _summary(
         said = " and ".join(_store_said(n, p, runs[p]) for n, p in stores)
         if events:
             sentence = f"{verb} {shown}: {said}, failures {', '.join(events)}"
+        elif verb == "left as it was":
+            sentence = f"left {shown} as it was: {said}; its runs carry no outcome, so no failures"
         else:
             sentence = f"{verb} {shown}: {said}; no failures, as these runs carry no outcome"
     else:
@@ -1036,9 +1134,17 @@ def _summary(
     lines.append("  prove    poisson-prove is installed at the version Trace reads")
     for item in imports:
         lines.append(f"  import   {import_line(item, stores[0][1])}")
+    taken = {n for n, _ in stores}
     for other in others:
-        add = look.command("poisson-trace", "init", "--add-store", look.word(other.path), *reach)
-        lines.append(f"  another  {add}")
+        name, why = store_name(other.path)
+        if why is None and name not in taken:
+            taken.add(name)
+            words = _pair("--add-store", other.path)
+            add = look.command("poisson-trace", "init", *(_shell_word(w) for w in words), *reach)
+            lines.append(f"  another  {add}")
+        else:
+            why = why or f"another store here is named {name} by its folder"
+            lines.append(f"  another  {other.path} is not added by its folder's name: {why}")
     if stores:
         following = look.command("poisson-trace", "runs", *reach)
     else:
@@ -1067,9 +1173,11 @@ def _summary(
 # ---------- --add-store ----------
 
 
-def add_store(ns: argparse.Namespace, path: Path, shown: str) -> Done:
-    """One store added to the config there already, named by its folder; every line it holds
-    is kept, and nothing is asked."""
+def add_store(
+    ns: argparse.Namespace, path: Path, shown: str, written: Callable[[str], None] = _no_hook
+) -> Done:
+    """One store added to the config there already, named by its folder, or as the store every
+    verb reads when the config names none; every line it holds is kept, and nothing is asked."""
     if _sets(ns, ("event", *_SETTING)) or ns.force:
         raise look.Usage(
             "--add-store adds one store to a config and takes no other setup flag", _HELP
@@ -1083,44 +1191,70 @@ def add_store(ns: argparse.Namespace, path: Path, shown: str) -> Done:
     held = config.load(ns.config)
     assert held is not None
     typed = ns.add_store
-    runs = _held(typed)
-    if not runs:
-        raise Refused(
-            f"no store at {look.shown(typed)} (no folder under it holds a run Prove stored)", _HELP
-        )
-    name = Path(os.path.abspath(typed)).name
-    if not config.STORE_NAME.fullmatch(name):
-        raise Refused(
-            f'a store added is named by its folder, and "{name}" is not a store name: '
-            f"{config.STORE_NAME_RULE}",
-            _HELP,
-        )
-    if name in held.named:
-        raise Refused(f"{held.shown} names a store {name} already, at {held.named[name]}", _HELP)
+    why = _storable(typed)
+    if why is not None:
+        raise Refused(why, _HELP)
     for _, p in held.stores():
         with contextlib.suppress(OSError):
             if os.path.samefile(p, typed):
                 raise Refused(f"{held.shown} names the store at {typed} already", _HELP)
-    block = f"[store.{name}]\npath = {names.toml_string(config.written_path(path, typed))}\n"
+    where = names.toml_string(config.written_path(path, typed))
+    if held.store is None:
+        # the config names no store every verb reads: this one becomes it
+        name: str | None = None
+        block = f"[store]\npath = {where}\n"
+    else:
+        name, why = store_name(typed)
+        if why is not None:
+            raise Refused(f"a store added is named by its folder, and {why}", _HELP)
+        if name in held.named:
+            raise Refused(
+                f"{held.shown} names a store {name} already, at {held.named[name]}", _HELP
+            )
+        block = f"[store.{name}]\npath = {where}\n"
     text = config.appended(held.text, block)
     try:
         after = config.parse(text, held.path, held.shown, given=held.given)
     except config.ConfigError:
         after = None
-    if after is None or name not in after.named:
+    if (
+        after is None
+        or (name is None and after.store is None)
+        or (name and name not in after.named)
+    ):
+        table = "[store]" if name is None else f"[store.{name}]"
         raise Refused(
-            f"{held.shown} sets its stores in a way a new [store.{name}] table cannot follow; "
-            "add it by hand",
+            f"{held.shown} sets its stores in a way a new {table} table cannot follow; add it "
+            "by hand",
             _HELP,
         )
     config.write_config_file(held.path, held.shown, text)
+    written(f"stopped  interrupted: {held.shown} was written whole; poisson-trace doctor checks it")
     stores = after.stores()
     indexes = [_index(p, after.names_from)[1] for _, p in stores]
-    held_runs = _plural(len(runs), "run", "runs")
-    sentence = f"added the store {name} at {typed} ({held_runs}) to {held.shown}"
-    # the store added may not carry the failures the config names, which runs would refuse;
-    # doctor reads the config and every store it names
+    added = next(i for (n, _), i in zip(stores, indexes, strict=True) if n == name)
+    held_runs = _plural(len(added.runs) + len(added.unreadable), "run", "runs")
+    if name is None:
+        sentence = (
+            f"added the store at {typed} ({held_runs}) to {held.shown}, as the store every verb "
+            "reads"
+        )
+    else:
+        sentence = f"added the store {name} at {typed} ({held_runs}) to {held.shown}"
     following = look.command("poisson-trace", "doctor", *reach)
+    if after.events and name is not None:
+        added_store, _ = _index(typed, after.names_from)
+        read = newest_outcomes(added_store, added, quiet=True)
+        if not any(e in read.counts for e in after.events):
+            sentence += (
+                f"; {read.whose} {read.carry} none of the failures {', '.join(after.events)}, so "
+                f"give --event with --store {name}"
+            )
+        else:
+            following = look.command("poisson-trace", "runs", *_pair("--store", name), *reach)
+    command = ["poisson-trace", "init", *_pair("--add-store", typed)]
+    if ns.config is not None:
+        command += _pair("--config", ns.config)
     data = {
         "schema": "poisson-trace.init/1",
         "verdict": "ok",
@@ -1133,11 +1267,7 @@ def add_store(ns: argparse.Namespace, path: Path, shown: str) -> Done:
         "events": list(after.events or ()),
         "named": sum(1 for index in indexes for r in index.runs if r.named_by == "you"),
         "prove": {"installed": True, "version": look.prove_found()},
-        "equivalent_command": ["poisson-trace", "init", "--add-store", typed, *_words(ns)],
+        "equivalent_command": command,
         "next": following,
     }
     return Done(data, f"ok  {sentence}\n\nnext: {following}\n")
-
-
-def _words(ns: argparse.Namespace) -> list[str]:
-    return [] if ns.config is None else ["--config", ns.config]
