@@ -55,12 +55,184 @@ poisson-trace runs --store tests/fixtures/cs --event unresolved
 poisson-trace where "cs_agents 2026-09-25 a" --store tests/fixtures/cs --event unresolved
 ```
 
+## Set up: `poisson-trace init`
+
+Run `poisson-trace init` in your project's folder. It finds the results already there (the
+stores Prove wrote, and result files DeepEval or Ragas wrote), asks what counts as a failure,
+and writes `trace.toml`, from which every verb then takes its store and its failures: the
+commands after it need neither `--store` nor `--event`. It runs nothing, spends nothing and
+writes under no store.
+
+It searches the folder you run it in and the folders below it, six deep, breadth first and in
+name order, reading at most 10,000 entries (it says so when it stops short); it skips `.git`,
+`.venv`, `venv`, `node_modules`, `__pycache__`, `.work`, `site-packages` and every folder
+whose name opens with a dot but `.deepeval`, and follows no link. It never searches your home
+folder or a folder above it; there, give the store with `--store PATH`.
+
+On a terminal it asks, on stderr, and reads your answers a line at a time:
+
+- **Which store**, when it finds several: `Which results do you want to start with? [1]`.
+  The others can be added later with `poisson-trace init --add-store PATH`, which the summary
+  shows; a store added is named by its folder, and `--store NAME` then reaches it.
+- **What counts as a failure**: the outcomes the newest 20 runs carry, each with its count of
+  episodes. The default, in brackets, is every outcome whose name is not a word for success
+  (`solved`, `resolved`, `passed`, `met`, `ok`, `success`, `fixed`, `planned`, `cited`,
+  `survived`, `correct`, `fresh`, `fast`; `poisson_trace.setup.SUCCESS_WORDS`). It is a guess,
+  shown for you to confirm or replace with the numbers you type.
+- **Whether to import**, when there is no store but there are result files another tool wrote:
+  `Import them as runs Trace can read? [Y/n]`, then the import's own questions (the metric, the
+  cut and its side, what identifies a case). Each file becomes one run, named after the file,
+  in a store `trace-store` beside `trace.toml`. See
+  [DeepEval](docs/integrations/deepeval.md) and [Ragas](docs/integrations/ragas.md).
+
+Every question has a flag (`poisson-trace init --help` lists them), and `--yes` asks nothing,
+taking each answer from its flag or its default. Here it is on the tau2 fixture, copied into a
+folder of its own:
+
+<!-- command -->
+```
+mkdir -p my-agent && cp -R tests/fixtures/tau2 my-agent/proofload-runs
+cd my-agent && poisson-trace init --yes
+```
+
+What it found, on stderr:
+
+<!-- excerpt exit=0 -->
+```
+  found 1 Prove store:
+    1) proofload-runs            3 runs · tau2-airline · newest 2026-09-17
+Using proofload-runs, the store found.
+```
+
+and its summary, on stdout, with the same setup as one command that asks nothing:
+
+<!-- excerpt exit=0 -->
+```
+ok  wrote trace.toml: store proofload-runs (3 runs), failures unsolved
+  names    3 runs, named from their manifests (tau2-airline 2026-09-17 a, tau2-airline 2026-09-15 b, tau2-airline 2026-09-15 a); none named by you yet: poisson-trace name RUN "a name"
+  prove    poisson-prove is installed at the version Trace reads
+  the same setup, without questions:
+    poisson-trace init --yes --store proofload-runs --event unsolved
+next: poisson-trace runs
+```
+
+It writes the file once, after the last answer; until then, Ctrl-C leaves nothing behind. A
+`trace.toml` that is there already is left as it is unless you give `--force`, but for one
+that names a store and no failures, which `init` completes, keeping every other line. Stdin
+that is not a terminal is refused unless you give `--yes`.
+
+### `trace.toml`
+
+<!-- command -->
+```
+cat my-agent/trace.toml
+```
+
+<!-- output exit=0 -->
+```
+# Poisson Trace: where your results are, and what counts as a failure.
+# Written by `poisson-trace init`. Edit it freely; `poisson-trace doctor` checks it.
+version = 1
+
+[store]
+path = "proofload-runs"
+
+[events]
+failed = ["unsolved"]
+
+[names]
+from = "target"
+```
+
+Every verb, and `poisson-trace-import`, reads `trace.toml` in the current folder, never one in
+a folder above, or the file `--config PATH` names (before or after the verb). A store path in
+it is read from the folder that holds the file. The commands then need no flags:
+
+<!-- command -->
+```
+cd my-agent && poisson-trace runs
+```
+
+<!-- output exit=0 -->
+```
+ok  3 runs in proofload-runs (newest first); 0 named by you, 3 named from their manifests
+
+  #  name                       rows  failed  traces  started           status
+  1  tau2-airline 2026-09-17 a    10       3  no      2026-09-17 14:02  complete
+  2  tau2-airline 2026-09-15 b   200     112  yes     2026-09-15 21:11  complete
+  3  tau2-airline 2026-09-15 a   200     110  yes     2026-09-15 21:01  complete
+
+next: poisson-trace where "tau2-airline 2026-09-15 b"
+```
+
+| setting | what it holds |
+|---|---|
+| `version` | `1` |
+| `[store] path`, `[store.NAME] path` | the store every verb reads, and stores named by you; a name is 1 to 40 letters, digits, `-` and `_` |
+| `[events] failed` | the outcomes that count as a failure, one or more, each once |
+| `[check] max_mde` | the `--max-mde` that `fix-check` takes when none is given, strictly between 0 and 1 |
+| `[check] max_mde_hr` | the `--max-mde-hr` that `compare` takes when none is given, above 1 |
+| `[check] fail_on` | a list drawn from `failed-more` and `too-small`, for the pull-request check to come |
+| `[names] from` | how a run with no name of yours is named: `target` (`tau2-airline 2026-09-15 a`, the default), `date` (`2026-09-15 a`) or `target-date` (`tau2-airline gpt-4.1-mini 2026-09-15 a`, the model taken from the target id) |
+| `[upload]` | `enabled`, `url` and `token_env`, checked now and read by the upload to come |
+
+A flag replaces what the file gives: an `--event` given replaces its failures, it does not add
+to them, and `--store NAME` takes the store the file names so before a folder of that name.
+What neither gives is a mistake in the command line, as it is with no file. The ceilings have
+no default: `init` writes `[check]` only when you give `--max-mde`, `--max-mde-hr` or
+`--fail-on`. A file that is not a version 1 config is refused, by every verb, naming the file
+and the line the fault is on:
+
+<!-- command -->
+```
+cd my-agent && sed 's/^failed/faild/' trace.toml > typo.toml && poisson-trace runs --config typo.toml
+```
+
+<!-- output exit=1 -->
+```
+error: typo.toml line 9: [events] "faild" is not a setting; did you mean "failed"?
+```
+
+### `poisson-trace doctor`
+
+`doctor` says whether this environment is ready, one line for each thing it checks: the
+Python running Trace, the package and where it was imported from (with a note when that is
+outside the interpreter's environment, as an editable install is), Prove, the config and the
+stores it names, the names of yours, and the readers in the install. A line that fails ends
+with the command that mends it, and `next:` is the first of them; not ready exits 4. It fixes
+nothing and asks nothing.
+
+<!-- command -->
+```
+cd my-agent && poisson-trace doctor
+```
+
+<!-- excerpt exit=0 -->
+```
+ok  this environment is ready
+```
+
+<!-- excerpt exit=0 -->
+```
+  prove     poisson-prove 0.0.1 (the version Trace reads)
+  config    trace.toml: store proofload-runs (3 runs, 3 complete, 0 partial), failures unsolved
+  names     proofload-runs: no names of yours yet
+  readers   deepeval, ragas
+next: poisson-trace runs
+```
+
 ## Use
 
 Point Trace at a Prove store (the directory that holds one `manifest.json` per run) and name
-the outcomes that count as a failure:
+the outcomes that count as a failure, by flag or in `trace.toml`:
 
 ```
+poisson-trace init [--store PATH ...] [--event NAME ...] [--names from=FORM] [--yes] [--json]
+                  [--import | --no-import] [--max-mde X] [--max-mde-hr X] [--fail-on LIST]
+                  [--force] [--config PATH]
+poisson-trace init --add-store PATH [--config PATH]
+poisson-trace doctor [--config PATH] [--json]
+
 poisson-trace runs --store ROOT [--event NAME ...] [--all] [--json]
 
 poisson-trace name RUN NAME --store ROOT
@@ -82,9 +254,13 @@ poisson-trace changes A B --store ROOT --event NAME [--event NAME ...]
                      [--alpha A] [--top N] [--json]
 ```
 
+- `--store` and `--event` may come from `trace.toml`, and then every command here takes them
+  from it; every verb also takes `--config PATH`. Written out above, they are the flags you
+  give when there is no config.
 - Every run has a name. A run you have not named is named from its manifest: its target up
-  to the first `/`, the day it started (UTC) and a letter in start order among the runs of
-  that target that day, such as `tau2-airline 2026-09-15 a`. A run written by
+  to the first `/`, the day it started (UTC) and a letter in start order among the runs that
+  would otherwise share the name, such as `tau2-airline 2026-09-15 a` (`[names] from` in
+  `trace.toml` gives two other forms). A run written by
   `poisson-trace-import` is named by the name it was imported under. `name` gives a run a
   name of yours, kept in `trace-names.toml` at the store's root, the one file Trace writes in
   a store; no run's own files change, and `name RUN --forget` takes the name back.
@@ -101,15 +277,17 @@ poisson-trace changes A B --store ROOT --event NAME [--event NAME ...]
 - Every verb prints its verdict line first, the verdict word (`ok`, or one of *different*,
   *no significant difference* and *too small to tell*) and its sentence, then a blank line,
   the report, and a `next:` line with the command to run next. A `next:` command names runs
-  by name and carries the `--store` and `--event` given; what it lacks is a ceiling, which is
-  yours to choose. A report names each run by its name, and gives its id once for the record.
-- `--store` is required; there is no default store. `--event` is required and repeatable
-  (on `runs` it is optional);
+  by name and carries what you typed (`--store`, each `--event`, `--config`); what `trace.toml`
+  gave it leaves out, since it reads the same file. What it lacks is a ceiling that neither you
+  nor `trace.toml` gave, which is yours to choose. A report names each run by its name, and
+  gives its id once for the record.
+- With no `trace.toml` giving them, `--store` is required, and so is `--event` (on `runs` it
+  is optional); there is no default store. `--event` is repeatable, and
   the union of the names is "died" for `where` and `compare` and "failed" for `fix-check`
   and `changes`. A name no stored row carries is refused, and the refusal lists the outcomes
   the runs do carry.
 - `--json` prints the structure (`poisson-trace.runs/1`, `.where/1`, `.compare/1`,
-  `.fix-check/1` or `.changes/1`) and nothing else. It opens with `schema`, `verdict` and
+  `.fix-check/1`, `.changes/1`, `.init/1` or `.doctor/1`) and nothing else. It opens with `schema`, `verdict` and
   `sentence`, the verdict line's two parts, ends with `next`, and carries `run_name` beside
   each `run_id`. It is byte-identical across invocations on equal inputs.
 - Options may come before or after the verb. An option cut short (`--ev` for `--event`) is
@@ -123,7 +301,8 @@ poisson-trace changes A B --store ROOT --event NAME [--event NAME ...]
 - Exit codes, the same in every Poisson Labs tool ([`docs/cli-look.md`](docs/cli-look.md)):
   0 the report is printed, whatever it says, *too small to tell* included; 1 refused, nothing
   written; 2 the command line is wrong; 3 a failure after work started, or an unexpected one;
-  130 interrupted (Ctrl-C prints a `stopped` line, as one JSON document under `--json`).
+  4 a check you asked for failed (`doctor`, not ready); 130 interrupted (Ctrl-C prints a
+  `stopped` line, as one JSON document under `--json`).
 - An unexpected failure prints one line naming `~/.cache/poisson-trace/errors.log`, where the
   details are added; `--debug` prints them on stderr too.
 
@@ -761,14 +940,16 @@ ruff check .
 mypy --strict src
 ```
 
-The suite holds 947 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
+The suite holds 1,202 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
 (3 of them its display rules), 124 for `poisson-trace-import` and its DeepEval reader, 80 for
 its Ragas reader, 184 that hold both commands to the shared command-line look
 ([`docs/cli-look.md`](docs/cli-look.md)): the exit codes, the `error:` lines, the help and
 `--version`, options before or after the verb, the ASCII fallback, a closed pipe and plain
-words; and 316 for names and runs: the names file, the name every run has, the words a verb
-takes for a run, `runs` and `name`, the verdict line and `next:`, and the import's run names.
-Four of the 947 run DeepEval or Ragas itself, installed from PyPI, and are left out
+words; 316 for names and runs: the names file, the name every run has, the words a verb
+takes for a run, `runs` and `name`, the verdict line and `next:`, and the import's run names;
+and 255 for the setup: `init`, `trace.toml` and how every verb reads it, the two further forms
+of a run's name, `doctor`, and the readers' `looks_like`.
+Four of the 1,202 run DeepEval or Ragas itself, installed from PyPI, and are left out
 unless asked for (`python -m pytest -m lane_j`). The figures the tests check against come
 from lifelines, scipy, full enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks
 the fixtures (`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).

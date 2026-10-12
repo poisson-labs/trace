@@ -72,6 +72,9 @@ cut is and which column identifies a case.
   cases.
 - `--started` is when that version's run started, with its zone. Without it the first
   file's modification time is used, and the summary says which of the two it was.
+- `--store` may be left out when a `trace.toml` in the current folder (or the file `--config
+  PATH` names) names a store: the import writes into it. `--store NAME` takes the store that
+  file names so.
 
 ## The worked example
 
@@ -376,6 +379,42 @@ On the 670 cases left the report reads *no significant difference*: 339 misses, 
 that 1,130 cases were left out and why, and they are the cases where the causal memory
 returned nothing. Read that line before the verdict. The two means do not show it: 0.453
 over the 670 rows Ragas scored, against 0.458 over 1,800.
+
+## From `poisson-trace init`
+
+`poisson-trace init`, run in a folder with no Prove store under it, lists the tables that look
+like Ragas scored them (a `.csv`, `.jsonl` or `.json` file with a column named like a Ragas
+metric, `faithfulness` or `answer_relevancy` and the others, within its first 4 KB; a `.json`
+file is a list of rows) and offers to import them. Its questions are the import's flags,
+asked in their order; with `--yes` it takes them as flags instead. Each file becomes one run,
+named after the file, in a store `trace-store` beside `trace.toml`, and `trace.toml` names
+that store with `missed` as the failure. Here it is on the base model's table:
+
+<!-- command -->
+```
+mkdir -p from-ragas && cp tests/fixtures/ingest/ragas/rag-base.jsonl from-ragas/
+cd from-ragas && poisson-trace init --yes --metric faithfulness --cut 0.5 --below --case-column case
+```
+
+<!-- excerpt exit=0 -->
+```
+  found 1 score table:
+    1) rag-base.jsonl            a JSON Lines table with the Ragas metrics faithfulness, answer_relevancy, answer_correctness
+```
+
+<!-- excerpt exit=0 -->
+```
+ok  wrote trace.toml and imported 1 run into trace-store, failures missed
+  names    1 run, named at import (rag-base); none named by you yet: poisson-trace name RUN "a name"
+  prove    poisson-prove is installed at the version Trace reads
+  import   poisson-trace-import ragas rag-base.jsonl --store trace-store --run rag-base --metric faithfulness --cut 0.5 --below --case-column case
+  the same setup, without questions:
+    poisson-trace init --yes --import --metric faithfulness --cut 0.5 \
+      --below --case-column case --event missed
+next: poisson-trace runs
+```
+
+With `trace.toml` there, the import takes its store from it too, so `--store` may be left out.
 
 ## What this does not do
 
