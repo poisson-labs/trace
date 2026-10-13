@@ -78,11 +78,11 @@ def test_every_store_offered_to_add_is_added_by_the_command_shown(tmp_path: Path
     """Two more stores share a folder's name, one folder's name is no store name, one opens with
     a dash: each command offered runs as written, and the others are not offered as commands."""
     folder = work(tmp_path)
-    tau2_copy(folder, "a-main")
-    for place in ("a/runs", "b/runs", "c/my runs", "d/-dash"):
+    tau2_copy(folder, "+main")
+    for place in ("a/runs", "b/runs", "c/my runs", "-dash"):
         store_of(folder / place, [R("r1", stamp(5, 9))])
     result = init_yes(folder)
-    assert result.code == 0 and config(folder)["store"]["path"] == "a-main", result.text
+    assert result.code == 0 and config(folder)["store"]["path"] == "+main", result.text
     offered = [shell_words(line[line.find("poisson-trace init"):]) for line in result.out.splitlines() if "poisson-trace init --add-store" in line]
     assert len(offered) == 2, result.out
     for words in offered:
