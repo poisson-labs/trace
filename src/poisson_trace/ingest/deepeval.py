@@ -36,7 +36,7 @@ declare. Test cases that share a case within one import are its repeats. No text
 case is kept. Nothing has a default but the start time.
 """
 EXAMPLE = (
-    "poisson-trace-import deepeval results/test_run_20260905_185407.json \\\n"
+    "poisson-trace import deepeval results/test_run_20260905_185407.json \\\n"
     '      --store trace-store --run before --metric "Tests Passed" --cut recorded --case name'
 )
 
