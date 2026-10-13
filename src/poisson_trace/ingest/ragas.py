@@ -30,6 +30,18 @@ from poisson_trace.ingest.rows import Refusal, Row, Run, case_id
 from poisson_trace.look import why
 
 FORMATS: tuple[str, ...] = ("csv", "jsonl", "json", "parquet")
+# the columns Ragas names its metrics, which a table it scored carries
+METRICS: tuple[str, ...] = (
+    "faithfulness",
+    "answer_relevancy",
+    "answer_correctness",
+    "context_precision",
+    "context_recall",
+    "id_based_context_precision",
+    "id_based_context_recall",
+)
+# how much of a file looks_like reads to find a metric among its columns
+_HEAD = 4096
 
 DESCRIPTION = """\
 Read the per-row score table saved from Ragas (.csv, .jsonl, .json as a list of objects, each
@@ -67,8 +79,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         "--cut",
         required=True,
         metavar="X",
-        help="the cut, a number, with its side; a Ragas table records no threshold "
-        "(no default)",
+        help="the cut, a number, with its side; a Ragas table records no threshold (no default)",
     )
     parser.add_argument("--below", action="store_true", help="a score under the cut missed it")
     parser.add_argument("--above", action="store_true", help="a score over the cut missed it")
@@ -308,6 +319,122 @@ def _case(path: Path, n: int, column: str, cell: Any) -> str:
 
 def _utc(at: datetime) -> str:
     return at.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def looks_like(path: Path | str) -> str | None:
+    """One line describing ``path`` when it looks like a table Ragas scored, else None; it
+    never raises. A table is a ``.csv``, ``.jsonl`` or ``.json`` file (a ``.json`` file being a
+    list of rows) with a column named like a Ragas metric within its first 4 KB: a CSV's header,
+    or the keys of the first row of a JSON Lines file or a JSON list. A metric's word in a cell,
+    or a column whose name only begins with one, is not a metric's column."""
+    try:
+        found = Path(path)
+        fmt = found.name.rpartition(".")[2].lower() if "." in found.name else ""
+        if fmt not in FORMATS[:3] or not found.is_file():
+            return None
+        with open(found, "rb") as table:
+            head = table.read(_HEAD + 1)
+        whole = len(head) <= _HEAD
+        text = _head_text(head[:_HEAD], whole)
+        if text is None:
+            return None
+        columns = _csv_head(text, whole) if fmt == "csv" else _json_head(text, fmt == "json")
+        metrics = [c for c in dict.fromkeys(columns) if c in METRICS]
+    except Exception:
+        return None
+    if not metrics:
+        return None
+    return (
+        f"a {_SAYS[fmt]} table with the Ragas {'metric' if len(metrics) == 1 else 'metrics'} "
+        + (", ".join(metrics))
+    )
+
+
+def _head_text(head: bytes, whole: bool) -> str | None:
+    """The first bytes as text; a character cut in two at the end of the bytes read is left
+    out. Bytes that are not UTF-8 are not a table."""
+    for cut in range(1 if whole else 4):
+        try:
+            return head[: len(head) - cut].decode("utf-8-sig")
+        except UnicodeDecodeError:
+            continue
+    return None
+
+
+def _csv_head(text: str, whole: bool) -> list[str]:
+    """A CSV's header, as far as the text holds it: a cell the text cuts short is not a column."""
+    line, newline, _ = text.partition("\n")
+    cells = next(csv.reader([line.rstrip("\r")]), [])
+    if not newline and not whole:
+        cells = cells[:-1]
+    return [cell.strip() for cell in cells]
+
+
+def _json_head(text: str, listed: bool) -> list[str]:
+    """The keys of the first row the text opens, as far as it holds them: of a JSON list's
+    first object (``listed``), or of the first line of a JSON Lines file. A key whose value the
+    text cuts short still counts, since its name is read whole."""
+    keys: list[str] = []
+    decoder = json.JSONDecoder()
+    at = _space(text, 0)
+    if listed:
+        if text[at : at + 1] != "[":
+            return []
+        at = _space(text, at + 1)
+    if text[at : at + 1] != "{":
+        return []
+    at = _space(text, at + 1)
+    while at < len(text) and text[at] == '"':
+        try:
+            key, at = decoder.raw_decode(text, at)
+        except ValueError:
+            return keys
+        at = _space(text, at)
+        if text[at : at + 1] != ":":
+            return keys
+        keys.append(str(key))
+        at = _skip_value(text, _space(text, at + 1))
+        at = _space(text, at)
+        if text[at : at + 1] != ",":
+            return keys
+        at = _space(text, at + 1)
+    return keys
+
+
+def _space(text: str, at: int) -> int:
+    while at < len(text) and text[at] in " \t\r\n":
+        at += 1
+    return at
+
+
+def _skip_value(text: str, at: int) -> int:
+    """Where the JSON value that opens at ``at`` ends; the end of the text when it ends first."""
+    depth = 0
+    quoted = False
+    escaped = False
+    while at < len(text):
+        ch = text[at]
+        at += 1
+        if quoted:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                quoted = False
+                if depth == 0:
+                    return at
+        elif ch == '"':
+            quoted = True
+        elif ch in "[{":
+            depth += 1
+        elif ch in "]}":
+            depth -= 1
+            if depth <= 0:
+                return at if depth == 0 else at - 1
+        elif ch == "," and depth == 0:
+            return at - 1
+    return at
 
 
 def read(ns: argparse.Namespace) -> Run:

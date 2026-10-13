@@ -105,7 +105,9 @@ def status(root: Path, name: str) -> str | None:
         return None
 
 
-def write(run: Run, root: Path) -> Written:
+def write(run: Run, root: Path, form: str = "target") -> Written:
+    """Write ``run`` as one new run of the store at ``root``; ``form`` is how the store's runs
+    are named from their manifests, for the check that no other run answers to its name."""
     if run.started_from not in STARTED_FROM:
         raise Refusal(f"the start time's source is one of {', '.join(STARTED_FROM)}")
     store = Store(root)
@@ -123,7 +125,7 @@ def write(run: Run, root: Path) -> Written:
             "new run and never adds to one, so give this one another name"
         )
     # the import's name is the word for its run, so no other run may answer to it
-    in_use = taken(store, stored, Path(root), run.name) if stored else None
+    in_use = taken(store, stored, Path(root), run.name, form) if stored else None
     if in_use is not None:
         raise Refusal(in_use)
     seen: Counter[str] = Counter()

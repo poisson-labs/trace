@@ -96,6 +96,8 @@ def test_tr9_src_writes_nothing_but_the_svg_and_the_json(synth) -> None:  # type
             in_log = any("errors_log" in f for f in fns)
             # R18: the names file's writer, a function named for it (name writes trace-names.toml)
             in_names = any("names_file" in f for f in fns)
+            # R18: the config file's writer, a function named for it (init writes trace.toml)
+            in_config = any("config_file" in f for f in fns)
             if name.endswith("to_parquet"):
                 raise AssertionError(f"{path.name}:{call.lineno}: to_parquet")
             if name == "open" or name.endswith(".open"):
@@ -105,9 +107,9 @@ def test_tr9_src_writes_nothing_but_the_svg_and_the_json(synth) -> None:  # type
                 for kw in call.keywords:
                     if kw.arg == "mode" and isinstance(kw.value, ast.Constant):
                         mode = str(kw.value.value)
-                assert not set(mode) & set("wax+") or in_svg or (in_names and mode in ("w", "wt", "x", "xt")) or (in_log and mode in ("a", "at")), f"{path.name}:{call.lineno}: open for writing outside the svg writer, the names file's writer and the errors log"
+                assert not set(mode) & set("wax+") or in_svg or ((in_names or in_config) and mode in ("w", "wt", "x", "xt")) or (in_log and mode in ("a", "at")), f"{path.name}:{call.lineno}: open for writing outside the svg writer, the names and config files' writers and the errors log"
             if name.endswith("write_text") or name.endswith("write_bytes"):
-                assert in_svg or in_names, f"{path.name}:{call.lineno}: a write outside the svg writer and the names file's writer"
+                assert in_svg or in_names or in_config, f"{path.name}:{call.lineno}: a write outside the svg writer and the names and config files' writers"
             if name in ("json.dump", "json.dumps") or name.endswith(".dump"):
                 assert path.name in ("report.py", "cli.py"), f"{path.name}:{call.lineno}: json.dump outside the printers"
 

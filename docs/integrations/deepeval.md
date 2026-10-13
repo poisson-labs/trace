@@ -68,6 +68,9 @@ identifies a test case.
 - `.json` and `.json.gz` are read: the file in the results folder,
   `.deepeval/.latest_run_full.json`, and `.deepeval/.latest_test_run.json` when it holds
   results.
+- `--store` may be left out when a `trace.toml` in the current folder (or the file `--config
+  PATH` names) names a store: the import writes into it. `--store NAME` takes the store that
+  file names so.
 
 ## The worked example
 
@@ -213,6 +216,44 @@ temperature 0.0, in an agent nobody changed. No other case is flagged. The by-in
 (p = 0.127) says the cases did not move as a body. The report says what it cannot say: a
 difference between two runs is a difference between the runs, and the version and the hour
 changed together.
+
+## From `poisson-trace init`
+
+`poisson-trace init`, run in a folder with no Prove store under it, lists the test runs
+DeepEval saved, by folder (a `test_run_*.json` file, and `.latest_test_run.json` in a
+`.deepeval` folder; a `.gz` copy is read by the import and not offered), and offers to import
+them. Its questions are the import's flags, asked in their order; with `--yes` it takes them
+as flags instead. Each file becomes one run, named after the file, in a store `trace-store`
+beside `trace.toml`, and `trace.toml` names that store with `missed` as the failure. Every
+file is read before any run is written, so a file the import refuses writes no run of the
+others. Here it is on the first worked file, saved under the name DeepEval gives:
+
+<!-- command -->
+```
+mkdir -p from-deepeval/results
+gunzip -c tests/fixtures/ingest/deepeval/humaneval-a.json.gz > from-deepeval/results/test_run_20260905_185407.json
+cd from-deepeval && poisson-trace init --yes --metric "Tests Passed" --cut recorded --case name
+```
+
+<!-- excerpt exit=0 -->
+```
+  found 1 DeepEval results folder:
+    1) results                   1 saved test run · newest 2026-09-05
+```
+
+<!-- excerpt exit=0 -->
+```
+ok  wrote trace.toml and imported 1 run into trace-store, failures missed
+  names    1 run, named at import (test_run_20260905_185407)
+  prove    poisson-prove is installed at the version Trace reads
+  import   poisson-trace-import deepeval results/test_run_20260905_185407.json --store trace-store --run test_run_20260905_185407 --metric "Tests Passed" --cut recorded --case name
+  the same setup, without questions:
+    poisson-trace init --yes --import --metric "Tests Passed" --cut recorded \
+      --case name --event missed
+next: poisson-trace runs
+```
+
+With `trace.toml` there, the import takes its store from it too, so `--store` may be left out.
 
 ## What this does not do
 

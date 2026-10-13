@@ -2,6 +2,62 @@
 
 ## Unreleased
 
+### Guided setup, the config file and doctor
+
+A first-time user types `poisson-trace init`, answers in plain words, and every verb then
+knows where their results are and what counts as a failure.
+
+- **`poisson-trace init`** finds the results in the current folder's tree: the stores Prove
+  wrote, then DeepEval's saved test runs and tables that look like Ragas scored them. It
+  searches breadth first and in name order, six folders down, reading at most 10,000 entries
+  and saying so when it stops short; it skips `.git`, `.venv`, `venv`, `node_modules`,
+  `__pycache__`, `.work`, `site-packages` and every dot folder but `.deepeval`, follows no
+  link, and never searches the home folder or a folder above it. It lists what it found on
+  stderr: each store with its runs, its targets and its newest day.
+- It asks which store when there are several (`[1]`, the first listed, by default), offers
+  to import the result files when there is no store (the import's own questions, each file
+  one run named after it, in `trace-store` beside the config), and asks which outcomes count
+  as a failure over the newest 20 runs, showing as its default every outcome that is not a
+  word for success (`poisson_trace.setup.SUCCESS_WORDS`).
+- It writes `trace.toml` once, after the last answer; Ctrl-C at any question writes nothing.
+  It prints the same setup as one command that asks nothing, which writes the same file in a
+  copy of the folder, and `next: poisson-trace runs`. Every question has a flag, and `--yes`
+  asks nothing; stdin that is not a terminal is refused without it. `--names from=FORM`
+  writes the names form, and `--max-mde`, `--max-mde-hr` and `--fail-on` write `[check]`,
+  only when given. A config there already is refused without `--force`, but for one with a
+  store and no failures, which `init` completes. `--add-store PATH` adds a store to a config,
+  named by its folder (or as the store every verb reads, when the config names none), keeping
+  every line, and says when its runs carry none of the config's failures. `init` never writes
+  `trace.toml` into a store or a run's folder, and does not import when both tools' files are
+  found. Without Prove, `init` refuses before it searches.
+  `--json` prints `poisson-trace.init/1`.
+- **`trace.toml`** is read by every verb and by `poisson-trace-import`, from the current
+  folder or `--config PATH`, never from a folder above: the store and named stores (a path
+  read from the file's folder), the failures, `[check]` (`fix-check` and `compare` take their
+  ceiling from it when no flag gives one), `[names] from` and `[upload]`. A flag replaces what
+  it gives; `--store NAME` is the store it names so before a folder of that name; what
+  neither gives is a mistake in the command line, as before. A file that is not a version 1
+  config is refused by every verb, naming the file and the line, with the setting meant when
+  one is within two edits.
+- **Two more forms of a run's name**, set by `[names] from`: `date` (`2026-09-15 a`, the
+  letters running across the day's runs) and `target-date` (`tau2-airline gpt-4.1-mini
+  2026-09-15 a`, the model taken from the target id after its first `/`, up to an `@`,
+  without a date stamp at its end). Names of yours and imports' names stay what they are.
+- **`poisson-trace doctor`** checks six things, one line each: the Python, the package and
+  where it was imported from (a note when that is outside the interpreter's environment),
+  Prove, the config and the stores it names, the names of yours, and the readers in the
+  install. A failing line ends with the command that mends it, where one does;
+  not ready exits 4. It fixes
+  nothing. `--json` prints `poisson-trace.doctor/1`.
+- **The readers say which files they read**: `looks_like(path)` on the DeepEval and Ragas
+  readers gives the one line a listing shows, or nothing, and never raises.
+- **A next command leaves out what the config gave** and carries what you typed: `--store`,
+  each `--event`, and `--config`.
+- The line that installs Prove is now said once, on the `  next:` line under the refusal,
+  and no longer inside the sentence too. An unknown option before the verb gives its error on
+  one line and the command's help on the next.
+- An interrupted import still names the partial run and the folder to remove.
+
 ### Names and runs
 
 Every stored run now has a name a person can read and type, and no command asks for a run's

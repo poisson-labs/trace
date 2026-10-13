@@ -1,5 +1,5 @@
-"""The console script: ``poisson-trace runs``, ``name``, ``where``, ``compare``, ``fix-check``
-and ``changes``.
+"""The console script: ``poisson-trace init``, ``runs``, ``name``, ``where``, ``compare``,
+``fix-check``, ``changes`` and ``doctor``.
 
 The command line is read first, so ``--help`` and ``--version`` need nothing installed; the
 check that ``proofload`` is present at the version this package reads runs next, and
@@ -29,7 +29,9 @@ _DRAWS = 100_000
 _MOST_BOOT = 1_000_000
 _DOES = "Poisson Trace reads stored runs"
 _VERBS = ("runs", "name", "where", "compare", "fix-check", "changes")
-_NAMED = "runs, name, where, compare, fix-check and changes"
+_NAMED = "init, runs, name, where, compare, fix-check, changes and doctor"
+# the verbs that count failures, and so need them from a flag or the config
+_COUNTING = ("where", "compare", "fix-check", "changes")
 # the complete runs the listing shows, newest first, before it says how many more there are
 _LISTED = 50
 # the command's own option, which stays where it is written; --help before a verb is that
@@ -54,6 +56,10 @@ latest:TARGET and previous:TARGET, a target's ("latest:tau2-airline"); by its nu
 runs listing ("#3"); or by its full id.
 
 Results another tool wrote (DeepEval, Ragas) are read in with poisson-trace-import.
+
+To begin, run poisson-trace init: it finds the results already here, asks what counts as a
+failure and writes trace.toml, from which every verb then takes its store and its failures.
+Then poisson-trace doctor says whether this environment is ready.
 """
 
 
@@ -61,8 +67,12 @@ def _example(*commands: str) -> str:
     return "examples:\n" + "".join(f"  {command}\n" for command in commands)
 
 
-_STORE_HELP = "the folder Prove stored the runs in (no default)"
-_RUN_HELP = "by its name, latest, previous or its number in the runs listing (\"#3\")"
+_STORE_HELP = (
+    "the folder Prove stored the runs in, or the name of a store trace.toml names (default: the "
+    "store trace.toml names)"
+)
+_CONFIG_HELP = "the config file to read (default: trace.toml in the current folder, if any)"
+_RUN_HELP = 'by its name, latest, previous or its number in the runs listing ("#3")'
 
 
 def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
@@ -81,6 +91,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
     )
     parser.add_argument("--debug", action="store_true", help=argparse.SUPPRESS)
     verbs = parser.add_subparsers(dest="verb", metavar="VERB", title="verbs")
+    init = _init_parser(verbs)
 
     runs = verbs.add_parser(
         "runs",
@@ -90,18 +101,19 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "rows, how many of them failed for the --event names, whether any row carries a\n"
             "trace (where and compare read traces; fix-check and changes do not need them), when\n"
             "it started (UTC) and its status. The newest 50 complete runs are listed. A run's\n"
-            "number, such as \"#1\", names it to every verb."
+            'number, such as "#1", names it to every verb.'
         ),
         epilog=_example("poisson-trace runs --store proofload-runs --event unsolved"),
     )
-    runs.add_argument("--store", required=True, metavar="ROOT", help=_STORE_HELP)
+    runs.add_argument("--store", metavar="ROOT", help=_STORE_HELP)
     runs.add_argument(
         "--event",
         action="append",
         metavar="NAME",
         help="an outcome that counts as a failure in the failed column; repeatable (default: "
-        "none, and the column is not counted)",
+        "the failures trace.toml names, else none, and the column is not counted)",
     )
+    runs.add_argument("--config", metavar="PATH", help=_CONFIG_HELP)
     runs.add_argument(
         "--all",
         action="store_true",
@@ -126,21 +138,23 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
     name.add_argument(
         "new", nargs="?", metavar="NAME", help="the name to give it, at most 80 characters"
     )
-    name.add_argument("--store", required=True, metavar="ROOT", help=_STORE_HELP)
+    name.add_argument("--store", metavar="ROOT", help=_STORE_HELP)
+    name.add_argument("--config", metavar="PATH", help=_CONFIG_HELP)
     name.add_argument(
         "--forget", action="store_true", help="take back the name of yours that RUN has"
     )
     name.add_argument("--list", action="store_true", help="list the names of yours")
 
     def common(p: argparse.ArgumentParser, died: str) -> None:
-        p.add_argument("--store", required=True, metavar="ROOT", help=_STORE_HELP)
+        p.add_argument("--store", metavar="ROOT", help=_STORE_HELP)
         p.add_argument(
             "--event",
             action="append",
-            required=True,
             metavar="NAME",
-            help=f"an outcome that counts as {died}; repeatable (no default)",
+            help=f"an outcome that counts as {died}; repeatable (default: the failures "
+            "trace.toml names)",
         )
+        p.add_argument("--config", metavar="PATH", help=_CONFIG_HELP)
 
     def where_and_compare(p: argparse.ArgumentParser) -> None:
         p.add_argument(
@@ -229,7 +243,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         type=float,
         metavar="X",
         help="the largest minimum detectable hazard ratio you accept, such as 1.5 "
-        "(no default)",
+        "(default: max_mde_hr in trace.toml's [check], else none)",
     )
     compare.show_required(ceiling)
     compare.add_argument(
@@ -285,8 +299,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         "--min-failures",
         type=int,
         metavar="M",
-        help="with --failing-from, the failures an input needs in RUN to be compared "
-        "(default: 1)",
+        help="with --failing-from, the failures an input needs in RUN to be compared (default: 1)",
     )
     fix.add_argument(
         "--inputs",
@@ -298,7 +311,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         type=float,
         metavar="X",
         help="the largest detection limit you accept, as a share of failures: 0.2 is twenty "
-        "points (no default)",
+        "points (default: max_mde in trace.toml's [check], else none)",
     )
     fix.show_required(limit)
     fix.add_argument(
@@ -332,14 +345,179 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         action="store_true",
         help="on an unexpected failure, print its details on stderr as well as in the log",
     )
+    tail(init)
+    doctor = verbs.add_parser(
+        "doctor",
+        help="whether this environment is ready, and what to run when it is not",
+        description=(
+            "Says whether this environment is ready for Trace, one line for each thing it\n"
+            "checks: the Python running it, the Trace package and where it was imported from,\n"
+            "Prove, the config file and the stores it names, the names of yours, and the\n"
+            "readers of other tools' files in the install. A line that fails ends with the\n"
+            "command to run. It fixes nothing and asks nothing; it exits 4 when not ready."
+        ),
+        epilog=_example("poisson-trace doctor", "poisson-trace doctor --config team.toml"),
+    )
+    doctor.add_argument("--config", metavar="PATH", help=_CONFIG_HELP)
+    tail(doctor)
     return parser, {
+        "init": init,
         "runs": runs,
         "name": name,
         "where": where,
         "compare": compare,
         "fix-check": fix,
         "changes": changes,
+        "doctor": doctor,
     }
+
+
+def _form(text: str) -> str:
+    """``--names from=FORM``: the form, or a wrong command line."""
+    from poisson_trace.config import FORMS
+
+    key, _, form = text.partition("=")
+    if key != "from" or form not in FORMS:
+        raise argparse.ArgumentTypeError(
+            f'takes from=target, from=date or from=target-date, not "{text}"'
+        )
+    return form
+
+
+def _fail_on(text: str) -> tuple[str, ...]:
+    """``--fail-on``: the check's results that fail its job, comma-separated."""
+    from poisson_trace.config import FAIL_ON
+
+    picked = [p.strip() for p in text.split(",")] if text.strip() else []
+    if any(p not in FAIL_ON for p in picked):
+        raise argparse.ArgumentTypeError(
+            f'takes failed-more, too-small or both, comma-separated, not "{text}"'
+        )
+    return tuple(dict.fromkeys(picked))
+
+
+def _init_parser(verbs: Any) -> look.Parser:
+    init: look.Parser = verbs.add_parser(
+        "init",
+        help="guided setup: finds your results, asks what counts as a failure, writes trace.toml",
+        description=(
+            "Finds the results already in this folder's tree (the stores Prove wrote, and the\n"
+            "result files of the readers in this install), asks which store to start with when\n"
+            "there are several, or offers to import the result files when there is no store,\n"
+            "asks which outcomes count as a failure, shows the runs' names, and writes\n"
+            "trace.toml once, after the last answer. Every verb then takes its store and its\n"
+            "failures from it. It runs nothing, spends nothing and writes under no store but\n"
+            "the runs an import you agree to writes. Every question has a flag: with --yes it\n"
+            "asks nothing. It never searches the home folder or a folder above it."
+        ),
+        epilog=_example(
+            "poisson-trace init",
+            "poisson-trace init --yes --store proofload-runs --event unsolved",
+            "poisson-trace init --add-store imported",
+        ),
+    )
+    init.add_argument(
+        "--store",
+        action="append",
+        metavar="PATH",
+        help="a store to set up, and nothing is searched; repeatable: the first is the store "
+        "every verb reads, each other is named by its folder (default: the one found here, or "
+        "the one you pick)",
+    )
+    init.add_argument(
+        "--add-store",
+        metavar="PATH",
+        help="add the store at PATH to the config there already, named by its folder; nothing "
+        "else is asked or changed (no default)",
+    )
+    init.add_argument(
+        "--event",
+        action="append",
+        metavar="NAME",
+        help="an outcome that counts as a failure; repeatable (default: every outcome of the "
+        "newest 20 runs whose name is not a word for success, shown for you to confirm)",
+    )
+    init.add_argument(
+        "--names",
+        type=_form,
+        metavar="from=FORM",
+        help="how a run with no name of yours is named: from=target, from=date or "
+        "from=target-date (default: from=target)",
+    )
+    init.add_argument(
+        "--import",
+        dest="import_",
+        action="store_true",
+        default=None,
+        help="import the result files found when there is no store, without the question",
+    )
+    init.add_argument(
+        "--no-import",
+        dest="import_",
+        action="store_false",
+        help="leave them as they are and write the config with no store",
+    )
+    init.add_argument(
+        "--metric",
+        metavar="NAME",
+        help="for the import: the metric, or the score column, to read (no default)",
+    )
+    init.add_argument(
+        "--cut",
+        metavar="recorded|X",
+        help="for the import: where a score misses; recorded, for DeepEval's own decision, or "
+        "a number with --below or --above (no default)",
+    )
+    init.add_argument(
+        "--below", action="store_true", help="for the import: a score under the cut missed it"
+    )
+    init.add_argument(
+        "--above", action="store_true", help="for the import: a score over the cut missed it"
+    )
+    init.add_argument(
+        "--case",
+        choices=("name", "input", "position"),
+        metavar="name|input|position",
+        help="for a DeepEval import: what identifies a test case across versions (no default)",
+    )
+    init.add_argument(
+        "--case-column",
+        metavar="COLUMN",
+        help="for a Ragas import: the column that identifies a case (no default)",
+    )
+    init.add_argument(
+        "--max-mde",
+        type=float,
+        metavar="X",
+        help="the largest detection limit fix-check and the check accept, written to [check] "
+        "(no default; written only when given)",
+    )
+    init.add_argument(
+        "--max-mde-hr",
+        type=float,
+        metavar="X",
+        help="the largest detectable hazard ratio compare accepts, written to [check] (no "
+        "default; written only when given)",
+    )
+    init.add_argument(
+        "--fail-on",
+        type=_fail_on,
+        metavar="LIST",
+        help="the check's results that fail its job, comma-separated: failed-more, too-small or "
+        "both (no default; written only when given)",
+    )
+    init.add_argument("--force", action="store_true", help="replace a config that is there already")
+    init.add_argument(
+        "--config",
+        metavar="PATH",
+        help="the config file to write (default: trace.toml in the current folder)",
+    )
+    init.add_argument(
+        "--yes",
+        action="store_true",
+        help="ask nothing: every answer from a flag or its default",
+    )
+    return init
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -354,9 +532,7 @@ def _main(session: look.Session) -> int:
     if look.asks(session.argv, valued, "--version"):
         look.out(look.version_line())
         return look.DONE
-    args, at = look.verb_first(
-        session.argv, valued, _KEPT, look.options(parsers), "poisson-trace"
-    )
+    args, at = look.verb_first(session.argv, valued, _KEPT, look.options(parsers), "poisson-trace")
     if at is not None and args[at] not in verbs:
         raise look.Usage(
             f'"{args[at]}" is not a verb; the verbs are {_NAMED}', "poisson-trace --help"
@@ -372,9 +548,15 @@ def _main(session: look.Session) -> int:
     if getattr(ns, "json", False):
         schema = f"poisson-trace.{ns.verb}/1"
         session.render = lambda line: _stopped_json(schema, line)
-    refusal = look.prove_refusal(_DOES)
+    if ns.verb == "doctor":
+        return _doctor(ns)
+    if ns.verb != "init":
+        _from_config(ns)
+    refusal = look.prove_refusal(_DOES if ns.verb != "init" else "poisson-trace init reads stores")
     if refusal is not None:
         raise _Refusal(refusal, look.INSTALL_PROVE)
+    if ns.verb == "init":
+        return _init(session, ns)
     _validate(ns)
     verb: Callable[[argparse.Namespace], int] = {
         "runs": _runs,
@@ -385,6 +567,73 @@ def _main(session: look.Session) -> int:
         "changes": _changes,
     }[ns.verb]
     return verb(ns)
+
+
+def _from_config(ns: argparse.Namespace) -> None:
+    """The store, the failures and the ceilings a verb takes from the config when no flag gives
+    them; a store name the config holds is that store. What neither gives is a wrong command
+    line, as it is with no config."""
+    from poisson_trace import config
+
+    held = config.load(ns.config)
+    ns.form = held.names_from if held is not None else "target"
+    ns.typed_store = ns.store
+    ns.typed_events = list(getattr(ns, "event", None) or ())
+    ns.config_flags = held.flags() if held is not None else ()
+    ns.settings = held
+    if ns.store is not None and held is not None and ns.store in held.named:
+        ns.store = held.named[ns.store]
+    elif ns.store is None and held is not None:
+        ns.store = held.store
+    if hasattr(ns, "event") and ns.event is None and held is not None and held.events is not None:
+        ns.event = list(held.events)
+    flags = []
+    if ns.store is None:
+        flags.append("--store")
+    if ns.verb in _COUNTING and not ns.event:
+        flags.append("--event")
+    if flags:
+        said = {"--store": "a store", "--event": "the failures"}
+        if held is None:
+            why = "no trace.toml here gives " + " or ".join(said[f] for f in flags)
+        else:
+            why = f"{held.shown} gives no " + " and no ".join(
+                said[f].removeprefix("a ").removeprefix("the ") for f in flags
+            )
+        raise look.Usage(
+            f"{' and '.join(flags)} {'is' if len(flags) == 1 else 'are'} required: {why}",
+            f"poisson-trace {ns.verb} --help",
+        )
+    if held is not None:
+        if ns.verb == "compare" and ns.max_mde_hr is None:
+            ns.max_mde_hr = held.max_mde_hr
+        if ns.verb == "fix-check" and ns.max_mde is None:
+            ns.max_mde = held.max_mde
+
+
+def _init(session: look.Session, ns: argparse.Namespace) -> int:
+    from poisson_trace import setup
+
+    session.stopped = lambda: setup.STOPPED
+
+    def written(line: str) -> None:
+        # once anything is on disk, Ctrl-C says what was kept
+        session.stopped = lambda: line
+
+    done = setup.init(ns, written)
+    look.out(json.dumps(done.data, indent=2, allow_nan=False) + "\n" if ns.json else done.text)
+    return look.DONE
+
+
+def _doctor(ns: argparse.Namespace) -> int:
+    from poisson_trace import doctor
+
+    report = doctor.check(ns.config)
+    if ns.json:
+        look.out(json.dumps(report, indent=2, allow_nan=False) + "\n")
+    else:
+        look.out(doctor.text(report))
+    return look.DONE if report["verdict"] == "ok" else look.CHECK_FAILED
 
 
 def _stopped_json(schema: str, line: str) -> str:
@@ -402,9 +651,7 @@ def _name_line(ns: argparse.Namespace) -> None:
             raise look.Usage("--list takes no run and no --forget", usage)
         return
     if ns.run is None:
-        raise look.Usage(
-            "name takes a run and a name, a run and --forget, or --list", usage
-        )
+        raise look.Usage("name takes a run and a name, a run and --forget, or --list", usage)
     if ns.forget and ns.new is not None:
         raise look.Usage("--forget takes the run alone, without a new name", usage)
     if not ns.forget and ns.new is None:
@@ -499,7 +746,9 @@ def _named(ns: argparse.Namespace, *, lenient: bool = False) -> tuple[Any, Any]:
     from poisson_trace import names
 
     store, held = _open(ns.store)
-    return store, names.index(store, held, ns.store, lenient=lenient)
+    return store, names.index(
+        store, held, ns.store, lenient=lenient, form=ns.form, carried=tuple(_reach(ns))
+    )
 
 
 def _load(store: Any, run: Any, *, trace: str = "envelope") -> tuple[Any, Any, Any]:
@@ -524,17 +773,24 @@ def _two(index: Any, first: str, second: str, labels: tuple[str, str]) -> tuple[
     return a, b
 
 
+def _reach(ns: argparse.Namespace) -> list[str]:
+    """What a next command carries to read the same store: ``--store`` as it was typed, and
+    the config file when it was named by flag; nothing for a store the config gave."""
+    words = [] if ns.typed_store is None else [look.option("--store", ns.typed_store)]
+    return [*words, *ns.config_flags]
+
+
 def _flags(ns: argparse.Namespace) -> list[str]:
-    """``--store`` and each ``--event`` as given, for a next command to carry."""
-    words = [look.option("--store", ns.store)]
-    for event in dict.fromkeys(ns.event or ()):
+    """What a next command carries: the store and each ``--event`` as they were typed, and the
+    config file when it was named by flag; what the config gave is left out, since the command
+    reads the same config."""
+    words = [] if ns.typed_store is None else [look.option("--store", ns.typed_store)]
+    for event in dict.fromkeys(ns.typed_events):
         words.append(look.option("--event", event))
-    return words
+    return [*words, *ns.config_flags]
 
 
-def _next(
-    index: Any, verb: str, runs: Sequence[Any], ns: argparse.Namespace, *extra: str
-) -> str:
+def _next(index: Any, verb: str, runs: Sequence[Any], ns: argparse.Namespace, *extra: str) -> str:
     """A next command: the runs by the words that reach them, the store and the events given."""
     words = (look.word(index.word_for(r)) for r in runs)
     return look.command("poisson-trace", verb, *words, *_flags(ns), *extra)
@@ -566,9 +822,7 @@ def _run_before(index: Any, run: Any) -> Any | None:
     if at is None:
         # a run whose start Prove's record does not give has no place in the order
         return None
-    return next(
-        (r for r in reversed(order[:at]) if r.complete and r.target == run.target), None
-    )
+    return next((r for r in reversed(order[:at]) if r.complete and r.target == run.target), None)
 
 
 def _outcomes(frame: Any) -> set[str]:
@@ -630,7 +884,8 @@ def _runs(ns: argparse.Namespace) -> int:
     else:
         listed = [r for r in index.runs if r.complete and r.number <= _LISTED]
     if not events:
-        look.err("note: no --event was given, so the failed column is not counted\n")
+        where = "" if ns.settings is None else f" and {ns.settings.shown} names no failures"
+        look.err(f"note: no --event was given{where}, so the failed column is not counted\n")
     if ns.all and len(complete) > _LISTED:
         look.err(
             f"note: --all reads the rows of every one of the {count(len(index.runs))} runs, "
@@ -986,7 +1241,7 @@ def _where_sentence(
     """The deaths, the placed episodes, the deaths by kind and the median; the episodes and
     the events when none died; and no count for a run with no traces."""
     if not traced:
-        how = f" (imported from {run.backend[len('import:'):]})" if run.imported else ""
+        how = f" (imported from {run.backend[len('import:') :]})" if run.imported else ""
         return f"this run has no traces, so there is no curve{how}"
     placed = len(placement.rows)
     died = sum(1 for p in placement.rows if p.died)
@@ -1703,7 +1958,6 @@ def _changes_sentence(data: Mapping[str, Any]) -> str:
     more = len(rows) - _NAMED_INPUTS
     tail = f"; and {count(more)} more" if more > 0 else ""
     return f"{head}: {'; '.join(named)}{tail}"
-
 
 
 if __name__ == "__main__":
