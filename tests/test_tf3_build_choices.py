@@ -2,14 +2,17 @@
 frozen tests leave room: the table's summary counts the rows each failure value matched, so a
 value that matched nothing shows; a start given on the command line drops the note a JUnit
 timestamp with no zone carries; init's table import replays a failure value that opens with a
-dash; and an option nobody knows, before a verb that is not import, stays the main command's to
-refuse though a later word is "import"."""
+dash; an option nobody knows, before a verb that is not import, stays the main command's to
+refuse though a later word is "import"; an option joined to its value by "=" before the verb is
+read as one word; and the table's wrong command lines are read before Prove is looked for."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from tf0_support import chdir, trace
+from proofload.store import Store
+
+from tf0_support import chdir, run_sub, trace
 from tf1_support import shell_words
 from tf2_support import copy_tree, doc, here, init_yes, scratch_home, work  # noqa: F401
 from tf3_support import Case, imported, junit_argv, outcome_rows, report, suite, table_argv, verb, write_report, write_table
@@ -60,3 +63,22 @@ def test_an_unknown_option_before_another_verb_is_the_main_command_s_though_impo
     assert result.code == 2 and result.out == "", result.text
     nexts = [line[len("  next: "):] for line in result.lines() if line.startswith("  next: ")]
     assert nexts and shell_words(nexts[0])[:2] == ["poisson-trace", "--help"], result.err
+
+
+def test_an_option_joined_to_its_value_before_the_verb_is_the_import_s(tmp_path: Path) -> None:
+    folder = work(tmp_path)
+    write_report(folder / "r.xml", report(suite([Case("test_a"), Case("test_b", result="failure")])))
+    with chdir(folder):
+        result = trace(["--store=st", "import", "junit", "r.xml", "--run", "r"])
+    assert result.code == 0, result.text
+    assert Store(folder / "st").runs() == ["r"]
+
+
+def test_a_wrong_table_command_line_is_exit_2_without_prove(tmp_path: Path) -> None:
+    folder = work(tmp_path)
+    write_table(folder / "t.csv", outcome_rows([("a", "fail")]))
+    argv = ["import", "table", "t.csv", "--store", "st", "--run", "r", "--case-column", "case"]
+    for prove in ("absent", "0.0.0-other"):
+        result = run_sub("trace", argv, prove=prove, cwd=folder)
+        assert result.code == 2 and "pip install" not in result.err, (prove, result.text)
+    assert not (folder / "st").exists()

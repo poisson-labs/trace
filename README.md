@@ -963,7 +963,7 @@ ruff check .
 mypy --strict src
 ```
 
-The suite holds 1,459 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
+The suite holds 1,461 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
 (3 of them its display rules), 124 for the import and its DeepEval reader, 80 for
 its Ragas reader, 186 that hold both commands to the shared command-line look
 ([`docs/cli-look.md`](docs/cli-look.md)): the exit codes, the `error:` lines, the help and
@@ -971,9 +971,9 @@ its Ragas reader, 186 that hold both commands to the shared command-line look
 words; 316 for names and runs: the names file, the name every run has, the words a verb
 takes for a run, `runs` and `name`, the verdict line and `next:`, and the import's run names;
 276 for the setup: `init`, `trace.toml` and how every verb reads it, the two further forms
-of a run's name, `doctor`, and the readers' `looks_like`; and 234 for `import` under the main
+of a run's name, `doctor`, and the readers' `looks_like`; and 236 for `import` under the main
 command, its table and JUnit readers, `init`'s part in them, and runs with no traces.
-Four of the 1,459 run DeepEval or Ragas itself, installed from PyPI, and are left out
+Four of the 1,461 run DeepEval or Ragas itself, installed from PyPI, and are left out
 unless asked for (`python -m pytest -m lane_j`). The figures the tests check against come
 from lifelines, scipy, full enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks
 the fixtures (`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).
