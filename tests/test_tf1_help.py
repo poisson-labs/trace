@@ -24,6 +24,9 @@ from tf0_support import DEEPEVAL, RAGAS, TOOLS, VERBS, chdir, examples, help_blo
 from tf1_support import shell_words
 
 NEW_VERBS = ("runs", "name")
+# the table and JUnit readers' committed files, for examples that name those readers
+TABLE = Path(__file__).resolve().parent / "fixtures" / "ingest" / "table" / "humaneval-a.csv"
+JUNIT = Path(__file__).resolve().parent / "fixtures" / "ingest" / "junit" / "humaneval-a.xml"
 TRACE_HELPS = [[], *[[v] for v in (*VERBS, *NEW_VERBS)]]
 IMPORT_HELPS = [[], *[[t] for t in TOOLS]]
 
@@ -76,7 +79,7 @@ def _write_table(path: Path, rows: list[dict[str, object]]) -> None:
 
 def _set_up(folder: Path, command: str, words: list[str]) -> list[str]:
     """Put in ``folder`` what the example names; the argv to run."""
-    if command == "trace":
+    if command == "trace" and words[1:2] != ["import"]:
         store = _option(words, "--store")
         if store is not None:
             shutil.copytree(TAU2, folder / store)
@@ -89,12 +92,37 @@ def _set_up(folder: Path, command: str, words: list[str]) -> list[str]:
         if tool == "deepeval":
             raw = gzip.decompress((DEEPEVAL / "humaneval-a.json.gz").read_bytes())
             path.write_bytes(gzip.compress(raw) if name.endswith(".gz") else raw)
+        elif tool == "junit":
+            shutil.copy(JUNIT, path)
+        elif tool == "table":
+            _write_table(path, _table_rows(words))
         else:
             column = _option(words, "--case-column") or "case"
             rows = [json.loads(line) for line in (RAGAS / "rag-base.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
             rows = [{(column if k == "case" else k): v for k, v in row.items()} for row in rows]
             _write_table(path, rows)
-    return words[start:]
+    return words[start:] if command == "import" else words[1:]
+
+
+def _table_rows(words: list[str]) -> list[dict[str, object]]:
+    """The committed HumanEval table's rows under the columns the example names: its case
+    column, and its outcome column with a failure value of the example's for each failure, or its
+    score column with 1 for a pass and 0 otherwise."""
+    import csv
+
+    failed = [words[i + 1] for i, w in enumerate(words) if w == "--failed"]
+    case, outcome, score = (_option(words, flag) for flag in ("--case-column", "--outcome-column", "--score-column"))
+    with open(TABLE, encoding="utf-8", newline="") as f:
+        source = list(csv.DictReader(f))
+    rows: list[dict[str, object]] = []
+    for row in source:
+        made: dict[str, object] = {str(case): row["case"]}
+        if outcome is not None:
+            made[outcome] = failed[0] if row["outcome"] != "passed" else "passed"
+        if score is not None:
+            made[score] = 1.0 if row["outcome"] == "passed" else 0.0
+        rows.append(made)
+    return rows
 
 
 @pytest.mark.parametrize("command,words", HELPS, ids=HELP_IDS)

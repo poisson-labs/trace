@@ -1,15 +1,18 @@
-"""The console script ``poisson-trace-import``.
+"""The import: ``poisson-trace import``, and the console script ``poisson-trace-import``.
 
-``poisson-trace-import TOOL FILE [FILE ...] --store ROOT --run NAME`` reads the files with
-the tool's reader, writes one new run through the writer, and prints a summary that ends with
-the Trace command to run next. Options may come before or after the tool. A refusal is one
-``error:`` line on stderr, exit 1, nothing written; a wrong command line exits 2; Ctrl-C and an
-unexpected failure follow the look (``poisson_trace.look``).
+``poisson-trace import TOOL FILE [FILE ...] --store ROOT --run NAME`` reads the files with the
+tool's reader, writes one new run through the writer, and prints a summary that ends with the
+Trace command to run next. ``poisson-trace-import`` is the same command under its first name:
+the main command hands it every word but ``import``, so both print the same bytes. Options may
+come before or after the tool. A refusal is one ``error:`` line on stderr, exit 1, nothing
+written; a wrong command line exits 2; Ctrl-C and an unexpected failure follow the look
+(``poisson_trace.look``).
 
 The readers are found from ``READERS`` by presence: a module that is not in the install is
 not in ``--help`` and its name is refused. A reader module defines ``add_arguments(parser)``
-and ``read(ns) -> Run``, and may define ``DESCRIPTION`` (its help's paragraph) and ``EXAMPLE``
-(a command its help and the import's show). It may also define ``FURTHER``, a mapping from one
+and ``read(ns) -> Run``, and may define ``DESCRIPTION`` (its help's paragraph), ``EXAMPLE``
+(a command its help and the import's show) and ``usage(ns) -> str | None`` (why a command line
+its parser takes is still wrong, exit 2). It may also define ``FURTHER``, a mapping from one
 further command name to ``(add_arguments, run)`` with ``run(ns) -> int``, for a command that
 writes no store and takes its own flags.
 
@@ -40,10 +43,12 @@ from poisson_trace.names import import_name_refusal
 if TYPE_CHECKING:
     from poisson_trace.ingest.writer import Written
 
-READERS: tuple[str, ...] = ("deepeval", "ragas", "langsmith", "otel", "lemma")
+READERS: tuple[str, ...] = ("deepeval", "ragas", "table", "junit", "langsmith", "otel", "lemma")
 SCHEMA = "poisson-trace.import/1"
+# the command as every help, refusal and next line names it, under either spelling
+PROG = "poisson-trace import"
 
-_DOES = "poisson-trace-import writes runs"
+_DOES = f"{PROG} writes runs"
 _Further = Callable[[argparse.Namespace], int]
 # the command's own option, which stays where it is written; --help before a tool is that
 # tool's help, as every other option before a tool is that tool's
@@ -72,7 +77,7 @@ def _build_parser(
 ) -> tuple[look.Parser, dict[str, look.Parser], dict[str, _Further]]:
     modules = {name: import_module(f"{__package__}.{name}") for name in present}
     shown = [module.EXAMPLE for module in modules.values() if hasattr(module, "EXAMPLE")]
-    parser = look.Parser(prog="poisson-trace-import", description=_ABOUT, epilog=_examples(shown))
+    parser = look.Parser(prog=PROG, description=_ABOUT, epilog=_examples(shown))
     parser.add_argument(
         "--version", action="store_true", help="print the versions of Trace, Prove and Python"
     )
@@ -133,6 +138,11 @@ def _build_parser(
     return parser, subs, further
 
 
+def parsers() -> tuple[look.Parser, dict[str, look.Parser], dict[str, _Further]]:
+    """The import's parser, each reader's and each further command's, for this install."""
+    return _build_parser(present())
+
+
 def _started(text: str) -> str:
     """``--started`` as UTC with a ``Z``. A time with no zone is refused: the gap Trace prints
     between two runs is only as good as the two instants it is taken from."""
@@ -164,7 +174,7 @@ def _zone(started: str) -> tuple[str, str]:
 def _sentence(written: Written, store: str) -> str:
     """The run, the store, the rows, the cases and their repeats, and the outcomes."""
     low, high = written.repeats_min, written.repeats_max
-    repeats = f"{count(low)} repeats each"
+    repeats = f"{count(low)} {'repeat' if low == 1 else 'repeats'} each"
     if low != high:
         repeats = f"{count(low)} to {count(high)} repeats"
     outcomes = ", ".join(f"{word} {count(n)}" for word, n in written.outcomes.items())
@@ -181,6 +191,8 @@ def _summary(run: Run, written: Written, store: str, reach: Sequence[str]) -> di
     if run.started_from == "file name":
         name, offset = _zone(run.started)
         started["zone"] = {"name": name, "offset": offset}
+    if run.started_note is not None:
+        started["note"] = run.started_note
     return {
         "schema": SCHEMA,
         "verdict": "ok",
@@ -218,6 +230,8 @@ def _markdown(d: Mapping[str, Any]) -> str:
             ": the time in the first file's name, which is when the file was saved, read in "
             f"this machine's zone ({zone['name']}, {zone['offset']})"
         )
+    if "note" in started:
+        source += f" ({started['note']})"
     none = d["no_outcome"]
     lines = [
         f"{d['verdict']}  {d['sentence']}",
@@ -248,33 +262,36 @@ def _markdown(d: Mapping[str, Any]) -> str:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
-    return look.run("poisson-trace-import", args, _main, (Refusal,))
+    return look.run(PROG, args, _main, (Refusal,))
 
 
 def _main(session: look.Session) -> int:
-    parser, subs, further = _build_parser(present())
-    parsers = [parser, *subs.values()]
-    valued = look.takes_value(parsers)
+    parser, subs, further = parsers()
+    every = [parser, *subs.values()]
+    valued = look.takes_value(every)
     if look.asks(session.argv, valued, "--version"):
         look.out(look.version_line())
         return look.DONE
-    args, at = look.verb_first(
-        session.argv, valued, _KEPT, look.options(parsers), "poisson-trace-import"
-    )
+    args, at = look.verb_first(session.argv, valued, _KEPT, look.options(every), PROG)
     if at is not None and args[at] not in subs:
         raise Refusal(
             f"unknown tool {look.shown(args[at])}; this install reads: "
             f"{', '.join(subs) or 'nothing'}",
-            "poisson-trace-import --help",
+            f"{PROG} --help",
         )
     ns, extra = parser.parse_known_args(args)
     if ns.tool is None:
         raise look.Usage(
             f"no tool was given; this install reads: {', '.join(subs) or 'nothing'}",
-            "poisson-trace-import --help",
+            f"{PROG} --help",
         )
     if extra:
         subs[ns.tool].error(f"unrecognized arguments: {' '.join(extra)}")
+    if ns.tool not in further:
+        wrong = getattr(import_module(f"{__package__}.{ns.tool}"), "usage", None)
+        said = wrong(ns) if wrong is not None else None
+        if said is not None:
+            subs[ns.tool].error(said)
     session.debug = bool(getattr(ns, "debug", False))
     if getattr(ns, "json", False):
         session.render = _stopped_json
@@ -318,7 +335,7 @@ def _main(session: look.Session) -> int:
     given = None if ns.started is None else _started(ns.started)
     run: Run = import_module(f"{__package__}.{ns.tool}").read(ns)
     if given is not None:
-        run = replace(run, started=given, started_from="given")
+        run = replace(run, started=given, started_from="given", started_note=None)
     if not run.rows:
         raise Refusal("no row was read from the files, so there is no run to write")
     if all(row.outcome is None for row in run.rows):

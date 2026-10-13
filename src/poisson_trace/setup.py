@@ -1,10 +1,11 @@
 """``poisson-trace init``: the guided setup.
 
 It finds the results already in the current folder's tree (the stores Prove wrote, and the
-result files of the readers in the install), asks which store to start with when there are
-several, or offers to import the result files when there is no store, asks which outcomes count
-as a failure, shows the runs' names, and writes ``trace.toml`` once, after the last answer. It
-prints the same setup as one command that asks nothing, and the first command to run next.
+result files of the readers in the install: DeepEval's test runs, tables, JUnit reports), asks
+which store to start with when there are several, or offers to import the result files when
+there is no store, asks which outcomes count as a failure, shows the runs' names, and writes
+``trace.toml`` once, after the last answer. It prints the same setup as one command that asks
+nothing, and the first command to run next.
 
 Every read of a store goes through Prove's ``Store``: listing a store reads its runs' records
 alone, and of the store chosen the rows of the newest 20 runs are read for their outcomes and
@@ -53,9 +54,10 @@ SUCCESS_WORDS: tuple[str, ...] = (
 # most 10,000 entries read in all, files and folders alike
 DEPTH = 6
 ENTRIES = 10_000
-# the most candidate result files (.csv, .jsonl, .json) opened to see whether a reader reads them
+# the most candidate result files (.csv, .jsonl, .json, .xml) opened to see whether a reader
+# reads them
 CANDIDATES = 200
-TABLES = (".csv", ".jsonl", ".json")
+RESULT_FILES = (".csv", ".jsonl", ".json", ".xml")
 # the runs whose outcomes the failure question reads, newest first
 NEWEST = 20
 # the folders never searched; every other folder whose name opens with a dot is skipped too,
@@ -188,7 +190,9 @@ def search(root: Path) -> Found:
                         stores.setdefault(here, FoundStore(here, depth)).runs.append(run)
                     elif depth < DEPTH:
                         queue.append((Path(entry.path), _joined(rel, entry.name), depth + 1))
-                elif entry.is_file(follow_symlinks=False) and entry.name.lower().endswith(TABLES):
+                elif entry.is_file(follow_symlinks=False) and entry.name.lower().endswith(
+                    RESULT_FILES
+                ):
                     candidates += 1
                     if candidates <= CANDIDATES:
                         found = _read_by(readers, Path(entry.path))
@@ -266,15 +270,15 @@ class Listed:
 
 def show(found: Found) -> Listed:
     """The listing, on stderr: the stores, then DeepEval's saved test runs by folder, then the
-    score tables by file, numbered on across all of them."""
+    other result files by file, numbered on across all of them."""
     stores: dict[int, FoundStore] = {}
     n = 0
     folders: dict[str, list[FoundFile]] = {}
     for f in found.files:
         if f.reader == "deepeval":
             folders.setdefault(f.folder, []).append(f)
-    tables = [f for f in found.files if f.reader != "deepeval"]
-    shown = [s.path for s in found.stores] + list(folders) + [f.path for f in tables]
+    others = [f for f in found.files if f.reader != "deepeval"]
+    shown = [s.path for s in found.stores] + list(folders) + [f.path for f in others]
     width = max([len(p) for p in shown] + [24])
     if found.stopped:
         look.err(
@@ -295,9 +299,9 @@ def show(found: Found) -> Listed:
             newest = max(_saved(f) for f in held)
             saved = _plural(len(held), "saved test run", "saved test runs")
             look.err(f"    {n}) {folder.ljust(width)}  {saved} · newest {newest}\n")
-    if tables:
-        look.err(f"  found {_plural(len(tables), 'score table', 'score tables')}:\n")
-        for f in tables:
+    if others:
+        look.err(f"  found {_plural(len(others), 'result file', 'result files')}:\n")
+        for f in others:
             n += 1
             look.err(f"    {n}) {f.path.ljust(width)}  {f.said}\n")
     if not found.stores and not found.files:
@@ -450,6 +454,12 @@ _ASKED: dict[str, tuple[tuple[str, str], ...]] = {
         ("side", "Does a score below the cut miss it, or above it? below or above:"),
         ("case_column", "Which column identifies a case across versions?"),
     ),
+    "table": (
+        ("case_column", "Which column identifies a case across versions?"),
+        ("outcome_column", "Which column holds each row's outcome?"),
+        ("failed", "Which of its values mean a failure? Separate them with commas:"),
+    ),
+    "junit": (),
 }
 _FLAG = {
     "metric": "--metric",
@@ -457,7 +467,11 @@ _FLAG = {
     "side": "--below or --above",
     "case": "--case",
     "case_column": "--case-column",
+    "outcome_column": "--outcome-column",
+    "failed": "--failed",
 }
+# the forms of --case init takes that the JUnit reader reads; the other is its default
+_JUNIT_CASES = ("name",)
 
 
 def _fits(reader: str, dest: str, answer: str) -> bool:
@@ -475,7 +489,14 @@ def _fits(reader: str, dest: str, answer: str) -> bool:
         return answer in ("below", "above")
     if dest == "case":
         return answer in ("name", "input", "position")
+    if dest == "failed":
+        return bool(_values(answer))
     return True
+
+
+def _values(answer: str) -> tuple[str, ...]:
+    """The failure values of an answer: the words between its commas, trimmed, each once."""
+    return tuple(dict.fromkeys(v.strip() for v in answer.split(",") if v.strip()))
 
 
 @dataclass
@@ -483,12 +504,13 @@ class Answers:
     """The import's answers, each as its flag takes it, by the flag's dest."""
 
     values: dict[str, str] = field(default_factory=dict)
+    failed: tuple[str, ...] = ()  # --failed, given once for each value
 
     @classmethod
     def given(cls, ns: argparse.Namespace) -> Answers:
         """The answers the flags give."""
         values = {}
-        for dest in ("metric", "cut", "case", "case_column"):
+        for dest in ("metric", "cut", "case", "case_column", "outcome_column"):
             value = getattr(ns, dest)
             if value is not None:
                 values[dest] = str(value)
@@ -496,7 +518,10 @@ class Answers:
             raise look.Usage("--below and --above are two sides; give one", _HELP)
         if ns.below or ns.above:
             values["side"] = "below" if ns.below else "above"
-        return cls(values)
+        return cls(values, tuple(dict.fromkeys(ns.failed or ())))
+
+    def has(self, dest: str) -> bool:
+        return bool(self.failed) if dest == "failed" else dest in self.values
 
     def flags(self) -> list[str]:
         words: list[str] = []
@@ -505,21 +530,24 @@ class Answers:
                 words += _pair(_FLAG[dest], self.values[dest])
         if "side" in self.values:
             words.append(f"--{self.values['side']}")
-        for dest in ("case", "case_column"):
+        for dest in ("case", "case_column", "outcome_column"):
             if dest in self.values:
                 words += _pair(_FLAG[dest], self.values[dest])
+        for value in self.failed:
+            words += _pair(_FLAG["failed"], value)
         return words
 
 
 def import_answers(readers: Sequence[str], answers: Answers, terminal: bool) -> Answers:
     """Each reader's questions, in the order its flags read, each asked once and only when its
     flag was not given; with no terminal, a missing answer is a refusal."""
-    values = dict(answers.values)
+    got = Answers(dict(answers.values), answers.failed)
+    values = got.values
     missing: list[str] = []
     sided = False
     for reader in readers:
         for dest, question in _ASKED[reader]:
-            if dest in values or (dest == "side" and values.get("cut") in ("recorded", None)):
+            if got.has(dest) or (dest == "side" and values.get("cut") in ("recorded", None)):
                 if dest == "side" and not terminal and values.get("cut") is None:
                     sided = True
                 continue
@@ -529,7 +557,10 @@ def import_answers(readers: Sequence[str], answers: Answers, terminal: bool) -> 
             while True:
                 answer = look.ask(question)
                 if _fits(reader, dest, answer):
-                    values[dest] = answer
+                    if dest == "failed":
+                        got.failed = _values(answer)
+                    else:
+                        values[dest] = answer
                     break
                 look.err("  that is not an answer this question takes\n")
     if missing:
@@ -540,13 +571,27 @@ def import_answers(readers: Sequence[str], answers: Answers, terminal: bool) -> 
             "no store",
             _HELP,
         )
-    return Answers(values)
+    return got
+
+
+def answers_fit(readers: Sequence[str], answers: Answers) -> None:
+    """Refused before anything is asked or written: an answer given that a reader of the files
+    found cannot read them by. The JUnit reader reads a test case by its class name and its
+    name, or by its name alone (``--case name``); input and position are DeepEval's."""
+    case = answers.values.get("case")
+    if "junit" in readers and case is not None and case not in _JUNIT_CASES:
+        raise Refused(
+            f"--case {case} cannot identify a test case of a JUnit report: give --case name to "
+            "read the reports by the test's name alone, or leave --case out to read them by its "
+            "class name and its name",
+            _HELP,
+        )
 
 
 def run_name(path: str) -> str:
     """A run named after its file, without the extensions that say its format."""
     name = Path(path).name.lstrip(".")
-    for suffix in (".gz", ".csv", ".jsonl", ".json"):
+    for suffix in (".gz", ".csv", ".jsonl", ".json", ".xml"):
         if name.lower().endswith(suffix):
             name = name[: -len(suffix)]
     return name
@@ -562,11 +607,13 @@ class Imported:
 def read_imports(files: Sequence[FoundFile], answers: Answers) -> list[Imported]:
     """Every file read by its reader before anything is written: a refusal on any file writes
     no run of the others."""
+    from poisson_trace.ingest.cli import parsers
     from poisson_trace.ingest.rows import Refusal
 
     made: list[Imported] = []
     seen: dict[str, str] = {}
     values = answers.values
+    _, readers, _ = parsers()
     for f in files:
         name = run_name(f.path)
         hole = names.import_name_refusal(name)
@@ -575,7 +622,7 @@ def read_imports(files: Sequence[FoundFile], answers: Answers) -> list[Imported]
         if name in seen:
             raise Refused(
                 f"{seen[name]} and {f.path} would both be imported as the run {name}; import "
-                "them one at a time with poisson-trace-import, each under a name of its own",
+                "them one at a time with poisson-trace import, each under a name of its own",
                 _HELP,
             )
         seen[name] = f.path
@@ -587,8 +634,12 @@ def read_imports(files: Sequence[FoundFile], answers: Answers) -> list[Imported]
             cut=values.get("cut"),
             below=values.get("side") == "below",
             above=values.get("side") == "above",
-            case=values.get("case"),
+            # a reader's own default, where it has one (the JUnit reader's case)
+            case=values.get("case", readers[f.reader].get_default("case")),
             case_column=values.get("case_column"),
+            outcome_column=values.get("outcome_column"),
+            failed=list(answers.failed),
+            score_column=None,
         )
         try:
             run = import_module(f"poisson_trace.ingest.{f.reader}").read(ns)
@@ -608,15 +659,21 @@ def read_imports(files: Sequence[FoundFile], answers: Answers) -> list[Imported]
 def import_line(item: Imported, store: str) -> str:
     """The import that writes one of the runs, as one command."""
     declared = dict(item.run.declared)
-    words = ["poisson-trace-import", item.reader, item.path, *_pair("--store", store)]
-    words += [*_pair("--run", item.run.name), *_pair("--metric", str(declared["metric"]))]
-    words += _pair("--cut", str(declared["cut"]))
+    words = ["poisson-trace", "import", item.reader, item.path, *_pair("--store", store)]
+    words += _pair("--run", item.run.name)
+    if "metric" in declared:
+        words += _pair("--metric", str(declared["metric"]))
+        words += _pair("--cut", str(declared["cut"]))
     if "side" in declared:
         words.append(f"--{declared['side']}")
     if "case" in declared:
         words += _pair("--case", str(declared["case"]))
     if "case_column" in declared:
         words += _pair("--case-column", str(declared["case_column"]))
+    if "outcome_column" in declared:
+        words += _pair("--outcome-column", str(declared["outcome_column"]))
+        for value in declared["failed"]:
+            words += _pair("--failed", str(value))
     return " ".join(_shell_word(w) for w in words)
 
 
@@ -721,6 +778,8 @@ _SETTING = (
     "cut",
     "case",
     "case_column",
+    "outcome_column",
+    "failed",
     "max_mde",
     "max_mde_hr",
     "fail_on",
@@ -797,9 +856,11 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
                     f"the result files found were written by {_and(readers)}, and init imports "
                     "one tool's files with one set of answers; give --no-import to write the "
                     "config with no store, then import each tool's files with "
-                    "poisson-trace-import",
-                    "poisson-trace-import --help",
+                    "poisson-trace import",
+                    "poisson-trace import --help",
                 )
+            if imported is not False:
+                answers_fit(readers, answers)
             if imported is None:
                 imported = not terminal or _yes_no(
                     "No Prove store here, but these look like results another tool wrote. "
@@ -1150,9 +1211,9 @@ def _summary(
     else:
         lines.append(
             "Trace reads runs Prove stored, or the result files of the tools "
-            "poisson-trace-import --help lists."
+            "poisson-trace import --help lists."
         )
-        following = f"{SWEEP} · or · poisson-trace-import --help"
+        following = f"{SWEEP} · or · poisson-trace import --help"
     lines += ["  the same setup, without questions:", "    " + shell_line(command)]
     lines.append(f"next: {following}")
     data = {

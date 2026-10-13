@@ -1,5 +1,8 @@
 """The console script: ``poisson-trace init``, ``runs``, ``name``, ``where``, ``compare``,
-``fix-check``, ``changes`` and ``doctor``.
+``fix-check``, ``changes``, ``import`` and ``doctor``.
+
+``import`` is the import's own command (``poisson_trace.ingest.cli``), handed every word of the
+command line but ``import`` itself, so that it prints what ``poisson-trace-import`` prints.
 
 The command line is read first, so ``--help`` and ``--version`` need nothing installed; the
 check that ``proofload`` is present at the version this package reads runs next, and
@@ -14,7 +17,7 @@ import json
 import math
 import os
 import sys
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -29,7 +32,7 @@ _DRAWS = 100_000
 _MOST_BOOT = 1_000_000
 _DOES = "Poisson Trace reads stored runs"
 _VERBS = ("runs", "name", "where", "compare", "fix-check", "changes")
-_NAMED = "init, runs, name, where, compare, fix-check, changes and doctor"
+_NAMED = "init, runs, name, where, compare, fix-check, changes, import and doctor"
 # the verbs that count failures, and so need them from a flag or the config
 _COUNTING = ("where", "compare", "fix-check", "changes")
 # the complete runs the listing shows, newest first, before it says how many more there are
@@ -55,7 +58,8 @@ as "tau2-airline 2026-09-15 a"); by latest or previous, the newest complete runs
 latest:TARGET and previous:TARGET, a target's ("latest:tau2-airline"); by its number in the
 runs listing ("#3"); or by its full id.
 
-Results another tool wrote (DeepEval, Ragas) are read in with poisson-trace-import.
+Results another tool wrote (DeepEval, Ragas, a table of results, JUnit reports) are read in
+with poisson-trace import.
 
 To begin, run poisson-trace init: it finds the results already here, asks what counts as a
 failure and writes trace.toml, from which every verb then takes its store and its failures.
@@ -346,6 +350,12 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         help="on an unexpected failure, print its details on stderr as well as in the log",
     )
     tail(init)
+    # listed for the help alone: the import's own command reads its command line
+    verbs.add_parser(
+        "import",
+        help="read in the results another tool wrote, as one new run of a store",
+        add_help=False,
+    )
     doctor = verbs.add_parser(
         "doctor",
         help="whether this environment is ready, and what to run when it is not",
@@ -478,12 +488,25 @@ def _init_parser(verbs: Any) -> look.Parser:
         "--case",
         choices=("name", "input", "position"),
         metavar="name|input|position",
-        help="for a DeepEval import: what identifies a test case across versions (no default)",
+        help="for a DeepEval import: what identifies a test case across versions; for JUnit "
+        "reports, name reads them by the test's name alone (no default)",
     )
     init.add_argument(
         "--case-column",
         metavar="COLUMN",
-        help="for a Ragas import: the column that identifies a case (no default)",
+        help="for a Ragas import or a table's: the column that identifies a case (no default)",
+    )
+    init.add_argument(
+        "--outcome-column",
+        metavar="COLUMN",
+        help="for a table's import: the column that holds each row's outcome (no default)",
+    )
+    init.add_argument(
+        "--failed",
+        action="append",
+        metavar="VALUE",
+        help="for a table's import: a value of the outcome column that means a failure; "
+        "repeatable (no default)",
     )
     init.add_argument(
         "--max-mde",
@@ -528,6 +551,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _main(session: look.Session) -> int:
     parser, verbs = _build_parser()
     parsers = [parser, *verbs.values()]
+    at = _import_at(session.argv, parsers, verbs)
+    if at is not None:
+        from poisson_trace.ingest import cli as importer
+
+        return importer.main([*session.argv[:at], *session.argv[at + 1 :]])
     valued = look.takes_value(parsers)
     if look.asks(session.argv, valued, "--version"):
         look.out(look.version_line())
@@ -538,7 +566,9 @@ def _main(session: look.Session) -> int:
             f'"{args[at]}" is not a verb; the verbs are {_NAMED}', "poisson-trace --help"
         )
     ns, extra = parser.parse_known_args(args)
-    if ns.verb is None:
+    if ns.verb is None or ns.verb not in verbs:
+        # "import" read as a verb here is an option's value: the import's own command takes the
+        # verb wherever it stands
         raise look.Usage(f"no verb was given; the verbs are {_NAMED}", "poisson-trace --help")
     if extra:
         verbs[ns.verb].error(f"unrecognized arguments: {' '.join(extra)}")
@@ -567,6 +597,51 @@ def _main(session: look.Session) -> int:
         "changes": _changes,
     }[ns.verb]
     return verb(ns)
+
+
+def _import_at(
+    args: Sequence[str], parsers: Sequence[argparse.ArgumentParser], verbs: Mapping[str, Any]
+) -> int | None:
+    """Where ``import`` stands as the verb, or None. An option before it is read as the verbs
+    and the import read it, so that its value is never taken for the verb. After an option none
+    of them knows, what follows cannot be told for its value or the verb: the first verb's name
+    after it decides, so that the import refuses an option written before ``import`` as it
+    refuses one written before its tool."""
+    from poisson_trace.ingest import cli as importer
+
+    _, subs, _ = importer.parsers()
+    every = [*parsers, *subs.values()]
+    known, valued = look.options(every), look.takes_value(every)
+    i = 0
+    while i < len(args) and args[i] != "--":
+        word = args[i]
+        if not word.startswith("-") or word == "-":
+            return i if word == "import" else None
+        name = word.split("=", 1)[0]
+        if name not in known:
+            return _first_verb(args[i + 1 :], i + 1, known, valued, verbs)
+        i += 2 if "=" not in word and name in valued else 1
+    return None
+
+
+def _first_verb(
+    rest: Sequence[str], at: int, known: Collection[str], valued: Collection[str], verbs: Any
+) -> int | None:
+    """After an option nobody knows: the place of ``import`` when it is the first verb's name
+    among the words that are not options or their values, else None."""
+    i = 0
+    while i < len(rest) and rest[i] != "--":
+        word = rest[i]
+        if word.startswith("-") and word != "-":
+            name = word.split("=", 1)[0]
+            i += 2 if "=" not in word and name in known and name in valued else 1
+            continue
+        if word == "import":
+            return at + i
+        if word in verbs:
+            return None
+        i += 1
+    return None
 
 
 def _from_config(ns: argparse.Namespace) -> None:
@@ -827,6 +902,24 @@ def _run_before(index: Any, run: Any) -> Any | None:
 
 def _outcomes(frame: Any) -> set[str]:
     return {o for o in frame["outcome"] if o is not None}
+
+
+def _traced(frame: Any) -> bool:
+    """Whether any row of the run carries a trace."""
+    return bool(frame["trace"].notna().any()) if len(frame) else False
+
+
+def _from(run: Any) -> str:
+    """Where an untraced run came from, for the sentence that says why it has no traces."""
+    return f" (it was imported from {run.backend[len('import:') :]})" if run.imported else ""
+
+
+def _no_traces(run: Any) -> str:
+    """The line every report of a run with no traces carries in place of its curve."""
+    return (
+        f"This run has no traces{_from(run)}, so there is no step to place it on; fix-check and "
+        "changes read it."
+    )
 
 
 def _header(run: Any, manifest: Any, placement: Any) -> dict[str, Any]:
@@ -1190,7 +1283,14 @@ def _where(ns: argparse.Namespace) -> int:
         data["declared"] = check.provenance()
         data["_reached"] = _reached_by(manifest, frame, events=events, by=ns.by)
     data["cannot_say"] = list(CANNOT_SAY)
-    traced = bool(frame["trace"].notna().any()) if len(frame) else False
+    traced = _traced(frame)
+    if not traced:
+        if ns.svg is not None:
+            raise _Refusal(
+                f"{look.word(index.word_for(run))} has no traces{_from(run)}, so there is no "
+                "curve for --svg to draw; fix-check and changes read it"
+            )
+        data["note"] = _no_traces(run)
     sentence = _where_sentence(run, placement, cause_rows, km.median(), events, traced)
     before = _run_before(index, run)
     if before is None:
@@ -1310,6 +1410,18 @@ def _compare(ns: argparse.Namespace) -> int:
     run_a, run_b = index.resolve(ns.a), index.resolve(ns.b)
     manifest_a, frame_a, tally_a = _load(store, run_a)
     manifest_b, frame_b, tally_b = _load(store, run_b)
+    untraced = [r for r, f in ((run_a, frame_a), (run_b, frame_b)) if not _traced(f)]
+    if untraced:
+        # compare places deaths at steps, which a run with no traces has none of; the fix check
+        # reads the outcomes alone
+        named = {r.run_id: r for r in untraced}.values()
+        said = " and ".join(f"{look.word(index.word_for(r))}{_from(r)}" for r in named)
+        has, its = ("has", "its") if len(named) == 1 else ("have", "their")
+        raise _Refusal(
+            f"{said} {has} no traces, so compare has no step to place {its} episodes on; "
+            "fix-check compares the runs by their outcomes",
+            _next(index, "fix-check", (run_a, run_b), ns, "--inputs", "all"),
+        )
     events = frozenset(ns.event)
     out_a, out_b = _outcomes(frame_a), _outcomes(frame_b)
     present = out_a | out_b

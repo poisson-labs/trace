@@ -10,7 +10,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-STARTED_FROM: tuple[str, ...] = ("given", "file name", "earliest span", "file time")
+# where a run's start was read: given on the command line, the time in the first file's name,
+# the earliest span's, the first file's modification time, or a time the tool wrote in the file
+STARTED_FROM: tuple[str, ...] = ("given", "file name", "earliest span", "file time", "file")
 
 # The longest text that is its own case id.
 _OWN_ID = 80
@@ -44,6 +46,8 @@ class Run:
     declared: Mapping[str, Any]
     files: tuple[Mapping[str, str], ...]
     counts: Mapping[str, int] = field(default_factory=dict)  # the reader's own, as printed
+    # what the summary adds to where the start came from, such as a zone the file left out
+    started_note: str | None = None
 
 
 def digest_id(text: str) -> str:

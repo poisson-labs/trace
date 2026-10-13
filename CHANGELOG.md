@@ -2,6 +2,45 @@
 
 ## Unreleased
 
+### The import under the main command; tables and JUnit reports
+
+- **`poisson-trace import`** is a verb of the main command, listed in its help. It is the
+  import as it was: the same readers, flags, refusals, store and summary. `poisson-trace-import`
+  stays, as the same command under its earlier name: it prints what `poisson-trace import`
+  prints, byte for byte, its help and its exit codes included. Every help, refusal, next line,
+  `init`'s and `doctor`'s lines, and every documented command now say `poisson-trace import`.
+  The import's options may stand before the verb, as the verbs' do.
+- **The `table` reader** reads any table of results a tool or a script saved: `.csv`,
+  `.jsonl`, `.json` (a list of objects), each also as `.gz`, or `.parquet`, told by the
+  extension. `--case-column` names the case; the result is read from an outcome column, where
+  a cell equal to a `--failed` value missed and any other met, compared as written (a true,
+  false or number in JSON or Parquet as JSON writes it), or from a score column at a cut with
+  its side. An empty cell has no outcome. It refuses what the Ragas reader refuses, and a table
+  with a column named like a Ragas metric is the Ragas reader's. Page:
+  `docs/integrations/table.md`, on this repository's HumanEval pair saved as CSV.
+- **The `junit` reader** reads JUnit XML reports: a failure or an error missed, a skip no
+  outcome, any other test case met; the case is the class name and the name (`--case
+  classname-name`, the default) or the name alone (`--case name`); the start is the earliest
+  suite timestamp, read as UTC when it carries no zone, which the summary says. A report that
+  declares a document type is refused unread, and so is one with a test case inside a test case
+  or an encoding the reader does not take; nothing of a message, a failure's text, a test's
+  output or a property is kept. Page: `docs/integrations/junit.md`, on pytest 9.1.1's
+  reports of a suite run against the same HumanEval pair.
+- **`init`** finds both readers' files (a table with a column named exactly `outcome`,
+  `passed`, `result` or `status`; a `.xml` file whose root is `<testsuites>` or `<testsuite>`;
+  `.xml` files count toward the 200 opened), imports JUnit reports with no question, asks a
+  table's case column, outcome column and failure values (`--case-column`,
+  `--outcome-column`, `--failed` with `--yes`), and still imports nothing when the files found
+  are of more than one tool. Its `--case name` reads JUnit reports by name; `input` and
+  `position` are refused for them. `doctor` lists the two readers.
+- **A run with no traces.** `where` prints one line saying the run has no traces and which
+  tool it was imported from, in place of an empty curve and causes table, and its JSON carries
+  the line as `note`; `where --svg` refuses to draw it. `compare` refuses such a run, naming
+  it and its tool, and points at `fix-check` on the two runs, which reads their outcomes.
+- An import's summary says "1 repeat each" where it said "1 repeats each".
+- `init`'s search reads a CSV header cell as the readers read it, spaces and all, so a column
+  named ` outcome` is not listed as `outcome`, which the import would not find.
+
 ### Guided setup, the config file and doctor
 
 A first-time user types `poisson-trace init`, answers in plain words, and every verb then

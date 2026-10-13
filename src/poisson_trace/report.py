@@ -292,6 +292,10 @@ class WhereReport:
         cause_word = "kind" if by == "kind" else "step"
         lines = [f"# Poisson Trace · where runs die · {_name(run)}", "", "## Run", ""]
         lines += _header_lines(run, d["events"])
+        if d.get("note") is not None:
+            # a run with no traces: its one line, in place of an empty curve and causes table
+            lines += ["", d["note"], "", *_cannot_say_lines(), ""]
+            return "\n".join(lines)
         lines += ["", "## Survival over step index", "", f"{KM_CAPTION}.", ""]
         lines += ["| step | at risk | died | S | 95% band |", "|---|---|---|---|---|"]
         for row in d["curve"]:

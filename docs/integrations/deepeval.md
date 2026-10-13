@@ -35,7 +35,7 @@ One import is one version. Each import reads one metric and writes one new run i
 in Prove's format; `poisson-trace fix-check` then compares the two runs.
 
 ```
-poisson-trace-import deepeval FILE [FILE ...] --store ROOT --run NAME
+poisson-trace import deepeval FILE [FILE ...] --store ROOT --run NAME
         --metric NAME
         --cut ( recorded | X ( --below | --above ) )
         --case ( name | input | position )
@@ -86,7 +86,7 @@ The commands run from the root of a clone and write the store to `./store`.
 
 <!-- command -->
 ```
-poisson-trace-import deepeval tests/fixtures/ingest/deepeval/humaneval-a.json.gz \
+poisson-trace import deepeval tests/fixtures/ingest/deepeval/humaneval-a.json.gz \
   --store ./store --run humaneval-a --metric "Tests Passed" --cut recorded --case name \
   --started 2026-09-05T18:54:07Z
 ```
@@ -115,7 +115,7 @@ next: poisson-trace fix-check OLD NEW --store ./store --event missed --inputs al
 
 <!-- command -->
 ```
-poisson-trace-import deepeval tests/fixtures/ingest/deepeval/humaneval-b.json.gz \
+poisson-trace import deepeval tests/fixtures/ingest/deepeval/humaneval-b.json.gz \
   --store ./store --run humaneval-b --metric "Tests Passed" --cut recorded --case name \
   --started 2026-09-05T19:50:09Z
 ```
@@ -246,7 +246,7 @@ cd from-deepeval && poisson-trace init --yes --metric "Tests Passed" --cut recor
 ok  wrote trace.toml and imported 1 run into trace-store, failures missed
   names    1 run, named at import (test_run_20260905_185407)
   prove    poisson-prove is installed at the version Trace reads
-  import   poisson-trace-import deepeval results/test_run_20260905_185407.json --store trace-store --run test_run_20260905_185407 --metric "Tests Passed" --cut recorded --case name
+  import   poisson-trace import deepeval results/test_run_20260905_185407.json --store trace-store --run test_run_20260905_185407 --metric "Tests Passed" --cut recorded --case name
   the same setup, without questions:
     poisson-trace init --yes --import --metric "Tests Passed" --cut recorded \
       --case name --event missed

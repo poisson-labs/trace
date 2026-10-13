@@ -6,6 +6,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -104,6 +105,10 @@ def test_tr9_src_writes_nothing_but_the_svg_and_the_json(synth) -> None:  # type
                 mode = ""
                 if len(call.args) > 1 and isinstance(call.args[1], ast.Constant):
                     mode = str(call.args[1].value)
+                # a method named open, Path.open among them, takes its mode first
+                first = call.args[0] if call.args else None
+                if isinstance(call.func, ast.Attribute) and isinstance(first, ast.Constant) and isinstance(first.value, str) and re.fullmatch(r"[rwxabt+]+", first.value):
+                    mode = first.value
                 for kw in call.keywords:
                     if kw.arg == "mode" and isinstance(kw.value, ast.Constant):
                         mode = str(kw.value.value)
