@@ -103,6 +103,19 @@ def test_tf3_21_a_ragas_table_is_never_the_table_reader_s(tmp_path: Path) -> Non
         _one_line(looks_like("ragas", path))
 
 
+def test_tf3_21_a_promptfoo_record_is_not_a_table_of_results(tmp_path: Path) -> None:
+    """promptfoo's ``-o results.jsonl`` row (promptfoo 0.120.19: these keys, in this order) holds
+    every prompt's results in one file; it is the promptfoo reader's to pick one, never one run of
+    the table reader's."""
+    row = {"cost": 0, "error": None, "gradingResult": None, "id": "x", "latencyMs": 1, "namedScores": {},
+           "prompt": {"raw": "p", "label": "p"}, "promptId": "y", "promptIdx": 0, "provider": {"id": "echo"},
+           "response": {"output": "o"}, "score": 1, "success": True, "testCase": {"vars": {}}, "testIdx": 0,
+           "vars": {"case": "a"}, "metadata": {}, "failureReason": 0}
+    path = tmp_path / "results.jsonl"
+    path.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    assert looks_like("table", path) is None
+
+
 # ---------- TF3-21: the JUnit reader ----------
 
 

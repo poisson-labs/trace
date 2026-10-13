@@ -69,6 +69,22 @@ def test_tf3_29_where_on_a_run_with_no_traces_says_so_in_one_line(tmp_path: Path
     h1 = next(i for i, line in enumerate(lines) if line.startswith("# "))
     assert note in lines[h1 + 1 :], text.out
     assert not any(line.startswith("| step") or line.startswith("| kind") for line in lines), text.out
+    # of a traced run's sections, only the first and the last remain: the run, and what it cannot say
+    traced = trace(["where", CS_RECORD, "--store", str(CS), *events_args(CS_EVENTS)]).out.splitlines()
+    headings = [line for line in traced if line.startswith("## ")]
+    assert [line for line in lines if line.startswith("## ")] == [headings[0], headings[-1]], text.out
+
+
+@pytest.mark.parametrize("tool", TOOLS)
+def test_tf3_29_no_chart_is_drawn_of_a_run_with_no_traces(tmp_path: Path, tool: str) -> None:
+    folder = work(tmp_path)
+    old, _ = _two_imported(folder, tool)
+    before = snapshot(folder)
+    with chdir(folder):
+        result = trace(["where", old, "--store", "st", "--event", "missed", "--svg", "chart.svg"])
+    assert result.code == 1 and result.out == "", result.text
+    assert result.lines()[0].startswith("error: ") and tool in result.lines()[0], result.err
+    assert not (folder / "chart.svg").exists() and snapshot(folder) == before
 
 
 def test_tf3_29_a_run_with_traces_keeps_its_curve_and_has_no_note(tmp_path: Path) -> None:

@@ -75,6 +75,19 @@ def test_tf3_15_every_test_case_of_the_report_is_read(tmp_path: Path, shape: str
     assert sorted(by_case(read_rows(tmp_path / "st", "r"))) == ["test_a", "test_b", "test_c", "test_d", "test_e"]
 
 
+def test_tf3_15_a_passing_test_with_its_own_output_and_properties_is_met(tmp_path: Path) -> None:
+    """pytest writes ``<properties>``, ``<system-out>`` and ``<system-err>`` inside a test case
+    (``record_property``, ``junit_logging``); none of them is a failure."""
+    own = '<properties><property name="k" value="v"/></properties><system-out>out</system-out><system-err>err</system-err>'
+    text = report(suite([Case("test_a"), Case("test_b"), Case("test_c", result="failure")]))
+    text = text.replace('name="test_a" time="0.010" />', f'name="test_a" time="0.010">{own}</testcase>')
+    text = text.replace('name="test_b" time="0.010" />', 'name="test_b" time="0.010"><system-out>only</system-out></testcase>')
+    write_report(tmp_path / "r.xml", text)
+    doc = _import(tmp_path, junit_argv("r.xml", "st", "r", "--case", "name"))
+    assert by_case(read_rows(tmp_path / "st", "r")) == {"test_a": ["met"], "test_b": ["met"], "test_c": ["missed"]}
+    assert doc["outcomes"] == {"met": 2, "missed": 1}
+
+
 def test_tf3_15_a_case_failing_twice_is_one_row(tmp_path: Path) -> None:
     text = report(suite([Case("test_a"), Case("test_b", result="failure")])).replace(
         "</failure></testcase>", '</failure><failure message="again">x</failure></testcase>'
@@ -99,6 +112,14 @@ def test_tf3_16_the_class_name_and_the_name_make_the_case_unless_asked_for_the_n
         assert any(c in case for c in ("tests.test_one", "tests.test_two")) and any(n in case for n in ("test_x", "test_y")), case
     assert by_case(read_rows(tmp_path / "st", "default-again")) == both
     assert by_case(read_rows(tmp_path / "st", "named")) == {"test_x": ["met", "missed"], "test_y": ["met"]}
+
+
+def test_tf3_16_class_name_and_name_never_run_together(tmp_path: Path) -> None:
+    """``tests.a`` with ``bc`` and ``tests.ab`` with ``c`` are two tests: the default case keeps
+    the class name and the name apart."""
+    write_report(tmp_path / "r.xml", report(suite([Case("bc", "tests.a"), Case("c", "tests.ab", result="failure")])))
+    doc = _import(tmp_path, junit_argv("r.xml", "st", "r"))
+    assert doc["cases"] == 2 and doc["repeats"] == {"min": 1, "max": 1}
 
 
 def test_tf3_16_a_case_with_no_class_name_is_its_name(tmp_path: Path) -> None:

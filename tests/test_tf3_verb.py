@@ -168,6 +168,16 @@ def test_tf3_03_options_may_stand_anywhere(tmp_path: Path, place: str) -> None:
     _same_store(base / "st", folder / "st")
 
 
+@pytest.mark.parametrize("option", ["--bogus", "--star"], ids=["unknown", "abbreviated"])
+def test_tf3_03_a_wrong_option_before_the_verb_is_the_alias_s_wrong_option(tmp_path: Path, option: str) -> None:
+    folder = _prepared(tmp_path / "f")
+    argv = [option, "x", "deepeval", "results/test_run_20261002_101500.json", "--store", "st", "--run", "r1"]
+    with chdir(folder):
+        a = trace([*argv[:2], "import", *argv[2:]])
+        b = alias(argv)
+    assert a.code == b.code == 2 and (a.out, a.err) == (b.out, b.err), (a.text, b.text)
+
+
 def test_tf3_03_the_config_given_before_the_verb_names_the_store(tmp_path: Path) -> None:
     folder = work(tmp_path)
     deepeval_file(folder / "r.json")

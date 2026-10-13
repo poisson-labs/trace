@@ -213,6 +213,25 @@ def test_tf3_25_on_a_terminal_the_table_questions_are_asked_in_its_flags_order(t
     assert (again / CONFIG).read_bytes() == (folder / CONFIG).read_bytes()
 
 
+def test_tf3_24_the_case_given_to_init_is_the_case_the_reports_are_read_by(tmp_path: Path) -> None:
+    """``--case name`` is a JUnit case form and is used; ``--case position`` is not one, and init
+    refuses it before writing, rather than record a case form the reader did not use."""
+    folder = work(tmp_path, "source")
+    _junit_files(folder)
+    pristine = copy_tree(folder, tmp_path / "pristine")
+    result = _ok(init_yes(folder, "--case", "name"))
+    runs = _runs(folder)
+    assert all(len(got) == 164 for got in runs.values()), {r: len(g) for r, g in runs.items()}
+    replayed = copy_tree(pristine, tmp_path / "lines")
+    for words in _import_lines(result.out, "junit"):
+        assert here(replayed, words[1:]).code == 0
+    assert _runs(replayed) == runs
+    other = copy_tree(pristine, tmp_path / "position")
+    before = tree(other)
+    refused(init_yes(other, "--case", "position"))
+    assert tree(other) == before
+
+
 # ---------- TF3-26: more than one tool ----------
 
 MAKERS = {
@@ -241,6 +260,10 @@ def test_tf3_26_files_of_two_tools_import_none(tmp_path: Path, tools: tuple[str,
     assert all(tool in line for tool in tools) and "--no-import" in line, line
     nexts = [shell_words(n[len("  next: "):]) for n in result.lines() if n.startswith("  next: ")]
     assert ["poisson-trace", "import", "--help"] in nexts, result.err
+    assert tree(folder) == before
+    # asking for the import does not make files of two tools importable
+    insisted = init_yes(folder, "--import", *answers)
+    refused(insisted)
     assert tree(folder) == before
     declined = init_yes(folder, "--no-import")
     assert declined.code == 0 and "store" not in config(folder), declined.text

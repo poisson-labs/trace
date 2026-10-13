@@ -56,6 +56,16 @@ def test_tf3_32_every_marked_block_of_the_page_holds(tmp_path: Path, page: str) 
         assert holds_block(c), f"{page}:{c.block.line}: {c.command} -> exit {c.code}\n--- block\n{c.block.body}\n--- printed\n{c.printed}"
 
 
+@pytest.mark.parametrize("tool", ["table", "junit"])
+def test_tf3_32_each_new_page_ends_with_what_it_does_not_do(tool: str) -> None:
+    """The page's last section is four sentences, one bullet each, and nothing after them."""
+    text = (PAGES / f"{tool}.md").read_text(encoding="utf-8").rstrip("\n")
+    last = text.split("\n## ")[-1].split("\n")
+    body = [line for line in last[1:] if line.strip()]
+    starts = [line for line in body if line.startswith("- ")]
+    assert len(starts) == 4 and all(line.startswith(("- ", "  ")) for line in body), last
+
+
 def _documents() -> list[Path]:
     return [REPO / "README.md", *sorted((REPO / "docs").rglob("*.md"))]
 
@@ -68,7 +78,8 @@ def test_tf3_33_no_block_of_the_docs_spells_the_old_command() -> None:
 
 def test_tf3_34_the_junit_page_names_the_pytest_that_wrote_its_fixture() -> None:
     provenance = (REPO / "tests" / "fixtures" / "PROVENANCE.md").read_text(encoding="utf-8")
-    m = re.search(r"pytest (\d+\.\d+\.\d+)", provenance)
+    section = next(s for s in provenance.split("\n## ") if s.startswith("Added for the JUnit import"))
+    m = re.search(r"pytest (\d+\.\d+\.\d+)", section)
     assert m is not None, "the provenance names no pytest version"
     text = (PAGES / "junit.md").read_text(encoding="utf-8")
     assert f"pytest {m.group(1)}" in text
