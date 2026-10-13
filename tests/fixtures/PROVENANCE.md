@@ -21,9 +21,10 @@ The manifest of every fixture is byte-identical to its source (same sha256):
 - `cs/20260925T234602Z-3ea0/manifest.json`: `f1bc2e6c15525850af28c64d7e7e950e58cc41911cf6df13b03572bfd8437851`
 - `cs/20260925T235434Z-af48/manifest.json`: `89640893c800d81203a41bcbd54f8f5de804ef9849345a3ad5700619c5a65c50`
 
-`SHA256SUMS` beside this file lists the sha256 of every fixture file (776 files: the 429 of
+`SHA256SUMS` beside this file lists the sha256 of every fixture file (782 files: the 429 of
 the first four runs, their lines unchanged, 341 for the three added on 2026-09-29, two for the
-DeepEval import and four for the Ragas import), in the format `shasum -a 256` prints. Verify with `cd tests/fixtures && shasum -a 256 -c SHA256SUMS`.
+DeepEval import, four for the Ragas import, two for the table import and four for the JUnit
+import), in the format `shasum -a 256` prints. Verify with `cd tests/fixtures && shasum -a 256 -c SHA256SUMS`.
 
 ## The runs
 
@@ -289,3 +290,99 @@ pair is a designed experiment with repeats. CSV text cells, an `@experiment` fil
 own columns, a missing case value and every refusal are built in the tests
 (`tests/ingest/test_ragas.py`), and Ragas's own output is read once in lane J
 (`tests/ingest/test_ragas_package.py`).
+
+## Added for the table import (2026-10-13)
+
+Two tables of this machine's HumanEval outcomes, one per run of the HumanEval pair above, written
+as CSV, for the `poisson-trace import table` tests. They are not Prove stores. The recipe is
+`make.py` beside them, in `ingest/table/`.
+
+| Fixture | Made from | Rows | Cases | Columns | failed_assertion / crashed / passed | Size |
+|---|---|---|---|---|---|---|
+| `ingest/table/humaneval-a.csv` | `humaneval/20260905T185407Z-0313` | 10,496 | 328 | `case`, `task_id`, `temperature`, `replicate`, `outcome` | 1,330 / 8 / 9,158 | 478,807 B |
+| `ingest/table/humaneval-b.csv` | `humaneval/20260905T195009Z-18ac` | 10,496 | 328 | the same five | 1,376 / 11 / 9,109 | 479,270 B |
+
+**How.** Each stored row of the run, read through `proofload.store.Store` (Prove at `98dc6af`,
+its version 0.0.1) in the order `Store.read` returns it, became one line: `case` is
+`<task_id>@<temperature>`, as the DeepEval fixture names its test cases; `task_id`,
+`temperature` and `replicate` are the row's config and replicate index; `outcome` is the stored
+outcome word. Nothing else of the row is written. Python's `csv` module wrote the file, UTF-8,
+a header line, a line feed after every line:
+
+```
+python tests/fixtures/ingest/table/make.py tests/fixtures/humaneval tests/fixtures/ingest/table
+```
+
+**What a rebuild gives.** The same two files byte for byte, from the committed store.
+
+**Checks made.** The only text is the column names, the HumanEval task ids, the two
+temperatures, the replicate numbers and the three outcome words. Read back through the table
+reader and Prove with `--case-column case --outcome-column outcome --failed failed_assertion
+--failed crashed`, each file gives its source run's failures case by case, and the fix check and
+the changes on the two imported runs give the source runs' numbers
+(`tests/test_tf3_fixtures.py`).
+
+**What each cannot express.** One outcome column of words, no score, no empty cell, no other
+format than CSV. Every other shape (JSON Lines, JSON, Parquet, gzip, scores at a cut, empty
+cells, true and false, refusals) is built in the tests (`tests/test_tf3_table.py`).
+
+## Added for the JUnit import (2026-10-13)
+
+Four JUnit XML reports written by pytest 9.1.1 (Python 3.11.7), two pairs, for the
+`poisson-trace import junit` tests. They are not Prove stores. The recipe is `make.py` beside
+them, in `ingest/junit/`, with the suite `replay_humaneval.py` and the plugin `fixture_host.py`.
+
+| Fixture | The suite | Test cases | Passed / failed / errors / skipped | Suite timestamp | Size |
+|---|---|---|---|---|---|
+| `ingest/junit/trace-suite-1.xml` | three of Trace's own test files at `a1abc6c` | 91 | 90 / 0 / 0 / 1 | `2026-10-13T00:01:11.564615-04:00` | 14,727 B |
+| `ingest/junit/trace-suite-2.xml` | the same, run again | 91 | 90 / 0 / 0 / 1 | `2026-10-13T00:01:23.261977-04:00` | 14,727 B |
+| `ingest/junit/humaneval-a.xml` | `replay_humaneval.py` on `humaneval/20260905T185407Z-0313` | 656 | 569 / 86 / 1 / 0 | `2026-10-13T00:20:34.510483-04:00` | 92,702 B |
+| `ingest/junit/humaneval-b.xml` | `replay_humaneval.py` on `humaneval/20260905T195009Z-18ac` | 656 | 573 / 83 / 0 / 0 | `2026-10-13T00:20:35.677086-04:00` | 91,387 B |
+
+**Trace's own tests, run twice.** `tests/test_tf1_names.py`, `tests/ingest/test_cut.py` and
+`tests/ingest/test_rows.py` of Trace's `main` at `a1abc6c`, run from a `git archive` of that
+commit extracted at `/Users/Shared/trace-fixture/trace` (so the one path pytest writes, a skip's
+location, names no home folder), one run after the other, nothing changed between them. One test
+skips itself; nothing fails. pytest writes each run's Hypothesis statistics as properties.
+
+```
+python tests/fixtures/ingest/junit/make.py own tests/fixtures/ingest/junit   # from the root of that checkout
+```
+
+**The replay suite, run against each stored run.** `replay_humaneval.py` holds one test per
+HumanEval problem at temperature 0.7 in each of four classes, `TestRepeat0` to `TestRepeat3`,
+one per replicate: a test passes when the stored episode passed, fails on its assertion when the
+episode failed its assertions, and errors in its setup when the episode crashed. Its name does
+not begin with `test_`, so Trace's own suite never collects it. It was run in
+`/Users/Shared/trace-fixture/replay`, beside a copy of the committed HumanEval store, with an
+empty pytest config so that the class names are the suite's own (`replay_humaneval.TestRepeat0`):
+
+```
+python tests/fixtures/ingest/junit/make.py replay tests/fixtures/ingest/junit store   # from that folder
+```
+
+With `--case name` the four classes' tests of one problem are four repeats of one case, so each
+report reads as the run's 164 problems at four repeats each.
+
+**The plugin.** pytest writes the machine's name into each report's `hostname`; the plugin
+`fixture_host.py`, loaded with `-p fixture_host`, gives it `localhost`. Nothing is edited after
+pytest writes a report.
+
+**What a rebuild gives.** pytest records wall-clock times (each test case's `time`, each suite's
+`time` and `timestamp`) and Hypothesis's statistics, so a rebuild differs from the committed files
+in those values and in nothing else.
+
+**Checks made.** Every string in the four files, the Hypothesis statistics decoded, was scanned
+for key-like material (`sk-…`, `AKIA…`, GitHub tokens, `bearer …`, `api_key`, `password`,
+`secret`, `authorization`, `token`), home-directory paths, the machine owner's name and email
+addresses: no hit. The only text is test names, class names, the replay suite's assertion
+messages and tracebacks (its own file and line), the skip's reason and location, and the
+statistics. Read back through the JUnit reader and Prove, each report of Trace's own tests is
+91 test cases, 90 passed and 1 skipped; each replay report gives its run's failures problem by
+problem (`tests/test_tf3_fixtures.py`).
+
+**What each cannot express.** Trace's own tests fail nothing, so `--event missed` names no
+outcome on that pair, and each test runs once. The replay pair has one error (in the first run
+only), no skip and no test case without a class name. Suites nested in suites, a lone
+`<testsuite>` root, a timestamp with no zone, a test case with no name, and every refusal are
+built in the tests (`tests/test_tf3_junit.py`).

@@ -774,3 +774,9 @@ c5577283c078591bd8cf719d1ebea95fcdcd75d018e5ccbadff629cc56bf2464  ./ingest/deepe
 df7d32356ccfa57013a21da2c7c3cca884004c94fdecb61686d52621acb901e4  ./ingest/ragas/memory-strong.jsonl.gz
 48e8afe8ab3913ab7a0126124bc4eb67357a626c3e78bd7ad2428bae0cfee19f  ./ingest/ragas/rag-base.jsonl
 5f5a986fade2bf12531e50e72c3f0532734a5882e18b8bb5bf6304c133975fe7  ./ingest/ragas/rag-raft.jsonl
+4bcab307a0268f69a648d43902b84af930e11ca525e92e7ffd5f813bea085720  ./ingest/table/humaneval-a.csv
+7f2108caa4916640d61c42bfef3ed904902ca4a4bfdbd11b62bcacaac2ed7495  ./ingest/table/humaneval-b.csv
+a6ab1f9d8ed0ffe149163202a6a5824159b739fb94264d786b9bd868bf84bf8b  ./ingest/junit/trace-suite-1.xml
+a4b26c44a50edd5d71a6289ecac54874d35b4ae473486616431a8d3203426466  ./ingest/junit/trace-suite-2.xml
+c513d191ba7ac89a6ed35505ba67cd90d8a640037ed007548def0297f7dbbc3c  ./ingest/junit/humaneval-a.xml
+4483fefb85efbe4acea5cabb3e744ce6477467ccab21f7586c8ec8d5f39a2b64  ./ingest/junit/humaneval-b.xml
