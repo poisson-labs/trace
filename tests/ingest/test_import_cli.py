@@ -322,7 +322,8 @@ def test_ic12_started_from_is_given_exactly_when_started_is_passed(tmp_path: Pat
     assert source == "given" and _instant(at) == datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
     assert "file time" in plain.out
     assert "given" in words(given.out)
-    assert STARTED_FROM == ("given", "file name", "earliest span", "file time")
+    # a time the tool wrote inside the file (a JUnit suite's timestamp) is "file"
+    assert STARTED_FROM == ("given", "file name", "earliest span", "file time", "file")
 
 
 # ---------- IC13 ----------
