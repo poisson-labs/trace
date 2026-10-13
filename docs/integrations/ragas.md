@@ -43,7 +43,7 @@ One import is one version. Each import reads one score column and writes one new
 store in Prove's format; `poisson-trace fix-check` then compares the two runs.
 
 ```
-poisson-trace-import ragas FILE [FILE ...] --store ROOT --run NAME
+poisson-trace import ragas FILE [FILE ...] --store ROOT --run NAME
         --metric COLUMN
         --cut X ( --below | --above )
         --case-column COLUMN
@@ -93,7 +93,7 @@ are when each set was last changed where it is published.
 
 <!-- command -->
 ```
-poisson-trace-import ragas tests/fixtures/ingest/ragas/rag-base.jsonl \
+poisson-trace import ragas tests/fixtures/ingest/ragas/rag-base.jsonl \
   --store ./store --run rag-base-faithfulness --metric faithfulness --cut 0.5 --below \
   --case-column case --started 2025-03-31T06:56:41Z
 ```
@@ -120,7 +120,7 @@ next: poisson-trace fix-check OLD NEW --store ./store --event missed --inputs al
 
 <!-- command -->
 ```
-poisson-trace-import ragas tests/fixtures/ingest/ragas/rag-raft.jsonl \
+poisson-trace import ragas tests/fixtures/ingest/ragas/rag-raft.jsonl \
   --store ./store --run rag-raft-faithfulness --metric faithfulness --cut 0.5 --below \
   --case-column case --started 2025-03-31T07:16:07Z
 ```
@@ -218,7 +218,7 @@ The same two files at the same cut, on the other two scores:
 
 <!-- command -->
 ```
-poisson-trace-import ragas tests/fixtures/ingest/ragas/rag-base.jsonl \
+poisson-trace import ragas tests/fixtures/ingest/ragas/rag-base.jsonl \
   --store ./store --run rag-base-correctness --metric answer_correctness --cut 0.5 --below \
   --case-column case --started 2025-03-31T06:56:41Z
 ```
@@ -231,7 +231,7 @@ poisson-trace-import ragas tests/fixtures/ingest/ragas/rag-base.jsonl \
 
 <!-- command -->
 ```
-poisson-trace-import ragas tests/fixtures/ingest/ragas/rag-raft.jsonl \
+poisson-trace import ragas tests/fixtures/ingest/ragas/rag-raft.jsonl \
   --store ./store --run rag-raft-correctness --metric answer_correctness --cut 0.5 --below \
   --case-column case --started 2025-03-31T07:16:07Z
 ```
@@ -261,7 +261,7 @@ difference: -13.3 points, new minus old (-23.1 to -3.6; Mantel-Haenszel weights;
 
 <!-- command -->
 ```
-poisson-trace-import ragas tests/fixtures/ingest/ragas/rag-base.jsonl \
+poisson-trace import ragas tests/fixtures/ingest/ragas/rag-base.jsonl \
   --store ./store --run rag-base-relevancy --metric answer_relevancy --cut 0.5 --below \
   --case-column case --started 2025-03-31T06:56:41Z
 ```
@@ -274,7 +274,7 @@ poisson-trace-import ragas tests/fixtures/ingest/ragas/rag-base.jsonl \
 
 <!-- command -->
 ```
-poisson-trace-import ragas tests/fixtures/ingest/ragas/rag-raft.jsonl \
+poisson-trace import ragas tests/fixtures/ingest/ragas/rag-raft.jsonl \
   --store ./store --run rag-raft-relevancy --metric answer_relevancy --cut 0.5 --below \
   --case-column case --started 2025-03-31T07:16:07Z
 ```
@@ -326,7 +326,7 @@ stored runs' own.
 
 <!-- command -->
 ```
-poisson-trace-import ragas tests/fixtures/ingest/ragas/memory-causal.jsonl.gz \
+poisson-trace import ragas tests/fixtures/ingest/ragas/memory-causal.jsonl.gz \
   --store ./store --run memory-causal-precision --metric id_based_context_precision \
   --cut 0.5 --below --case-column user_input --started 2026-09-28T19:37:36Z
 ```
@@ -340,7 +340,7 @@ poisson-trace-import ragas tests/fixtures/ingest/ragas/memory-causal.jsonl.gz \
 
 <!-- command -->
 ```
-poisson-trace-import ragas tests/fixtures/ingest/ragas/memory-strong.jsonl.gz \
+poisson-trace import ragas tests/fixtures/ingest/ragas/memory-strong.jsonl.gz \
   --store ./store --run memory-strong-precision --metric id_based_context_precision \
   --cut 0.5 --below --case-column user_input --started 2026-09-29T08:26:16Z
 ```
@@ -398,7 +398,7 @@ cd from-ragas && poisson-trace init --yes --metric faithfulness --cut 0.5 --belo
 
 <!-- excerpt exit=0 -->
 ```
-  found 1 score table:
+  found 1 result file:
     1) rag-base.jsonl            a JSON Lines table with the Ragas metrics faithfulness, answer_relevancy, answer_correctness
 ```
 
@@ -407,7 +407,7 @@ cd from-ragas && poisson-trace init --yes --metric faithfulness --cut 0.5 --belo
 ok  wrote trace.toml and imported 1 run into trace-store, failures missed
   names    1 run, named at import (rag-base)
   prove    poisson-prove is installed at the version Trace reads
-  import   poisson-trace-import ragas rag-base.jsonl --store trace-store --run rag-base --metric faithfulness --cut 0.5 --below --case-column case
+  import   poisson-trace import ragas rag-base.jsonl --store trace-store --run rag-base --metric faithfulness --cut 0.5 --below --case-column case
   the same setup, without questions:
     poisson-trace init --yes --import --metric faithfulness --cut 0.5 \
       --below --case-column case --event missed
