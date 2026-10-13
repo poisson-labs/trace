@@ -173,7 +173,7 @@ def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]
     if held.store is None and not held.named:
         line = (
             f"{shown} names no store yet: make one with a Prove sweep, or import results another "
-            f"tool wrote (poisson-trace-import --help), then run {again}"
+            "tool wrote (poisson-trace-import --help), then set up again"
         )
         return [_check("config", False, line, again), _names(indexes)]
     if held.store is None:
