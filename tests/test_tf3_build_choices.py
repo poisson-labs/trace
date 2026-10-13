@@ -59,7 +59,7 @@ def test_init_replays_a_table_failure_value_that_opens_with_a_dash(tmp_path: Pat
 
 def test_an_unknown_option_before_another_verb_is_the_main_command_s_though_import_follows(tmp_path: Path) -> None:
     with chdir(work(tmp_path)):
-        result = trace(["--bogus", "runs", "--store", "import"])
+        result = trace(["--bogus", "runs", "import"])
     assert result.code == 2 and result.out == "", result.text
     nexts = [line[len("  next: "):] for line in result.lines() if line.startswith("  next: ")]
     assert nexts and shell_words(nexts[0])[:2] == ["poisson-trace", "--help"], result.err
