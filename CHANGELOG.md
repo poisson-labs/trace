@@ -22,8 +22,9 @@
   outcome, any other test case met; the case is the class name and the name (`--case
   classname-name`, the default) or the name alone (`--case name`); the start is the earliest
   suite timestamp, read as UTC when it carries no zone, which the summary says. A report that
-  declares a document type is refused unread, and nothing of a message, a failure's text, a
-  test's output or a property is kept. Page: `docs/integrations/junit.md`, on pytest 9.1.1's
+  declares a document type is refused unread, and so is one with a test case inside a test case
+  or an encoding the reader does not take; nothing of a message, a failure's text, a test's
+  output or a property is kept. Page: `docs/integrations/junit.md`, on pytest 9.1.1's
   reports of a suite run against the same HumanEval pair.
 - **`init`** finds both readers' files (a table with a column named exactly `outcome`,
   `passed`, `result` or `status`; a `.xml` file whose root is `<testsuites>` or `<testsuite>`;
@@ -37,6 +38,8 @@
   the line as `note`; `where --svg` refuses to draw it. `compare` refuses such a run, naming
   it and its tool, and points at `fix-check` on the two runs, which reads their outcomes.
 - An import's summary says "1 repeat each" where it said "1 repeats each".
+- `init`'s search reads a CSV header cell as the readers read it, spaces and all, so a column
+  named ` outcome` is not listed as `outcome`, which the import would not find.
 
 ### Guided setup, the config file and doctor
 

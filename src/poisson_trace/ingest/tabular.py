@@ -283,12 +283,13 @@ def _head_text(head: bytes, whole: bool) -> str | None:
 
 
 def _csv_head(text: str, whole: bool) -> list[str]:
-    """A CSV's header, as far as the text holds it: a cell the text cuts short is not a column."""
+    """A CSV's header, as far as the text holds it: a cell the text cuts short is not a column.
+    A cell is the name as the readers read it, spaces and all."""
     line, newline, _ = text.partition("\n")
     cells = next(csv.reader([line.rstrip("\r")]), [])
     if not newline and not whole:
         cells = cells[:-1]
-    return [cell.strip() for cell in cells]
+    return cells
 
 
 def _json_head(text: str, listed: bool) -> list[str]:

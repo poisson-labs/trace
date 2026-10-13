@@ -45,9 +45,10 @@ gives the result, and what counts as a failure.
   file that is not what its extension says.
 - `--outcome-column` reads the result as words. A cell equal to a `--failed` value is
   `missed`; any other cell is `met`. Equal means the same text: `FAIL` is not `fail`, and
-  neither is ` fail` with a space. A true, false or whole number in a JSON or Parquet table is
-  compared as JSON writes it, so `--failed false` or `--failed 1`. The summary counts the rows
-  each `--failed` value matched, so a value that matched nothing shows as 0.
+  neither is ` fail` with a space. A true, false or number in a JSON or Parquet table is
+  compared as JSON writes it, so `--failed false` or `--failed 1`; but a column of whole numbers
+  that pandas saved with a missing value holds decimals, and its 1 is `1.0`. The summary counts
+  the rows each `--failed` value matched, so a value that matched nothing shows as 0.
 - `--score-column` reads the result as a number at the cut you declare, with exactly one side:
   `--cut 0.5 --below` counts a score under 0.5 as missed. A score equal to the cut met it.
   A cell that holds no number has no outcome; it is never read as 0.
@@ -68,8 +69,9 @@ gives the result, and what counts as a failure.
   PATH` names) names a store: the import writes into it. `--store NAME` takes the store that
   file names so.
 
-A table with a column named like a Ragas metric is read by the [Ragas reader](ragas.md)
-instead, by its score.
+`poisson-trace init` offers a table with a column named like a Ragas metric to the
+[Ragas reader](ragas.md), by its score, and not to this one; `poisson-trace import table` reads
+any table you name.
 
 ## The worked example
 

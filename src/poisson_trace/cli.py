@@ -17,7 +17,7 @@ import json
 import math
 import os
 import sys
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -566,7 +566,9 @@ def _main(session: look.Session) -> int:
             f'"{args[at]}" is not a verb; the verbs are {_NAMED}', "poisson-trace --help"
         )
     ns, extra = parser.parse_known_args(args)
-    if ns.verb is None:
+    if ns.verb is None or ns.verb not in verbs:
+        # "import" read as a verb here is an option's value: the import's own command takes the
+        # verb wherever it stands
         raise look.Usage(f"no verb was given; the verbs are {_NAMED}", "poisson-trace --help")
     if extra:
         verbs[ns.verb].error(f"unrecognized arguments: {' '.join(extra)}")
@@ -617,9 +619,28 @@ def _import_at(
             return i if word == "import" else None
         name = word.split("=", 1)[0]
         if name not in known:
-            later = [j for j in range(i + 1, len(args)) if args[j] in verbs or args[j] == "import"]
-            return later[0] if later and args[later[0]] == "import" else None
+            return _first_verb(args[i + 1 :], i + 1, known, valued, verbs)
         i += 2 if "=" not in word and name in valued else 1
+    return None
+
+
+def _first_verb(
+    rest: Sequence[str], at: int, known: Collection[str], valued: Collection[str], verbs: Any
+) -> int | None:
+    """After an option nobody knows: the place of ``import`` when it is the first verb's name
+    among the words that are not options or their values, else None."""
+    i = 0
+    while i < len(rest) and rest[i] != "--":
+        word = rest[i]
+        if word.startswith("-") and word != "-":
+            name = word.split("=", 1)[0]
+            i += 2 if "=" not in word and name in known and name in valued else 1
+            continue
+        if word == "import":
+            return at + i
+        if word in verbs:
+            return None
+        i += 1
     return None
 
 
@@ -1393,10 +1414,11 @@ def _compare(ns: argparse.Namespace) -> int:
     if untraced:
         # compare places deaths at steps, which a run with no traces has none of; the fix check
         # reads the outcomes alone
-        said = " and ".join(f"{look.word(index.word_for(r))}{_from(r)}" for r in untraced)
-        has = "has" if len(untraced) == 1 else "have"
+        named = {r.run_id: r for r in untraced}.values()
+        said = " and ".join(f"{look.word(index.word_for(r))}{_from(r)}" for r in named)
+        has, its = ("has", "its") if len(named) == 1 else ("have", "their")
         raise _Refusal(
-            f"{said} {has} no traces, so compare has no step to place their episodes on; "
+            f"{said} {has} no traces, so compare has no step to place {its} episodes on; "
             "fix-check compares the runs by their outcomes",
             _next(index, "fix-check", (run_a, run_b), ns, "--inputs", "all"),
         )

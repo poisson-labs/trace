@@ -60,6 +60,10 @@ class _Declared(Exception):
     """The report declares a document type."""
 
 
+class _Nested(Exception):
+    """A test case holds another test case."""
+
+
 class _Root(Exception):
     """The report's root element is not a JUnit one."""
 
@@ -92,7 +96,9 @@ def _parser(read: _Read) -> Any:
         read.depth += 1
         if name == "testsuite" and "timestamp" in attrs:
             read.stamps.append(attrs["timestamp"])
-        elif name == "testcase" and read.open_case is None:
+        elif name == "testcase":
+            if read.open_case is not None:
+                raise _Nested
             read.cases.append((attrs.get("classname"), attrs.get("name"), set()))
             read.open_case = read.depth
         elif read.open_case is not None and read.depth == read.open_case + 1:
@@ -120,6 +126,10 @@ def _report(path: Path, raw: bytes) -> _Read:
         raise Refusal(
             f"{path} declares a document type, which no test runner writes, so it is not read"
         ) from None
+    except _Nested:
+        raise Refusal(
+            f"{path} is not a JUnit report: a test case in it holds another test case"
+        ) from None
     except _Root as e:
         raise Refusal(
             f"{path} is not a JUnit report: its root element is <{e.root}>, not <testsuites> "
@@ -127,6 +137,12 @@ def _report(path: Path, raw: bytes) -> _Read:
         ) from None
     except expat.ExpatError as e:
         raise Refusal(f"{path} is not a JUnit report: it is not XML that can be read ({e})") from e
+    except (LookupError, ValueError):
+        # an encoding the declaration names that the parser does not know, or cannot read
+        raise Refusal(
+            f"{path} is not a JUnit report that can be read: its XML declaration names an "
+            "encoding this reader does not take"
+        ) from None
     if not read.cases:
         raise Refusal(f"{path} holds no test case, so there is nothing to read from it")
     return read
@@ -166,8 +182,7 @@ def _instant(path: Path, stamp: str) -> tuple[datetime, bool]:
 
 def _utc(at: datetime) -> str:
     """An instant as UTC with a ``Z``, to the microsecond when it has a fraction of a second."""
-    fraction = f".{at.microsecond:06d}" if at.microsecond else ""
-    return at.strftime("%Y-%m-%dT%H:%M:%S") + fraction + "Z"
+    return at.astimezone(UTC).replace(tzinfo=None).isoformat() + "Z"
 
 
 def _root_of(head: bytes) -> str | None:

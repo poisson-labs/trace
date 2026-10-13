@@ -50,7 +50,8 @@ Nothing needs declaring: a JUnit report says what failed.
   read as UTC, and the summary says so; one that is not a time refuses the import. With no
   timestamp, the first file's modification time is used. `--started` gives it instead, with
   its zone. The summary prints which it was.
-- A file that is not XML, whose root is another element, that holds no test case, or that
+- A file that is not XML, whose root is another element, that holds no test case or a test
+  case inside another, whose declaration names an encoding the reader does not take, or that
   declares a document type is refused. No runner writes a document type, and a report that
   declares one is not read at all, so nothing it names is opened.
 - `--store` may be left out when a `trace.toml` in the current folder (or the file `--config
