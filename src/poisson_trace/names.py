@@ -275,6 +275,8 @@ class Named:
     target_id: str
     backend: str
     number: int | None = None
+    # where an imported run's start came from (the import's word); None for a run Prove stored
+    started_from: str | None = None
 
     @property
     def target(self) -> str:
@@ -398,6 +400,7 @@ class Index:
         pool = self.complete if target is None else [r for r in self.complete if r.target == target]
         rank = 0 if form == "latest" else 1
         if len(pool) > rank:
+            self._ordered(form if target is None else f"{form}:{target}", pool[: rank + 2])
             return pool[rank]
         if target is not None and "/" in target:
             raise look.Refused(
@@ -420,6 +423,39 @@ class Index:
             f"the store holds {held}",
             self.listing("--all"),
         )
+
+    def _ordered(self, word: str, ranked: Sequence[Named]) -> None:
+        """Refused when the start times cannot order the runs ``word`` ranks, newest first: two
+        of them started at the same moment, or one took its start from its file's modification
+        time, which says when the file was written or copied, not when the run ran. Either way
+        the word could pick the older run as the newer, so it names the runs to give instead."""
+        if len(ranked) < 2:
+            return
+        shown = " and ".join(f'"{self.word_for(r)}"' for r in ranked)
+        tied = [(a, b) for a, b in zip(ranked, ranked[1:], strict=False) if a.started == b.started]
+        if tied:
+            a, b = tied[0]
+            raise look.Refused(
+                f'{word} goes by when each run started, and "{self.word_for(a)}" and '
+                f'"{self.word_for(b)}" started at the same moment, so it cannot tell which is '
+                f"newer; name the runs instead ({shown}), the older first",
+                self.listing(),
+            )
+        filed = [r for r in ranked if r.started_from == FILE_TIME]
+        if filed:
+            which = " and ".join(f'"{self.word_for(r)}"' for r in filed)
+            whose = (
+                f"start of {which} is its file's modification time"
+                if len(filed) == 1
+                else f"starts of {which} are their files' modification times"
+            )
+            raise look.Refused(
+                f"{word} goes by when each run started, and the {whose}, which say when a file "
+                "was written or copied, not when the run ran; "
+                f"name the runs instead ({shown}), the older first, or import them again with "
+                "--started",
+                self.listing(),
+            )
 
     def _numbered(self, text: str) -> Named:
         digits = text[1:]
@@ -488,6 +524,22 @@ def shown_file(store: str) -> str:
     return f"{store.rstrip('/') or '/'}/{NAMES_FILE}" if store else NAMES_FILE
 
 
+# the word an import records when a run's start is its file's modification time
+FILE_TIME = "file time"
+
+
+def _started_from(manifest: Any) -> str | None:
+    """Where an imported run's start came from, as its import recorded it; None for any other."""
+    environment = getattr(manifest, "environment", None)
+    if not isinstance(environment, Mapping):
+        return None
+    recorded = environment.get("import")
+    if not isinstance(recorded, Mapping):
+        return None
+    word = recorded.get("started_from")
+    return word if isinstance(word, str) else None
+
+
 def index(
     store: Any,
     held: Sequence[str],
@@ -527,6 +579,7 @@ def index(
                 status=str(manifest.status),
                 target_id=str(manifest.target_id),
                 backend=str(manifest.backend),
+                started_from=_started_from(manifest),
             )
         )
     runs.sort(key=lambda r: (r.started, r.run_id))
