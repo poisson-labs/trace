@@ -63,7 +63,7 @@ pip install ./poisson_trace-0.1.0rc1-py3-none-any.whl ./proofload-0.0.1-py3-none
 poisson-trace --version
 ```
 
-pip takes numpy, scipy, pandas and pyarrow from PyPI. The last line prints
+pip takes numpy, scipy, pandas and pyarrow, and the few packages they need, from PyPI. The last line prints
 `poisson-trace 0.1.0rc1 (poisson-prove 0.0.1, Python 3.11.7)`, with your Python's version in
 place of 3.11.7. Then unpack the source archive and work inside it; every command below, and
 every page under `docs/`, runs from there:
@@ -87,7 +87,9 @@ Each block starts and ends in the unpacked folder, so they can be typed one afte
 The first line of every `fix-check` report is its verdict, one of three:
 
 - *different*: the two runs differ, in the direction it names, at the p it prints. It says
-  the runs differ, not why: on its own it does not show that your change caused it.
+  the runs differ, not why: on its own it does not show that your change caused it. It can
+  appear below the limit the report states, which is for a change spread over every input; a
+  change in a few inputs, as in the HumanEval pair below, can be seen at a smaller size.
 - *no significant difference*: no difference was seen, and the line says the smallest drop in
   failure share this design could have seen. A smaller one may be there.
 - *too small to tell*: this design could not have seen a drop as small as the one you asked
@@ -95,8 +97,9 @@ The first line of every `fix-check` report is its verdict, one of three:
   would settle it.
 
 `--max-mde` is the smallest drop in failure share you want to be able to see, as a fraction
-(0.10 is ten points). Set it to the smallest improvement that would matter to you; the
-examples below each use one that suits their size.
+(0.10 is ten points). Set it to the smallest improvement that would matter to you, before
+you look at a result: a ceiling chosen after seeing the report no longer says what the
+design could see. The examples below each use one that suits their size.
 
 Prove's stored runs, the tau2-airline agent run twice with nothing changed. A store found under
 the folder is used as it is; `unsolved` is the failure its runs carry:
@@ -225,7 +228,7 @@ command and every flag.
 
 Run `poisson-trace init` in the folder that holds them: it finds Prove stores and the other
 four readers' files on its own, asks what it needs to know on a terminal, and with `--yes`
-takes the answers from its flags (`poisson-trace init --help` lists them). Three things to
+takes the answers from its flags (`poisson-trace init --help` lists them). Four things to
 know first:
 
 - Name the two runs in `fix-check`, old first, as the blocks above do. `latest` and `previous`
@@ -234,6 +237,9 @@ know first:
 - Check the summary's `failures` before going on. If it names no failure, the values you gave
   match no row (`--failed` is matched exactly, as the cell is written), and `poisson-trace runs`
   shows no failed counts.
+- A JUnit report is read by class name and test name unless you give `--case name`. If your
+  runner puts each repeat of a test in a class of its own, as the example reports do, give
+  `--case name`, or each repeat is read as an input of its own.
 - To set up again from the start, remove `trace.toml` and the `trace-store` folder init made,
   then run `poisson-trace init` again. A store already there is used as it is.
 
