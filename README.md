@@ -41,15 +41,20 @@ not run, so install from the files sent with this README. You get three:
 | `proofload-0.0.1-py3-none-any.whl` | Prove, whose stores Trace reads, and writes other tools' results into |
 | `poisson_trace-0.1.0rc1.tar.gz` | Trace's source: this README, the pages under `docs/`, and the example files the commands below read |
 
-The links to github.com/poisson-labs on this page lead to repositories that are private for
-now; every page they name is in the source archive.
+Prove goes by three names for now: Prove in these docs, `proofload` as its package and wheel,
+and `poisson-prove` in Trace's version line. They are the same thing.
+
+The links to github.com/poisson-labs, on this page and in a few of Trace's own `next:` lines,
+lead to repositories that are private for now; every page they name is in the source archive.
+The post the introduction above mentions is not linked from here.
 
 ### Install from the files
 
 Trace needs Python 3.11 or newer. Check yours first: the `python3` that macOS ships is 3.9,
 and pip refuses this package on it. If `python3 --version` prints a version below 3.11, type
-`python3.11`, `python3.12` or `python3.13` where the first line says `python3`. In the folder
-holding the three files:
+`python3.11`, `python3.12` or `python3.13` where the first line says `python3`, whichever your
+machine has. If it has none of them, install Python 3.11 or newer first (python.org or your
+package manager). In the folder holding the three files:
 
 ```
 python3 -m venv trace-env
@@ -68,27 +73,41 @@ tar -xzf poisson_trace-0.1.0rc1.tar.gz
 cd poisson_trace-0.1.0rc1
 ```
 
-The [Install](#install) section further down is for the public release and does not apply to
-this one. If a command says Prove is missing and names
-`pip install git+https://github.com/poisson-labs/prove`, install the Prove wheel as above
-instead.
+The [Install](#install) section further down, and the Install section at the top of each page
+under `docs/integrations/`, are for the public release and do not apply to this one. If a
+command says Prove is missing and names `pip install git+https://github.com/poisson-labs/prove`,
+install the Prove wheel as above instead.
 
 ### A first result on each reader
 
 Each block puts one reader's example pair in a folder of its own, sets it up with
-`poisson-trace init`, and asks `fix-check` whether the second version failed less than the
-first. `--max-mde` is the smallest drop in failure share you need to be able to see (0.10 is
-ten points); every verdict says what it could not have detected. With your own results, run
-`poisson-trace init` in the folder that holds them: it finds Prove stores and the other four
-readers' files on its own, and asks what it needs to know.
+`poisson-trace init`, and asks `fix-check` whether the second run failed less than the first.
+Each block starts and ends in the unpacked folder, so they can be typed one after another.
 
-Prove's stored runs, the tau2-airline agent run twice with nothing changed:
+The first line of every `fix-check` report is its verdict, one of three:
+
+- *different*: the two runs differ, in the direction it names, at the p it prints. It says
+  the runs differ, not why: on its own it does not show that your change caused it.
+- *no significant difference*: no difference was seen, and the line says the smallest drop in
+  failure share this design could have seen. A smaller one may be there.
+- *too small to tell*: this design could not have seen a drop as small as the one you asked
+  about (`--max-mde`), whatever happened; the report ends with how many more repeats or inputs
+  would settle it.
+
+`--max-mde` is the smallest drop in failure share you want to be able to see, as a fraction
+(0.10 is ten points). Set it to the smallest improvement that would matter to you; the
+examples below each use one that suits their size.
+
+Prove's stored runs, the tau2-airline agent run twice with nothing changed. A store found under
+the folder is used as it is; `unsolved` is the failure its runs carry:
 
 <!-- command -->
 ```
 mkdir -p try-prove && cp -R tests/fixtures/tau2 try-prove/proofload-runs
-cd try-prove && poisson-trace init --yes
+cd try-prove
+poisson-trace init --yes
 poisson-trace fix-check "tau2-airline 2026-09-15 a" "tau2-airline 2026-09-15 b" --inputs all --max-mde 0.10
+cd ..
 ```
 
 <!-- excerpt exit=0 -->
@@ -102,15 +121,22 @@ too small to tell  could not have detected a drop in failure share below 11.1 po
 ```
 
 DeepEval's saved test runs: one agent run twice on 164 HumanEval problems, 56 minutes apart,
-with nothing changed, written through DeepEval:
+with nothing changed, written through DeepEval. This pair reads *different*, though nothing
+changed: one problem, HumanEval/129, failed far more often in the second run. Two runs at
+different hours differ in more than the code, and the [DeepEval
+page](docs/integrations/deepeval.md) walks through it. Every import writes each test case as
+`met` or `missed`, and `missed` is the failure; `--metric` names the metric, `--cut recorded`
+takes DeepEval's own pass or fail, and `--case name` matches test cases across the runs by name:
 
 <!-- command -->
 ```
 mkdir -p try-deepeval/results
 gunzip -c tests/fixtures/ingest/deepeval/humaneval-a.json.gz > try-deepeval/results/test_run_20260905_185407.json
 gunzip -c tests/fixtures/ingest/deepeval/humaneval-b.json.gz > try-deepeval/results/test_run_20260905_195009.json
-cd try-deepeval && poisson-trace init --yes --metric "Tests Passed" --cut recorded --case name
+cd try-deepeval
+poisson-trace init --yes --metric "Tests Passed" --cut recorded --case name
 poisson-trace fix-check test_run_20260905_185407 test_run_20260905_195009 --inputs all --max-mde 0.02
+cd ..
 ```
 
 <!-- excerpt exit=0 -->
@@ -123,13 +149,16 @@ ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
 different  the new version failed more on these inputs (exact Cochran-Mantel-Haenszel, stratified by input, p = 0.036)
 ```
 
-Ragas's score table, a base model and its fine-tuned version, a faithfulness below 0.5 a miss:
+Ragas's score table, a base model and its fine-tuned version: a faithfulness score below the
+cut, 0.5, is missed, and the column `case` matches rows across the two tables:
 
 <!-- command -->
 ```
 mkdir -p try-ragas && cp tests/fixtures/ingest/ragas/rag-base.jsonl tests/fixtures/ingest/ragas/rag-raft.jsonl try-ragas/
-cd try-ragas && poisson-trace init --yes --metric faithfulness --cut 0.5 --below --case-column case
+cd try-ragas
+poisson-trace init --yes --metric faithfulness --cut 0.5 --below --case-column case
 poisson-trace fix-check rag-base rag-raft --inputs all --max-mde 0.10
+cd ..
 ```
 
 <!-- excerpt exit=0 -->
@@ -142,13 +171,16 @@ ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
 too small to tell  could not have detected a drop in failure share below 15.9 points, and 10 was asked for
 ```
 
-Any table of results: the same HumanEval pair saved as CSV, with an outcome column:
+Any table of results: the same HumanEval pair saved as CSV. The column `outcome` holds each
+row's result, and a row whose outcome is one of the `--failed` values is missed:
 
 <!-- command -->
 ```
 mkdir -p try-table && cp tests/fixtures/ingest/table/humaneval-*.csv try-table/
-cd try-table && poisson-trace init --yes --case-column case --outcome-column outcome --failed failed_assertion --failed crashed
+cd try-table
+poisson-trace init --yes --case-column case --outcome-column outcome --failed failed_assertion --failed crashed
 poisson-trace fix-check humaneval-a humaneval-b --inputs all --max-mde 0.02
+cd ..
 ```
 
 <!-- excerpt exit=0 -->
@@ -162,13 +194,17 @@ different  the new version failed more on these inputs (exact Cochran-Mantel-Hae
 ```
 
 JUnit XML reports: pytest replaying the same pair, four repeats at one temperature where the
-files above hold 32 at two:
+files above hold 32 at two. A failure or an error is missed, and `--case name` matches tests
+by name. At this size the difference the two readers above found is not there to see, and
+the line says how small a drop it could have seen ([JUnit page](docs/integrations/junit.md)):
 
 <!-- command -->
 ```
 mkdir -p try-junit && cp tests/fixtures/ingest/junit/humaneval-*.xml try-junit/
-cd try-junit && poisson-trace init --yes --case name
+cd try-junit
+poisson-trace init --yes --case name
 poisson-trace fix-check humaneval-a humaneval-b --inputs all --max-mde 0.05
+cd ..
 ```
 
 <!-- excerpt exit=0 -->
@@ -181,11 +217,25 @@ ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
 no significant difference  p = 0.639; could not have detected a drop in failure share below 3.2 points
 ```
 
-A pair with nothing changed can read *different*: the [DeepEval page](docs/integrations/deepeval.md)
-says what that one means, and the [JUnit page](docs/integrations/junit.md) why its smaller
-replay cannot see it. In any of these folders, `poisson-trace runs` lists the runs and `poisson-trace doctor` says
+In any of these folders, `poisson-trace runs` lists the runs and `poisson-trace doctor` says
 whether the setup is ready. Each reader's page under `docs/integrations/` shows its import
 command and every flag.
+
+### With your own results
+
+Run `poisson-trace init` in the folder that holds them: it finds Prove stores and the other
+four readers' files on its own, asks what it needs to know on a terminal, and with `--yes`
+takes the answers from its flags (`poisson-trace init --help` lists them). Three things to
+know first:
+
+- Name the two runs in `fix-check`, old first, as the blocks above do. `latest` and `previous`
+  go by when each run started, and a run imported from a table or a Ragas file starts when it
+  was imported, so two files imported together can come out in either order.
+- Check the summary's `failures` before going on. If it names no failure, the values you gave
+  match no row (`--failed` is matched exactly, as the cell is written), and `poisson-trace runs`
+  shows no failed counts.
+- To set up again from the start, remove `trace.toml` and the `trace-store` folder init made,
+  then run `poisson-trace init` again. A store already there is used as it is.
 
 ### What works today
 
