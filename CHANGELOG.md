@@ -1,8 +1,24 @@
 # Changelog
 
-## Unreleased
+## 0.1.0rc1 — pre-release
 
-Built as `0.1.0rc1`, a private pre-release for design partners, installed from its wheel.
+A private pre-release for design partners, installed from its wheel; not on PyPI and not yet
+released. Everything below is in it, newest first.
+
+### A failure value that matches nothing; latest and previous on imported runs
+
+- **`init`** refuses a `--failed` value that no cell of the outcome column carries in any
+  table it found, naming the value and the column and listing the column's values; nothing is
+  written. Before, it said ok, imported every row as met, and set no failure. A value that one
+  version carries and the other does not is taken.
+- Where a store's runs carry only words for success, `init` says so, where it said the runs
+  carried no outcome, and `doctor` no longer points back to `init`: for imported runs it points
+  to importing them again into a new store with the values that mean a failure and setting up
+  with it, and for Prove's runs it names no command.
+- **`latest` and `previous`** are refused, naming the runs to give instead, where the start
+  times cannot order the runs they rank: two that started at the same moment, or an imported
+  run whose start is its file's modification time. Before, a tie fell to the run id, so two
+  tables `init` imported together could be compared the wrong way round.
 
 ### An empty JUnit report left out by init
 
@@ -180,7 +196,7 @@ written down in `docs/cli-look.md`, which every Poisson Labs tool follows.
 - `--help` and `--version` work without Prove: Prove is checked once the command line is
   read, and a command that needs it, without it or at another version, names the install
   command `pip install git+https://github.com/poisson-labs/prove` and the version it found.
-- `--version` prints one line: `poisson-trace 0.1.0 (poisson-prove 0.0.1, Python 3.11.7)`,
+- `--version` prints one line: `poisson-trace 0.1.0rc1 (poisson-prove 0.0.1, Python 3.11.7)`,
   with Prove's version as installed, or `poisson-prove not installed`.
 - `python -m poisson_trace` is the same command as `poisson-trace`.
 - `--seed` below 0 is refused, and `--boot` above 1,000,000; a store that cannot be read, a
@@ -214,9 +230,9 @@ written down in `docs/cli-look.md`, which every Poisson Labs tool follows.
 - The README and the two integration pages give the install line above, and their example
   outputs are re-run.
 
-## 0.1.0 — 2026-10-01
+### The first slice
 
-First release, three parts. The first two read Prove's stored runs; the third writes a
+Three parts. The first two read Prove's stored runs; the third writes a
 store in Prove's format from the result files of another tool.
 
 Where runs die: `where` and `compare` over leaf-span index; Kaplan–Meier with Greenwood;

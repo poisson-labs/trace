@@ -25,9 +25,8 @@ tell*, the report says how many repeats or how many inputs would settle it.
 
 Every number prints with what the run could not have detected.
 
-Released with the Poisson Labs post responding to LangSmith Engine v2 (2026-10-01; the post
-links here). Trace is a reader of stored runs: it runs nothing, captures nothing, patches
-nothing, phones nowhere.
+This copy is a private pre-release for design partners; Trace is not public yet. Trace is a
+reader of stored runs: it runs nothing, captures nothing, patches nothing, phones nowhere.
 
 ## Pre-release for design partners
 
@@ -46,7 +45,6 @@ and `poisson-prove` in Trace's version line. They are the same thing.
 
 The links to github.com/poisson-labs, on this page and in a few of Trace's own `next:` lines,
 lead to repositories that are private for now; every page they name is in the source archive.
-The post the introduction above mentions is not linked from here.
 
 ### Install from the files
 
@@ -228,20 +226,11 @@ command and every flag.
 
 Run `poisson-trace init` in the folder that holds them: it finds Prove stores and the other
 four readers' files on its own, asks what it needs to know on a terminal, and with `--yes`
-takes the answers from its flags (`poisson-trace init --help` lists them). Four things to
-know first:
+takes the answers from its flags (`poisson-trace init --help` lists them).
 
-- Name the two runs in `fix-check`, old first, as the blocks above do. `latest` and `previous`
-  go by when each run started, and a run imported from a table or a Ragas file starts when it
-  was imported, so two files imported together can come out in either order.
-- Check the summary's `failures` before going on. If it names no failure, the values you gave
-  match no row (`--failed` is matched exactly, as the cell is written), and `poisson-trace runs`
-  shows no failed counts.
-- A JUnit report is read by class name and test name unless you give `--case name`. If your
-  runner puts each repeat of a test in a class of its own, as the example reports do, give
-  `--case name`, or each repeat is read as an input of its own.
-- To set up again from the start, remove `trace.toml` and the `trace-store` folder init made,
-  then run `poisson-trace init` again. A store already there is used as it is.
+A JUnit report is read by class name and test name unless you give `--case name`. If your
+runner puts each repeat of a test in a class of its own, as the example reports do, give
+`--case name`, or each repeat is read as an input of its own.
 
 ### What works today
 
@@ -518,6 +507,10 @@ poisson-trace import TOOL FILE [FILE ...] --store ROOT --run NAME [the reader's 
   newest complete runs), `latest:TARGET` or `previous:TARGET` (the same among one target's
   runs), `#N` (row N of `runs`; a shell needs it quoted, `"#3"`) or the full run id. A word
   that reaches no run, or two, is refused, never guessed; a part of an id is not a name.
+  `latest` and `previous` go by when each run started, and are refused, naming the runs to
+  give instead, where the start times cannot order the runs: two that started at the same
+  moment, or an imported run whose start is its file's modification time, which says when the
+  file was written or copied (an import's `--started` gives the time it ran).
 - `runs` lists a store's runs, newest first: each complete run's number and name, its rows,
   how many of them failed for the `--event` names given, whether any row carries a trace
   (`where` and `compare` read traces; `fix-check` and `changes` do not need them), when it
@@ -1198,17 +1191,17 @@ ruff check .
 mypy --strict src
 ```
 
-The suite holds 1,475 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
+The suite holds 1,485 tests: 100 for `where` and `compare`, 143 for `fix-check` and `changes`
 (3 of them its display rules), 124 for the import and its DeepEval reader, 80 for
 its Ragas reader, 186 that hold both commands to the shared command-line look
 ([`docs/cli-look.md`](docs/cli-look.md)): the exit codes, the `error:` lines, the help and
 `--version`, options before or after the verb, the ASCII fallback, a closed pipe and plain
-words; 316 for names and runs: the names file, the name every run has, the words a verb
+words; 320 for names and runs: the names file, the name every run has, the words a verb
 takes for a run, `runs` and `name`, the verdict line and `next:`, and the import's run names;
-276 for the setup: `init`, `trace.toml` and how every verb reads it, the two further forms
+282 for the setup: `init`, `trace.toml` and how every verb reads it, the two further forms
 of a run's name, `doctor`, and the readers' `looks_like`; and 250 for `import` under the main
 command, its table and JUnit readers, `init`'s part in them, and runs with no traces.
-Four of the 1,475 run DeepEval or Ragas itself, installed from PyPI, and are left out
+Four of the 1,485 run DeepEval or Ragas itself, installed from PyPI, and are left out
 unless asked for (`python -m pytest -m lane_j`). The figures the tests check against come
 from lifelines, scipy, full enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks
 the fixtures (`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).
