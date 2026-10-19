@@ -29,6 +29,185 @@ Released with the Poisson Labs post responding to LangSmith Engine v2 (2026-10-0
 links here). Trace is a reader of stored runs: it runs nothing, captures nothing, patches
 nothing, phones nowhere.
 
+## Pre-release for design partners
+
+This is Poisson Trace `0.1.0rc1`, a private pre-release for design partners. It is not on
+PyPI: the `poisson-trace` and `proofload` you would get there by name are placeholders that do
+not run, so install from the files sent with this README. You get three:
+
+| File | What it is |
+|---|---|
+| `poisson_trace-0.1.0rc1-py3-none-any.whl` | Trace |
+| `proofload-0.0.1-py3-none-any.whl` | Prove, whose stores Trace reads, and writes other tools' results into |
+| `poisson_trace-0.1.0rc1.tar.gz` | Trace's source: this README, the pages under `docs/`, and the example files the commands below read |
+
+The links to github.com/poisson-labs on this page lead to repositories that are private for
+now; every page they name is in the source archive.
+
+### Install from the files
+
+Trace needs Python 3.11 or newer. Check yours first: the `python3` that macOS ships is 3.9,
+and pip refuses this package on it. If `python3 --version` prints a version below 3.11, type
+`python3.11`, `python3.12` or `python3.13` where the first line says `python3`. In the folder
+holding the three files:
+
+```
+python3 -m venv trace-env
+. trace-env/bin/activate
+pip install ./poisson_trace-0.1.0rc1-py3-none-any.whl ./proofload-0.0.1-py3-none-any.whl
+poisson-trace --version
+```
+
+pip takes numpy, scipy, pandas and pyarrow from PyPI. The last line prints
+`poisson-trace 0.1.0rc1 (poisson-prove 0.0.1, Python 3.11.7)`, with your Python's version in
+place of 3.11.7. Then unpack the source archive and work inside it; every command below, and
+every page under `docs/`, runs from there:
+
+```
+tar -xzf poisson_trace-0.1.0rc1.tar.gz
+cd poisson_trace-0.1.0rc1
+```
+
+The [Install](#install) section further down is for the public release and does not apply to
+this one. If a command says Prove is missing and names
+`pip install git+https://github.com/poisson-labs/prove`, install the Prove wheel as above
+instead.
+
+### A first result on each reader
+
+Each block puts one reader's example pair in a folder of its own, sets it up with
+`poisson-trace init`, and asks `fix-check` whether the second version failed less than the
+first. `--max-mde` is the smallest drop in failure share you need to be able to see (0.10 is
+ten points); every verdict says what it could not have detected. With your own results, run
+`poisson-trace init` in the folder that holds them: it finds Prove stores and the other four
+readers' files on its own, and asks what it needs to know.
+
+Prove's stored runs, the tau2-airline agent run twice with nothing changed:
+
+<!-- command -->
+```
+mkdir -p try-prove && cp -R tests/fixtures/tau2 try-prove/proofload-runs
+cd try-prove && poisson-trace init --yes
+poisson-trace fix-check "tau2-airline 2026-09-15 a" "tau2-airline 2026-09-15 b" --inputs all --max-mde 0.10
+```
+
+<!-- excerpt exit=0 -->
+```
+ok  wrote trace.toml: store proofload-runs (3 runs), failures unsolved
+```
+
+<!-- excerpt exit=0 -->
+```
+too small to tell  could not have detected a drop in failure share below 11.1 points, and 10 was asked for
+```
+
+DeepEval's saved test runs: one agent run twice on 164 HumanEval problems, 56 minutes apart,
+with nothing changed, written through DeepEval:
+
+<!-- command -->
+```
+mkdir -p try-deepeval/results
+gunzip -c tests/fixtures/ingest/deepeval/humaneval-a.json.gz > try-deepeval/results/test_run_20260905_185407.json
+gunzip -c tests/fixtures/ingest/deepeval/humaneval-b.json.gz > try-deepeval/results/test_run_20260905_195009.json
+cd try-deepeval && poisson-trace init --yes --metric "Tests Passed" --cut recorded --case name
+poisson-trace fix-check test_run_20260905_185407 test_run_20260905_195009 --inputs all --max-mde 0.02
+```
+
+<!-- excerpt exit=0 -->
+```
+ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
+```
+
+<!-- excerpt exit=0 -->
+```
+different  the new version failed more on these inputs (exact Cochran-Mantel-Haenszel, stratified by input, p = 0.036)
+```
+
+Ragas's score table, a base model and its fine-tuned version, a faithfulness below 0.5 a miss:
+
+<!-- command -->
+```
+mkdir -p try-ragas && cp tests/fixtures/ingest/ragas/rag-base.jsonl tests/fixtures/ingest/ragas/rag-raft.jsonl try-ragas/
+cd try-ragas && poisson-trace init --yes --metric faithfulness --cut 0.5 --below --case-column case
+poisson-trace fix-check rag-base rag-raft --inputs all --max-mde 0.10
+```
+
+<!-- excerpt exit=0 -->
+```
+ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
+```
+
+<!-- excerpt exit=0 -->
+```
+too small to tell  could not have detected a drop in failure share below 15.9 points, and 10 was asked for
+```
+
+Any table of results: the same HumanEval pair saved as CSV, with an outcome column:
+
+<!-- command -->
+```
+mkdir -p try-table && cp tests/fixtures/ingest/table/humaneval-*.csv try-table/
+cd try-table && poisson-trace init --yes --case-column case --outcome-column outcome --failed failed_assertion --failed crashed
+poisson-trace fix-check humaneval-a humaneval-b --inputs all --max-mde 0.02
+```
+
+<!-- excerpt exit=0 -->
+```
+ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
+```
+
+<!-- excerpt exit=0 -->
+```
+different  the new version failed more on these inputs (exact Cochran-Mantel-Haenszel, stratified by input, p = 0.036)
+```
+
+JUnit XML reports: pytest replaying the same pair, four repeats at one temperature where the
+files above hold 32 at two:
+
+<!-- command -->
+```
+mkdir -p try-junit && cp tests/fixtures/ingest/junit/humaneval-*.xml try-junit/
+cd try-junit && poisson-trace init --yes --case name
+poisson-trace fix-check humaneval-a humaneval-b --inputs all --max-mde 0.05
+```
+
+<!-- excerpt exit=0 -->
+```
+ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
+```
+
+<!-- excerpt exit=0 -->
+```
+no significant difference  p = 0.639; could not have detected a drop in failure share below 3.2 points
+```
+
+A pair with nothing changed can read *different*: the [DeepEval page](docs/integrations/deepeval.md)
+says what that one means, and the [JUnit page](docs/integrations/junit.md) why its smaller
+replay cannot see it. In any of these folders, `poisson-trace runs` lists the runs and `poisson-trace doctor` says
+whether the setup is ready. Each reader's page under `docs/integrations/` shows its import
+command and every flag.
+
+### What works today
+
+- Five readers: Prove's stored runs, and the result files of DeepEval, Ragas, any table of
+  results (CSV, JSON Lines, JSON or Parquet) and JUnit XML reports.
+- The commands: `init`, `doctor`, `runs`, `name`, `import`, `fix-check` and `changes` on any
+  of the five; `where` and `compare` on Prove's runs, which carry traces. An imported run
+  carries none, so on one `where` says so and `compare` points to `fix-check`.
+- Checked on macOS with Python 3.11, 3.12 and 3.13, from the three files alone.
+
+### What is coming
+
+- Readers for promptfoo, Inspect, OpenAI Evals, Braintrust, Weave, LangSmith, OpenTelemetry
+  and Lemma.
+- A pull-request check that puts the fix check's verdict on the pull request.
+
+### Problems
+
+Send them to work@poissonlabs.ai, with the command you typed, what it printed and what
+`poisson-trace --version` prints. When a command fails unexpectedly it prints one line naming
+`~/.cache/poisson-trace/errors.log`; attach that file too.
+
 ## Install
 
 Prove is not yet on PyPI, so it is installed from its repository and is not a declared
