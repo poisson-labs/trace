@@ -109,6 +109,9 @@ def _store_words(name: str | None, path: str) -> str:
     return f"store {path}" if name is None else f"store {name} at {path}"
 
 
+_IMPORT_HELP = "poisson-trace import --help"
+
+
 def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]:
     """The config check and the names check, which reads the stores the config names."""
     reach = [look.option("--config", given)] if given is not None else []
@@ -179,7 +182,7 @@ def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]
     if held.store is None:
         line = f"{shown} names no store every verb reads ([store] has no path)"
         return [_check("config", False, line, again), _names(indexes)]
-    from poisson_trace.setup import newest_outcomes
+    from poisson_trace.setup import SUCCESS_WORDS, newest_outcomes
 
     notes = []
     for name, store_path, index in indexes[1:]:
@@ -198,6 +201,22 @@ def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]
         if not read.counts:
             # no answer to the failure question exists: the runs carry no outcome
             line = f"{said}; {read.whose} {read.carry} no outcome, so there is no failure to set"
+            return [_check("config", False, line, None), _names(indexes)]
+        if all(o in SUCCESS_WORDS for o in read.counts):
+            # init has no failure to offer either, so it is not the command that mends this
+            successes = sorted(read.counts)
+            words = "a word" if len(successes) == 1 else "words"
+            line = (
+                f"{said}; {read.whose} {read.carry} only {', '.join(successes)}, {words} for "
+                "success, so there is no failure to set"
+            )
+            if any(r.imported for r in first.runs):
+                line += (
+                    "; if they were imported with values that match no failure, import the "
+                    "result files again into a new store with the values that mean a failure, "
+                    "then set up with it: poisson-trace init --force --store NEW"
+                )
+                return [_check("config", False, line, _IMPORT_HELP), _names(indexes)]
             return [_check("config", False, line, None), _names(indexes)]
         return [_check("config", False, said, init), _names(indexes)]
     missing = [e for e in events if e not in read.counts]

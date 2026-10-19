@@ -670,7 +670,49 @@ def read_imports(files: Sequence[FoundFile], answers: Answers) -> list[Imported]
                 "compare and no run was written"
             )
         made.append(Imported(f.path, f.reader, run))
+    _failed_carried(made, answers)
     return made
+
+
+def _failed_carried(made: Sequence[Imported], answers: Answers) -> None:
+    """Refused when a failure value given for the tables matches no cell of their outcome
+    column in any file found: no row would count as a failure, so the setup would have none."""
+    tables = [item for item in made if item.reader == "table"]
+    if not tables or not answers.failed:
+        return
+    cells: Counter[str] = Counter()
+    for item in tables:
+        cells.update(item.run.cells)
+    missing = [v for v in answers.failed if cells[v] == 0]
+    if not missing:
+        return
+    column = answers.values.get("outcome_column", "")
+    held = [f'"{v}" ({_plural(n, "row", "rows")})' for v, n in cells.most_common(_CELLS_SHOWN)]
+    more = len(cells) - len(held)
+    if more > 0:
+        held.append(f"{count(more)} more")
+    files = "the file found" if len(tables) == 1 else f"the {count(len(tables))} files found"
+    values = " and ".join(f'"{v}"' for v in missing)
+    raise Refused(
+        f"--failed {values} matches no cell of the column {column} in {files}, so no row "
+        f"would count as a failure; its cells are {', '.join(held) or 'all empty'}: give "
+        "--failed with the values that mean a failure",
+        _HELP,
+    )
+
+
+# how many of a column's values a refusal lists
+_CELLS_SHOWN = 10
+
+
+def no_failures_why(counts: Mapping[str, int]) -> str:
+    """Why no failure was set for runs whose outcomes are ``counts``: they carry none, or
+    every one they carry is a word for success."""
+    if not counts:
+        return "these runs carry no outcome"
+    carried = sorted(counts)
+    words = "a word" if len(carried) == 1 else "words"
+    return f"these runs carry only {', '.join(carried)}, {words} for success"
 
 
 def import_line(item: Imported, store: str) -> str:
@@ -1191,21 +1233,28 @@ def _summary(
     verb: str,
 ) -> Done:
     reach = _reach(ns)
-    indexes = [_index(p, form)[1] for _, p in stores]
+    opened = [_index(p, form) for _, p in stores]
+    indexes = [index for _, index in opened]
     runs = {p: len(i.runs) + len(i.unreadable) for (_, p), i in zip(stores, indexes, strict=True)}
     if imports:
         sentence = (
             f"{verb} {shown} and imported {_plural(len(imports), 'run', 'runs')} into "
-            f"{stores[0][1]}, failures {', '.join(events)}"
+            f"{stores[0][1]}"
         )
+        if events:
+            sentence += f", failures {', '.join(events)}"
+        else:
+            sentence += f"; no failures, as {no_failures_why(_imported_outcomes(imports).counts)}"
     elif stores:
         said = " and ".join(_store_said(n, p, runs[p]) for n, p in stores)
         if events:
             sentence = f"{verb} {shown}: {said}, failures {', '.join(events)}"
-        elif verb == "left as it was":
-            sentence = f"left {shown} as it was: {said}; its runs carry no outcome, so no failures"
         else:
-            sentence = f"{verb} {shown}: {said}; no failures, as these runs carry no outcome"
+            reason = no_failures_why(newest_outcomes(opened[0][0], opened[0][1], quiet=True).counts)
+            if verb == "left as it was":
+                sentence = f"left {shown} as it was: {said}; no failures, as {reason}"
+            else:
+                sentence = f"{verb} {shown}: {said}; no failures, as {reason}"
     else:
         sentence = f"{verb} {shown} with no store yet"
     lines = [f"ok  {sentence}"]

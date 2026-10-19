@@ -46,6 +46,8 @@ class Run:
     declared: Mapping[str, Any]
     files: tuple[Mapping[str, str], ...]
     counts: Mapping[str, int] = field(default_factory=dict)  # the reader's own, as printed
+    # the outcome column's cells as written, each with its rows (a table read by --failed)
+    cells: Mapping[str, int] = field(default_factory=dict)
     # what the summary adds to where the start came from, such as a zone the file left out
     started_note: str | None = None
 
