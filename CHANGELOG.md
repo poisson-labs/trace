@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+Built as `0.1.0rc1`, a private pre-release for design partners, installed from its wheel.
+
 ### An empty JUnit report left out by init
 
 - **`init`** leaves out a JUnit report that holds no test case, as a runner writes when it
