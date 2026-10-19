@@ -40,6 +40,13 @@ Issues = "https://github.com/poisson-labs/trace/issues"
 [tool.hatch.build.targets.wheel]
 packages = ["src/poisson_trace"]
 
+[tool.hatch.build.targets.sdist]
+# the repository's own working rules, and (with hatch_build.py) its ignore file, are not part of
+# the source a user gets
+exclude = ["docs/repo-hygiene.md", "/.gitignore"]
+
+[tool.hatch.build.targets.sdist.hooks.custom]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
