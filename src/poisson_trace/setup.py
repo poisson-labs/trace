@@ -210,6 +210,23 @@ def search(root: Path) -> Found:
     return Found(ordered, files, stopped)
 
 
+def _left_in(files: Sequence[FoundFile]) -> list[FoundFile]:
+    """The files found but the JUnit reports that hold no test case, as a runner writes when it
+    collected none: each is left out, in one line on stderr naming it."""
+    from poisson_trace.ingest import junit
+
+    kept = []
+    for f in files:
+        if f.reader == "junit" and junit.holds_no_test_case(f.path):
+            look.err(
+                f"Leaving out {f.path}: a JUnit report with no test case in it, as a runner "
+                "writes when it collected no test.\n"
+            )
+        else:
+            kept.append(f)
+    return kept
+
+
 def _read_by(
     readers: Mapping[str, Callable[[Path], str | None]], path: Path
 ) -> tuple[str, str] | None:
@@ -842,6 +859,8 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
         look.err(f"Looking for results under {Path.cwd()} …\n")
         found = search(Path("."))
         listed = show(found)
+        if not found.stores:
+            found.files = _left_in(found.files)
         if len(found.stores) > 1 and terminal:
             stores = [(None, _store_question(listed).path)]
         elif found.stores:

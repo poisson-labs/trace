@@ -191,6 +191,28 @@ next: poisson-trace runs
 
 With `trace.toml` there, the import takes its store from it too, so `--store` may be left out.
 
+A report that holds no test case, as a runner writes when it collected no test (pytest exits 5
+and still writes one), has nothing to import. init lists it, leaves it out in one line naming
+it, and imports the other reports; it does not count as a second tool's file either. A report
+that cannot be read still stops the import, naming it, and `poisson-trace import junit` given
+an empty report refuses it:
+
+<!-- command -->
+```
+mkdir -p with-empty && cp tests/fixtures/ingest/junit/humaneval-*.xml with-empty/
+printf '<testsuites><testsuite name="pytest" tests="0" /></testsuites>\n' > with-empty/nothing-collected.xml
+cd with-empty && poisson-trace init --yes --case name
+```
+
+<!-- excerpt exit=0 -->
+```
+  found 3 result files:
+    1) humaneval-a.xml           a JUnit XML report, its root <testsuites>
+    2) humaneval-b.xml           a JUnit XML report, its root <testsuites>
+    3) nothing-collected.xml     a JUnit XML report, its root <testsuites>
+Leaving out nothing-collected.xml: a JUnit report with no test case in it, as a runner writes when it collected no test.
+```
+
 ## What this does not do
 
 - It does not run your tests or your runner. It reads the reports.

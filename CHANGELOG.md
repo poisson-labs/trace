@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### An empty JUnit report left out by init
+
+- **`init`** leaves out a JUnit report that holds no test case, as a runner writes when it
+  collected no test, says so in one line naming the file, and imports the other files it
+  found. Before, that one report stopped the import of every file. Such a report no longer
+  counts as a second tool's file beside a table or DeepEval's results, and a report that cannot
+  be read still stops the import, naming it. `poisson-trace import junit` given an empty report
+  still refuses it.
+
 ### The import under the main command; tables and JUnit reports
 
 - **`poisson-trace import`** is a verb of the main command, listed in its help. It is the

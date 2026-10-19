@@ -117,6 +117,14 @@ def _parser(read: _Read) -> Any:
 
 
 def _report(path: Path, raw: bytes) -> _Read:
+    read = _parsed(path, raw)
+    if not read.cases:
+        raise Refusal(f"{path} holds no test case, so there is nothing to read from it")
+    return read
+
+
+def _parsed(path: Path, raw: bytes) -> _Read:
+    """The report read whole, its test cases possibly none; a file that is no report is refused."""
     if not raw.strip():
         raise Refusal(f"{path} is not a JUnit report: it is empty")
     read = _Read()
@@ -143,8 +151,6 @@ def _report(path: Path, raw: bytes) -> _Read:
             f"{path} is not a JUnit report that can be read: its XML declaration names an "
             "encoding this reader does not take"
         ) from None
-    if not read.cases:
-        raise Refusal(f"{path} holds no test case, so there is nothing to read from it")
     return read
 
 
@@ -229,6 +235,16 @@ def looks_like(path: Path | str) -> str | None:
     if root not in ROOTS:
         return None
     return f"a JUnit XML report, its root <{root}>"
+
+
+def holds_no_test_case(path: Path | str) -> bool:
+    """Whether ``path`` is a report read whole that holds no test case, as a runner writes when it
+    collected no test; it never raises. A file the reader refuses for any other reason is not."""
+    try:
+        found = Path(path)
+        return not _parsed(found, found.read_bytes()).cases
+    except Exception:
+        return False
 
 
 def read(ns: argparse.Namespace) -> Run:
