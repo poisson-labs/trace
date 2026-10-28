@@ -174,6 +174,17 @@ def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]
         indexes.append((name, store_path, index))
         described.append(f"{_store_words(name, store_path)} ({_counted(index)})")
     if held.store is None and not held.named:
+        beside = _store_beside(path, held.names_from)
+        if beside is not None:
+            line, store = beside
+            line = (
+                f"{shown} names no store yet, and {line}: run the command below to set Trace "
+                "up with it"
+            )
+            following = look.command(
+                "poisson-trace", "init", "--force", look.option("--store", store), *reach
+            )
+            return [_check("config", False, line, following), _names(indexes)]
         line = (
             f"{shown} names no store yet: make one with a Prove sweep, or import results another "
             "tool wrote (poisson-trace import --help), then set up again"
@@ -228,6 +239,44 @@ def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]
         )
         return [_check("config", False, line, again), _names(indexes)]
     return [_check("config", True, said), _names(indexes)]
+
+
+# the runs a line names before "and N more"
+_RUNS_NAMED = 3
+
+
+def _store_beside(path: Path, form: str) -> tuple[str, str] | None:
+    """The store init's import writes beside the config, when it holds runs: what it holds, by
+    what wrote them and the runs' names, and the store as the current folder reads it."""
+    from proofload.store import Store
+
+    from poisson_trace.setup import IMPORTED_STORE
+
+    store = config.beside(path, IMPORTED_STORE)
+    runs = _held(store)
+    if not runs:
+        return None
+    try:
+        index = names.index(Store(store), runs, store, lenient=True, form=form)
+    except names.Damaged:
+        return None
+    held = index.runs
+    if not held:
+        return None
+    tools = sorted({r.backend[len(names.IMPORTED) :] for r in held if r.imported})
+    stored = any(not r.imported for r in held)
+    imported = f"imported from {' and '.join(tools)}" if tools else ""
+    what = (
+        imported if not stored else ("Prove stored" if not tools else f"{imported} or Prove stored")
+    )
+    named = sorted(r.name for r in held)
+    shown = ", ".join(named[:_RUNS_NAMED])
+    more = len(named) - _RUNS_NAMED
+    if more > 0:
+        shown += f" and {look.count(more)} more"
+    total = len(held) + len(index.unreadable)
+    counted = f"{look.count(total)} {'run' if total == 1 else 'runs'}"
+    return f"{store} beside it holds {counted} {what} ({shown})", store
 
 
 def _names_unchecked(held: config.Config) -> dict[str, Any]:

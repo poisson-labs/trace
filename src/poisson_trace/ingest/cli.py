@@ -35,8 +35,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from poisson_trace import look
-from poisson_trace.ingest.cut import MISSED
-from poisson_trace.ingest.rows import Refusal, Run
+from poisson_trace.ingest.cut import MET, MISSED
+from poisson_trace.ingest.rows import Refusal, Run, zone_of
 from poisson_trace.look import count
 from poisson_trace.names import import_name_refusal
 
@@ -164,11 +164,10 @@ def _started(text: str) -> str:
     return utc.isoformat().replace("+00:00", "Z")
 
 
-def _zone(started: str) -> tuple[str, str]:
-    """The name and the offset from UTC of this machine's zone at that instant."""
-    local = datetime.fromisoformat(started.replace("Z", "+00:00")).astimezone()
-    offset = local.strftime("%z")
-    return local.strftime("%Z"), f"UTC{offset[:3]}:{offset[3:5]}"
+def _outcomes_said(written: Written, sep: str) -> str:
+    """The outcomes in the summary's words: passed for met, failed for missed."""
+    said = {MET: "passed", MISSED: "failed"}
+    return sep.join(f"{count(n)} {said.get(word, word)}" for word, n in written.outcomes.items())
 
 
 def _sentence(written: Written, store: str) -> str:
@@ -177,20 +176,18 @@ def _sentence(written: Written, store: str) -> str:
     repeats = f"{count(low)} {'repeat' if low == 1 else 'repeats'} each"
     if low != high:
         repeats = f"{count(low)} to {count(high)} repeats"
-    outcomes = ", ".join(f"{word} {count(n)}" for word, n in written.outcomes.items())
     none = sum(written.no_outcome.values())
     no_outcome = f", {count(none)} with no outcome" if none else ""
     return (
         f"wrote run {written.run} to {store}: {count(written.rows)} rows, "
-        f"{count(written.cases)} cases, {repeats}; {outcomes}{no_outcome}"
+        f"{count(written.cases)} cases, {repeats}; {_outcomes_said(written, ', ')}{no_outcome}"
     )
 
 
 def _summary(run: Run, written: Written, store: str, reach: Sequence[str]) -> dict[str, Any]:
     started: dict[str, Any] = {"at": run.started, "from": run.started_from}
     if run.started_from == "file name":
-        name, offset = _zone(run.started)
-        started["zone"] = {"name": name, "offset": offset}
+        started["zone"] = zone_of(run.started)
     if run.started_note is not None:
         started["note"] = run.started_note
     return {
@@ -221,7 +218,147 @@ def _value(value: Any) -> str:
     return value if isinstance(value, str) else json.dumps(value)
 
 
-def _markdown(d: Mapping[str, Any]) -> str:
+def _plural(n: int, one: str, many: str) -> str:
+    return f"{count(n)} {one if n == 1 else many}"
+
+
+def _or(words: Sequence[str]) -> str:
+    return words[0] if len(words) == 1 else ", ".join(words[:-1]) + " or " + words[-1]
+
+
+def _and(words: Sequence[str]) -> str:
+    return words[0] if len(words) == 1 else ", ".join(words[:-1]) + " and " + words[-1]
+
+
+def _failed_when(d: Mapping[str, Any]) -> str:
+    """When a try counts as failed, in the summary's words, from what was declared."""
+    declared, tool = d["declared"], d["tool"]
+    if tool == "junit":
+        return "its test failed or errored"
+    if "outcome_column" in declared:
+        values = _or([json.dumps(v, ensure_ascii=False) for v in declared["failed"]])
+        return f"its {declared['outcome_column']} column reads {values}"
+    if declared.get("cut") == "recorded":
+        return f"DeepEval marked its {declared['metric']} metric as not passed"
+    scored = declared.get("score_column", declared.get("metric"))
+    side = "below" if declared.get("side") == "below" else "above"
+    return f"its {scored} score is {side} {_value(declared['cut'])}"
+
+
+def _import_flags(declared: Mapping[str, Any]) -> list[str]:
+    """The flags that read another file as this one was read, from what was declared."""
+    words: list[str] = []
+    for key, flag in (
+        ("metric", "--metric"),
+        ("score_column", "--score-column"),
+        ("cut", "--cut"),
+    ):
+        if key in declared:
+            words.append(look.option(flag, _value(declared[key])))
+    if declared.get("side") in ("below", "above"):
+        words.append(f"--{declared['side']}")
+    for key, flag in (
+        ("case", "--case"),
+        ("case_column", "--case-column"),
+        ("outcome_column", "--outcome-column"),
+    ):
+        if key in declared:
+            words.append(look.option(flag, _value(declared[key])))
+    words += [look.option("--failed", str(v)) for v in declared.get("failed", ())]
+    return words
+
+
+def _extension(name: str) -> str:
+    """The extensions that say a file's format: ``.csv``, ``.jsonl.gz``."""
+    lowered = name.lower()
+    for ext in (".csv", ".jsonl", ".json", ".parquet", ".xml"):
+        for whole in (ext + ".gz", ext):
+            if lowered.endswith(whole):
+                return name[-len(whole) :]
+    return ""
+
+
+def _summary_lines(d: Mapping[str, Any], reach: Sequence[str]) -> list[str]:
+    """The four lines of the plain summary: what was written, what counts as failed, what it
+    is compared with, and the command to run next."""
+    files = [str(f["name"]) for f in d["files"]]
+    outcomes = d["outcomes"]
+    failed, passed = outcomes.get(MISSED, 0), outcomes.get(MET, 0)
+    none = sum(d["no_outcome"].values())
+    counted = f"{count(failed)} failed and {count(passed)} passed"
+    if none:
+        counted += f"; {count(none)} had no outcome"
+    other = "OTHER" + _extension(files[0])
+    command = look.command(
+        "poisson-trace",
+        "import",
+        d["tool"],
+        other,
+        *reach,
+        "--run OTHER",
+        *_import_flags(d["declared"]),
+    )
+    whose = "file" if len(files) == 1 else "files"
+    tail = ""
+    if "outcome_column" in d["declared"]:
+        tail = "; any other value counts as a pass"
+    return [
+        f"- Wrote: {d['run']} into {d['store']}, from {_and(files)} ({d['tool']}): "
+        f"{_plural(d['rows'], 'try', 'tries')} on {_plural(d['cases'], 'input', 'inputs')}.",
+        f"- Failures: {counted}. A try counts as failed when {_failed_when(d)}{tail}.",
+        "- Compared: Nothing yet. One import is one version.",
+        f"- Next: Import the other version's {whose} the same way: `{command}`.",
+    ]
+
+
+# where a start came from, as the caveat says it
+_STARTED_SAID = {
+    "file time": (
+        "Its start time is when its file was written or copied, so latest and previous won't "
+        "order it: name the runs when you compare them, the older first."
+    ),
+    "earliest span": "Its start time is the earliest span's start in the file.",
+}
+MAX_MDE_ADVICE = (
+    "When you compare, choose the smallest drop that matters to you (--max-mde) before you look "
+    "at any results; Trace then says whether these tries could catch it."
+)
+
+
+def _caveats(d: Mapping[str, Any]) -> list[str]:
+    """What to know before acting on the import: where its start came from, the values counted
+    as a pass, the tests left out, and the ceiling to choose before comparing."""
+    started, tool = d["started"], d["tool"]
+    said: list[str] = []
+    source = started["from"]
+    if source == "file name":
+        zone = started["zone"]
+        said.append(
+            "Its start time is taken from the file's name, which DeepEval writes on its own "
+            f"clock, read as if in this machine's zone, which is a guess ({zone['name']}, "
+            f"{zone['offset']}); if the name was written in another zone, the start is off by "
+            "the difference."
+        )
+    elif source == "file" and tool == "junit":
+        note = f" ({started['note']})" if "note" in started else ""
+        said.append(f"Its start time is the report's earliest suite timestamp{note}.")
+    elif source == "file":
+        said.append("Its start time is a time the tool wrote in the file.")
+    elif source in _STARTED_SAID:
+        said.append(_STARTED_SAID[source])
+    if "outcome_column" in d["declared"]:
+        said.append(
+            f"Every other value of the {d['declared']['outcome_column']} column counts as a pass."
+        )
+    if tool == "junit":
+        said.append("A skipped test has no outcome and is left out.")
+    said.append(MAX_MDE_ADVICE)
+    return said
+
+
+def _written_lines(d: Mapping[str, Any], cells: Mapping[str, int]) -> list[str]:
+    """What was written, as the record of it: the run, the files, what was declared, the start,
+    the counts; for a table read by its outcome column, every value the column holds."""
     started = d["started"]
     source = started["from"]
     if "zone" in started:
@@ -233,22 +370,51 @@ def _markdown(d: Mapping[str, Any]) -> str:
     if "note" in started:
         source += f" ({started['note']})"
     none = d["no_outcome"]
-    lines = [
-        f"{d['verdict']}  {d['sentence']}",
-        "",
-        f"# Poisson Trace · import · {d['run']}",
-        "",
+    declared = d["declared"]
+    if "outcome_column" in declared:
+        failed = [str(v) for v in declared["failed"]]
+        held = sorted(cells.items(), key=lambda kv: (-kv[1], kv[0]))
+        held += [(v, 0) for v in failed if v not in cells]
+        listed = " · ".join(
+            f"{json.dumps(value, ensure_ascii=False)} {_plural(n, 'row', 'rows')}"
+            + (" (counted as failed)" if value in failed else " (counted as passed)")
+            for value, n in held
+        )
+        counted = [f"- the {declared['outcome_column']} column's values: {listed}"]
+    else:
+        counted = [f"- {label}: {count(n)}" for label, n in d["counts"].items()]
+    return [
         f"- run written: {d['run']} · store: {d['store']}",
         f"- tool: {d['tool']}",
         *[f"- file: {f['name']} · sha256 {f['sha256']}" for f in d["files"]],
-        "- declared: " + " · ".join(f"{k} {_value(v)}" for k, v in d["declared"].items()),
+        "- declared: " + " · ".join(f"{k} {_value(v)}" for k, v in declared.items()),
         f"- started: {started['at']} · from: {source}",
         f"- rows {count(d['rows'])} · cases {count(d['cases'])} · repeats of a case: smallest "
         f"{count(d['repeats']['min'])}, largest {count(d['repeats']['max'])}",
         "- outcomes: " + " · ".join(f"{word} {count(n)}" for word, n in d["outcomes"].items()),
         "- rows with no outcome: "
         + (" · ".join(f"{reason} {count(n)}" for reason, n in none.items()) if none else "0"),
-        *[f"- {label}: {count(n)}" for label, n in d["counts"].items()],
+        *counted,
+    ]
+
+
+def _markdown(d: Mapping[str, Any], cells: Mapping[str, int], reach: Sequence[str]) -> str:
+    lines = [
+        f"{d['verdict']}  {d['sentence']}",
+        "",
+        f"# Poisson Trace · import · {d['run']}",
+        "",
+        "## Summary",
+        "",
+        *_summary_lines(d, reach),
+        "",
+        "## Before you act on this",
+        "",
+        *[f"- {caveat}" for caveat in _caveats(d)],
+        "",
+        "## What was written",
+        "",
+        *_written_lines(d, cells),
         "",
         "In the command below, OLD and NEW are this run and the other version's run, "
         "imported into the same store, the older version first. X is the largest limit of "
@@ -347,7 +513,11 @@ def _main(session: look.Session) -> int:
 
     written = write(run, store, form)
     data = _summary(run, written, str(ns.store), reach)
-    look.out(json.dumps(data, indent=2, allow_nan=False) + "\n" if ns.json else _markdown(data))
+    look.out(
+        json.dumps(data, indent=2, allow_nan=False) + "\n"
+        if ns.json
+        else _markdown(data, run.cells, reach)
+    )
     return look.DONE
 
 

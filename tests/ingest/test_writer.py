@@ -134,7 +134,10 @@ def test_ic5_the_manifest_carries_the_fields_of_section_2_5(tmp_path: Path) -> N
     assert m.created_at == "2026-01-02T03:04:05Z"
     assert m.status == "complete"
     imported = m.environment["import"]
-    assert set(imported) == {"tool", "started_from", "declared", "files", "poisson_trace"}
+    # spec section 9.6 item 2 (ruled 2026-10-20, item 5): a start read from a file's name records
+    # the zone it was read in
+    assert set(imported) == {"tool", "started_from", "declared", "files", "poisson_trace", "zone"}
+    assert set(imported["zone"]) == {"name", "offset"}
     assert imported["tool"] == "deepeval"
     assert imported["started_from"] == "file name"
     assert imported["declared"] == declared

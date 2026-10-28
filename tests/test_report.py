@@ -37,11 +37,13 @@ def _words_absent(words: tuple[str, ...]) -> None:
 
 
 def test_tr14_the_band_is_labelled_greenwood_in_the_markdown() -> None:
+    """ST8 (ruled 2026-10-20): the curve is Aalen-Johansen's with finishing a competing end, and
+    its band resamples inputs; the Kaplan-Meier curve and Greenwood's band are retired."""
     result = where(TAU2, TAU2_A, TAU2_EVENTS)
     assert result.code == 0, result.text
     text = norm(result.out)
-    assert "Greenwood" in text
-    assert "Kaplan-Meier" in text
+    assert "Aalen-Johansen" in text and re.search(r"resampl\w* inputs", text)
+    assert "Greenwood" not in text and "Kaplan-Meier" not in text
 
 
 # ---------- TR21 ----------
@@ -172,8 +174,10 @@ def test_tr27_svg_parses_with_one_polyline_per_curve_and_the_labels(tmp_path: Pa
     assert tags.count("polygon") == 1
     text = _svg_text(out)
     assert "step" in text.split()
-    assert "share of runs still going" in text
-    assert "Kaplan-Meier" in text and "Greenwood" in text
+    # ST8 (ruled 2026-10-20): the curve is the share not yet failed, Aalen-Johansen's, banded by
+    # resampling inputs; Kaplan-Meier and Greenwood are retired
+    assert "share of runs not yet failed" in text and "share of runs still going" not in text
+    assert "Kaplan-Meier" not in text and "Greenwood" not in text
     assert "Aalen-Johansen" in text and "bootstrap" in text
 
 
@@ -200,10 +204,13 @@ def test_tr28_every_caption_names_its_test_and_band() -> None:
     c = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.5)
     assert w.code == 0 and c.code == 0, w.text + c.text
     wt, ct = norm(w.out), norm(c.out)
-    for word in ("Kaplan-Meier", "Greenwood", "Aalen-Johansen", "bootstrap"):
+    # ST8 and ST5 (ruled 2026-10-20): Aalen-Johansen with competing ends, a band resampling inputs;
+    # compare's limit from the log-rank's own information, not Schoenfeld's
+    for word in ("Aalen-Johansen", "bootstrap", "resampling inputs"):
         assert word in wt, word
-    for word in ("log-rank", "stratified", "Benjamini-Hochberg", "Schoenfeld"):
+    for word in ("log-rank", "stratified", "Benjamini-Hochberg", "information"):
         assert word in ct, word
+    assert "Schoenfeld" not in ct and "Kaplan-Meier" not in wt and "Greenwood" not in wt
     assert re.search(r"B = \d+", wt) and re.search(r"seed = \d+", wt)
 
 

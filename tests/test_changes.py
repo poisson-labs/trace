@@ -90,14 +90,13 @@ def test_tr57_each_row_is_fisher_on_its_counts_and_flagged_by_its_q(tmp_path: Pa
 
 
 def test_tr58_each_row_carries_proves_per_cell_limit() -> None:
-    from proofload.diff import mde_two_proportion
-
+    """ST9 (ruled 2026-10-20): the per-input limit is dropped, from the table and the JSON, at any
+    alpha; no row carries it (no printed value was reached 4 times in 5 by the flag Trace raises)."""
     for root, a, b, events in ((TAU2, TAU2_A, TAU2_B, TAU2_EVENTS), (TAU2, TAU2_B, PILOT, TAU2_EVENTS)):
         for alpha in ("0.05", "0.1"):
             d = _json(changes(root, a, b, events, "--alpha", alpha, "--json"))
-            for r in d["rows"]:
-                expected = mde_two_proportion(r["failed_a"] / r["runs_a"], r["runs_a"], r["runs_b"], alpha=float(alpha), power=0.8)
-                assert r["limit_rise"] == pytest.approx(expected, abs=1e-12)
+            assert d["rows"] and all(set(r) == FLAG_ROW_KEYS for r in d["rows"])
+            assert "could not have detected a rise below" not in ok(changes(root, a, b, events, "--alpha", alpha)).out
 
 
 # ---------- TR59 ----------
@@ -215,7 +214,7 @@ def test_tr61_changes_json_keys_and_bytes() -> None:
     d = _json(a)
     assert a.out == b.out
     assert tuple(d) == CHANGES_KEYS
-    assert d["schema"] == "poisson-trace.changes/1"
+    assert d["schema"] == "poisson-trace.changes/2"  # ST9 (ruled 2026-10-20)
     assert set(d["runs"]) == {"a", "b"} and all(set(h) == HEADER_KEYS for h in d["runs"].values())
     assert d["events"] == ["unsolved"] and d["alpha"] == 0.05
     assert (d["tested"], d["flagged"]) == (50, 0)

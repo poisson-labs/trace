@@ -7,9 +7,10 @@ stored and answers two questions about them, each with a stated confidence and w
 design could not have detected.
 
 **Where runs die.** `where` puts every run on one clock (the index of the step it was
-executing) and draws the survival curve over that clock: at step 10, what share of runs was
-still going; at step 20; at step 30. Runs that ended normally, timed out or hit the capture
-cap are censored, never counted as deaths. The curve is split by the kind of step runs die at
+executing) and draws the curve of failures over that clock: by step 10, what share of runs
+had not yet failed; by step 20; by step 30. Runs that ended normally or timed out are ends of
+their own, never counted as failures, and only runs that hit the capture cap are censored.
+The curve is split by the kind of step runs die at
 (model call, tool call, guardrail, agent turn), each part with a stated interval. `compare`
 takes two stored runs, a before and an after, and says whether the curves differ.
 
@@ -30,15 +31,15 @@ reader of stored runs: it runs nothing, captures nothing, patches nothing, phone
 
 ## Pre-release for design partners
 
-This is Poisson Trace `0.1.0rc1`, a private pre-release for design partners. It is not on
+This is Poisson Trace `0.1.0rc2`, a private pre-release for design partners. It is not on
 PyPI: the `poisson-trace` and `proofload` you would get there by name are placeholders that do
 not run, so install from the files sent with this README. You get three:
 
 | File | What it is |
 |---|---|
-| `poisson_trace-0.1.0rc1-py3-none-any.whl` | Trace |
+| `poisson_trace-0.1.0rc2-py3-none-any.whl` | Trace |
 | `proofload-0.0.1-py3-none-any.whl` | Prove, whose stores Trace reads, and writes other tools' results into |
-| `poisson_trace-0.1.0rc1.tar.gz` | Trace's source: this README, the pages under `docs/`, and the example files the commands below read |
+| `poisson_trace-0.1.0rc2.tar.gz` | Trace's source: this README, the pages under `docs/`, and the example files the commands below read |
 
 Prove goes by three names for now: Prove in these docs, `proofload` as its package and wheel,
 and `poisson-prove` in Trace's version line. They are the same thing.
@@ -57,18 +58,18 @@ package manager). In the folder holding the three files:
 ```
 python3 -m venv trace-env
 . trace-env/bin/activate
-pip install ./poisson_trace-0.1.0rc1-py3-none-any.whl ./proofload-0.0.1-py3-none-any.whl
+pip install ./poisson_trace-0.1.0rc2-py3-none-any.whl ./proofload-0.0.1-py3-none-any.whl
 poisson-trace --version
 ```
 
 pip takes numpy, scipy, pandas and pyarrow, and the few packages they need, from PyPI. The last line prints
-`poisson-trace 0.1.0rc1 (poisson-prove 0.0.1, Python 3.11.7)`, with your Python's version in
+`poisson-trace 0.1.0rc2 (poisson-prove 0.0.1, Python 3.11.7)`, with your Python's version in
 place of 3.11.7. Then unpack the source archive and work inside it; every command below, and
 every page under `docs/`, runs from there:
 
 ```
-tar -xzf poisson_trace-0.1.0rc1.tar.gz
-cd poisson_trace-0.1.0rc1
+tar -xzf poisson_trace-0.1.0rc2.tar.gz
+cd poisson_trace-0.1.0rc2
 ```
 
 The [Install](#install) section further down, and the Install section at the top of each page
@@ -88,11 +89,14 @@ The first line of every `fix-check` report is its verdict, one of three:
   the runs differ, not why: on its own it does not show that your change caused it. It can
   appear below the limit the report states, which is for a change spread over every input; a
   change in a few inputs, as in the HumanEval pair below, can be seen at a smaller size.
-- *no significant difference*: no difference was seen, and the line says the smallest drop in
-  failure share this design could have seen. A smaller one may be there.
-- *too small to tell*: this design could not have seen a drop as small as the one you asked
-  about (`--max-mde`), whatever happened; the report ends with how many more repeats or inputs
-  would settle it.
+- *no significant difference*: the gap could be chance, and the run rules out a change of the
+  size you asked about (`--max-mde`). Where its range of differences is reliable, the range
+  lies inside plus or minus that size, either way; where the range is too rough to use, the
+  smallest drop the design could catch is under it. A smaller change may still be there.
+- *too small to tell*: these tries cannot rule out a change of the size you asked about
+  (`--max-mde`): the range still reaches it, or, where the range is too rough to use, the
+  design could not catch a drop that small. Where more tries would settle it, the report says
+  how many.
 
 `--max-mde` is the smallest drop in failure share you want to be able to see, as a fraction
 (0.10 is ten points). Set it to the smallest improvement that would matter to you, before
@@ -118,7 +122,7 @@ ok  wrote trace.toml: store proofload-runs (3 runs), failures unsolved
 
 <!-- excerpt exit=0 -->
 ```
-too small to tell  could not have detected a drop in failure share below 11.1 points, and 10 was asked for
+no significant difference  the gap could be chance
 ```
 
 DeepEval's saved test runs: one agent run twice on 164 HumanEval problems, 56 minutes apart,
@@ -147,7 +151,7 @@ ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
 
 <!-- excerpt exit=0 -->
 ```
-different  the new version failed more on these inputs (exact Cochran-Mantel-Haenszel, stratified by input, p = 0.036)
+different  the new version failed slightly more often
 ```
 
 Ragas's score table, a base model and its fine-tuned version: a faithfulness score below the
@@ -169,7 +173,7 @@ ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
 
 <!-- excerpt exit=0 -->
 ```
-too small to tell  could not have detected a drop in failure share below 15.9 points, and 10 was asked for
+too small to tell  too few tries to see a 10-point drop
 ```
 
 Any table of results: the same HumanEval pair saved as CSV. The column `outcome` holds each
@@ -191,13 +195,13 @@ ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
 
 <!-- excerpt exit=0 -->
 ```
-different  the new version failed more on these inputs (exact Cochran-Mantel-Haenszel, stratified by input, p = 0.036)
+different  the new version failed slightly more often
 ```
 
 JUnit XML reports: pytest replaying the same pair, four repeats at one temperature where the
 files above hold 32 at two. A failure or an error is missed, and `--case name` matches tests
 by name. At this size the difference the two readers above found is not there to see, and
-the line says how small a drop it could have seen ([JUnit page](docs/integrations/junit.md)):
+the report says which differences its results still fit ([JUnit page](docs/integrations/junit.md)):
 
 <!-- command -->
 ```
@@ -215,7 +219,7 @@ ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
 
 <!-- excerpt exit=0 -->
 ```
-no significant difference  p = 0.639; could not have detected a drop in failure share below 3.2 points
+no significant difference  the gap could be chance
 ```
 
 In any of these folders, `poisson-trace runs` lists the runs and `poisson-trace doctor` says
@@ -332,7 +336,7 @@ What it found, on stderr:
 
 <!-- excerpt exit=0 -->
 ```
-  found 1 Prove store:
+  found 1 store:
     1) proofload-runs            3 runs · tau2-airline · newest 2026-09-17
 Using proofload-runs, the store found.
 ```
@@ -579,18 +583,22 @@ For `fix-check` and `changes`:
 - Neither verb reads a trace, a seed or a replicate index. They work on a run stored with no
   capture, and repeat runs of one input are read as separate draws, never as replays.
 
-`where` prints the survival curve over step index with a 95% band (Kaplan–Meier,
-Greenwood), the median step, the deaths by kind of step with a bootstrap band on each
-(Aalen–Johansen), the counts of runs ended, timed out, capped and excluded, and a closing
-block of what the curve cannot say.
+`where` prints the share of tries not yet failed by each step, with a 95% band from
+resampling inputs (Aalen–Johansen, with finishing and timing out as ends of their own and
+only capped tries censored), the median step of the failed tries and the step by which half
+of all tries had failed, each kind of step's share of tries failed by the last step, the
+counts of tries finished, timed out, capped and excluded, and a closing block of what the
+curve cannot say.
 
 `compare` prints the log-rank test stratified by config cell over the cells both runs
-carry, the direction, the minimum detectable hazard ratio (Schoenfeld, 80% power) and one
-of three lines: *different*, *no significant difference*, or *too small to tell*.
+carry, the direction, the hazard ratio after against before with its range, the smallest
+hazard ratio the test's own information could catch four times in five, and one of three
+lines: *different*, *no significant difference*, or *too small to tell*.
 
 `fix-check` prints the control (how often the old version failed when re-run on the same
 inputs, beside the new), the exact conditional Cochran–Mantel–Haenszel test stratified by
-input, the difference in points with Sato's interval, a second reading by input that does
+input, the difference in points with its range (the stratified Miettinen–Nurminen
+interval), a second reading by input that does
 not assume repeats are independent, how consistent the failures were, the smallest drop and
 rise in failure share it could have detected, one of the three lines, and the per-input
 table of `changes`.
@@ -666,10 +674,22 @@ poisson-trace where "cs_agents 2026-09-25 a" --store tests/fixtures/cs \
 
 <!-- output exit=0 -->
 ```
-ok  7 of 24 placed episodes died, 4 at a model call and 3 at an agent step; median step 50
+ok  7 of 24 tries failed; their last steps: 4 at a model call and 3 at an agent step (not necessarily the cause)
   wrote  docs/figures/cs-record.svg
 
 # Poisson Trace · where runs die · cs_agents 2026-09-25 a
+
+## Summary
+
+- Read: cs_agents 2026-09-25 a (cs_agents/record): 24 tries, each placed at the turn where it stopped.
+- Question: At which turn do failing tries stop?
+- Answer: 7 of 24 failed. Their last steps: 4 at a model call and 3 at an agent step (not necessarily the cause), between turn 24 and turn 58.
+- Next: Before blaming that step, see where passing tries stop too: `poisson-trace where "cs_agents 2026-09-25 a" --store tests/fixtures/cs --event PASSING-OUTCOME`, naming an outcome other than app_error, forbidden_action, max_turns or unresolved (init lists a store's outcomes).
+
+## Before you act on this
+
+- The turn is where a try stopped, not where it went wrong; the kind of step is that of its last turn, not the cause. Check what passing tries end on before reading it as one part's fault.
+- One run shows where tries stop, not whether a change moved anything.
 
 ## Run
 
@@ -678,48 +698,50 @@ ok  7 of 24 placed episodes died, 4 at a model call and 3 at an agent step; medi
 - placement: placed 24 · died 7 · ended 17 · timed out 0 · capped 0 · excluded 0
 - events: app_error, forbidden_action, max_turns, unresolved
 
-## Survival over step index
+## Share not yet failed, by turn
 
-Kaplan–Meier over leaf-span index; band: Greenwood, plain, 95%.
+Aalen–Johansen over leaf-span index: finishing without failing and timing out are ends of their own, and only capped tries are censored; band: bootstrap 95%, resampling inputs, B = 1,000, seed = 0.
 
-| step | at risk | died | S | 95% band |
+| turn | at risk | failed | not yet failed | 95% band |
 |---|---|---|---|---|
-| 24 | 18 | 1 | 0.944 | 0.839 – 1.000 |
-| 30 | 15 | 1 | 0.881 | 0.727 – 1.000 |
-| 33 | 11 | 1 | 0.801 | 0.596 – 1.000 |
-| 35 | 10 | 1 | 0.721 | 0.484 – 0.959 |
-| 48 | 5 | 1 | 0.577 | 0.261 – 0.893 |
-| 50 | 4 | 1 | 0.433 | 0.092 – 0.774 |
-| 58 | 2 | 1 | 0.216 | 0.000 – 0.561 |
+| 24 | 18 | 1 | 0.958 | 0.875 – 1.000 |
+| 30 | 15 | 1 | 0.917 | 0.750 – 1.000 |
+| 33 | 11 | 1 | 0.875 | 0.708 – 1.000 |
+| 35 | 10 | 1 | 0.833 | 0.667 – 1.000 |
+| 48 | 5 | 1 | 0.792 | 0.583 – 1.000 |
+| 50 | 4 | 1 | 0.750 | 0.500 – 1.000 |
+| 58 | 2 | 1 | 0.708 | 0.417 – 1.000 |
 
-median step: 50
-S(20) = 1.000 (1.000 – 1.000)
-S(40) = 0.721 (0.484 – 0.959)
+median turn of the failed tries: 35
+the share failed stayed under one half: 0.292 by the last failure
+not yet failed by turn 20: 1.000 (1.000 – 1.000)
+not yet failed by turn 40: 0.833 (0.667 – 1.000)
 
 ## Where they die, by kind of step
 
-Aalen–Johansen cumulative incidence; band: bootstrap 95%, B = 1,000, seed = 0.
+Aalen–Johansen: each kind's share of tries failed by turn 59, and the share that timed out; band: bootstrap 95%, resampling inputs, B = 1,000, seed = 0.
 
-| kind | deaths | F at step 58 | 95% band |
+| kind | tries | share by turn 59 | 95% band |
 |---|---|---|---|
-| llm | 4 | 0.343 | 0.056 – 0.679 |
-| agent | 3 | 0.441 | 0.000 – 0.871 |
+| llm | 4 | 0.167 | 0.000 – 0.333 |
+| agent | 3 | 0.125 | 0.000 – 0.250 |
+| timed out | 0 | 0.000 | 0.000 – 0.000 |
 
-sum of F = 1 − S = 0.784 (1 − 0.216)
+the kinds' shares add to the share failed, 1 − not yet failed = 0.292 (1 − 0.708); timed out is an end of its own and not among them
 
 ## What this cannot say
 
 - The step index is where the run stopped, not why. A run that died at a tool step may have gone wrong three steps earlier.
-- Timed-out and capped runs are censored at their last recorded step. If they would have died soon after, the curve is optimistic by that much; the header counts them.
+- Capped runs are censored at their last recorded step. If they would have died soon after, the curve is optimistic by that much. A run that timed out ends where it stopped, counted beside the kinds and not as a death; the header counts both.
 - Excluded rows are not on the curve; the header counts them by reason.
 - On one run, this is a description. Only a comparison of two stored runs on the same cells says whether anything moved, and only within what it could not have detected.
 
 next: poisson-trace fix-check --help
 ```
 
-Seven of 24 runs died, four at a model call and three at a guardrail agent. The Greenwood
-band at step 40 spans a quarter of the axis and the bootstrap bands on the two kinds span
-most of `[0, 1]`: 24 episodes is a description, and the report says so.
+Seven of 24 tries failed, four at a model call and three at a guardrail agent. The bands
+come from resampling the run's few inputs, so they are wide: 24 tries is a description, and
+the report says so.
 
 [`docs/figures/cs-record.svg`](docs/figures/cs-record.svg) is the `--svg` output of that
 command (`--force` because the clone already holds it).
@@ -728,8 +750,9 @@ command (`--force` because the clone already holds it).
 
 `tests/fixtures/tau2` holds two runs of `tau2-airline/gpt-4.1-mini-2025-04-14@v0`: 50
 tasks × 4 replicates each, the same seeds, ten minutes apart, nothing changed between them.
-On the first, `where` places 200 runs, 110 died and 90 ended; steps run from 6 to 44 with a
-median step of 22; `S(10)`, `S(20)` and `S(30)` are 0.964, 0.599 and 0.163
+On the first, `where` places 200 tries, 110 failed and 90 finished; steps run from 6 to 44,
+the median step of the failed tries is 20, half of all tries had failed by step 30, and the
+shares not yet failed by steps 10, 20 and 30 are 0.965, 0.695 and 0.490
 ([`docs/figures/tau2-a.svg`](docs/figures/tau2-a.svg)). Comparing the two as a before and
 an after, with a ceiling of 1.3 on the minimum detectable hazard ratio:
 
@@ -741,9 +764,26 @@ poisson-trace compare "tau2-airline 2026-09-15 a" "tau2-airline 2026-09-15 b" \
 
 <!-- output exit=0 -->
 ```
-too small to tell  could not have detected a hazard ratio below 1.457, and 1.3 was asked for
+too small to tell  too few failures to see a 1.3-fold change
 
 # Poisson Trace · compare · tau2-airline 2026-09-15 a (before) and tau2-airline 2026-09-15 b (after)
+
+## Summary
+
+- Compared: before tau2-airline 2026-09-15 a against after tau2-airline 2026-09-15 b, on the same 50 inputs: 200 tries each. A try counts as failed when it ended unsolved.
+- Question: Step by step, among tries still going, did the after version fail more or less often? You asked to see that rate change 1.3-fold, either way.
+- Answer: Can't tell yet. 112 of 200 tries failed after and 110 of 200 before; by Trace's estimate these tries would catch a 1.60-fold change in that rate 4 times in 5, and you asked about 1.3-fold; after against before, the per-step failure rate is 1.11 times as high (0.80 to 1.55).
+- Next: Run each version 11 times on each of these 50 inputs with your own harness, then run `poisson-trace compare` on the two new runs.
+
+## Before you act on this
+
+- They started 10 min apart. Trace can't tell whether they were run side by side, so anything else that changed between them (the provider, the model behind the API, the day) may be part of the difference, in either direction.
+- Both runs name the same target (tau2-airline/gpt-4.1-mini-2025-04-14@v0); Trace can't tell what differs between them, only what you tell it.
+- A try that finished without failing counts as still going up to its last step, so this mixes how often and how early tries fail. Tries of the same input are counted as separate chances; if they are near copies, this is more confident than it should be.
+- A 1.60-fold change means the per-step failure rate among tries still going rises 1.60 times, or falls to 0.62 of what it was; it is not the ratio of the failure counts.
+- This asks whether failures come sooner or later among tries still going. Whether a version fails more often overall is fix-check's question, and on the same two runs the two can read differently.
+- The 11 times per input is an estimate from these runs' failure rates. Even with good estimates, about half of runs built to it end up a little too small. Make it a fresh run, judged on its own.
+- If a 1.60-fold change is the smallest that matters to you, and you would have said so before seeing this, `--max-mde-hr 1.604` accepts this design as it stands. That changes the label only, not the evidence.
 
 ## Run A (before)
 
@@ -761,7 +801,7 @@ too small to tell  could not have detected a hazard ratio below 1.457, and 1.3 w
 
 ## Comparison
 
-log-rank, stratified by config cell over 50 common cells (excluded: 0 in A only, 0 in B only), unpaired (the runs share a run_salt); α = 0.05.
+log-rank, stratified by config cell over 50 common cells (excluded: 0 in A only, 0 in B only), unpaired, though the runs share a run_salt; α = 0.05.
 
 | arm | placed | died | observed | expected |
 |---|---|---|---|---|
@@ -770,9 +810,15 @@ log-rank, stratified by config cell over 50 common cells (excluded: 0 in A only,
 
 statistic: χ² = 0.411 on 1 d.f., variance 35.223, p = 0.521
 direction: runs die later in A (before) than in B (after): runs die earlier in B
-S_B(10) − S_A(10) = 0.005 (-0.031 – 0.041, Wald 95%)
-S_B(20) − S_A(20) = -0.050 (-0.164 – 0.065, Wald 95%)
-S_B(30) − S_A(30) = 0.064 (-0.048 – 0.176, Wald 95%)
+hazard ratio, after against before: 1.11 (0.80 to 1.55, 95%); Peto's one-step estimate from the observed, expected and variance above
+
+The test compares, step by step, the failure rate among tries still going; the rows by step below and the curves `poisson-trace where` draws give the share of tries failed by a step. A version whose tries finish sooner can differ in one and not the other.
+
+Share of tries not yet failed by a step (Aalen-Johansen, finishing and timing out as ends of their own); band: bootstrap 95%, resampling inputs, both runs' tries on an input drawn together, B = 2,000, seed = 0.
+
+not yet failed by step 10: after 0.970, before 0.965, after minus before 0.005 (-0.030 – 0.045)
+not yet failed by step 20: after 0.655, before 0.695, after minus before -0.040 (-0.105 – 0.030)
+not yet failed by step 30: after 0.500, before 0.490, after minus before 0.010 (-0.055 – 0.075)
 
 ### Per kind
 
@@ -780,51 +826,51 @@ cause-specific log-rank, stratified by config cell, deaths of other kinds censor
 
 | kind | deaths A | deaths B | χ² | p | q | could not have detected a hazard ratio below |
 |---|---|---|---|---|---|---|
-| llm | 110 | 112 | 0.411 | 0.521 | 0.521 | 1.457 |
+| llm | 110 | 112 | 0.411 | 0.521 | 0.521 | 1.603 |
 
-could not have detected a hazard ratio below 1.457 (Schoenfeld, 80% power, α = 0.05, 222 deaths over the common cells, allocation 0.500)
+could not have detected a hazard ratio below 1.603 (from the log-rank's own information, its variance 35.223 over the common cells; 80% power, α = 0.05)
 
-**too small to tell: could not have detected a hazard ratio below 1.457, and 1.3 was asked for**
+**too small to tell: could not have detected a hazard ratio below 1.603, and 1.3 was asked for**
 
 ## Guidance
 
-- deaths: 457 would bring the detectable hazard ratio to 1.3; this design has 222
-- runs: 824 placed runs at the present share of deaths, which is 103 inputs at the present repeats, or 9 repeats per arm on these 50; this design has 400 placed runs
-- ceiling: --max-mde-hr 1.457 accepts this design as it stands
+- tries: 11 per input per version on these 50 inputs would bring the detectable hazard ratio to 1.3: the log-rank's expected information there, 114.5, reaches the 114.0 that 1.3 needs; this design has 4
+- ceiling: --max-mde-hr 1.604 accepts this design as it stands
 
-These numbers assume the share of runs that die holds in the next runs, and that new inputs resemble the present ones. It is a guide to the next design and not a promise about it: a design built to the number has an expected limit at the ceiling asked for, so about half the time its own limit will land a little above.
+These numbers assume each input fails and finishes, step by step, at the rates these two runs show (no change between the versions), and that the next runs are on the same inputs. It is a guide to the next design and not a promise about it: a design built to the number has an expected limit at the ceiling asked for, so about half the time its own limit will land a little above.
 
 For the share of runs that fail, input by input, and the inputs that changed: poisson-trace fix-check A B --inputs all
 
 ## What this cannot say
 
 - The step index is where the run stopped, not why. A run that died at a tool step may have gone wrong three steps earlier.
-- Timed-out and capped runs are censored at their last recorded step. If they would have died soon after, the curve is optimistic by that much; the header counts them.
+- Capped runs are censored at their last recorded step. If they would have died soon after, the curve is optimistic by that much. A run that timed out ends where it stopped, counted beside the kinds and not as a death; the header counts both.
 - Excluded rows are not on the curve; the header counts them by reason.
 - On one run, this is a description. Only a comparison of two stored runs on the same cells says whether anything moved, and only within what it could not have detected.
 
 next: poisson-trace fix-check "tau2-airline 2026-09-15 a" "tau2-airline 2026-09-15 b" --store tests/fixtures/tau2 --event unsolved --inputs all
 ```
 
-It exits 0, as every printed result does, and the guidance says what would settle it: 457
-deaths, which is 824 placed runs, 103 inputs at 4 repeats or 9 repeats per arm on these 50.
+It exits 0, as every printed result does, and the guidance says what would settle it: 11
+tries per input per version on these 50, where the runs had 4. Its summary gives the
+hazard ratio after against before as 1.11, with a range of 0.80 to 1.55.
 With the ceiling the report offers,
 
 <!-- command -->
 ```
 poisson-trace compare "tau2-airline 2026-09-15 a" "tau2-airline 2026-09-15 b" \
-  --store tests/fixtures/tau2 --event unsolved --max-mde-hr 1.457
+  --store tests/fixtures/tau2 --event unsolved --max-mde-hr 1.604
 ```
 
 the same numbers end
 
 <!-- excerpt exit=0 -->
 ```
-**no significant difference (p = 0.521); could not have detected a hazard ratio below 1.457**
+**no significant difference (p = 0.521); could not have detected a hazard ratio below 1.603**
 ```
 
 with no guidance block. That pair of lines is the point: the same agent run twice, 400
-episodes, and the design could still not have seen a 40% change in the hazard.
+episodes, and the design could still not have caught a 60% change in the hazard four times in five.
 
 ### A real before and after: the patched pilot
 
@@ -843,9 +889,28 @@ poisson-trace fix-check previous latest --store tests/fixtures/tau2 --event unso
 
 <!-- output exit=0 -->
 ```
-too small to tell  could not have detected a drop in failure share below 64.3 points, and 20 was asked for
+too small to tell  too few tries to see a 20-point drop
 
 # Poisson Trace · fix check · tau2-airline 2026-09-15 b (old) and tau2-airline 2026-09-17 a (new)
+
+## Summary
+
+- Compared: old tau2-airline 2026-09-15 b against new tau2-airline 2026-09-17 a, on the 6 inputs that failed in tau2-airline 2026-09-15 a and were run again: 24 tries of the old, 6 of the new. A try counts as failed when it ended unsolved.
+- Question: Did the new version fail more or less often than the old? You asked that the run be able to catch a 20-point drop in how often it fails.
+- Answer: Can't tell yet. The new version failed 3 of 6 tries and the old 18 of 24; by Trace's rough estimate, these tries would catch a 64-point drop 4 times in 5 and smaller ones less often, and you asked for 20.
+- Next: Run each version 16 times on each of these 6 inputs (or, to avoid picking which to re-run, on all 37 that failed in tau2-airline 2026-09-15 a; Trace has not sized that) with your own harness, then run `poisson-trace fix-check` on the two new runs.
+
+## Before you act on this
+
+- They started 40 h 50 min apart. Trace can't tell whether they were run side by side, so anything else that changed between them (the provider, the model behind the API, the day) may be part of the difference, in either direction.
+- Both runs name the same target (tau2-airline/gpt-4.1-mini-2025-04-14@v0); Trace can't tell what differs between them, only what you tell it.
+- 37 inputs failed in tau2-airline 2026-09-15 a; only the 6 run again on both versions are compared, so this speaks for those alone. If those were picked for re-running because they looked repaired, the result leans the new version's way.
+- On these inputs, picked because they failed in tau2-airline 2026-09-15 a, the old version's run passed 6 of 24 tries. Inputs picked for failing once often do not fail when run again, so not failing on a re-run is not a repair by itself; Trace compares the new version's passes with the old version's, allowing for chance.
+- These results fit anything from 62 fewer failures per 100 tries to 11 more, but that range is only a rough guide here and may be off either way (fewer than 10 inputs vary and one try per input on the new version): don't use it to rule sizes in or out.
+- This design is weak at spotting the new version failing more: even if it failed every try, Trace would catch that less than 4 times in 5. So this is no evidence that the new version does not fail more often.
+- Tries of the same input are counted as separate chances, and if they are near copies the answer is more confident than it should be.
+- The 16 times per input is an estimate from these runs' failure rates (one try per input on one version, so rough). 55 inputs like these at the present tries would do the same, but only 37 such inputs exist. Even with good estimates, about half of runs built to it end up a little too small. Make it a fresh run, judged on its own: don't add tries to these and test again.
+- If a 64-point drop is the smallest that matters to you (the old version failed 75.0% of tries), and you would have said so before seeing this, `--max-mde 0.6430` accepts this design as it stands. That changes the label only, not the evidence.
 
 ## Runs
 
@@ -862,7 +927,7 @@ too small to tell  could not have detected a drop in failure share below 64.3 po
 
 ## The control
 
-The old version, re-run on the same inputs with nothing changed.
+The old version's run on the inputs that failed in tau2-airline 2026-09-15 a, beside the new.
 
 | version | runs | failed | failure share | did not fail on re-run |
 |---|---|---|---|---|
@@ -876,7 +941,7 @@ Re-running these inputs and counting the runs that did not fail would have read 
 exact conditional Cochran-Mantel-Haenszel test, stratified by input over 6 inputs (4 informative), two-sided; α = 0.05.
 
 new failures: observed 3, expected 4.200, variance 0.800; p = 0.269
-difference: -25.0 points, new minus old (-60.1 to +10.1; Mantel-Haenszel weights; interval: Sato variance, large-sample, 95%)
+difference: -25.0 points, new minus old (-61.5 to +11.3; Mantel-Haenszel weights; range: stratified Miettinen-Nurminen score interval, 95%, for these inputs as run; rough here: fewer than 10 inputs vary and one try per input on the new version)
 by input: p = 0.375 (sign-flip over the 4 inputs that moved, exact); not part of the line below
 
 ## Consistency
@@ -905,14 +970,14 @@ These numbers assume the next runs fail at the rates these did, input by input, 
 
 Fisher's exact test per input, Benjamini-Hochberg at q = 0.05 over 6 inputs; 0 flagged.
 
-| input | old failed/runs | new failed/runs | change | p | q | flag | could not have detected a rise below |
-|---|---|---|---|---|---|---|---|
-| {"task_id":"2"} | 3/4 | 0/1 | -75.0 points | 0.400 | 1.000 | – | 25.0 points |
-| {"task_id":"5"} | 3/4 | 0/1 | -75.0 points | 0.400 | 1.000 | – | 25.0 points |
-| {"task_id":"7"} | 4/4 | 1/1 | 0.0 points | 1.000 | 1.000 | – | 12.5 points |
-| {"task_id":"9"} | 4/4 | 1/1 | 0.0 points | 1.000 | 1.000 | – | 12.5 points |
-| {"task_id":"1"} | 3/4 | 1/1 | +25.0 points | 1.000 | 1.000 | – | 25.0 points |
-| {"task_id":"3"} | 1/4 | 0/1 | -25.0 points | 1.000 | 1.000 | – | 75.0 points |
+| input | old failed/runs | new failed/runs | change | p | q | flag |
+|---|---|---|---|---|---|---|
+| {"task_id":"2"} | 3/4 | 0/1 | -75.0 points | 0.400 | 1.000 | – |
+| {"task_id":"5"} | 3/4 | 0/1 | -75.0 points | 0.400 | 1.000 | – |
+| {"task_id":"7"} | 4/4 | 1/1 | 0.0 points | 1.000 | 1.000 | – |
+| {"task_id":"9"} | 4/4 | 1/1 | 0.0 points | 1.000 | 1.000 | – |
+| {"task_id":"1"} | 3/4 | 1/1 | +25.0 points | 1.000 | 1.000 | – |
+| {"task_id":"3"} | 1/4 | 0/1 | -25.0 points | 1.000 | 1.000 | – |
 
 A lone changed input is flagged only if its p is below α / M = 0.00833, and the smallest p an input of this design can give is 0.2: no input can be flagged whatever happens; a lone complete flip needs 5 repeats per arm. An input with no flag is not an input that did not change.
 
@@ -925,7 +990,7 @@ A lone changed input is flagged only if its p is below α / M = 0.00833, and the
 - Trace reads the runs it is given. If the inputs were chosen by the old arm's own outcomes, or the more favourable of several runs was handed over, the confidence printed does not hold.
 - The detection limit and the run counts are computed from these runs' own failure rates, which are estimates. They are a guide to the next design, not a promise about it.
 
-next: run 16 repeats per arm on these 6 inputs, then poisson-trace fix-check again
+next: run 16 repeats per arm on these 6 inputs, then poisson-trace fix-check on the two new runs
 ```
 
 Counting re-runs reads "3 of 6 failing inputs now succeed". The control says a
@@ -962,9 +1027,22 @@ poisson-trace changes "golden-pilot 2026-09-05 a" "golden-pilot 2026-09-05 b" \
 
 <!-- output exit=0 -->
 ```
-ok  2 of 328 inputs changed: task_id HumanEval/129 at temperature 0.7 failed more in B; task_id HumanEval/129 at temperature 0.0 failed more in B
+ok  2 of 328 inputs stand out: task_id HumanEval/129 at temperature 0.7 failed more in B; task_id HumanEval/129 at temperature 0.0 failed more in B
 
 # Poisson Trace · changes · golden-pilot 2026-09-05 a (A) and golden-pilot 2026-09-05 b (B)
+
+## Summary
+
+- Compared: A golden-pilot 2026-09-05 a against B golden-pilot 2026-09-05 b, input by input, on 328 inputs: 32 per input.
+- Question: Which single inputs failed more or less often in B than in A?
+- Answer: 2 inputs stand out. In B, task_id HumanEval/129 at temperature 0.7 failed 32 of 32 tries against 12 of 32 in A; task_id HumanEval/129 at temperature 0.0 failed 32 of 32 tries against 20 of 32 in A.
+- Next: See whether the versions differ overall: `poisson-trace fix-check "golden-pilot 2026-09-05 a" "golden-pilot 2026-09-05 b" --store tests/fixtures/humaneval --event failed_assertion --event crashed --inputs all --max-mde X`, choosing X before you look.
+
+## Before you act on this
+
+- They started 56 min apart. Trace can't tell whether they were run side by side, so anything else that changed between them (the provider, the model behind the API, the day) may be part of the difference, in either direction.
+- Both are task_id HumanEval/129 at different settings, which may be one fault rather than 2.
+- Trace's rule keeps false alarms to at most about 1 in 20 of flagged inputs on average, if tries of an input are independent; a flag says the runs differ on that input, not why. An input with no flag may still have changed.
 
 ## Runs
 
@@ -980,10 +1058,10 @@ ok  2 of 328 inputs changed: task_id HumanEval/129 at temperature 0.7 failed mor
 
 Fisher's exact test per input, Benjamini-Hochberg at q = 0.05 over 328 inputs; 2 flagged.
 
-| input | A failed/runs | B failed/runs | change | p | q | flag | could not have detected a rise below |
-|---|---|---|---|---|---|---|---|
-| {"task_id":"HumanEval/129","temperature":0.7} | 12/32 | 32/32 | +62.5 points | 2.30e-08 | 7.55e-06 | failed more in B | 34.2 points |
-| {"task_id":"HumanEval/129","temperature":0.0} | 20/32 | 32/32 | +37.5 points | 1.38e-04 | 0.023 | failed more in B | 28.9 points |
+| input | A failed/runs | B failed/runs | change | p | q | flag |
+|---|---|---|---|---|---|---|
+| {"task_id":"HumanEval/129","temperature":0.7} | 12/32 | 32/32 | +62.5 points | 2.30e-08 | 7.55e-06 | failed more in B |
+| {"task_id":"HumanEval/129","temperature":0.0} | 20/32 | 32/32 | +37.5 points | 1.38e-04 | 0.023 | failed more in B |
 
 2 of 328 inputs shown, by ascending p; --json lists all.
 
@@ -1019,7 +1097,7 @@ poisson-trace fix-check "golden-pilot 2026-09-05 a" "golden-pilot 2026-09-05 b" 
 exact conditional Cochran-Mantel-Haenszel test, stratified by input over 328 inputs (58 informative), two-sided; α = 0.05.
 
 new failures: observed 1,387, expected 1,362.500, variance 131.139; p = 0.036
-difference: +0.47 points, new minus old (+0.04 to +0.90; Mantel-Haenszel weights; interval: Sato variance, large-sample, 95%)
+difference: +0.47 points, new minus old (+0.04 to +0.93; Mantel-Haenszel weights; range: stratified Miettinen-Nurminen score interval, 95%, for these inputs as run)
 by input: p = 0.127 (sign-flip over the 47 inputs that moved, 100,000 draws, seed = 0); not part of the line below
 ```
 
@@ -1037,12 +1115,12 @@ side by side.
 ### Guidance: what would settle it
 
 The tau2 pair again, nothing changed, this time asking whether the share of runs that fail
-moved by 10 points:
+moved by 7.5 points:
 
 <!-- command -->
 ```
 poisson-trace fix-check "tau2-airline 2026-09-15 a" "tau2-airline 2026-09-15 b" \
-  --store tests/fixtures/tau2 --event unsolved --inputs all --max-mde 0.10
+  --store tests/fixtures/tau2 --event unsolved --inputs all --max-mde 0.075
 ```
 
 <!-- excerpt exit=0 -->
@@ -1059,22 +1137,25 @@ proportional change on every input, 80% power, α = 0.05, continuity-corrected n
 - a drop in failure share: could not have detected one below 11.1 points
 - a rise in failure share: could not have detected one below 10.8 points
 
-**too small to tell: could not have detected a drop in failure share below 11.1 points, and 10 was asked for**
+The line below follows the range, which is reliable here; these limits are for planning the next run.
+
+**too small to tell: the 95% range, -6.0 to +8.1 points, does not lie inside ±7.5, which was asked for**
 
 ## Guidance
 
-- repeats: 5 per arm on these 50 inputs would bring the limit to 10 points
-- inputs: 61 inputs like these, at the present repeats, would do the same
-- ceiling: --max-mde 0.1109 accepts this design as it stands
+- repeats: 9 per arm on these 50 inputs would bring the limit to 7.5 points
+- inputs: 101 inputs like these, at the present repeats, would do the same
+- ceiling: --max-mde 0.0812 accepts this design as it stands
 
 These numbers assume the next runs fail at the rates these did, input by input, and that new inputs resemble the present ones: for failing inputs chosen by a rule, chosen by the same rule. It is a guide to the next design and not a promise about it: a design built to the number has an expected limit at the ceiling asked for, so about half the time its own limit will land a little above.
 ```
 
 Failures on these tasks are consistent (an input that failed once fails again 79% of the
 time), so comparing inside each input needs fewer than half the runs a pooled comparison
-would. Even so, 200 runs per arm could not have detected a drop smaller than 11.1 points.
-With `--max-mde 0.1109`, the ceiling the report offers, the same numbers read *no
-significant difference*. The per-input table of the same report ends
+would. Their range, -6.0 to +8.1 points, leaves out a drop of 7.5 points but not a rise of
+7.5, so the report cannot rule out a change that size either way. With `--max-mde 0.0812`,
+the ceiling the report offers, the same numbers read *no significant difference*, as they do
+at 0.10: the range lies inside plus or minus 10. The per-input table of the same report ends
 
 <!-- excerpt exit=0 -->
 ```
@@ -1092,9 +1173,15 @@ so on this design no change to a single task could have been flagged at all.
   two-sided, with no normal approximation. An input that always fails, or never does, adds
   nothing: no signal and no noise. With one input it is Fisher's exact test; with one run
   per arm per input it is the exact McNemar test.
-- **The difference** is the Mantel–Haenszel risk difference in points, new minus old, with
-  Sato's variance for the interval. The interval is large-sample and labelled so. The line
-  follows the test, never the interval, and the report says so when the two disagree.
+- **The difference** is the Mantel–Haenszel risk difference in points, new minus old. Its
+  range is the stratified Miettinen–Nurminen score interval with Mantel–Haenszel weights, for
+  these inputs as run. It is called reliable when it exists, agrees with the test, at least 10
+  inputs vary, and neither version ran once on most inputs; otherwise the report calls it
+  rough here and says why.
+- **The line** is *different* when the test says so. Otherwise, where the range is reliable,
+  it is *no significant difference* when the range lies inside plus or minus `--max-mde` and
+  *too small to tell* when it does not; where the range is rough, the detection limit against
+  `--max-mde` decides.
 - **The by-input reading** treats each input as one observation and flips its sign. It does
   not need repeat runs to be independent, so it is the check on the case where repeats are
   near copies of one another. It prints beside the test and has no part in the line.
@@ -1105,7 +1192,9 @@ so on this design no change to a single task could have been flagged at all.
   inputs compared, number for number what Prove's `diff` does with `fisher_bh`.
 - **The guidance** is computed with the function that stated the limit, so the number it
   suggests cannot drift from the number that refused the design, and the ceiling it offers
-  is accepted when handed back.
+  is accepted when handed back: where the range decides, the smallest size the range lies
+  inside. Where the range decides and the tries already reach the size asked, it offers no
+  number of repeats.
 
 ## What this cannot say
 
@@ -1113,8 +1202,9 @@ so on this design no change to a single task could have been flagged at all.
 
 - The step index is where the run stopped, not why. A run that died at a tool step may
   have gone wrong three steps earlier.
-- Timed-out and capped runs are censored at their last recorded step. If they would have
-  died soon after, the curve is optimistic by that much; the header counts them.
+- Capped runs are censored at their last recorded step. If they would have died soon after,
+  the curve is optimistic by that much. A run that timed out ends where it stopped, counted
+  beside the kinds and not as a death; the header counts both.
 - Excluded rows are not on the curve; the header counts them by reason.
 - On one run, this is a description. Only a comparison of two stored runs on the same
   cells says whether anything moved, and only within what it could not have detected.

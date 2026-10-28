@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.1.0rc2 — pre-release
+
+A second private pre-release for design partners, rebuilt from the first partner's hands-on
+test. Not on PyPI and not yet released. Everything under 0.1.0rc1 is in it too.
+
+### Every report opens in plain words
+
+- **`compare`, `fix-check`, `where`, `changes` and the import** open with the verdict in plain
+  words, the title on line 3, a summary of four lines (what was compared, the question, the
+  answer, what to do next) and a section *Before you act on this* holding every caveat; the
+  statistics follow as before. The technical sentence stays on the bold line inside. The
+  summary is not in `--json`, whose `sentence` is the first line's.
+- The report's last `next:` line is the summary's command, where one can run as written.
+- Headers say where each imported start came from (a file's modification time, `--started`,
+  a JUnit suite timestamp, a DeepEval file name and the zone it was read in), say *not known*
+  rather than a gap where both starts are file times, and call an imported run's tally the
+  run's own. `runs` marks a start that is a file time. The import records the zone a DeepEval
+  file name was read in, says *passed* and *failed*, and the table import lists every value
+  of its outcome column with its rows.
+
+### fix-check
+
+- The range of the difference is the stratified Miettinen–Nurminen score interval, with
+  Mantel–Haenszel weights, in place of Sato's; it is named at its own level and marked
+  *rough here*, with the reason, where it cannot be relied on.
+- *No significant difference* now means a reliable range inside plus or minus `--max-mde`;
+  where the range is rough the detection limit decides, as before. The detection limit is for
+  planning. A *too small to tell* whose reliable range leaves out a drop of the size asked
+  says so. A ceiling offered is the smallest that accepts the design; no repeats are offered
+  where the range decided and the tries already reach the size asked.
+- A *different* the by-input check does not confirm names the inputs carrying it and gives
+  the gap and p without them.
+- The per-input column *could not have detected a rise below* and its JSON key `limit_rise`
+  are gone; the schemas of `fix-check` and `changes` are `/2`.
+
+### compare and where
+
+- `compare`'s detection limit comes from the log-rank's own information, in place of
+  Schoenfeld's, and so does each kind's; its tries per input are those whose expected
+  information under no change reaches the ratio asked, and always more than the runs had. It
+  prints the hazard ratio after against before with its range (JSON `hazard_ratio`,
+  `hazard_ratio_lo`, `hazard_ratio_hi`). The guidance keys `deaths`, `runs` and `inputs` stay,
+  with no value.
+- `where` reads finishing and timing out as ends of their own, with only capped tries
+  censored (Aalen–Johansen): its curve is the share not yet failed, its band resamples
+  inputs, its median is that of the failed tries, and it says when half of all tries had
+  failed. It says *turn* for runs counted in turns. `compare`'s `--at` rows give the same
+  share, banded by resampling the two runs' shared inputs together.
+
+### Setting up
+
+- **`init`** on a folder of several tools' files prints one import line per file, a word it
+  cannot read left in capitals; `--no-import` lists them, and keeps the link to Prove only
+  where it found nothing at all. A store Trace's import wrote is named by what wrote it, not
+  as a Prove store.
+- **`doctor`** notices a store beside a `trace.toml` that names none and gives the command
+  that sets Trace up with it.
+- **`latest` and `previous`**, where start times cannot order the runs, are refused with a
+  command that has `OLDER` and `NEWER` in their place.
+
 ## 0.1.0rc1 — pre-release
 
 A private pre-release for design partners, installed from its wheel; not on PyPI and not yet

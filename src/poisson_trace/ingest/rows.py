@@ -14,6 +14,17 @@ from typing import Any
 # the earliest span's, the first file's modification time, or a time the tool wrote in the file
 STARTED_FROM: tuple[str, ...] = ("given", "file name", "earliest span", "file time", "file")
 
+
+def zone_of(started: str) -> dict[str, str]:
+    """The name and the offset from UTC (``UTC+02:00``) of this machine's zone at the instant
+    ``started``, an ISO-8601 time: the zone a time in a file's name is read in."""
+    from datetime import datetime
+
+    local = datetime.fromisoformat(started.replace("Z", "+00:00")).astimezone()
+    offset = local.strftime("%z")
+    return {"name": local.strftime("%Z"), "offset": f"UTC{offset[:3]}:{offset[3:5]}"}
+
+
 # The longest text that is its own case id.
 _OWN_ID = 80
 

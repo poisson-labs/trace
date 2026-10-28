@@ -17,6 +17,7 @@ import json
 import math
 import os
 import sys
+from collections import Counter
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -192,10 +193,11 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         "where",
         help="where in the workflow the episodes of one stored run died",
         description=(
-            "The survival curve of one stored run over step index: the share of its episodes\n"
-            "still going at each step, the median step, and where the ones that died stopped,\n"
-            "by kind of step. An episode died when its outcome is one of the --event names;\n"
-            "episodes that ended otherwise, timed out or hit the capture cap are censored."
+            "The share of one stored run's episodes not yet failed at each step index, the\n"
+            "median step of the failed ones, and where they stopped, by kind of step. An\n"
+            "episode failed when its outcome is one of the --event names; finishing otherwise\n"
+            "and timing out are ends of their own, and only episodes at the capture cap are\n"
+            "censored."
         ),
         epilog=_example(
             "poisson-trace where previous --store proofload-runs --event unsolved --at 20",
@@ -209,7 +211,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         type=int,
         default=1000,
         metavar="B",
-        help="bootstrap resamples for the bands by kind of step (default: 1000)",
+        help="bootstrap resamples of the inputs, for the bands (default: 1000)",
     )
     where.add_argument(
         "--seed", type=int, default=0, metavar="S", help="the bootstrap's seed (default: 0)"
@@ -596,7 +598,66 @@ def _main(session: look.Session) -> int:
         "fix-check": _fix_check,
         "changes": _changes,
     }[ns.verb]
-    return verb(ns)
+    from poisson_trace.names import Unordered
+
+    try:
+        return verb(ns)
+    except Unordered as e:
+        raise _unordered(e, ns.verb, session.argv, valued) from None
+
+
+# the verbs that read two runs, the older version's first
+_TWO_RUNS = ("compare", "fix-check", "changes")
+_PLACEHOLDERS = ("OLDER", "NEWER")
+
+
+def _unordered(e: Any, verb: str, argv: Sequence[str], valued: Collection[str]) -> _Refusal:
+    """latest or previous refused because the start times cannot order the runs: for a verb of
+    two runs, the command as it was typed with OLDER and NEWER in place of each reserved word,
+    so that it cannot be run the wrong way round as it stands."""
+    words: list[str] = []
+    replaced: list[str] = []
+    place = -1  # -1 until the verb is passed; then the place of each run given
+    i = 0
+    while i < len(argv):
+        word = argv[i]
+        if word.startswith("-") and word != "-":
+            words.append(_typed_option(word))
+            if "=" not in word and word in valued and i + 1 < len(argv):
+                words.append(look.word(argv[i + 1]))
+                i += 1
+        elif place < 0:
+            words.append(look.word(word))
+            place = 0
+        else:
+            if verb in _TWO_RUNS and place < 2 and _by_start(word):
+                words.append(_PLACEHOLDERS[place])
+                replaced.append(_PLACEHOLDERS[place])
+            else:
+                words.append(look.word(word))
+            place += 1
+        i += 1
+    if not replaced:
+        return _Refusal(e.sentence(two=False), e.listing)
+    runs = " and ".join(f'"{r}"' for r in e.runs)
+    if len(replaced) == 2:
+        said = f"OLDER and NEWER are {runs}, in the order you know"
+    else:
+        said = f"{replaced[0]} is one of {runs}, as you know them"
+    line = look.command("poisson-trace", *words) + f"  # {said}"
+    return _Refusal(e.sentence(two=True), line, e.listing)
+
+
+def _by_start(word: str) -> bool:
+    """Whether a run is given by a word that goes by when runs started: latest or previous."""
+    text = word.strip()
+    return text in ("latest", "previous") or text.startswith(("latest:", "previous:"))
+
+
+def _typed_option(word: str) -> str:
+    """An option as typed, its value after ``=`` quoted for a shell."""
+    flag, joined, value = word.partition("=")
+    return f"{flag}={look.word(value)}" if joined else word
 
 
 def _import_at(
@@ -878,7 +939,33 @@ def _enveloped(
     verb had, and the next command last."""
     head = {"schema": data["schema"], "verdict": verdict, "sentence": sentence}
     rest = {k: v for k, v in data.items() if k != "schema"}
+    # a run's header holds what the markdown alone reads, in keys that open with an underscore
+    if isinstance(rest.get("run"), Mapping):
+        rest["run"] = _public(rest["run"])
+    if isinstance(rest.get("runs"), Mapping):
+        rest["runs"] = {k: _public(v) for k, v in rest["runs"].items()}
     return {**head, **rest, "next": following}
+
+
+def _public(header: Mapping[str, Any]) -> dict[str, Any]:
+    return {k: v for k, v in header.items() if not k.startswith("_")}
+
+
+def _start_of(manifest: Any) -> dict[str, Any] | None:
+    """Where an imported run's start came from, as its import recorded it: the import's word
+    for the source (``file time``, ``given``, ``file name``, ``file``, ``earliest span``), the
+    tool, and for a time read from a file's name the zone it was read in (None when the run
+    was imported before the zone was recorded). None for a run Prove stored."""
+    environment = getattr(manifest, "environment", None)
+    recorded = environment.get("import") if isinstance(environment, Mapping) else None
+    if not isinstance(recorded, Mapping):
+        return None
+    zone = recorded.get("zone")
+    return {
+        "from": recorded.get("started_from"),
+        "tool": recorded.get("tool"),
+        "zone": dict(zone) if isinstance(zone, Mapping) else None,
+    }
 
 
 def _said(
@@ -939,6 +1026,8 @@ def _header(run: Any, manifest: Any, placement: Any) -> dict[str, Any]:
             **counts,
             "excluded": dict(placement.excluded),
         },
+        "_imported": run.imported,
+        "_start": _start_of(manifest),
     }
 
 
@@ -946,6 +1035,12 @@ def _ordered(causes: set[str]) -> list[str]:
     from proofload.trace import KINDS
 
     return [k for k in KINDS if k in causes] + sorted(c for c in causes if c not in KINDS)
+
+
+def _tries(placement: Any) -> list[tuple[str, int, str, str]]:
+    """Each placed try as the competing-ends estimator reads it: its input, its step, how it
+    ended, and the kind of step it failed at."""
+    return [(p.config_hash, int(p.index), p.reason, p.cause) for p in placement.rows]
 
 
 def _arrays(placement: Any) -> tuple[Any, Any, Any]:
@@ -962,6 +1057,10 @@ def _arrays(placement: Any) -> tuple[Any, Any, Any]:
 
 def _plural(n: int, one: str, many: str) -> str:
     return f"{count(n)} {one if n == 1 else many}"
+
+
+# the key under the listing for a start that is a file's modification time
+FILE_MARK = "(file): the start is when the file was written or copied, not when the run ran"
 
 
 def _utc_minute(run: Any) -> str:
@@ -1057,7 +1156,15 @@ def _runs(ns: argparse.Namespace) -> int:
         return look.DONE
     hidden = 0 if ns.all else total - len(complete)
     older = 0 if ns.all else max(0, len(complete) - _LISTED)
-    lines = _runs_table(rows, [_utc_minute(run) for run in read])
+    from poisson_trace.names import FILE_TIME
+
+    filed = [run.started_from == FILE_TIME for run in read]
+    lines = _runs_table(
+        rows,
+        [_utc_minute(run) + (" (file)" if f else "") for run, f in zip(read, filed, strict=True)],
+    )
+    if any(filed):
+        lines.append(FILE_MARK)
     if older:
         lines.append(
             f"  {_plural(older, 'older complete run is', 'older complete runs are')} not listed; "
@@ -1205,9 +1312,10 @@ def _where(ns: argparse.Namespace) -> int:
     import proofload
     from proofload.steps import declaration_check
 
+    from poisson_trace import summary
     from poisson_trace.clock import _reached_by, place
     from poisson_trace.report import CANNOT_SAY, WhereReport
-    from poisson_trace.survival import _band, aalen_johansen, bootstrap_band, kaplan_meier
+    from poisson_trace.survival import competing, competing_band
 
     if ns.svg is not None:
         _check_svg(ns.svg, ns.force)
@@ -1223,49 +1331,49 @@ def _where(ns: argparse.Namespace) -> int:
             f"{', '.join(sorted(present)) or 'none'}"
         )
     placement = place(manifest, frame, tally, events=events, by=ns.by)
-    index_steps, died, cause = _arrays(placement)
-    km = kaplan_meier(index_steps, died)
+    index_steps = _arrays(placement)[0]
     causes = _ordered({p.cause for p in placement.rows if p.died})
-    aj = aalen_johansen(index_steps, died, cause, causes)
-    last = [int(km.steps[-1])] if len(km.steps) else []
-    bands = (
-        bootstrap_band(index_steps, died, cause, causes, last, b=ns.boot, seed=ns.seed)
-        if causes
-        else {}
-    )
+    tries = _tries(placement)
+    aj = competing(tries, causes)
+    band = competing_band(tries, causes, ns.at, b=ns.boot, seed=ns.seed) if tries else None
     curve = []
-    for step, at_risk, deaths, s, var in zip(
-        km.steps, km.at_risk, km.deaths, km.survival, km.var, strict=True
-    ):
-        lo, hi = _band(float(s), float(var))
+    for i, step in enumerate(aj.steps):
         curve.append(
             {
                 "step": int(step),
-                "at_risk": int(at_risk),
-                "died": int(deaths),
-                "survival": float(s),
-                "var": float(var),
-                "lo": lo,
-                "hi": hi,
+                "at_risk": int(aj.at_risk[i]),
+                "died": int(aj.failed[i]),
+                "survival": float(aj.share[i]),
+                # the band resamples inputs; no variance formula stands behind it
+                "var": None,
+                "lo": None if band is None else float(band.curve[0][i]),
+                "hi": None if band is None else float(band.curve[1][i]),
             }
         )
     at_rows = []
-    for q in ns.at:
-        s, var = km.at(q)
-        lo, hi = _band(s, var)
-        at_rows.append({"step": q, "survival": s, "lo": lo, "hi": hi})
+    for j, (q, s) in enumerate(zip(ns.at, aj.at(ns.at), strict=True)):
+        at_rows.append(
+            {
+                "step": q,
+                "survival": float(s),
+                "lo": None if band is None else float(band.at[0][j]),
+                "hi": None if band is None else float(band.at[1][j]),
+            }
+        )
     cause_rows = []
     for k in causes:
-        f = float(aj.incidence[k][-1]) if len(aj.steps) else 0.0
         cause_rows.append(
             {
                 "cause": k,
                 "deaths": int(sum(1 for p in placement.rows if p.died and p.cause == k)),
-                "f": f,
-                "lo": float(bands[k][0][0]),
-                "hi": float(bands[k][1][0]),
+                "f": aj.final[k],
+                "lo": None if band is None else band.final[k][0],
+                "hi": None if band is None else band.final[k][1],
             }
         )
+    failed_steps = sorted(p.index for p in placement.rows if p.died)
+    # the median step of the failed tries: the lower middle one where their number is even
+    median = failed_steps[(len(failed_steps) - 1) // 2] if failed_steps else None
     data: dict[str, Any] = {
         "schema": "poisson-trace.where/1",
         "prove": {"version": proofload.__version__, "store": ns.store},
@@ -1273,10 +1381,20 @@ def _where(ns: argparse.Namespace) -> int:
         "events": sorted(events),
         "clock": {"unit": "leaf span index", "by": ns.by},
         "curve": curve,
-        "median_step": km.median(),
+        "median_step": median,
         "at": at_rows,
         "causes": cause_rows,
         "bootstrap": {"b": ns.boot, "seed": ns.seed},
+        # the share of tries that timed out, an end of its own beside the kinds, with its band;
+        # the first step by which half of all tries had failed; the last step a try reached
+        "_timed_out": {
+            "count": sum(1 for p in placement.rows if p.reason == "timed out"),
+            "f": aj.timed_out,
+            "lo": None if band is None else band.timed_out[0],
+            "hi": None if band is None else band.timed_out[1],
+        },
+        "_half_step": aj.half(),
+        "_last_step": int(index_steps.max()) if len(index_steps) else None,
     }
     check = declaration_check(manifest, frame)
     if check is not None:
@@ -1291,7 +1409,6 @@ def _where(ns: argparse.Namespace) -> int:
                 "curve for --svg to draw; fix-check and changes read it"
             )
         data["note"] = _no_traces(run)
-    sentence = _where_sentence(run, placement, cause_rows, km.median(), events, traced)
     before = _run_before(index, run)
     if before is None:
         following = look.command("poisson-trace", "fix-check", "--help")
@@ -1300,6 +1417,26 @@ def _where(ns: argparse.Namespace) -> int:
     else:
         # compare reads traces, and this run has none: the fix check reads its outcomes
         following = _next(index, "fix-check", (before, run), ns, "--inputs", "all")
+    this = look.word(index.word_for(run))
+    data["_how"] = (
+        f"it was imported from {run.backend[len('import:') :]}"
+        if run.imported
+        else "it was stored without traces"
+    )
+    plain = summary.where(
+        data,
+        compare=None if before is None else _next(index, "compare", (before, run), ns),
+        passing=look.command(
+            "poisson-trace", "where", this, *_reach(ns), "--event", "PASSING-OUTCOME"
+        ),
+        fix_check=(
+            look.command("poisson-trace", "fix-check", "OLD", this, *_flags(ns), "--inputs", "all")
+            if before is None
+            else _next(index, "fix-check", (before, run), ns, "--inputs", "all")
+        ),
+    )
+    data["_summary"], data["_before_you_act"] = plain.lines, plain.caveats
+    sentence = plain.sentence
     report = WhereReport(
         data=data,
         last_step=int(index_steps.max()) if len(index_steps) else 0,
@@ -1312,45 +1449,6 @@ def _where(ns: argparse.Namespace) -> int:
     else:
         look.out(_said("ok", sentence, report.to_markdown(), following, ns.svg))
     return look.DONE
-
-
-# the kinds of step Prove records, as a sentence names the place an episode died
-_AT = {
-    "llm": "a model call",
-    "tool": "a tool call",
-    "retrieval": "a retrieval",
-    "db": "a database call",
-    "http": "an HTTP call",
-    "agent": "an agent step",
-    "other": "another kind of step",
-}
-
-
-def _and(items: Sequence[str]) -> str:
-    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
-
-
-def _where_sentence(
-    run: Any,
-    placement: Any,
-    causes: Sequence[Mapping[str, Any]],
-    median: float | None,
-    events: frozenset[str],
-    traced: bool,
-) -> str:
-    """The deaths, the placed episodes, the deaths by kind and the median; the episodes and
-    the events when none died; and no count for a run with no traces."""
-    if not traced:
-        how = f" (imported from {run.backend[len('import:') :]})" if run.imported else ""
-        return f"this run has no traces, so there is no curve{how}"
-    placed = len(placement.rows)
-    died = sum(1 for p in placement.rows if p.died)
-    episodes = "placed episode" if placed == 1 else "placed episodes"
-    if died == 0:
-        return f"none of {count(placed)} {episodes} died of {' or '.join(sorted(events))}"
-    where = _and([f"{count(c['deaths'])} at {_AT.get(c['cause'], c['cause'])}" for c in causes])
-    middle = "not reached" if median is None else count(median)
-    return f"{count(died)} of {count(placed)} {episodes} died, {where}; median step {middle}"
 
 
 def _check_svg(path: str, force: bool) -> None:
@@ -1396,13 +1494,16 @@ def _compare(ns: argparse.Namespace) -> int:
     import numpy as np
     import proofload
 
+    from poisson_trace import summary
     from poisson_trace.clock import place
     from poisson_trace.report import CANNOT_SAY, CompareReport
     from poisson_trace.survival import (
         bh,
-        kaplan_meier,
+        competing,
+        difference_band,
+        information_limit,
         logrank_stratified,
-        mde_hazard_ratio,
+        one_step,
     )
 
     store, index = _named(ns)
@@ -1454,12 +1555,13 @@ def _compare(ns: argparse.Namespace) -> int:
     deaths_common = sum(p.died for p in common_a) + sum(p.died for p in common_b)
     if deaths_common == 0:
         raise _Refusal("no death in either run over the common cells; nothing to compare")
-    share = len(common_a) / (len(common_a) + len(common_b))
     lr = logrank_stratified(
         [(p.config_hash, p.index, p.died) for p in rows_a],
         [(p.config_hash, p.index, p.died) for p in rows_b],
     )
-    mde = mde_hazard_ratio(deaths_common, share, alpha=ns.alpha)
+    # ST5: the limit from the log-rank's own information over the common cells
+    mde = information_limit(lr.variance, alpha=ns.alpha)
+    estimate = one_step(lr)
     if lr.observed_a < lr.expected_a:
         direction = "runs die later in A (before) than in B (after): runs die earlier in B"
         in_b = "earlier"
@@ -1477,48 +1579,51 @@ def _compare(ns: argparse.Namespace) -> int:
             f"(log-rank, stratified by cell, p = {p_text})"
         )
         verdict_line = f"different: {sentence}"
-    elif mde <= ns.max_mde_hr:
+    elif mde is not None and mde <= ns.max_mde_hr:
         verdict = "no significant difference"
         limit = f"could not have detected a hazard ratio below {mde:.3f}"
         sentence = f"p = {p_text}; {limit}"
         verdict_line = f"no significant difference (p = {p_text}); {limit}"
     else:
         verdict = "too small to tell"
-        sentence = (
-            f"could not have detected a hazard ratio below {mde:.3f}, "
-            f"and {ns.max_mde_hr:g} was asked for"
-        )
+        if mde is None:
+            sentence = (
+                "the log-rank has no information on these runs, so it could not have detected "
+                f"any hazard ratio, and {ns.max_mde_hr:g} was asked for"
+            )
+        else:
+            sentence = (
+                f"could not have detected a hazard ratio below {mde:.3f}, "
+                f"and {ns.max_mde_hr:g} was asked for"
+            )
         verdict_line = f"too small to tell: {sentence}"
-    guidance = None
+    guidance = information = None
     if verdict == "too small to tell":
-        guidance = _compare_guidance(
-            ns, deaths_common, len(common_a) + len(common_b), len(common), share, mde
-        )
-    km_a = kaplan_meier(*_arrays(placement_a)[:2])
-    km_b = kaplan_meier(*_arrays(placement_b)[:2])
-    at_rows = []
-    for q in ns.at:
-        sa, va = km_a.at(q)
-        sb, vb = km_b.at(q)
-        half = 1.96 * math.sqrt(va + vb)
-        at_rows.append(
-            {
-                "step": q,
-                "survival_a": sa,
-                "survival_b": sb,
-                "diff": sb - sa,
-                "lo": sb - sa - half,
-                "hi": sb - sa + half,
-            }
-        )
+        guidance, information = _compare_guidance(ns, common_a, common_b, mde)
     causes = _ordered({p.cause for p in rows_a + rows_b if p.died})
+    tries_a, tries_b = _tries(placement_a), _tries(placement_b)
+    at_rows = []
+    if ns.at:
+        share_a = competing(tries_a, causes).at(ns.at)
+        share_b = competing(tries_b, causes).at(ns.at)
+        lo, hi = difference_band(tries_a, tries_b, causes, ns.at, draws=_AT_DRAWS, seed=0)
+        for j, q in enumerate(ns.at):
+            at_rows.append(
+                {
+                    "step": q,
+                    "survival_a": float(share_a[j]),
+                    "survival_b": float(share_b[j]),
+                    "diff": float(share_b[j] - share_a[j]),
+                    "lo": float(lo[j]),
+                    "hi": float(hi[j]),
+                }
+            )
     per: list[dict[str, Any]] = []
     for k in causes:
         lr_k = logrank_stratified(
             [(p.config_hash, p.index, p.died and p.cause == k) for p in rows_a],
             [(p.config_hash, p.index, p.died and p.cause == k) for p in rows_b],
         )
-        d_k = sum(1 for p in common_a + common_b if p.died and p.cause == k)
         per.append(
             {
                 "cause": k,
@@ -1527,9 +1632,8 @@ def _compare(ns: argparse.Namespace) -> int:
                 "statistic": lr_k.statistic,
                 "p": lr_k.p,
                 "q": None,
-                "mde_hazard_ratio": (
-                    mde_hazard_ratio(d_k, share, alpha=ns.alpha) if d_k > 0 else None
-                ),
+                # each kind's limit from its own cause-specific log-rank information
+                "mde_hazard_ratio": information_limit(lr_k.variance, alpha=ns.alpha),
             }
         )
     if per:
@@ -1557,6 +1661,10 @@ def _compare(ns: argparse.Namespace) -> int:
             "alpha": ns.alpha,
             "direction": direction,
             "paired": False,
+            # ST6: after against before, Peto's one-step estimate from the numbers above
+            "hazard_ratio": None if estimate is None else estimate[0],
+            "hazard_ratio_lo": None if estimate is None else estimate[1],
+            "hazard_ratio_hi": None if estimate is None else estimate[2],
             "mde_hazard_ratio": mde,
             "max_mde_hr": ns.max_mde_hr,
             "verdict": verdict,
@@ -1566,13 +1674,33 @@ def _compare(ns: argparse.Namespace) -> int:
         "cannot_say": list(CANNOT_SAY),
         "_observed_b": float(sum(p.died for p in common_b)),
         "_deaths_common": deaths_common,
-        "_share_a": share,
         "_verdict_line": verdict_line,
         "_same_salt": manifest_a.run_salt == manifest_b.run_salt,
         "_event_notes": notes,
         "_placed_common": len(common_a) + len(common_b),
+        "_at_draws": _AT_DRAWS,
+        # the information a hazard ratio of the size asked needs, and what the tries offered
+        # are expected to give, for the guidance
+        "_information": information,
+        "_tries_per_input": _tries_per_input(common_a, common_b),
+        # for the summary: the tries and failures over the common cells, how far apart the two
+        # started, and whether every common input failed as often of as many tries in both
+        "_common": {
+            arm: {"tries": len(rows), "failed": sum(1 for p in rows if p.died)}
+            for arm, rows in (("a", common_a), ("b", common_b))
+        },
+        "_gap_seconds": _gap_between(run_a, manifest_a, run_b, manifest_b),
+        "_matching": _per_cell(common_a) == _per_cell(common_b),
+        # for the summary: when a try counts as failed in each run
+        "_rules": {
+            "a": summary.failed_when(manifest_a, sorted(events)),
+            "b": summary.failed_when(manifest_b, sorted(events)),
+        },
     }
     following = _next(index, "fix-check", (run_a, run_b), ns, "--inputs", "all")
+    plain = summary.compare(data, verdict, following)
+    data["_summary"], data["_before_you_act"] = plain.lines, plain.caveats
+    sentence = plain.sentence
     if ns.json:
         look.out(CompareReport(data=_enveloped(data, verdict, sentence, following)).to_json())
     else:
@@ -1581,33 +1709,71 @@ def _compare(ns: argparse.Namespace) -> int:
     return look.DONE
 
 
-def _compare_guidance(
-    ns: argparse.Namespace, deaths: int, placed: int, cells: int, share: float, mde: float
-) -> dict[str, Any]:
-    """Schoenfeld's line inverted at the ceiling asked for: the deaths needed, and the placed
-    runs, inputs and repeats that many deaths take at the present share of deaths. The ceiling
-    offered is the detectable hazard ratio rounded up, so it accepts the design as it stands."""
-    from poisson_trace.paired import accepts_at
-    from poisson_trace.survival import deaths_needed
+# compare's --at band: resamples of the inputs, and their seed
+_AT_DRAWS = 2_000
 
-    offered = accepts_at(mde, decimals=3) if math.isfinite(mde) else None
+
+def _per_cell(rows: Sequence[Any]) -> dict[str, tuple[int, int]]:
+    """Each cell's tries and failures among placed tries."""
+    held: dict[str, tuple[int, int]] = {}
+    for p in rows:
+        n, died = held.get(p.config_hash, (0, 0))
+        held[p.config_hash] = (n + 1, died + int(p.died))
+    return held
+
+
+def _gap_between(run_a: Any, manifest_a: Any, run_b: Any, manifest_b: Any) -> float | None:
+    """How far apart two runs started, in seconds; None where a start cannot be read."""
     try:
-        needed = deaths_needed(ns.max_mde_hr, share, alpha=ns.alpha)
-    except (ValueError, OverflowError):
-        return dict.fromkeys(("deaths", "runs", "inputs", "repeats"), None) | {
-            "accepts_at": offered
-        }
+        return abs((_started(run_b, manifest_b) - _started(run_a, manifest_a)).total_seconds())
+    except _Refusal:
+        return None
+
+
+def _tries_per_input(common_a: Sequence[Any], common_b: Sequence[Any]) -> int | None:
+    """The tries per input per run over the common cells, where every one carries the same
+    number; ``None`` where they differ."""
+    held: dict[tuple[int, str], int] = {}
+    for arm, rows in enumerate((common_a, common_b)):
+        for p in rows:
+            held[(arm, p.config_hash)] = held.get((arm, p.config_hash), 0) + 1
+    numbers = set(held.values())
+    return numbers.pop() if len(numbers) == 1 else None
+
+
+def _compare_guidance(
+    ns: argparse.Namespace, common_a: Sequence[Any], common_b: Sequence[Any], mde: float | None
+) -> tuple[dict[str, Any], dict[str, float | None]]:
+    """The tries per input per version whose expected log-rank information under no change,
+    on the per-input model fitted to the two runs' common cells, reaches what the ratio asked
+    for needs, and more than any input had in either run: these runs fell short, so the model
+    reaching the target at their own tries does not make them enough. The ceiling offered is
+    the detectable hazard ratio rounded up, so it accepts the design as it stands. Deaths, runs
+    and inputs no longer size the guidance and hold no value."""
+    from poisson_trace.paired import accepts_at
+    from poisson_trace.survival import (
+        expected_information,
+        fit_cells,
+        information_needed,
+        tries_needed,
+    )
+
+    fit = fit_cells([(p.config_hash, p.index, p.died) for p in [*common_a, *common_b]])
+    repeats = tries_needed(fit, ns.max_mde_hr, alpha=ns.alpha)
+    if repeats is not None:
+        had = Counter(("a", p.config_hash) for p in common_a)
+        had.update(("b", p.config_hash) for p in common_b)
+        repeats = max(repeats, max(had.values()) + 1)
     return {
-        "deaths": needed,
-        "runs": _ceil_ratio(placed * needed, deaths),
-        "inputs": _ceil_ratio(cells * needed, deaths),
-        "repeats": _ceil_ratio(placed * needed, 2 * cells * deaths),
-        "accepts_at": offered,
+        "deaths": None,
+        "runs": None,
+        "inputs": None,
+        "repeats": repeats,
+        "accepts_at": None if mde is None else accepts_at(mde, decimals=3),
+    }, {
+        "needed": information_needed(ns.max_mde_hr, alpha=ns.alpha),
+        "expected": None if repeats is None else expected_information(fit, repeats),
     }
-
-
-def _ceil_ratio(numerator: int, denominator: int) -> int:
-    return -(-numerator // denominator)
 
 
 # ---------- fix-check and changes ----------
@@ -1664,6 +1830,8 @@ def _paired_header(run: Any, manifest: Any, tally: Any) -> dict[str, Any]:
         "created_at": manifest.created_at,
         "declared_repeats": _declared_repeats(manifest),
         "tally": tally.to_dict(),
+        "_imported": run.imported,
+        "_start": _start_of(manifest),
     }
 
 
@@ -1735,7 +1903,6 @@ def _changes_block(
                 "p": f.p,
                 "q": f.q,
                 "flag": f.flag,
-                "limit_rise": f.limit_rise,
             }
         )
 
@@ -1769,7 +1936,7 @@ def _number(x: float) -> float | None:
 def _fix_check(ns: argparse.Namespace) -> int:
     import proofload
 
-    from poisson_trace import paired
+    from poisson_trace import paired, summary
     from poisson_trace.report import FixCheckReport, _p_is, _points
 
     store, index = _named(ns)
@@ -1823,7 +1990,8 @@ def _fix_check(ns: argparse.Namespace) -> int:
     ]
     header_old = _paired_header(run_old, manifest_old, tally_old)
     header_new = _paired_header(run_new, manifest_new, tally_new)
-    gap = abs((_started(run_new, manifest_new) - _started(run_old, manifest_old)).total_seconds())
+    started_old, started_new = _started(run_old, manifest_old), _started(run_new, manifest_new)
+    gap = abs((started_new - started_old).total_seconds())
     rows_old = _arm_rows(arm_old, compared, header_old["declared_repeats"])
     rows_new = _arm_rows(arm_new, compared, header_new["declared_repeats"])
 
@@ -1859,21 +2027,42 @@ def _fix_check(ns: argparse.Namespace) -> int:
     largest_drop = sum(w * r for w, r in zip(weights, rates, strict=True)) / sum(weights)
     asked = f"{100.0 * ns.max_mde:g}"
     limit_text = None if drop is None else _points(drop)
+    excludes_zero = lo is not None and hi is not None and (lo > 0.0 or hi < 0.0)
+    disagree = variance is not None and ((test.p < ns.alpha) != excludes_zero)
+    # the range reads the verdict only where it is reliable (section 9.5's gate); where it is
+    # not, the drop limit against the size asked reads it, as before
+    rough = paired.rough(counts, informative=test.informative, disagree=disagree)
+    reliable = lo is not None and hi is not None and not rough
+    inside = (
+        reliable and lo is not None and hi is not None and -ns.max_mde <= lo and hi <= ns.max_mde
+    )
+    enough = drop is not None and drop <= ns.max_mde
     guidance = None
     if test.p < ns.alpha and points != 0:
-        verdict = "different"
+        verdict, decided = "different", "test"
         sentence = (
             f"the new version failed {word} on these inputs (exact "
             f"Cochran-Mantel-Haenszel, stratified by input, {p_is})"
         )
         verdict_line = f"different: {sentence}"
-    elif drop is not None and drop <= ns.max_mde:
-        verdict = "no significant difference"
+    elif reliable:
+        decided = "range"
+        span = _range_text(lo, hi, ns.alpha)
+        if inside:
+            verdict = "no significant difference"
+            sentence = f"{p_is}; {span}, lies inside ±{asked}"
+            verdict_line = f"no significant difference ({p_is}); {span}, lies inside ±{asked}"
+        else:
+            verdict = "too small to tell"
+            sentence = f"{span}, does not lie inside ±{asked}, which was asked for"
+            verdict_line = f"too small to tell: {sentence}"
+    elif enough:
+        verdict, decided = "no significant difference", "limit"
         limit = f"could not have detected a drop in failure share below {limit_text} points"
         sentence = f"{p_is}; {limit}"
         verdict_line = f"no significant difference ({p_is}); {limit}"
     else:
-        verdict = "too small to tell"
+        verdict, decided = "too small to tell", "limit"
         if drop is None:
             sentence = (
                 "could not have detected a drop in failure share below or "
@@ -1886,15 +2075,12 @@ def _fix_check(ns: argparse.Namespace) -> int:
                 f"{limit_text} points, and {asked} was asked for"
             )
         verdict_line = f"too small to tell: {sentence}"
-        guidance = {
-            "repeats": paired.repeats_needed(counts, ns.max_mde, alpha=ns.alpha),
-            "inputs": paired.inputs_needed(counts, ns.max_mde, alpha=ns.alpha),
-            "accepts_at": None if drop is None else paired.accepts_at(drop, decimals=4),
-        }
-    excludes_zero = lo is not None and hi is not None and (lo > 0.0 or hi < 0.0)
+    if verdict == "too small to tell":
+        guidance = _fix_check_guidance(ns, counts, drop, lo, hi, reliable=reliable, enough=enough)
     configs = {h: arm_old[h].config for h in compared}
+    block = _changes_block(counts, configs, ns.alpha)
     data: dict[str, Any] = {
-        "schema": "poisson-trace.fix-check/1",
+        "schema": "poisson-trace.fix-check/2",
         "prove": {"version": proofload.__version__, "store": ns.store},
         "runs": {"old": header_old, "new": header_new},
         "gap_seconds": gap,
@@ -1925,7 +2111,7 @@ def _fix_check(ns: argparse.Namespace) -> int:
             "lo": lo,
             "hi": hi,
             "variance": variance,
-            "interval": "Sato",
+            "interval": paired.INTERVAL,
         },
         "by_input": {
             "moved": moved,
@@ -1944,7 +2130,7 @@ def _fix_check(ns: argparse.Namespace) -> int:
         "limits": {"drop": drop, "rise": rise, "power": 0.8, "max_mde": ns.max_mde},
         "direction": direction,
         "guidance": guidance,
-        "changes": _changes_block(counts, configs, ns.alpha),
+        "changes": block,
         "cannot_say": list(paired.CANNOT_SAY),
         "_verdict_line": verdict_line,
         "_failing_from": None if selecting is None else selecting.name,
@@ -1953,20 +2139,126 @@ def _fix_check(ns: argparse.Namespace) -> int:
         "_one_run": one_run,
         "_few_repeat": (repeating, len(counts)) if few_repeat else None,
         "_largest": {"drop": largest_drop, "rise": 1.0 - largest_drop},
-        "_disagree": variance is not None and ((test.p < ns.alpha) != excludes_zero),
+        "_disagree": disagree,
+        # what the verdict rests on, for the summary: "test", "range" or "limit"
+        "_decided_by": decided,
+        # the range's level in percent, and why it is rough here (empty where it is reliable)
+        "_level": 100.0 * (1.0 - ns.alpha),
+        "_rough": list(rough),
+        "_reliable": reliable,
+        # the drop limit is at or under the size asked
+        "_tries_enough": enough,
+        # the size asked, where a reliable range leaves out a drop (or a rise) of that size or more
+        "_drop_ruled_out": ns.max_mde if reliable and lo is not None and lo > -ns.max_mde else None,
+        "_rise_ruled_out": ns.max_mde if reliable and hi is not None and hi < ns.max_mde else None,
+        "_unconfirmed": (
+            _unconfirmed(counts, block) if verdict == "different" and by_p >= ns.alpha else None
+        ),
         "_copies": [
             arm
             for arm, held in (("old", arm_old), ("new", arm_new))
             if all(held[h].runs >= 2 and not 0 < held[h].failed < held[h].runs for h in compared)
         ],
+        # for the summary: when a try counts as failed in each run, whether the run given as new
+        # started first, and each version's tries with no outcome on the inputs selected
+        "_rules": {
+            "old": summary.failed_when(manifest_old, sorted(events)),
+            "new": summary.failed_when(manifest_new, sorted(events)),
+        },
+        "_new_first": started_new < started_old,
+        "_no_outcome": {
+            name: sum(arm[h].no_outcome + arm[h].timed_out for h in selected if h in arm)
+            for name, arm in (("old", arm_old), ("new", arm_new))
+        },
     }
-    following = _fix_check_next(index, ns, run_old, run_new, guidance, len(compared))
+    plain = summary.fix_check(data, verdict, _next(index, "changes", (run_old, run_new), ns))
+    data["_summary"], data["_before_you_act"] = plain.lines, plain.caveats
+    sentence = plain.sentence
+    following = plain.follows or _fix_check_next(
+        index, ns, run_old, run_new, guidance, len(compared)
+    )
     if ns.json:
         look.out(FixCheckReport(data=_enveloped(data, verdict, sentence, following)).to_json())
     else:
         markdown = FixCheckReport(data=data).to_markdown()
         look.out(_said(verdict, sentence, markdown, following))
     return look.DONE
+
+
+def _range_text(lo: float | None, hi: float | None, alpha: float) -> str:
+    """``the 95% range, -6.0 to +8.1 points``, at the level the range was computed at."""
+    from poisson_trace.report import _points
+
+    assert lo is not None and hi is not None
+    places = 2 if all(abs(100.0 * x) < 1.0 for x in (lo, hi)) else 1
+    low, high = (_points(x, signed=True, places=places) for x in (lo, hi))
+    return f"the {100.0 * (1.0 - alpha):g}% range, {low} to {high} points"
+
+
+def _fix_check_guidance(
+    ns: argparse.Namespace,
+    counts: Sequence[Any],
+    drop: float | None,
+    lo: float | None,
+    hi: float | None,
+    *,
+    reliable: bool,
+    enough: bool,
+) -> dict[str, Any]:
+    """What too small to tell offers: the repeats and the inputs that bring the drop limit to
+    the size asked, and the ceiling that accepts the design as it stands. Where a reliable range
+    decided and the drop limit is already under the size asked, more tries of the same design
+    are not what is short, and nothing is offered. Where a reliable range decides, the ceiling
+    offered is the smallest the range lies inside, so that given, it reads otherwise."""
+    from poisson_trace import paired
+
+    if reliable and enough:
+        return {"repeats": None, "inputs": None, "accepts_at": None}
+    ceiling = drop
+    if reliable and lo is not None and hi is not None:
+        # the range alone decides: the smallest size asked that it lies inside, whatever the
+        # drop limit says
+        ceiling = max(-lo, hi)
+    return {
+        "repeats": paired.repeats_needed(counts, ns.max_mde, alpha=ns.alpha),
+        "inputs": paired.inputs_needed(counts, ns.max_mde, alpha=ns.alpha),
+        "accepts_at": None if ceiling is None else paired.accepts_at(ceiling, decimals=4),
+    }
+
+
+def _unconfirmed(counts: Sequence[Any], block: Mapping[str, Any]) -> dict[str, Any]:
+    """For a difference the by-input check does not bear out: the inputs the per-input check
+    flagged, their share of the net extra failures, and the gap and the exact test without
+    them. An input's extra failures are its new failures less the old version's rate at the
+    new version's tries; the net is their sum over every compared input."""
+    from poisson_trace import paired
+
+    flagged = {r["config_hash"]: r for r in block["rows"] if r["flag"] is not None}
+
+    def extra(c: Any) -> float:
+        return float(c.failed_new - c.failed_old * c.runs_new / c.runs_old)
+
+    rest = [c for c in counts if c.config_hash not in flagged]
+    points_without = p_without = None
+    if flagged and rest:
+        points_without = paired.difference(rest)[0]
+        p_without = paired.paired_test(rest).p
+    return {
+        "inputs": [
+            {
+                "config_hash": c.config_hash,
+                "config": flagged[c.config_hash]["config"],
+                "extra": extra(c),
+            }
+            for c in counts
+            if c.config_hash in flagged
+        ],
+        "extra": sum(extra(c) for c in counts if c.config_hash in flagged),
+        "net_extra": sum(extra(c) for c in counts),
+        "compared_without": len(rest),
+        "points_without": points_without,
+        "p_without": p_without,
+    }
 
 
 def _fix_check_next(
@@ -1981,7 +2273,7 @@ def _fix_check_next(
     again. Otherwise the inputs that moved, on the same two runs."""
     if guidance is None:
         return _next(index, "changes", (old, new), ns)
-    again = "then poisson-trace fix-check again"
+    again = "then poisson-trace fix-check on the two new runs"
     if guidance["repeats"] is not None:
         return (
             f"run {count(guidance['repeats'])} repeats per arm on these {count(inputs)} "
@@ -1995,7 +2287,7 @@ def _fix_check_next(
 def _changes(ns: argparse.Namespace) -> int:
     import proofload
 
-    from poisson_trace import paired
+    from poisson_trace import paired, summary
     from poisson_trace.report import ChangesReport
 
     store, index = _named(ns)
@@ -2016,7 +2308,7 @@ def _changes(ns: argparse.Namespace) -> int:
     ]
     gap = abs((_started(run_b, manifest_b) - _started(run_a, manifest_a)).total_seconds())
     data: dict[str, Any] = {
-        "schema": "poisson-trace.changes/1",
+        "schema": "poisson-trace.changes/2",
         "prove": {"version": proofload.__version__, "store": ns.store},
         "runs": {
             "a": _paired_header(run_a, manifest_a, tally_a),
@@ -2034,42 +2326,24 @@ def _changes(ns: argparse.Namespace) -> int:
             "b_only": len(set(arm_b) - set(arm_a)),
         },
     }
-    sentence = _changes_sentence(data)
+    # for the summary: each run's tries with no outcome, and the inputs both carry that one of
+    # them gives no outcome on
+    data["_no_outcome"] = {
+        "a": sum(r.no_outcome + r.timed_out for r in arm_a.values()),
+        "b": sum(r.no_outcome + r.timed_out for r in arm_b.values()),
+        "left_out": sum(
+            1 for h in set(arm_a) & set(arm_b) if not (arm_a[h].runs and arm_b[h].runs)
+        ),
+    }
     following = _next(index, "fix-check", (run_a, run_b), ns, "--inputs", "all")
+    plain = summary.changes(data, following)
+    data["_summary"], data["_before_you_act"] = plain.lines, plain.caveats
+    sentence = plain.sentence
     if ns.json:
         look.out(ChangesReport(data=_enveloped(data, "ok", sentence, following)).to_json())
     else:
         look.out(_said("ok", sentence, ChangesReport(data=data).to_markdown(), following))
     return look.DONE
-
-
-# the changed inputs a verdict line names before it says how many more there are
-_NAMED_INPUTS = 3
-
-
-def _input_words(config: Any) -> str:
-    """An input as a sentence names it, never as JSON: its first key and value, then each
-    further one after "at" (``task_id HumanEval/129 at temperature 0.7``)."""
-    if not isinstance(config, Mapping) or not config:
-        return str(config)
-    pairs = [f"{k} {v if isinstance(v, str) else json.dumps(v)}" for k, v in config.items()]
-    return " at ".join(pairs)
-
-
-def _changes_sentence(data: Mapping[str, Any]) -> str:
-    """How many inputs changed of those tested, and which, each with its direction."""
-    tested, flagged = data["tested"], data["flagged"]
-    inputs = "input" if tested == 1 else "inputs"
-    head = f"{count(flagged)} of {count(tested)} {inputs} changed"
-    rows = [r for r in data["rows"] if r["flag"] is not None]
-    if not rows:
-        if data["together"] == 1:
-            return head
-        return f"{head}; a lone change could not have been flagged on this design"
-    named = [f"{_input_words(r['config'])} {r['flag']}" for r in rows[:_NAMED_INPUTS]]
-    more = len(rows) - _NAMED_INPUTS
-    tail = f"; and {count(more)} more" if more > 0 else ""
-    return f"{head}: {'; '.join(named)}{tail}"
 
 
 if __name__ == "__main__":

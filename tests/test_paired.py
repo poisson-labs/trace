@@ -182,9 +182,50 @@ def _sato(tab):  # type: ignore[no-untyped-def]
     return d, (d * p_sum + q_sum) / w**2
 
 
+def _mn_oracle(tab, alpha):  # type: ignore[no-untyped-def]
+    """The stratified Miettinen-Nurminen score interval for new minus old, written here from its
+    definition (Miettinen & Nurminen 1985): Mantel-Haenszel weights; each input's variance at the
+    constrained maximum likelihood (found numerically, not by the closed-form cubic), times
+    N / (N - 1); the interval is every difference the score test at ``alpha`` does not reject."""
+    from scipy import optimize, special
+
+    rows = [(xb, nb, xa, na) for xa, na, xb, nb in tab]  # 1 is new, 2 is old
+    w = [n1 * n2 / (n1 + n2) for _, n1, _, n2 in rows]
+    dhat = [x1 / n1 - x2 / n2 for x1, n1, x2, n2 in rows]
+    est = sum(wi * di for wi, di in zip(w, dhat)) / sum(w)
+
+    def constrained(x1, n1, x2, n2, delta):  # type: ignore[no-untyped-def]
+        lo, hi = max(0.0, -delta), min(1.0, 1.0 - delta)
+
+        def nll(p2: float) -> float:
+            p1 = p2 + delta
+            return -float(special.xlogy(x1, p1) + special.xlogy(n1 - x1, 1 - p1) + special.xlogy(x2, p2) + special.xlogy(n2 - x2, 1 - p2))
+
+        r = optimize.minimize_scalar(nll, bounds=(lo, hi), method="bounded", options={"xatol": 1e-13})
+        p2 = min([(nll(lo), lo), (nll(hi), hi), (float(r.fun), float(r.x))])[1]
+        return p2 + delta, p2
+
+    def score(delta: float) -> float:
+        num = sum(wi * (di - delta) for wi, di in zip(w, dhat))
+        tot = 0.0
+        for wi, (x1, n1, x2, n2) in zip(w, rows):
+            p1, p2 = constrained(x1, n1, x2, n2, delta)
+            tot += wi * wi * (p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2) * (n1 + n2) / (n1 + n2 - 1)
+        return num / math.sqrt(tot) if tot > 0 else math.copysign(math.inf, num) if num else 0.0
+
+    z = float(stats.norm.isf(alpha / 2))
+    eps = 1e-9
+    lo = -1.0 if score(-1 + eps) <= z else optimize.brentq(lambda d: score(d) - z, -1 + eps, est, xtol=1e-13)
+    hi = 1.0 if score(1 - eps) >= -z else optimize.brentq(lambda d: score(d) + z, est, 1 - eps, xtol=1e-13)
+    return lo, hi
+
+
 @SETTINGS
 @given(tables(max_inputs=8, max_runs=8), st.sampled_from([0.05, 0.1, 0.01]))
 def test_tr49_the_difference_is_mantel_haenszel_with_sato_variance(tab, alpha) -> None:  # type: ignore[no-untyped-def]
+    """ST3 (ruled 2026-10-20): the estimate is still Mantel-Haenszel's and the JSON's variance
+    still Sato's; the interval is the stratified Miettinen-Nurminen score interval, printed where
+    Sato's variance is positive, as the interval was before."""
     points, var, lo, hi = difference(counts_of(tab), alpha=alpha)
     t = paired_test(counts_of(tab))
     assert points == pytest.approx((t.observed_new - t.expected_new) / t.weight, abs=1e-12)
@@ -192,9 +233,9 @@ def test_tr49_the_difference_is_mantel_haenszel_with_sato_variance(tab, alpha) -
     assert points == pytest.approx(d, abs=1e-12)
     if v > 0:
         assert var == pytest.approx(v, abs=1e-12)
-        half = float(stats.norm.isf(alpha / 2)) * math.sqrt(v)
-        assert lo == pytest.approx(max(-1.0, d - half), abs=1e-12)
-        assert hi == pytest.approx(min(1.0, d + half), abs=1e-12)
+        want_lo, want_hi = _mn_oracle(tab, alpha)
+        assert lo == pytest.approx(want_lo, abs=1e-6)
+        assert hi == pytest.approx(want_hi, abs=1e-6)
         assert lo <= points <= hi
     else:
         assert var is None and lo is None and hi is None
@@ -224,8 +265,9 @@ def test_tr49_the_worked_example_and_a_variance_that_is_not_positive() -> None:
     points, var, lo, hi = difference(counts_of(WORKED))
     assert points == pytest.approx(-0.25, abs=1e-4)
     assert var == pytest.approx(0.015625, abs=1e-4)
-    assert lo == pytest.approx(-0.4950, abs=1e-4)
-    assert hi == pytest.approx(-0.0050, abs=1e-4)
+    # ST3 (ruled 2026-10-20): the statistics check's simlib.mn_stratified on WORKED
+    assert lo == pytest.approx(-0.501442, abs=1e-4)
+    assert hi == pytest.approx(0.004307, abs=1e-4)
     points, var, lo, hi = difference(counts_of([(4, 4, 0, 4)] * 3))
     assert points == pytest.approx(-1.0, abs=1e-12)
     assert var is None and lo is None and hi is None

@@ -94,9 +94,23 @@ poisson-trace import table tests/fixtures/ingest/table/humaneval-a.csv \
 
 <!-- output exit=0 -->
 ```
-ok  wrote run humaneval-a to ./store: 10,496 rows, 328 cases, 32 repeats each; met 9,158, missed 1,338
+ok  wrote run humaneval-a to ./store: 10,496 rows, 328 cases, 32 repeats each; 9,158 passed, 1,338 failed
 
 # Poisson Trace · import · humaneval-a
+
+## Summary
+
+- Wrote: humaneval-a into ./store, from humaneval-a.csv (table): 10,496 tries on 328 inputs.
+- Failures: 1,338 failed and 9,158 passed. A try counts as failed when its outcome column reads "failed_assertion" or "crashed"; any other value counts as a pass.
+- Compared: Nothing yet. One import is one version.
+- Next: Import the other version's file the same way: `poisson-trace import table OTHER.csv --store ./store --run OTHER --case-column case --outcome-column outcome --failed failed_assertion --failed crashed`.
+
+## Before you act on this
+
+- Every other value of the outcome column counts as a pass.
+- When you compare, choose the smallest drop that matters to you (--max-mde) before you look at any results; Trace then says whether these tries could catch it.
+
+## What was written
 
 - run written: humaneval-a · store: ./store
 - tool: table
@@ -106,8 +120,7 @@ ok  wrote run humaneval-a to ./store: 10,496 rows, 328 cases, 32 repeats each; m
 - rows 10,496 · cases 328 · repeats of a case: smallest 32, largest 32
 - outcomes: met 9,158 · missed 1,338
 - rows with no outcome: 0
-- rows whose outcome is "failed_assertion": 1,330
-- rows whose outcome is "crashed": 8
+- the outcome column's values: "passed" 9,158 rows (counted as passed) · "failed_assertion" 1,330 rows (counted as failed) · "crashed" 8 rows (counted as failed)
 
 In the command below, OLD and NEW are this run and the other version's run, imported into the same store, the older version first. X is the largest limit of detection you accept, as a share: 0.05 is five points.
 
@@ -126,8 +139,7 @@ poisson-trace import table tests/fixtures/ingest/table/humaneval-b.csv \
 ```
 - outcomes: met 9,109 · missed 1,387
 - rows with no outcome: 0
-- rows whose outcome is "failed_assertion": 1,376
-- rows whose outcome is "crashed": 11
+- the outcome column's values: "passed" 9,109 rows (counted as passed) · "failed_assertion" 1,376 rows (counted as failed) · "crashed" 11 rows (counted as failed)
 ```
 
 <!-- command -->
@@ -143,10 +155,10 @@ poisson-trace fix-check humaneval-a humaneval-b --store ./store --event missed \
 
 <!-- excerpt exit=0 -->
 ```
-| input | old failed/runs | new failed/runs | change | p | q | flag | could not have detected a rise below |
-|---|---|---|---|---|---|---|---|
-| {"case":"HumanEval/129@0.7"} | 12/32 | 32/32 | +62.5 points | 2.30e-08 | 7.55e-06 | failed more in new | 34.2 points |
-| {"case":"HumanEval/129@0.0"} | 20/32 | 32/32 | +37.5 points | 1.38e-04 | 0.023 | failed more in new | 28.9 points |
+| input | old failed/runs | new failed/runs | change | p | q | flag |
+|---|---|---|---|---|---|---|
+| {"case":"HumanEval/129@0.7"} | 12/32 | 32/32 | +62.5 points | 2.30e-08 | 7.55e-06 | failed more in new |
+| {"case":"HumanEval/129@0.0"} | 20/32 | 32/32 | +37.5 points | 1.38e-04 | 0.023 | failed more in new |
 ```
 
 The table gives what the DeepEval page's files give, number for number: the runs are the

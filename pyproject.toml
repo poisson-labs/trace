@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "poisson-trace"
-version = "0.1.0rc1"
+version = "0.1.0rc2"
 description = "Where in the workflow runs die, and whether a change made them fail less: survival curves and a controlled fix check, read from Prove's stored runs."
 readme = "README.md"
 license = { file = "LICENSE" }

@@ -68,11 +68,15 @@ def test_tf3_29_where_on_a_run_with_no_traces_says_so_in_one_line(tmp_path: Path
     lines = text.out.splitlines()
     h1 = next(i for i, line in enumerate(lines) if line.startswith("# "))
     assert note in lines[h1 + 1 :], text.out
-    assert not any(line.startswith("| step") or line.startswith("| kind") for line in lines), text.out
+    assert not any(line.startswith(("| step", "| turn", "| kind")) for line in lines), text.out
     # of a traced run's sections, only the first and the last remain: the run, and what it cannot say
+    # (S6, ruled 2026-10-20: both open with the summary, kept out of the comparison; the traced run's
+    # caveats section is the summary's too)
     traced = trace(["where", CS_RECORD, "--store", str(CS), *events_args(CS_EVENTS)]).out.splitlines()
-    headings = [line for line in traced if line.startswith("## ")]
-    assert [line for line in lines if line.startswith("## ")] == [headings[0], headings[-1]], text.out
+    plain = ("## Summary", "## Before you act on this")
+    headings = [line for line in traced if line.startswith("## ") and line not in plain]
+    assert [line for line in lines if line.startswith("## ")][0] == "## Summary", text.out
+    assert [line for line in lines if line.startswith("## ") and line not in plain] == [headings[0], headings[-1]], text.out
 
 
 @pytest.mark.parametrize("tool", TOOLS)
@@ -93,7 +97,8 @@ def test_tf3_29_a_run_with_traces_keeps_its_curve_and_has_no_note(tmp_path: Path
     assert data.code == 0 and text.code == 0
     doc = json.loads(data.out)
     assert doc.get("note") is None and doc["curve"], doc.get("note")
-    assert any(line.startswith("| step") for line in text.out.splitlines())
+    # cs is counted in turns, and where says turn (S15, carried into TF15 on 2026-10-20)
+    assert any(line.startswith("| turn") for line in text.out.splitlines())
 
 
 # ---------- TF3-30: compare ----------

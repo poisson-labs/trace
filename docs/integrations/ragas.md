@@ -100,9 +100,22 @@ poisson-trace import ragas tests/fixtures/ingest/ragas/rag-base.jsonl \
 
 <!-- output exit=0 -->
 ```
-ok  wrote run rag-base-faithfulness to ./store: 150 rows, 146 cases, 1 to 3 repeats; met 95, missed 52, 3 with no outcome
+ok  wrote run rag-base-faithfulness to ./store: 150 rows, 146 cases, 1 to 3 repeats; 95 passed, 52 failed, 3 with no outcome
 
 # Poisson Trace · import · rag-base-faithfulness
+
+## Summary
+
+- Wrote: rag-base-faithfulness into ./store, from rag-base.jsonl (ragas): 150 tries on 146 inputs.
+- Failures: 52 failed and 95 passed; 3 had no outcome. A try counts as failed when its faithfulness score is below 0.5.
+- Compared: Nothing yet. One import is one version.
+- Next: Import the other version's file the same way: `poisson-trace import ragas OTHER.jsonl --store ./store --run OTHER --metric faithfulness --cut 0.5 --below --case-column case`.
+
+## Before you act on this
+
+- When you compare, choose the smallest drop that matters to you (--max-mde) before you look at any results; Trace then says whether these tries could catch it.
+
+## What was written
 
 - run written: rag-base-faithfulness · store: ./store
 - tool: ragas
@@ -129,6 +142,19 @@ poisson-trace import ragas tests/fixtures/ingest/ragas/rag-raft.jsonl \
 ```
 # Poisson Trace · import · rag-raft-faithfulness
 
+## Summary
+
+- Wrote: rag-raft-faithfulness into ./store, from rag-raft.jsonl (ragas): 150 tries on 146 inputs.
+- Failures: 47 failed and 95 passed; 8 had no outcome. A try counts as failed when its faithfulness score is below 0.5.
+- Compared: Nothing yet. One import is one version.
+- Next: Import the other version's file the same way: `poisson-trace import ragas OTHER.jsonl --store ./store --run OTHER --metric faithfulness --cut 0.5 --below --case-column case`.
+
+## Before you act on this
+
+- When you compare, choose the smallest drop that matters to you (--max-mde) before you look at any results; Trace then says whether these tries could catch it.
+
+## What was written
+
 - run written: rag-raft-faithfulness · store: ./store
 - tool: ragas
 - file: rag-raft.jsonl · sha256 5f5a986fade2bf12531e50e72c3f0532734a5882e18b8bb5bf6304c133975fe7
@@ -149,36 +175,53 @@ poisson-trace fix-check rag-base-faithfulness rag-raft-faithfulness --store ./st
 ```
 # Poisson Trace · fix check · rag-base-faithfulness (old) and rag-raft-faithfulness (new)
 
+## Summary
+
+- Compared: old rag-base-faithfulness against new rag-raft-faithfulness, on the same 137 inputs: 141 tries of each. A try counts as failed when its faithfulness score is below 0.5.
+- Question: Did the new version fail more or less often than the old? You asked that the run be able to catch a 10-point drop in how often it fails.
+- Answer: Can't tell yet. The new version failed 46 of 141 tries and the old 51 of 141; by Trace's rough estimate, these tries would catch a 16-point drop 4 times in 5 and smaller ones less often, and you asked for 10; the gap is no bigger than the gap in tries with no outcome.
+- Next: First find out why the new version has more tries with no outcome; then run each version 3 times on each of these 137 inputs with your own harness, then run `poisson-trace fix-check` on the two new runs.
+
+## Before you act on this
+
+- They started 19 min apart. Trace can't tell whether they were run side by side, so anything else that changed between them (the provider, the model behind the API, the day) may be part of the difference, in either direction.
+- Both runs name the same target (import/ragas); Trace can't tell what differs between them, only what you tell it.
+- 3 tries of the old and 8 of the new had no outcome; the 9 inputs that leaves without a result on one side are left out on both versions. If no outcome means a bad answer, the new version, which has more of them, fails more often than it looks. The difference in them (5) is as large as the whole gap in failures (5).
+- These results fit anything from 16 fewer failures per 100 tries to 8.8 more, but that range is only a rough guide here and may be off either way (one try per input on the new version (134 of 137 inputs) and one try per input on the old version (134 of 137 inputs)): don't use it to rule sizes in or out.
+- Tries of the same input are counted as separate chances, and if they are near copies the answer is more confident than it should be.
+- The 3 times per input is an estimate from these runs' failure rates (one try per input on one version, so rough). 356 inputs like these at the present tries would do the same, more than the 137 here. Even with good estimates, about half of runs built to it end up a little too small. Make it a fresh run, judged on its own: don't add tries to these and test again.
+- If a 16-point drop is the smallest that matters to you (the old version failed 36.2% of tries), and you would have said so before seeing this, `--max-mde 0.1588` accepts this design as it stands. That changes the label only, not the evidence.
+
 ## Runs
 
-- old: rag-base-faithfulness · target: import/ragas · status: complete · started: 2025-03-31T06:56:41Z · declared repeats: not recorded
-- Prove's tally (old): rows 150 · with outcome 147 · no outcome 3 · timed out 0 · infra 0 · other 3
-- new: rag-raft-faithfulness · target: import/ragas · status: complete · started: 2025-03-31T07:16:07Z · declared repeats: not recorded
-- Prove's tally (new): rows 150 · with outcome 142 · no outcome 8 · timed out 0 · infra 0 · other 8
+- old: rag-base-faithfulness · target: import/ragas · status: complete · started: 2025-03-31T06:56:41Z (given with --started) · declared repeats: not recorded
+- the run's tally (old): rows 150 · with outcome 147 · no outcome 3 · timed out 0 · infra 0 · other 3
+- new: rag-raft-faithfulness · target: import/ragas · status: complete · started: 2025-03-31T07:16:07Z (given with --started) · declared repeats: not recorded
+- the run's tally (new): rows 150 · with outcome 142 · no outcome 8 · timed out 0 · infra 0 · other 8
 - the two runs started 19 min apart
 - events: missed
 - inputs: every input either run carries · selected 146 · compared 137 · left out 9 (no outcome on the old version 3; no outcome on the new version 6)
 - rows used: old 141 (timed out 0, no outcome 0) · new 141 (timed out 0, no outcome 0)
-- inputs short of the declared repeats: old 0 · new 0
+- inputs short of the declared repeats: old no repeats declared · new no repeats declared
 - inputs with mixed outcomes across their repeats: old 1 · new 0
 
-## The control
+## The two versions
 
-The old version, re-run on the same inputs with nothing changed.
+The old version and the new on the same inputs.
 
-| version | runs | failed | failure share | did not fail on re-run |
+| version | runs | failed | failure share | did not fail |
 |---|---|---|---|---|
 | old | 141 | 51 | 36.2% | 63.8% |
 | new | 141 | 46 | 32.6% | 67.4% |
 
-Re-running these inputs and counting the runs that did not fail would have read 63.8% on the old version, where nothing changed.
+The old version did not fail on 63.8% of its episodes on these inputs.
 
 ## The comparison
 
 exact conditional Cochran-Mantel-Haenszel test, stratified by input over 137 inputs (68 informative), two-sided; α = 0.05.
 
 new failures: observed 46, expected 48.500, variance 17.083; p = 0.629
-difference: -3.5 points, new minus old (-15.1 to +8.0; Mantel-Haenszel weights; interval: Sato variance, large-sample, 95%)
+difference: -3.5 points, new minus old (-16.4 to +8.8; Mantel-Haenszel weights; range: stratified Miettinen-Nurminen score interval, 95%, for these inputs as run; rough here: one try per input on the new version (134 of 137 inputs) and one try per input on the old version (134 of 137 inputs))
 by input: p = 0.636 (sign-flip over the 68 inputs that moved, 100,000 draws, seed = 0); not part of the line below
 
 ## Consistency
@@ -251,7 +294,7 @@ poisson-trace fix-check rag-base-correctness rag-raft-correctness --store ./stor
 <!-- excerpt exit=0 -->
 ```
 new failures: observed 87, expected 97.000, variance 14.333; p = 0.011
-difference: -13.3 points, new minus old (-23.1 to -3.6; Mantel-Haenszel weights; interval: Sato variance, large-sample, 95%)
+difference: -13.3 points, new minus old (-25.5 to -3.0; Mantel-Haenszel weights; range: stratified Miettinen-Nurminen score interval, 95%, for these inputs as run; rough here: one try per input on the new version (143 of 146 inputs) and one try per input on the old version (143 of 146 inputs))
 ```
 
 <!-- excerpt exit=0 -->
@@ -294,7 +337,7 @@ poisson-trace fix-check rag-base-relevancy rag-raft-relevancy --store ./store \
 <!-- excerpt exit=0 -->
 ```
 new failures: observed 32, expected 40.500, variance 9.750; p = 0.009
-difference: -11.3 points, new minus old (-19.3 to -3.4; Mantel-Haenszel weights; interval: Sato variance, large-sample, 95%)
+difference: -11.3 points, new minus old (-22.6 to -2.6; Mantel-Haenszel weights; range: stratified Miettinen-Nurminen score interval, 95%, for these inputs as run; rough here: one try per input on the new version (143 of 146 inputs) and one try per input on the old version (143 of 146 inputs))
 ```
 
 <!-- excerpt exit=0 -->
@@ -366,7 +409,7 @@ poisson-trace fix-check memory-causal-precision memory-strong-precision --store 
 <!-- excerpt exit=0 -->
 ```
 new failures: observed 338, expected 338.500, variance 0.750; p = 1.000
-difference: -0.15 points, new minus old (-0.66 to +0.36; Mantel-Haenszel weights; interval: Sato variance, large-sample, 95%)
+difference: -0.1 points, new minus old (-1.6 to +1.1; Mantel-Haenszel weights; range: stratified Miettinen-Nurminen score interval, 95%, for these inputs as run; rough here: fewer than 10 inputs vary and one try per input on the new version and one try per input on the old version)
 ```
 
 <!-- excerpt exit=0 -->
@@ -375,7 +418,7 @@ difference: -0.15 points, new minus old (-0.66 to +0.36; Mantel-Haenszel weights
 ```
 
 On the 670 cases left the report reads *no significant difference*: 339 misses, then 338,
--0.15 points, in a design that could have detected a drop of 1.7 points. The header says
+a 0.15-point drop, in a design that could have detected a drop of 1.7 points. The header says
 that 1,130 cases were left out and why, and they are the cases where the causal memory
 returned nothing. Read that line before the verdict. The two means do not show it: 0.453
 over the 670 rows Ragas scored, against 0.458 over 1,800.

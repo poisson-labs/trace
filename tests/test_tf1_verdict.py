@@ -60,7 +60,8 @@ def compare_cases(two_run_store) -> dict[str, list[str]]:  # type: ignore[no-unt
     different = two_run_store(deaths_rows(list(range(1, 21))), deaths_rows(list(range(21, 41))))
     return {
         "different": ["compare", "a", "b", "--store", str(different), "--event", "fail", "--max-mde-hr", "100"],
-        "no significant difference": compare_tau2("1.5"),
+        # ST5 (ruled 2026-10-20): tau2's limit is 1.603, so 1.5 now reads too small to tell
+        "no significant difference": compare_tau2("1.604"),
         "too small to tell": compare_tau2("1.3"),
     }
 
@@ -71,16 +72,41 @@ FIX_CASES = {
     "too small to tell": fix_check_tau2(),
 }
 
+# S12 (ruled 2026-10-20): the first line's sentence is plain (spec section 9.5.6); the bold line
+# inside the report keeps the technical sentence, and both carry the verdict word
+COMPARE_FIRST = {
+    "different": "failures come later after the change",
+    "no significant difference": "the gap could be chance",
+    "too small to tell": "too few failures to see a 1.3-fold change",
+}
+COMPARE_BOLD = {
+    "different": ("log-rank", "p = "),
+    "no significant difference": ("p = 0.521", "1.603"),
+    "too small to tell": ("1.603", "1.3"),
+}
+FIX_FIRST = {
+    "different": "the new version failed slightly more often",
+    "no significant difference": "the gap could be chance",
+    "too small to tell": "too few tries to see a 20-point drop",
+}
+FIX_BOLD = {
+    "different": ("Cochran-Mantel-Haenszel", "p = 0.036"),
+    "no significant difference": ("p = 0.883", "lies inside ±20"),
+    "too small to tell": ("64.3", "20"),
+}
+
 
 @pytest.mark.parametrize("want", THREE)
 def test_tf1_09_compare_opens_with_its_verdict_and_keeps_the_bold_line(compare_cases: dict[str, list[str]], want: str) -> None:
     result = trace(compare_cases[want])
     word, sentence = _opens_with_the_verdict(result)
     assert word == want
+    assert sentence == COMPARE_FIRST[want], sentence
     bold = _bold(result.out)
     assert bold.startswith(want), bold
-    assert _plain(sentence) == _plain(bold[len(want):]), (sentence, bold)
-    assert trace([*compare_cases[want], "--json"]).json()["comparison"]["verdict"] == want
+    assert all(fact in bold for fact in COMPARE_BOLD[want]), bold
+    doc = trace([*compare_cases[want], "--json"]).json()
+    assert doc["comparison"]["verdict"] == want and doc["sentence"] == sentence
 
 
 @pytest.mark.parametrize("want", THREE)
@@ -88,16 +114,22 @@ def test_tf1_09_fix_check_opens_with_its_verdict_and_keeps_the_bold_line(want: s
     result = trace(FIX_CASES[want])
     word, sentence = _opens_with_the_verdict(result)
     assert word == want
+    assert sentence == FIX_FIRST[want], sentence
     bold = _bold(result.out)
     assert bold.startswith(want), bold
-    assert _plain(sentence) == _plain(bold[len(want):]), (sentence, bold)
+    assert all(fact in bold for fact in FIX_BOLD[want]), bold
 
 
 def test_tf1_09_where_states_the_deaths_the_kinds_and_the_median() -> None:
+    """S11 (ruled 2026-10-20) and ST8: the first line drops the median; it states the failures
+    and the kinds of their last steps, not the cause."""
     word, sentence = _opens_with_the_verdict(trace(where_cs()))
     assert word == "ok"
-    # cs record: 7 of 24 placed episodes died, 4 at a model call and 3 at an agent; median 50
-    assert sorted(counts_in(sentence), key=int) == ["3", "4", "7", "24", "50"], sentence
+    assert sentence == (
+        "7 of 24 tries failed; their last steps: 4 at a model call and 3 at an agent step "
+        "(not necessarily the cause)"
+    ), sentence
+    assert sorted(counts_in(sentence), key=int) == ["3", "4", "7", "24"], sentence
 
 
 def test_tf1_09_where_with_no_death_states_the_episodes_and_the_events(two_run_store) -> None:  # type: ignore[no-untyped-def]

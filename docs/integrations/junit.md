@@ -78,9 +78,24 @@ poisson-trace import junit tests/fixtures/ingest/junit/humaneval-a.xml \
 
 <!-- output exit=0 -->
 ```
-ok  wrote run replay-a to ./store: 656 rows, 164 cases, 4 repeats each; met 569, missed 87
+ok  wrote run replay-a to ./store: 656 rows, 164 cases, 4 repeats each; 569 passed, 87 failed
 
 # Poisson Trace · import · replay-a
+
+## Summary
+
+- Wrote: replay-a into ./store, from humaneval-a.xml (junit): 656 tries on 164 inputs.
+- Failures: 87 failed and 569 passed. A try counts as failed when its test failed or errored.
+- Compared: Nothing yet. One import is one version.
+- Next: Import the other version's file the same way: `poisson-trace import junit OTHER.xml --store ./store --run OTHER --case name`.
+
+## Before you act on this
+
+- Its start time is the report's earliest suite timestamp.
+- A skipped test has no outcome and is left out.
+- When you compare, choose the smallest drop that matters to you (--max-mde) before you look at any results; Trace then says whether these tries could catch it.
+
+## What was written
 
 - run written: replay-a · store: ./store
 - tool: junit
@@ -120,12 +135,12 @@ poisson-trace fix-check replay-a replay-b --store ./store --event missed \
 
 <!-- excerpt exit=0 -->
 ```
-no significant difference  p = 0.639; could not have detected a drop in failure share below 3.2 points
+no significant difference  the gap could be chance
 ```
 
 <!-- excerpt exit=0 -->
 ```
-| version | runs | failed | failure share | did not fail on re-run |
+| version | runs | failed | failure share | did not fail |
 |---|---|---|---|---|
 | old | 656 | 87 | 13.3% | 86.7% |
 | new | 656 | 83 | 12.7% | 87.3% |

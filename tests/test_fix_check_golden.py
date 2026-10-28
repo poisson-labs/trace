@@ -40,8 +40,10 @@ def test_tr66_tau2_pair_all_inputs() -> None:
     assert t["p"] == pytest.approx(0.883073, abs=1e-4)
     diff = d["difference"]
     assert diff["points"] == pytest.approx(0.0100, abs=1e-4)
-    assert diff["lo"] == pytest.approx(-0.056451, abs=1e-4)
-    assert diff["hi"] == pytest.approx(0.076451, abs=1e-4)
+    # ST3 (ruled 2026-10-20): the stratified Miettinen-Nurminen interval (the statistics check's
+    # simlib.mn_stratified on its dump F1-tau2-fixcheck-all)
+    assert diff["lo"] == pytest.approx(-0.060441, abs=1e-4)
+    assert diff["hi"] == pytest.approx(0.081196, abs=1e-4)
     c = d["consistency"]
     assert c["failure_share"] == pytest.approx(0.555, abs=1e-4)
     assert c["fails_again"] == pytest.approx(0.7915, abs=1e-4)
@@ -50,10 +52,15 @@ def test_tr66_tau2_pair_all_inputs() -> None:
     assert c["pooled"] == pytest.approx(0.2470, abs=1e-4)
     assert d["limits"]["drop"] == pytest.approx(0.110854, abs=1e-4)
     assert d["limits"]["rise"] == pytest.approx(0.108253, abs=1e-4)
-    assert d["verdict"] == "too small to tell"
-    assert d["guidance"] == {"repeats": 5, "inputs": 61, "accepts_at": pytest.approx(0.1109, abs=1e-12)}
+    # ST2 (ruled 2026-10-20): -6.0 to +8.1 lies inside plus or minus 10, so no significant
+    # difference, though the drop limit is above 10; the guidance is for too small to tell only
+    assert d["verdict"] == "no significant difference"
+    assert d["guidance"] is None
     assert d["by_input"]["moved"] == 20 and d["by_input"]["method"] == "monte carlo"
-    assert "too small to tell" in norm(fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.10").out)
+    assert "no significant difference" in norm(fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.10").out)
+    tight = _json(fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.075", "--json"), 0)
+    assert tight["verdict"] == "too small to tell"
+    assert tight["guidance"]["accepts_at"] == pytest.approx(0.0812, abs=1e-12)
     loose = fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.12")
     assert loose.code == 0 and "no significant difference" in norm(loose.out)
     assert _json(fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.12", "--json"), 0)["guidance"] is None
@@ -65,10 +72,12 @@ def test_tr66_tau2_pair_all_inputs() -> None:
 def test_tr67_tau2_pair_compare_guidance() -> None:
     tight = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.3, "--json")
     g = _json(tight, 0)["comparison"]["guidance"]  # R17
-    assert (g["deaths"], g["runs"], g["inputs"], g["repeats"]) == (457, 824, 103, 9)
-    assert g["accepts_at"] == pytest.approx(1.457, abs=1e-12)
-    assert _json(compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.5, "--json"), 0)["comparison"]["guidance"] is None
-    assert compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.457).code == 0
+    # ST5 (ruled 2026-10-20): the tries per input whose expected log-rank information reaches the
+    # asked ratio's (the statistics check's sim_compare.py search; 11, settled in the Session A log)
+    assert g["repeats"] == 11
+    assert g["accepts_at"] == pytest.approx(1.604, abs=1e-12)
+    assert _json(compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.604, "--json"), 0)["comparison"]["guidance"] is None
+    assert compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.604).code == 0
 
 
 # ---------- TR68 ----------
@@ -95,8 +104,9 @@ def test_tr68_the_real_before_and_after() -> None:
     assert t["p"] == pytest.approx(0.2688, abs=1e-4)
     diff = d["difference"]
     assert diff["points"] == pytest.approx(-0.25, abs=1e-4)
-    assert diff["lo"] == pytest.approx(-0.601255, abs=1e-4)
-    assert diff["hi"] == pytest.approx(0.101255, abs=1e-4)
+    # ST3: simlib.mn_stratified on the dump tau2-fixcheck-failing-from
+    assert diff["lo"] == pytest.approx(-0.615002, abs=1e-4)
+    assert diff["hi"] == pytest.approx(0.113135, abs=1e-4)
     assert d["by_input"] == {"moved": 4, "p": 0.375, "method": "exact", "draws": None, "seed": None}
     assert d["limits"]["drop"] == pytest.approx(0.642939, abs=1e-4)
     assert d["limits"]["rise"] is None
@@ -162,8 +172,9 @@ def test_tr69_the_humaneval_pair_reads_different_failed_more() -> None:
     assert d["gap_seconds"] == pytest.approx(3361.826296, abs=1e-6)
     diff = d["difference"]
     assert diff["points"] == pytest.approx(0.004668, abs=1e-4)
-    assert diff["lo"] == pytest.approx(0.000364, abs=1e-4)
-    assert diff["hi"] == pytest.approx(0.008973, abs=1e-4)
+    # ST3: simlib.mn_stratified on the dump he-fixcheck
+    assert diff["lo"] == pytest.approx(0.000378, abs=1e-4)
+    assert diff["hi"] == pytest.approx(0.009263, abs=1e-4)
     assert d["limits"]["drop"] == pytest.approx(0.006436, abs=1e-4)
     c = d["consistency"]
     assert (c["failure_share"], c["fails_again"], c["kappa"]) == (

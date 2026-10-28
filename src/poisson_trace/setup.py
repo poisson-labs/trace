@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import json
 import math
 import os
 import re
@@ -107,6 +108,15 @@ class StoreRun:
     run_id: str
     target_id: str
     created_at: str
+    backend: str = ""
+
+    @property
+    def tool(self) -> str | None:
+        """The tool whose files Trace's import wrote this run from; None for a run Prove
+        stored."""
+        return (
+            self.backend[len(names.IMPORTED) :] if self.backend.startswith(names.IMPORTED) else None
+        )
 
 
 @dataclass
@@ -245,7 +255,12 @@ def _run_of(store: Any, name: str) -> StoreRun | None:
         manifest = store.manifest(name)
     except Exception:
         return None
-    return StoreRun(manifest.run_id, str(manifest.target_id), str(manifest.created_at))
+    return StoreRun(
+        manifest.run_id,
+        str(manifest.target_id),
+        str(manifest.created_at),
+        str(getattr(manifest, "backend", "") or ""),
+    )
 
 
 def _day(created_at: str) -> str | None:
@@ -253,14 +268,22 @@ def _day(created_at: str) -> str | None:
     return None if started is None else started.strftime("%Y-%m-%d")
 
 
+def written_by(runs: Sequence[StoreRun]) -> str:
+    """What wrote a store's runs, by the tools Trace's import read them from: "imported from
+    ragas", or "" for runs Prove stored alone."""
+    tools = list(dict.fromkeys(r.tool for r in runs if r.tool is not None))
+    return f"imported from {_and(sorted(tools))}" if tools else ""
+
+
 def store_line(found: FoundStore) -> str:
-    """A store's runs, its targets as names show them, and its newest day in UTC."""
-    targets = sorted({names.target_of(r.target_id) for r in found.runs})
+    """A store's runs, its targets as names show them (what wrote them, for runs Trace's import
+    wrote), and its newest day in UTC."""
+    targets = sorted({names.target_of(r.target_id) for r in found.runs if r.tool is None})
     shown = targets[:TARGETS_SHOWN]
     more = len(targets) - len(shown)
     said = ", ".join(shown) + (f" and {count(more)} more" if more > 0 else "")
     days = [d for d in (_day(r.created_at) for r in found.runs) if d is not None]
-    parts = [_plural(len(found.runs), "run", "runs"), said]
+    parts = [_plural(len(found.runs), "run", "runs"), said, written_by(found.runs)]
     if days:
         parts.append(f"newest {max(days)}")
     return " · ".join(p for p in parts if p)
@@ -303,7 +326,7 @@ def show(found: Found) -> Listed:
             "point at a store elsewhere\n"
         )
     if found.stores:
-        look.err(f"  found {_plural(len(found.stores), 'Prove store', 'Prove stores')}:\n")
+        look.err(f"  found {_plural(len(found.stores), 'store', 'stores')}:\n")
         for s in found.stores:
             n += 1
             stores[n] = s
@@ -322,7 +345,7 @@ def show(found: Found) -> Listed:
             n += 1
             look.err(f"    {n}) {f.path.ljust(width)}  {f.said}\n")
     if not found.stores and not found.files:
-        look.err("  found no Prove store and no result file a reader of this install reads\n")
+        look.err("  found no store and no result file a reader of this install reads\n")
     return Listed(stores)
 
 
@@ -736,6 +759,194 @@ def import_line(item: Imported, store: str) -> str:
     return " ".join(_shell_word(w) for w in words)
 
 
+# ---------- the lines that import the files init leaves ----------
+
+# the most import lines a refusal or a summary prints; the rest are counted
+LINES_SHOWN = 12
+# the column names init reads as a table's case, in the order it prefers them
+CASE_COLUMNS = ("case", "id", "case_id", "question_id", "sample_id")
+
+
+def listing_order(files: Sequence[FoundFile]) -> list[FoundFile]:
+    """The files in the order the listing shows them: DeepEval's saved test runs first, then
+    the other result files."""
+    return [f for f in files if f.reader == "deepeval"] + [
+        f for f in files if f.reader != "deepeval"
+    ]
+
+
+def by_tool(files: Sequence[FoundFile]) -> list[FoundFile]:
+    """The files grouped by the tool that wrote them, the tools in the order the listing first
+    shows each, each tool's files in the listing's order."""
+    ordered = listing_order(files)
+    tools = dict.fromkeys(f.reader for f in ordered)
+    return [f for tool in tools for f in ordered if f.reader == tool]
+
+
+def tools_of(files: Sequence[FoundFile]) -> list[str]:
+    return list(dict.fromkeys(f.reader for f in listing_order(files)))
+
+
+def _guessed(found: FoundFile) -> dict[str, Any]:
+    """The answers an import of the file takes, read from the file where it says them, else a
+    word in capitals for the user to fill in."""
+    path = Path(found.path)
+    if found.reader == "deepeval":
+        return _deepeval_guess(path)
+    if found.reader in ("ragas", "table"):
+        try:
+            head = _columns(path)
+        except Exception:
+            head = []
+        case = next((c for c in CASE_COLUMNS if c in head), "CASE")
+        if found.reader == "ragas":
+            from poisson_trace.ingest.tabular import METRICS
+
+            metrics = [c for c in dict.fromkeys(head) if c in METRICS]
+            return {
+                "metric": metrics[0] if len(metrics) == 1 else "METRIC",
+                "cut": "CUT",
+                "side": "below",
+                "case_column": case,
+            }
+        from poisson_trace.ingest.table import OUTCOME_COLUMNS
+
+        outcomes = [c for c in dict.fromkeys(head) if c in OUTCOME_COLUMNS]
+        column = outcomes[0] if len(outcomes) == 1 else "OUTCOME"
+        failed = _failure_values(path, column) if column != "OUTCOME" else []
+        return {
+            "case_column": case,
+            "outcome_column": column,
+            "failed": failed or ["FAILED"],
+        }
+    return {}
+
+
+def _columns(path: Path) -> list[str]:
+    from poisson_trace.ingest.tabular import head_columns
+
+    head = head_columns(path)
+    return [] if head is None else list(head[1])
+
+
+def _failure_values(path: Path, column: str) -> list[str]:
+    """The values of a table's outcome column that are not words for success, the most rows
+    first; none when the column cannot be read."""
+    from poisson_trace.ingest import tabular
+    from poisson_trace.ingest.table import spelt
+
+    try:
+        fmt, gzipped = tabular.format_of(path)
+        raw, _ = tabular.read_bytes(path)
+        cells = Counter(
+            text
+            for cell, _ in tabular.pairs(path, fmt, gzipped, raw, (column, column))
+            if (text := spelt(cell)) is not None
+        )
+    except Exception:
+        return []
+    return [v for v in _outcome_order(cells) if v not in SUCCESS_WORDS]
+
+
+def _deepeval_guess(path: Path) -> dict[str, Any]:
+    """A DeepEval test run's one metric, read at DeepEval's own decision, its cases by name
+    where each has a name of its own."""
+    from poisson_trace.ingest import deepeval
+
+    metrics: list[str] = []
+    case = "CASE"
+    try:
+        _, test_run = deepeval._test_run(path, json.loads(path.read_bytes().decode("utf-8")))
+        entries = deepeval._entries(path, test_run)
+        for _, test_case in entries:
+            metrics += [str(m.get("name")) for m in deepeval._metrics(path, test_case)]
+        named = [test_case.get("name") for _, test_case in entries]
+        if named and all(
+            isinstance(n, str) and n and not deepeval._POSITIONAL.fullmatch(n) for n in named
+        ):
+            case = "name"
+    except Exception:
+        # a file the reader would refuse: every answer is the user's to give
+        metrics, case = [], "CASE"
+    held = list(dict.fromkeys(metrics))
+    return {"metric": held[0] if len(held) == 1 else "METRIC", "cut": "recorded", "case": case}
+
+
+def _run_names(files: Sequence[FoundFile]) -> dict[str, str]:
+    """Each file's run name: the file's own, with its tool's name after it where two files
+    would share one; RUN where the file's name cannot be a run's."""
+    named: dict[str, str] = {}
+    stems = Counter(run_name(f.path) for f in files)
+    for f in files:
+        name = run_name(f.path)
+        if stems[name] > 1:
+            name = f"{name}-{f.reader}"
+        named[f.path] = "RUN" if names.import_name_refusal(name) is not None else name
+    taken: Counter[str] = Counter()
+    for f in files:
+        taken[named[f.path]] += 1
+        if taken[named[f.path]] > 1 and named[f.path] != "RUN":
+            named[f.path] = f"{named[f.path]}-{taken[named[f.path]]}"
+    return named
+
+
+def file_lines(files: Sequence[FoundFile], store: str) -> list[str]:
+    """One import line for each file, grouped by tool, at most 12 of them (each file shown is
+    opened for its answers): every answer init can read from the file filled in, and a word in
+    capitals for each it cannot (METRIC, CUT, CASE)."""
+    ordered = by_tool(files)
+    run_names = _run_names(ordered)
+    lines = []
+    for f in ordered[:LINES_SHOWN]:
+        guess = _guessed(f)
+        words = ["poisson-trace", "import", f.reader, f.path, *_pair("--store", store)]
+        words += _pair("--run", run_names[f.path])
+        for dest in ("metric", "cut"):
+            if dest in guess:
+                words += _pair(_FLAG[dest], str(guess[dest]))
+        if "side" in guess:
+            words.append(f"--{guess['side']}")
+        for dest in ("case", "case_column", "outcome_column"):
+            if dest in guess:
+                words += _pair(_FLAG[dest], str(guess[dest]))
+        for value in guess.get("failed", ()):
+            words += _pair("--failed", str(value))
+        lines.append(" ".join(_shell_word(w) for w in words))
+    return lines
+
+
+def shown_lines(files: Sequence[FoundFile], store: str) -> list[str]:
+    """The lines a refusal or a summary prints: at most 12, then how many more and where the
+    import's help is."""
+    shown = file_lines(files, store)
+    more = len(files) - len(shown)
+    if more > 0:
+        word = "file" if more == 1 else "files"
+        shown.append(f"and {count(more)} more {word}: {_IMPORT_HELP}")
+    else:
+        shown.append(_IMPORT_HELP)
+    return shown
+
+
+def files_said(files: Sequence[FoundFile]) -> str:
+    """``8 result files of 4 tools``."""
+    tools = len(tools_of(files))
+    return (
+        f"{_plural(len(files), 'result file', 'result files')} of {_plural(tools, 'tool', 'tools')}"
+    )
+
+
+def _not_empty(files: Sequence[FoundFile]) -> list[FoundFile]:
+    """The files but the JUnit reports that hold no test case, left out without a word: init
+    imports none of them here, so it has none to say it leaves out."""
+    from poisson_trace.ingest import junit
+
+    return [f for f in files if not (f.reader == "junit" and junit.holds_no_test_case(f.path))]
+
+
+_IMPORT_HELP = "poisson-trace import --help"
+
+
 def _imported_outcomes(imports: Sequence[Imported]) -> Outcomes:
     counts: Counter[str] = Counter()
     for item in imports:
@@ -913,18 +1124,12 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
         elif found.files:
             readers = list(dict.fromkeys(f.reader for f in found.files))
             if len(readers) > 1 and imported is not False:
-                raise Refused(
-                    f"the result files found were written by {_and(readers)}, and init imports "
-                    "one tool's files with one set of answers; give --no-import to write the "
-                    "config with no store, then import each tool's files with "
-                    "poisson-trace import",
-                    "poisson-trace import --help",
-                )
+                _several_tools(ns, found.files, config.beside(path, IMPORTED_STORE), shown)
             if imported is not False:
                 answers_fit(readers, answers)
             if imported is None:
                 imported = not terminal or _yes_no(
-                    "No Prove store here, but these look like results another tool wrote. "
+                    "No store here, but these look like results another tool wrote. "
                     "Import them as runs Trace can read? [Y/n]"
                 )
             if imported:
@@ -961,7 +1166,34 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
     others = []
     if found is not None and stores and not imports:
         others = [s for s in found.stores if s.path != stores[0][1]]
-    return _summary(ns, shown, setup, form, events, command, others, imports, "wrote")
+    left: list[FoundFile] = []
+    if found is not None and not imports:
+        left = found.files if not found.stores else _not_empty(found.files)
+    return _summary(ns, shown, setup, form, events, command, others, imports, "wrote", left)
+
+
+def _several_tools(
+    ns: argparse.Namespace, files: Sequence[FoundFile], store: str, shown: str
+) -> None:
+    """Refused: files of several tools, which init cannot import with one set of answers; the
+    refusal carries one import line for each file."""
+    tools = tools_of(files)
+    finish = look.command(
+        "poisson-trace",
+        "init",
+        "--force",
+        *(_shell_word(w) for w in _pair("--store", store)),
+        *_reach(ns),
+    )
+    raise Refused(
+        f"the {_plural(len(files), 'result file', 'result files')} here were written by "
+        f"{_plural(len(tools), 'tool', 'tools')} ({_and(tools)}), and init can import one "
+        "tool's files at a time, so it imported none; pick the two files you want to compare, "
+        "the old version's and the new one's, import each with its line below (a word in "
+        f"capitals is yours to fill in), then run {finish}; or give --no-import to write "
+        f"{shown} with no store first",
+        *shown_lines(files, store),
+    )
 
 
 def _existing(ns: argparse.Namespace, path: Path, shown: str) -> config.Config | None:
@@ -1231,6 +1463,7 @@ def _summary(
     others: Sequence[FoundStore],
     imports: Sequence[Imported],
     verb: str,
+    left: Sequence[FoundFile] = (),
 ) -> Done:
     reach = _reach(ns)
     opened = [_index(p, form) for _, p in stores]
@@ -1257,12 +1490,16 @@ def _summary(
                 sentence = f"{verb} {shown}: {said}; no failures, as {reason}"
     else:
         sentence = f"{verb} {shown} with no store yet"
+    if left:
+        sentence += f"; {files_said(left)} not imported"
     lines = [f"ok  {sentence}"]
     if indexes:
         lines.append(f"  names    {_names_line(indexes[0])}")
     lines.append("  prove    poisson-prove is installed at the version Trace reads")
     for item in imports:
         lines.append(f"  import   {import_line(item, stores[0][1])}")
+    if left:
+        lines += _left_lines(ns, left, stores)
     taken = {n for n, _ in stores}
     for other in others:
         name, why = store_name(other.path)
@@ -1276,6 +1513,8 @@ def _summary(
             lines.append(f"  another  {other.path} is not added by its folder's name: {why}")
     if stores:
         following = look.command("poisson-trace", "runs", *reach)
+    elif left:
+        following = _IMPORT_HELP
     else:
         lines.append(
             "Trace reads runs Prove stored, or the result files of the tools "
@@ -1297,6 +1536,51 @@ def _summary(
         "next": following,
     }
     return Done(data, "\n".join(lines) + "\n")
+
+
+def _left_lines(
+    ns: argparse.Namespace, left: Sequence[FoundFile], stores: Sequence[tuple[str | None, str]]
+) -> list[str]:
+    """The result files init found and did not import, one import line for each, and what to
+    run once a pair is imported: set up with their store, add it beside the one set up, or
+    nothing more where they join the store set up."""
+    store = config.beside(config.path_of(ns.config), IMPORTED_STORE)
+    reach = _reach(ns)
+    one = len(left) == 1
+    said = (
+        f"  left out {_plural(len(left), 'result file', 'result files')}, not imported; "
+        + ("the line below imports it." if one else "the lines below import them.")
+        + " To compare two, run the pair's lines (a word in capitals is yours to fill in)"
+    )
+    if not stores:
+        finish = look.command(
+            "poisson-trace",
+            "init",
+            "--force",
+            *(_shell_word(w) for w in _pair("--store", store)),
+            *reach,
+        )
+        said += f", then run {finish}:"
+    elif _same_folder(stores[0][1], store):
+        held = config.CONFIG if ns.config is None else look.shown(ns.config)
+        said += f"; they join {stores[0][1]}, which {held} reads:"
+    else:
+        add = look.command(
+            "poisson-trace", "init", *(_shell_word(w) for w in _pair("--add-store", store)), *reach
+        )
+        said += f", then run {add} to add their store beside this one:"
+    shown = shown_lines(left, store)
+    if len(left) <= LINES_SHOWN:
+        # the import's help is the next command, or a line away from it
+        shown = shown[:-1]
+    return [said, *(f"    {line}" for line in shown)]
+
+
+def _same_folder(a: str, b: str) -> bool:
+    try:
+        return os.path.samefile(a, b)
+    except OSError:
+        return os.path.normpath(os.path.abspath(a)) == os.path.normpath(os.path.abspath(b))
 
 
 # ---------- --add-store ----------
