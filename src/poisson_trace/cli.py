@@ -5,8 +5,8 @@
 command line but ``import`` itself, so that it prints what ``poisson-trace-import`` prints.
 
 The command line is read first, so ``--help`` and ``--version`` need nothing installed; the
-check that ``proofload`` is present at the version this package reads runs next, and
-``proofload`` is imported inside the verbs and nowhere at module level. Every line printed,
+check that ``poisson_prove`` is present at the version this package reads runs next, and
+``poisson_prove`` is imported inside the verbs and nowhere at module level. Every line printed,
 every refusal and every exit code is the look's (``look.py``, ``docs/cli-look.md``).
 """
 
@@ -862,7 +862,7 @@ def _validate_fix_check(ns: argparse.Namespace) -> None:
 def _open(path: str) -> tuple[Any, list[str]]:
     """The store and the runs it holds, or a refusal when no folder under the path holds a run
     Prove stored: a path that is not there, an empty folder and a plain file alike."""
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     store = Store(path)
     try:
@@ -1032,7 +1032,7 @@ def _header(run: Any, manifest: Any, placement: Any) -> dict[str, Any]:
 
 
 def _ordered(causes: set[str]) -> list[str]:
-    from proofload.trace import KINDS
+    from poisson_prove.trace import KINDS
 
     return [k for k in KINDS if k in causes] + sorted(c for c in causes if c not in KINDS)
 
@@ -1239,12 +1239,17 @@ def _name(ns: argparse.Namespace) -> int:
         run = index.resolve(ns.run)
         mine = [n for n, r in entries.items() if r == run.run_id]
         if not mine:
-            whose = "the one it was imported under" if run.imported else "from its manifest"
+            if run.imported:
+                whose = "the one it was imported under"
+            elif run.swept is not None:
+                whose = "the one it was given when it was swept"
+            else:
+                whose = "from its manifest"
             raise _Refusal(f"{run.shown()} has no name of yours to forget; its name is {whose}")
         for old in mine:
             del entries[old]
         names.write_names_file(index.root, shown, entries)
-        again = run.computed or run.run_id
+        again = run.without_yours
         look.out(
             f'ok  forgot the name "{mine[0]}" of {run.run_id}, which is named "{again}" again, '
             f"in {shown}\n\nnext: {listing}\n"
@@ -1292,7 +1297,7 @@ def _name_list(index: Any, shown: str, listing: str) -> int:
         elif run is None:
             own = "not in this store"
         else:
-            own = run.computed or run.run_id
+            own = run.without_yours
         cells.append((name, own, entries[name]))
     head = ("name", "name from its manifest", "run")
     widths = [max(len(c[i]) for c in [head, *cells]) for i in range(3)]
@@ -1309,8 +1314,8 @@ def _name_list(index: Any, shown: str, listing: str) -> int:
 
 
 def _where(ns: argparse.Namespace) -> int:
-    import proofload
-    from proofload.steps import declaration_check
+    import poisson_prove
+    from poisson_prove.steps import declaration_check
 
     from poisson_trace import summary
     from poisson_trace.clock import _reached_by, place
@@ -1376,7 +1381,7 @@ def _where(ns: argparse.Namespace) -> int:
     median = failed_steps[(len(failed_steps) - 1) // 2] if failed_steps else None
     data: dict[str, Any] = {
         "schema": "poisson-trace.where/1",
-        "prove": {"version": proofload.__version__, "store": ns.store},
+        "prove": {"version": poisson_prove.__version__, "store": ns.store},
         "run": _header(run, manifest, placement),
         "events": sorted(events),
         "clock": {"unit": "leaf span index", "by": ns.by},
@@ -1492,7 +1497,7 @@ def _write_svg(path: str, text: str) -> None:
 
 def _compare(ns: argparse.Namespace) -> int:
     import numpy as np
-    import proofload
+    import poisson_prove
 
     from poisson_trace import summary
     from poisson_trace.clock import place
@@ -1642,7 +1647,7 @@ def _compare(ns: argparse.Namespace) -> int:
             row["q"] = float(q_value)
     data: dict[str, Any] = {
         "schema": "poisson-trace.compare/1",
-        "prove": {"version": proofload.__version__, "store": ns.store},
+        "prove": {"version": poisson_prove.__version__, "store": ns.store},
         "runs": {
             "a": _header(run_a, manifest_a, placement_a),
             "b": _header(run_b, manifest_b, placement_b),
@@ -1934,7 +1939,7 @@ def _number(x: float) -> float | None:
 
 
 def _fix_check(ns: argparse.Namespace) -> int:
-    import proofload
+    import poisson_prove
 
     from poisson_trace import paired, summary
     from poisson_trace.report import FixCheckReport, _p_is, _points
@@ -2081,7 +2086,7 @@ def _fix_check(ns: argparse.Namespace) -> int:
     block = _changes_block(counts, configs, ns.alpha)
     data: dict[str, Any] = {
         "schema": "poisson-trace.fix-check/2",
-        "prove": {"version": proofload.__version__, "store": ns.store},
+        "prove": {"version": poisson_prove.__version__, "store": ns.store},
         "runs": {"old": header_old, "new": header_new},
         "gap_seconds": gap,
         "events": sorted(events),
@@ -2285,7 +2290,7 @@ def _fix_check_next(
 
 
 def _changes(ns: argparse.Namespace) -> int:
-    import proofload
+    import poisson_prove
 
     from poisson_trace import paired, summary
     from poisson_trace.report import ChangesReport
@@ -2309,7 +2314,7 @@ def _changes(ns: argparse.Namespace) -> int:
     gap = abs((_started(run_b, manifest_b) - _started(run_a, manifest_a)).total_seconds())
     data: dict[str, Any] = {
         "schema": "poisson-trace.changes/2",
-        "prove": {"version": proofload.__version__, "store": ns.store},
+        "prove": {"version": poisson_prove.__version__, "store": ns.store},
         "runs": {
             "a": _paired_header(run_a, manifest_a, tally_a),
             "b": _paired_header(run_b, manifest_b, tally_b),

@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from conftest import FIXTURES
 from tf0_support import HE_A, HE_B, chdir, run_sub, trace
@@ -226,7 +226,7 @@ def test_tf1_07_rows_are_every_row_prove_holds(tmp_path: Path) -> None:
 def test_tf1_07_a_run_with_traces_on_one_row_carries_traces(tmp_path: Path) -> None:
     from conftest import Row, build_store, roots
 
-    from proofload.store import config_hash
+    from poisson_prove.store import config_hash
 
     # the trace on the input Prove reads last (rows come back sorted by config hash)
     cases = sorted((str(i) for i in range(9)), key=lambda c: config_hash({"case": c}))

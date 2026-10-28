@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from conftest import (
     CS, CS_EVENTS, CS_RECORD, CS_REPLAY, SYNTH_COUNTS, SYNTH_DECLARED, SYNTH_EVENTS, TAU2, TAU2_A,

@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from conftest import COMPARE_KEYS, WHERE_KEYS, deaths_rows
 from fixcheck_support import CHANGES_KEYS, FIX_KEYS

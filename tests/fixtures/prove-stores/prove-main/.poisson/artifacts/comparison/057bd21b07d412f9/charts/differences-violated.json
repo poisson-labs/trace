@@ -1,0 +1,50 @@
+{
+  "schema": "poisson-prove.chart/1",
+  "event": "violated",
+  "condition": null,
+  "kind": "differences",
+  "title": "Per-condition differences: violated, after minus before, with its 97.5% interval (Tango; false coverage (Benjamini-Yekutieli); the paired test (McNemar))",
+  "caption": "The change in each condition's share of violated, after minus before, with the interval on the change at 97.5%; flagged rows in their direction's colour, the rest dim.",
+  "columns": [
+    "condition",
+    "verdict",
+    "delta",
+    "lo",
+    "hi",
+    "q"
+  ],
+  "rows": [
+    [
+      "task_id refund · tool_fail_rate 0.55",
+      "lower",
+      -0.575,
+      -0.7319735321565533,
+      -0.39925726841744147,
+      9.5367431640625e-07
+    ],
+    [
+      "task_id refund · tool_fail_rate 0",
+      "unchanged",
+      0.0,
+      -0.1115826867190848,
+      0.1115826867190848,
+      1.0
+    ],
+    [
+      "task_id search · tool_fail_rate 0.55",
+      "lower",
+      -0.55,
+      -0.7106972671854648,
+      -0.3770468355854186,
+      9.5367431640625e-07
+    ],
+    [
+      "task_id search · tool_fail_rate 0",
+      "unchanged",
+      0.0,
+      -0.1115826867190848,
+      0.1115826867190848,
+      1.0
+    ]
+  ]
+}

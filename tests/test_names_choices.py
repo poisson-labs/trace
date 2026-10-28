@@ -34,7 +34,7 @@ import json
 from pathlib import Path
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from tf0_support import chdir, deepeval_import, trace, trace_import
 from tf1_support import (

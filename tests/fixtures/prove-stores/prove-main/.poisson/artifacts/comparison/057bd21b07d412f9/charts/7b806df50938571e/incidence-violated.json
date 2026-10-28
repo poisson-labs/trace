@@ -1,0 +1,100 @@
+{
+  "schema": "poisson-prove.chart/1",
+  "event": "violated",
+  "condition": "7b806df50938571e",
+  "kind": "incidence",
+  "title": "Cumulative incidence of violated, each run: task_id refund · tool_fail_rate 0.55",
+  "caption": "The share of each run's episodes in task_id refund · tool_fail_rate 0.55 that had ended in violated by each time, before in grey and after in violet, to the horizon (20 tool_calls).",
+  "columns": [
+    "t",
+    "before",
+    "after"
+  ],
+  "rows": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      3.0,
+      0.175,
+      0.025
+    ],
+    [
+      4.0,
+      0.22499999999999998,
+      0.05
+    ],
+    [
+      5.0,
+      0.3,
+      0.075
+    ],
+    [
+      6.0,
+      0.35,
+      0.075
+    ],
+    [
+      7.0,
+      0.5249999999999999,
+      0.2
+    ],
+    [
+      8.0,
+      0.5499999999999999,
+      0.2
+    ],
+    [
+      9.0,
+      0.6,
+      0.225
+    ],
+    [
+      10.0,
+      0.6499999999999999,
+      0.225
+    ],
+    [
+      11.0,
+      0.6749999999999999,
+      0.225
+    ],
+    [
+      12.0,
+      0.7,
+      0.225
+    ],
+    [
+      13.0,
+      0.75,
+      0.25
+    ],
+    [
+      15.0,
+      0.8,
+      0.25
+    ],
+    [
+      17.0,
+      0.8250000000000001,
+      0.25
+    ],
+    [
+      18.0,
+      0.8250000000000001,
+      0.275
+    ],
+    [
+      19.0,
+      0.8500000000000001,
+      0.275
+    ],
+    [
+      20.0,
+      0.8500000000000001,
+      0.275
+    ]
+  ]
+}

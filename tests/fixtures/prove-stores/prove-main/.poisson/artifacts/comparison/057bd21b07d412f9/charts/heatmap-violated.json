@@ -1,0 +1,60 @@
+{
+  "schema": "poisson-prove.chart/1",
+  "event": "violated",
+  "condition": null,
+  "kind": "heatmap",
+  "title": "Verdict heatmap: violated over the conditions (the paired test (McNemar), flags by Benjamini-Hochberg at the false discovery rate q 0.05 over 4 tests)",
+  "caption": "Each condition's verdict for violated with the change in its share, after minus before, and its q; task_id across, tool_fail_rate up.",
+  "columns": [
+    "condition",
+    "task_id",
+    "tool_fail_rate",
+    "before",
+    "after",
+    "delta",
+    "q",
+    "verdict"
+  ],
+  "rows": [
+    [
+      "task_id refund · tool_fail_rate 0.55",
+      "refund",
+      0.55,
+      0.85,
+      0.275,
+      -0.575,
+      9.5367431640625e-07,
+      "lower"
+    ],
+    [
+      "task_id refund · tool_fail_rate 0",
+      "refund",
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      "unchanged"
+    ],
+    [
+      "task_id search · tool_fail_rate 0.55",
+      "search",
+      0.55,
+      0.8,
+      0.25,
+      -0.55,
+      9.5367431640625e-07,
+      "lower"
+    ],
+    [
+      "task_id search · tool_fail_rate 0",
+      "search",
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      "unchanged"
+    ]
+  ]
+}

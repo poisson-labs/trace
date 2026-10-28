@@ -15,7 +15,7 @@ import shutil
 from pathlib import Path
 
 from conftest import TAU2
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from tf2_support import CONFIG, NUMBERED, config, copy_tree, here, init_yes, refused, scratch_home, summary_command, tty, work  # noqa: F401
 from tf3_support import SUITE_1, SUITE_2, TABLE_A, TABLE_B

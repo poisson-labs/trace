@@ -123,10 +123,10 @@ def test_tr9_src_writes_nothing_but_the_svg_and_the_json(synth) -> None:  # type
 
 
 ALLOWED_PROVE_IMPORTS = {
-    "proofload": set(),
-    "proofload.store": {"Store", "RunManifest", "RunTally"},
-    "proofload.steps": {"declaration_check", "DeclarationCheck"},
-    "proofload.trace": {"KINDS"},
+    "poisson_prove": set(),
+    "poisson_prove.store": {"Store", "RunManifest", "RunTally"},
+    "poisson_prove.steps": {"declaration_check", "DeclarationCheck"},
+    "poisson_prove.trace": {"KINDS"},
 }
 
 
@@ -139,11 +139,11 @@ def test_tr10_reads_through_prove_only(synth) -> None:  # type: ignore[no-untype
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     assert not alias.name.startswith("pyarrow"), path.name
-                    assert alias.name == "proofload" or not alias.name.startswith("proofload"), (path.name, alias.name)
+                    assert alias.name == "poisson_prove" or not alias.name.startswith("poisson_prove"), (path.name, alias.name)
             if isinstance(node, ast.ImportFrom):
                 module = node.module or ""
                 assert not module.startswith("pyarrow"), path.name
-                if module.startswith("proofload"):
+                if module.startswith("poisson_prove"):
                     assert module in ALLOWED_PROVE_IMPORTS, (path.name, module)
                     names = {alias.name for alias in node.names}
                     assert names <= ALLOWED_PROVE_IMPORTS[module], (path.name, module, names)
@@ -271,18 +271,18 @@ CALLS = (
 
 @pytest.mark.parametrize("argv", CALLS)
 def test_tr31_refuses_before_the_store_when_prove_is_unimportable(argv) -> None:  # type: ignore[no-untyped-def]
-    code = f"import sys; sys.modules['proofload'] = None; from poisson_trace.cli import main; sys.exit(main({argv!r}))"
+    code = f"import sys; sys.modules['poisson_prove'] = None; from poisson_trace.cli import main; sys.exit(main({argv!r}))"
     proc = _run(code, dict(os.environ))
     assert proc.returncode == 1, proc.stderr + proc.stdout
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
     assert lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
-    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "pip install" in " ".join(lines)
+    assert "poisson-prove" in lines[0] and "0.0.1" in lines[0] and "pip install" in " ".join(lines)
     assert "no-such-store" not in " ".join(lines)
 
 
 @pytest.mark.parametrize("argv", CALLS)
 def test_tr31_refuses_on_the_wrong_prove_version(tmp_path: Path, argv) -> None:  # type: ignore[no-untyped-def]
-    fake = tmp_path / "fake" / "proofload"
+    fake = tmp_path / "fake" / "poisson_prove"
     fake.mkdir(parents=True)
     (fake / "__init__.py").write_text('__version__ = "9.9.9"\n')
     env = dict(os.environ)
@@ -292,7 +292,7 @@ def test_tr31_refuses_on_the_wrong_prove_version(tmp_path: Path, argv) -> None: 
     assert proc.returncode == 1, proc.stderr + proc.stdout
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
     assert lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
-    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "9.9.9" in lines[0] and "pip install" in " ".join(lines)
+    assert "poisson-prove" in lines[0] and "0.0.1" in lines[0] and "9.9.9" in lines[0] and "pip install" in " ".join(lines)
 
 
 def test_tr31_prints_no_such_line_when_prove_is_present() -> None:

@@ -29,7 +29,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from conftest import CS, CS_RECORD, TAU2, TAU2_A, TAU2_B
 from tf0_support import RAGAS, deepeval_import, ragas_import, run_sub, trace, trace_import, where_cs

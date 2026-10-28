@@ -6,7 +6,7 @@ third-party packages listed below and copies no third-party code. Each licence g
 quoted from the licence file shipped in the named distribution, with the upstream URL.
 
 --------------------------------------------------------------------------------
-Prove (the `proofload` package)
+Prove (the `poisson-prove` package)
 https://github.com/poisson-labs/prove
 First party: Poisson Labs. Not yet public and not a declared dependency of this package
 (see README, "Install"). Poisson Trace reads Prove's stored runs through Prove's public

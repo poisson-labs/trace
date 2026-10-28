@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 from support import FIXTURES, read_rows, run_import, run_trace
 
 RAGAS = FIXTURES / "ingest" / "ragas"

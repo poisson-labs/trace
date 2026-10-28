@@ -17,8 +17,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from proofload.store import EpisodeRecord, RunManifest, Store
-from proofload.trace import Declaration, Span, Trace
+from poisson_prove.store import EpisodeRecord, RunManifest, Store
+from poisson_prove.trace import Declaration, Span, Trace
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 TAU2 = FIXTURES / "tau2"
@@ -168,7 +168,7 @@ def build_store(
                 replicate_index=row.replicate_index, error=row.error, wall_time=1.0, meta=meta,
             )
         else:
-            from proofload.store import config_hash
+            from poisson_prove.store import config_hash
 
             rec = EpisodeRecord(
                 run_id=run_id, config_hash=config_hash(row.config), config=dict(row.config),

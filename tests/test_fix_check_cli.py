@@ -172,7 +172,7 @@ def test_tr37_a_row_failed_exactly_when_its_outcome_is_an_event(tmp_path: Path) 
 
 
 def test_tr37_rows_with_no_outcome_are_in_no_count_and_the_rows_add_up(store70: Path) -> None:
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     d = _json(_sel(store70, "--json"))
     store = Store(store70)
@@ -199,7 +199,7 @@ def test_tr37_timed_out_and_no_outcome_are_counted_apart(tmp_path: Path) -> None
 
 
 def test_tr37_the_same_numbers_on_runs_whose_traces_are_all_null(tmp_path: Path) -> None:
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     bare = tmp_path / "bare"
     for run in (TAU2_A, TAU2_B):
@@ -385,10 +385,10 @@ def test_tr41_nothing_under_the_store_changes() -> None:
 
 
 ALLOWED_PROVE_IMPORTS = {
-    "proofload": set(),
-    "proofload.store": {"Store", "RunManifest", "RunTally"},
-    "proofload.steps": {"declaration_check", "DeclarationCheck"},
-    "proofload.trace": {"KINDS"},
+    "poisson_prove": set(),
+    "poisson_prove.store": {"Store", "RunManifest", "RunTally"},
+    "poisson_prove.steps": {"declaration_check", "DeclarationCheck"},
+    "poisson_prove.trace": {"KINDS"},
 }
 
 
@@ -402,8 +402,8 @@ def test_tr41_every_read_is_a_prove_call() -> None:
         for node in ast.walk(ast.parse(text)):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    assert alias.name == "proofload" or not alias.name.startswith("proofload"), (path.name, alias.name)
-            if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("proofload"):
+                    assert alias.name == "poisson_prove" or not alias.name.startswith("poisson_prove"), (path.name, alias.name)
+            if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("poisson_prove"):
                 assert node.module in ALLOWED_PROVE_IMPORTS, (path.name, node.module)
                 assert {a.name for a in node.names} <= ALLOWED_PROVE_IMPORTS[node.module], (path.name, node.module)
             if isinstance(node, ast.Constant) and isinstance(node.value, str):
@@ -434,17 +434,17 @@ NEW_CALLS = (
 @pytest.mark.parametrize("argv", NEW_CALLS)
 def test_tr41_without_prove_both_verbs_refuse_before_the_store(argv) -> None:  # type: ignore[no-untyped-def]
     ok(fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.1"))
-    code = f"import sys; sys.modules['proofload'] = None; from poisson_trace.cli import main; sys.exit(main({argv!r}))"
+    code = f"import sys; sys.modules['poisson_prove'] = None; from poisson_trace.cli import main; sys.exit(main({argv!r}))"
     proc = _sub(code, dict(os.environ))
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
     assert proc.returncode == 1 and lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
-    assert "proofload" in lines[0] and "0.0.1" in lines[0] and "no-such-store" not in " ".join(lines)
+    assert "poisson-prove" in lines[0] and "0.0.1" in lines[0] and "no-such-store" not in " ".join(lines)
 
 
 @pytest.mark.parametrize("argv", NEW_CALLS)
 def test_tr41_on_the_wrong_prove_both_verbs_refuse(tmp_path: Path, argv) -> None:  # type: ignore[no-untyped-def]
     ok(changes(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS))
-    fake = tmp_path / "fake" / "proofload"
+    fake = tmp_path / "fake" / "poisson_prove"
     fake.mkdir(parents=True)
     (fake / "__init__.py").write_text('__version__ = "9.9.9"\n')
     env = dict(os.environ)

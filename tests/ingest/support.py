@@ -129,7 +129,7 @@ def tree(root: Path) -> dict[str, str]:
 def read_rows(root: Path, run: str) -> list[dict[str, Any]]:
     """The run's rows through Prove, as plain dicts: case, repeat, outcome, error, seed, t,
     horizon and ``meta["import"]``."""
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     frame = Store(root).read(run, meta=True, trace="none")
     out = []

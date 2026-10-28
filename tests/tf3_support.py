@@ -220,7 +220,7 @@ def write_report(path: Path, text: str) -> Path:
 def read_rows(root: Path, run: str) -> list[dict[str, Any]]:
     """The run's rows through Prove: case, repeat, outcome, error, seed, and ``meta``, sorted by
     case then repeat."""
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     frame = Store(root).read(run, meta=True, trace="none")
     out = []

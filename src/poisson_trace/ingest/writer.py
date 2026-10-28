@@ -1,4 +1,4 @@
-"""The one module under ``ingest/`` that imports ``proofload``: a Run becomes one new run.
+"""The one module under ``ingest/`` that imports ``poisson_prove``: a Run becomes one new run.
 
 Every record is built before the store is touched, so a row Prove would not take is refused
 with nothing written. The run is created, its rows appended in one part, and it is marked
@@ -14,8 +14,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from proofload.store import EpisodeRecord, RunManifest, Store, config_hash
-from proofload.trace import CONTENT_KEYS, OBSERVATION_KEYS, Trace, from_otel
+from poisson_prove.store import EpisodeRecord, RunManifest, Store, config_hash
+from poisson_prove.trace import CONTENT_KEYS, OBSERVATION_KEYS, Trace, from_otel
 
 import poisson_trace
 from poisson_trace.ingest.cut import MET, MISSED

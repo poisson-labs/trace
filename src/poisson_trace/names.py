@@ -2,19 +2,24 @@
 manifest, and the words a verb takes for a run.
 
 ``trace-names.toml`` at the store root holds the names a user gave, written by ``poisson-trace
-name`` alone; no run's bytes change. A run with no entry is named from its manifest, in the form
-the config's ``[names] from`` sets: ``target`` (the target up to its first ``/``, then the day it
-started in UTC), ``date`` (the day alone) or ``target-date`` (the target, the model, the day),
-then a letter in start order among the runs that would otherwise share that name. A run an
-import wrote is named by the name it was imported under, which is its id. Names are computed
-each time, never stored, so they are the same on every machine that holds the same store.
+name`` alone; no run's bytes change. A run with no entry goes by the name it was given when it
+was swept (``poisson-prove sweep --name``, the manifest's ``name``), read as Prove reads it:
+trimmed, and passed over where it could not be typed back as a name. A run with neither is named
+from its manifest, in the form the config's ``[names] from`` sets: ``target`` (the target up to
+its first ``/``, then the day it started in UTC), ``date`` (the day alone) or ``target-date``
+(the target, the model, the day), then a letter in start order among the runs that would
+otherwise share that name. A run an import wrote is named by the name it was imported under,
+which is its id. Names are computed each time, never stored, so they are the same on every
+machine that holds the same store. A run goes by one name, the first of these it has; every
+other name it has still reaches it.
 
 A verb takes a run as ``latest``, ``previous``, ``latest:TARGET``, ``previous:TARGET``, ``#N``
-(row N of ``poisson-trace runs``), a name the user gave, a name from the manifest or the full
-id. A word that reaches no run, or two, is refused and never guessed.
+(row N of ``poisson-trace runs``), a name the user gave, the name it was given when it was
+swept, a name from the manifest or the full id. A word that reaches no run, or two, is refused
+and never guessed.
 
-``proofload`` is imported inside the functions that read a store, so the checks on a name alone
-can run before the check that Prove is installed.
+``poisson_prove`` is imported inside the functions that read a store, so the checks on a name
+alone can run before the check that Prove is installed.
 """
 
 from __future__ import annotations
@@ -305,6 +310,18 @@ def target_of(target_id: str) -> str:
     return target_id.split("/", 1)[0]
 
 
+def swept_name(manifest: Any) -> str | None:
+    """The name a run was given when it was swept (``poisson-prove sweep --name``, the manifest's
+    ``name``), read as Prove reads it: trimmed, and None when the run has none or when it could
+    not be typed back as a name (a reserved word, a dash first, over 80 characters, two lines, a
+    control character, nothing but spaces), so the run goes by its computed name."""
+    given = getattr(manifest, "name", None)
+    if not isinstance(given, str):
+        return None
+    trimmed = given.strip()
+    return trimmed if unfit(trimmed) is None else None
+
+
 @dataclass(frozen=True)
 class Named:
     """One run of a store and the name it goes by."""
@@ -321,10 +338,18 @@ class Named:
     number: int | None = None
     # where an imported run's start came from (the import's word); None for a run Prove stored
     started_from: str | None = None
+    # the name it was given when it was swept, if it has one a verb can take
+    swept: str | None = None
 
     @property
     def target(self) -> str:
         return target_of(self.target_id)
+
+    @property
+    def without_yours(self) -> str:
+        """The name the run goes by when none of yours is given: the sweep-time name, else the
+        computed one, else the id."""
+        return self.swept or self.computed or self.run_id
 
     @property
     def imported(self) -> bool:
@@ -623,6 +648,7 @@ def index(
                 target_id=str(manifest.target_id),
                 backend=str(manifest.backend),
                 started_from=_started_from(manifest),
+                swept=swept_name(manifest),
             )
         )
     runs.sort(key=lambda r: (r.started, r.run_id))
@@ -660,6 +686,9 @@ def index(
             name, by = sorted(yours)[0], "you"
         elif run.imported:
             name, by = run.run_id, "you"
+        elif run.swept is not None:
+            # a name typed when the run was made is the user's own, as a name given at import is
+            name, by = run.swept, "you"
         else:
             name, by = own or run.run_id, "manifest"
         named.append(replace(run, name=name, named_by=by, computed=own))
@@ -681,6 +710,8 @@ def index(
         add(run.run_id, run.run_id)
         if run.computed is not None:
             add(run.computed, run.run_id)
+        if run.swept is not None:
+            add(run.swept, run.run_id)
     for name, run_id in entries.items():
         if run_id in ids and name not in unfit_names:
             add(name, run_id)

@@ -41,7 +41,7 @@ LINES = [
     "poisson-trace import ragas rag-base.jsonl --store trace-store --run rag-base --metric METRIC --cut CUT --below --case-column case",
     "poisson-trace import ragas rag-raft.jsonl --store trace-store --run rag-raft --metric METRIC --cut CUT --below --case-column case",
 ]
-PRIVATE = ("proofload sweep", "github.com/poisson-labs/prove")
+PRIVATE = ("poisson-prove sweep", "github.com/poisson-labs/prove")
 # "a Prove store" as a noun; "runs Prove stored" is another phrase
 PROVE_STORE = re.compile(r"\bProve stores?\b")
 
@@ -141,7 +141,7 @@ def test_tf15_h4_no_import_lists_the_lines_and_drops_the_private_link(tmp_path: 
 def test_tf15_h5_the_private_link_stays_where_nothing_was_found(tmp_path: Path) -> None:
     result = init_yes(work(tmp_path), "--no-import")
     assert result.code == 0, result.text
-    assert "proofload sweep" in result.out.splitlines()[-1]
+    assert "poisson-prove sweep" in result.out.splitlines()[-1]
     assert "found no store and no result file a reader of this install reads" in result.err
     assert not PROVE_STORE.search(result.text)
 

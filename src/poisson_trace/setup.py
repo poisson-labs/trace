@@ -62,9 +62,11 @@ RESULT_FILES = (".csv", ".jsonl", ".json", ".xml")
 # the runs whose outcomes the failure question reads, newest first
 NEWEST = 20
 # the folders never searched; every other folder whose name opens with a dot is skipped too,
-# but for the ones a reader names
+# but for the ones a reader names. ".poisson" is a store's own folder for what Prove and its
+# tools write beside the runs (the store descriptor, saved artifacts, the pages), none of it a
+# run and none of it a result file to import
 SKIPPED = frozenset(
-    {".git", ".venv", "venv", "node_modules", "__pycache__", ".work", "site-packages"}
+    {".git", ".venv", "venv", "node_modules", "__pycache__", ".work", "site-packages", ".poisson"}
 )
 READERS_FOLDERS = frozenset({".deepeval"})
 # where an import from init writes its runs: beside the config
@@ -74,7 +76,7 @@ TARGETS_SHOWN = 4
 NAMES_SHOWN = 3
 STOPPED = "stopped  setup interrupted; nothing was written"
 # where a store comes from when nothing here holds results
-SWEEP = "proofload sweep … (see https://github.com/poisson-labs/prove)"
+SWEEP = "poisson-prove sweep … (see https://github.com/poisson-labs/prove)"
 _HELP = "poisson-trace init --help"
 
 
@@ -163,7 +165,7 @@ def search(root: Path) -> Found:
     order: the stores, and the files a reader of the install reads. A store is a folder holding
     a run folder whose record Prove reads; a run folder is not searched further. No link is
     followed, and no folder is searched past the depth or once the bound is reached."""
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     readers = present_readers()
     stores: dict[str, FoundStore] = {}
@@ -1011,7 +1013,7 @@ def _here_is_home() -> bool:
 
 
 def _held(path: str) -> list[str]:
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     try:
         return Store(path).runs()
@@ -1023,7 +1025,7 @@ def _index(path: str, form: str) -> tuple[Any, Any]:
     """The store at ``path`` and its runs, named. A names file with an entry every verb but
     name refuses is read here as name reads it, since the setup names nothing; one that is not
     a names file at all is refused."""
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     store = Store(path)
     return store, names.index(store, _held(path), path, lenient=True, form=form)
@@ -1228,7 +1230,7 @@ def _existing(ns: argparse.Namespace, path: Path, shown: str) -> config.Config |
 
 def _not_in_a_store(path: Path, shown: str) -> None:
     """The config is never written into a store or a run's folder."""
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     folder = path.parent
     try:

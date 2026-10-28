@@ -10,7 +10,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 from support import FIXTURES, HE_A, HE_B, HUMANEVAL, PAIR, read_rows, run_import, run_trace
 
 RUNS = ("humaneval-a", "humaneval-b")

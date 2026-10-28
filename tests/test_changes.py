@@ -32,9 +32,9 @@ def _fisher(xa: int, na: int, xb: int, nb: int) -> float:
 
 
 def _prove_cells(root: Path, a: str, b: str, event: str, alpha: float):  # type: ignore[no-untyped-def]
-    from proofload.diff import diff
-    from proofload.store import Store
-    from proofload.survival import censor
+    from poisson_prove.diff import diff
+    from poisson_prove.store import Store
+    from poisson_prove.survival import censor
 
     store = Store(root)
     result = diff(censor(store.read(a), event), censor(store.read(b), event), event=event,
@@ -69,7 +69,7 @@ def test_tr57_the_flags_are_proves_on_the_humaneval_pair_for_one_event() -> None
 
 
 def test_tr57_each_row_is_fisher_on_its_counts_and_flagged_by_its_q(tmp_path: Path) -> None:
-    from proofload.diff import bh
+    from poisson_prove.diff import bh
 
     tab = [(0, 12, 12, 12), (12, 12, 0, 12), (3, 6, 2, 5), (1, 3, 2, 7)] + [(4, 8, 4, 8)] * 6
     root = pair_store(tmp_path, tab)

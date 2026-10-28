@@ -108,7 +108,7 @@ def test_tf0_13_the_ceiling_is_shown_required_and_its_absence_is_a_refusal(verb:
 
 @pytest.mark.parametrize("command", ["trace", "import"])
 def test_tf0_11_version_names_trace_prove_and_python(command: str) -> None:
-    import proofload
+    import poisson_prove
 
     result = (trace if command == "trace" else trace_import)(["--version"])
     assert result.code == 0 and result.err == "", result.text
@@ -116,7 +116,7 @@ def test_tf0_11_version_names_trace_prove_and_python(command: str) -> None:
     assert len(lines) == 1, result.out
     m = VERSION_LINE.match(lines[0])
     assert m is not None, lines[0]
-    assert m.groups() == (TRACE_VERSION, proofload.__version__, PYTHON), lines[0]
+    assert m.groups() == (TRACE_VERSION, poisson_prove.__version__, PYTHON), lines[0]
 
 
 @pytest.mark.parametrize("command", ["trace", "import"])

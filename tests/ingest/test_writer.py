@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from proofload.store import Store, config_hash
-from proofload.trace import CONTENT_KEYS, OBSERVATION_KEYS, from_otel
+from poisson_prove.store import Store, config_hash
+from poisson_prove.trace import CONTENT_KEYS, OBSERVATION_KEYS, from_otel
 from support import HUMANEVAL, INGEST, holds, read_rows, tree
 
 import poisson_trace
@@ -198,7 +198,7 @@ CONTENT = [
     "gen_ai.prompt.0.content", "gen_ai.completion.0.content", "traceloop.entity.input",
     "traceloop.entity.output", "llm.input_messages.0.message.content",
     "llm.output_messages.0.message.content", "input.value", "output.value",
-    "gen_ai.tool.call.arguments", "gen_ai.tool.call.result", "proofload.logprobs",
+    "gen_ai.tool.call.arguments", "gen_ai.tool.call.result", "poisson_prove.logprobs",
 ]
 
 
@@ -252,17 +252,17 @@ def _imports(path: Path) -> list[str]:
 
 
 def _prove(modules: list[str]) -> list[str]:
-    return [m for m in modules if m == "proofload" or m.startswith("proofload.")]
+    return [m for m in modules if m == "poisson_prove" or m.startswith("poisson_prove.")]
 
 
-def test_ic8_the_writer_is_the_only_module_that_imports_proofload() -> None:
+def test_ic8_the_writer_is_the_only_module_that_imports_poisson_prove() -> None:
     modules = sorted(INGEST.glob("*.py"))
     assert "writer.py" in [p.name for p in modules]
     for path in modules:
         prove = _prove(_imports(path))
         if path.name == "writer.py":
-            assert "proofload.store" in prove, "the writer writes through proofload.store"
-            assert set(prove) <= {"proofload.store", "proofload.trace"}, prove
+            assert "poisson_prove.store" in prove, "the writer writes through poisson_prove.store"
+            assert set(prove) <= {"poisson_prove.store", "poisson_prove.trace"}, prove
         else:
             assert prove == [], (path.name, prove)
 

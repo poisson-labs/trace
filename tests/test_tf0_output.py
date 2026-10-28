@@ -200,7 +200,7 @@ def test_tf0_18_a_reader_that_went_away_ends_the_command_quietly(tmp_path: Path,
 
 
 def test_tf0_18_an_import_into_a_closed_pipe_still_writes_its_run(tmp_path: Path) -> None:
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     code, err = _closed_pipe("import", deepeval_import(tmp_path / "store", "v1"), tmp_path)
     assert "Traceback" not in err and "Exception ignored" not in err, err

@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 from support import (
     IMPORT_MAIN, by_case, case, conversation, deepeval_argv, holds, metric, read_rows, refused,
     run_doc, run_import, run_python, save, scored, tree,

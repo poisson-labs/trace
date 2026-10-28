@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from conftest import (
     CELL_A, CELL_B, CS, CS_EVENTS, CS_RECORD, CS_REPLAY, SYNTH_CAP, SYNTH_COUNTS, SYNTH_EVENTS,
@@ -211,7 +211,7 @@ def test_tr6_no_cap_means_no_capped_row(make_store) -> None:  # type: ignore[no-
 
 
 def test_tr6_cap_absent_from_the_manifest_means_no_capped_row(tmp_path: Path) -> None:
-    from proofload.store import RunManifest
+    from poisson_prove.store import RunManifest
 
     from conftest import build_store
 

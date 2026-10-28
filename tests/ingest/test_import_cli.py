@@ -16,7 +16,7 @@ from typing import Any
 
 import pandas as pd
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 from support import (
     BANNED, IMPORT_MAIN, IMPORT_SCHEMA, INGEST, PACKAGE, REPO, TESTS, case, conversation,
     deepeval_argv, holds, in_order, metric, read_rows, refused, run_doc, run_import, run_python,
@@ -140,28 +140,28 @@ def _no_open_of(opened: list[str], f: Path) -> None:
     assert hits == [], hits
 
 
-def test_ic9_without_proofload_the_command_refuses_before_it_opens_a_file(tmp_path: Path) -> None:
-    r, opened, f, root = _probe(tmp_path, "sys.modules['proofload'] = None", dict(os.environ))
+def test_ic9_without_poisson_prove_the_command_refuses_before_it_opens_a_file(tmp_path: Path) -> None:
+    r, opened, f, root = _probe(tmp_path, "sys.modules['poisson_prove'] = None", dict(os.environ))
     refused(r)
-    assert "proofload" in r.err and "0.0.1" in r.err
+    assert "poisson-prove" in r.err and "0.0.1" in r.err
     _no_open_of(opened, f)
     assert tree(root) == {}
 
 
-def test_ic9_with_proofload_at_another_version_the_command_refuses_before_it_opens_a_file(tmp_path: Path) -> None:
-    fake = tmp_path / "fake" / "proofload"
+def test_ic9_with_poisson_prove_at_another_version_the_command_refuses_before_it_opens_a_file(tmp_path: Path) -> None:
+    fake = tmp_path / "fake" / "poisson_prove"
     fake.mkdir(parents=True)
     (fake / "__init__.py").write_text('__version__ = "9.9.9"\n')
     env = dict(os.environ)
     env["PYTHONPATH"] = str(tmp_path / "fake") + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     r, opened, f, root = _probe(tmp_path, "", env)
     refused(r)
-    assert "proofload" in r.err and "0.0.1" in r.err and "9.9.9" in r.err
+    assert "poisson-prove" in r.err and "0.0.1" in r.err and "9.9.9" in r.err
     _no_open_of(opened, f)
     assert tree(root) == {}
 
 
-def test_ic9_with_proofload_present_the_file_is_read(tmp_path: Path) -> None:
+def test_ic9_with_poisson_prove_present_the_file_is_read(tmp_path: Path) -> None:
     r, opened, f, root = _probe(tmp_path, "", dict(os.environ))
     assert r.code == 0, r.text
     assert any(os.path.basename(p) == f.name for p in opened)
@@ -451,17 +451,17 @@ def test_ic14_changes_reads_the_counts_the_rows_hold(tmp_path: Path) -> None:
 
 
 FROZEN = {
-    "conftest.py": "aef2c826e49141f374a1997ebc289b2e8dbe6c0e1f10f256395297219763538e",
-    "fixcheck_support.py": "926eaba653082b815f23c479a224565f8bfe3675713e53e9588b063fdd2ba2c3",
-    "test_changes.py": "7f6693e5492627ed592b4134af16d4a61057e671c4783d5e3703d4ae3c3055a1",
-    "test_cli.py": "cce2a562d498ecf83a46e139389a27033cab6c260af9b9ff8fd1952550701fea",
-    "test_clock.py": "298568af543464a27a9ebd0e9ab65bc80ba1401149684179cbc7f2c35b9186da",
-    "test_fix_check_cli.py": "2d9917bf879686828528d38a95b8ec227d3c7033beffa3cf9f4aba206fefd741",
+    "conftest.py": "1bd912be79bf064512efb1bfaf742713902c2bad8200feb80586d731d0e1e091",
+    "fixcheck_support.py": "54fe40ac7a20f0f3cb08a790a02bfac2b04e91955d6e0a999896415500fac1ac",
+    "test_changes.py": "e2df5951fa8eb980cd78f6cf36d2a53833eec674150830d0bda17c53938c6aca",
+    "test_cli.py": "3c3a5a0d6d840f036f5532945609f9fe3e606e32879e5e516be5340a682e7295",
+    "test_clock.py": "4c63abd620252f7dd4033f81403a3311af85e9161ad16e05ba372f36f798b8f2",
+    "test_fix_check_cli.py": "c0e331c5f24525d29c6be8e87e0b23f266a1699335cbb05b2c69fdde51f0c30e",
     "test_fix_check_golden.py": "9b851201ed0b74bf04b2a28a5f3b83fdc85175bd929c6e7db72a8a21889262a3",
-    "test_golden.py": "018426df4ef416749a1a34a0faba02d1cddb35ac73df9ed791367f175af25cae",
-    "test_paired.py": "7e646ce3511bbfa567a69bcde9d785fc6d384e78fc670850d6166de3f86f0519",
-    "test_report.py": "97b58893f8f63696713c516fefb44f3a7b2f286cf2e977ed878c28ddac1b4448",
-    "test_survival.py": "aebe33482d972def820b148a7fbb18882e83ea23dd738975620a058effe552a9",
+    "test_golden.py": "96336168933b628ccd373b58882dfa84d641872556a71567863fb2f90bc5fdcd",
+    "test_paired.py": "ab96beeb0ff456d9e6649061c95e3d41af310cc7c1c5aa652131b73f17653795",
+    "test_report.py": "a11a9bd2dee9950ddc871db2d45acf833572056efc5568c3ce35e99201c70784",
+    "test_survival.py": "a9052b14912434f0de116cfe8b19d76f9e48841fc4ec0fea6da7d3e3e4a67060",
 }
 
 

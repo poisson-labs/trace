@@ -1,7 +1,7 @@
 """The clock and the placement: leaves, step index, cause labels, and where each row lands.
 
-Reads a run only through ``proofload.store.Store``, ``proofload.steps.declaration_check`` and
-``proofload.trace.KINDS``. Spans are walked as plain mappings off the envelope.
+Reads a run only through ``poisson_prove.store.Store``, ``poisson_prove.steps.declaration_check``
+and ``poisson_prove.trace.KINDS``. Spans are walked as plain mappings off the envelope.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 import pandas as pd
-from proofload.store import RunManifest, RunTally
+from poisson_prove.store import RunManifest, RunTally
 
 REASONS: tuple[str, ...] = ("died", "ended", "timed out", "capped")
 EXCLUSIONS: tuple[str, ...] = (

@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from tf0_support import VERDICT_LINE, deepeval_import, trace_import
 from tf2_support import scratch_home  # noqa: F401

@@ -1,0 +1,14 @@
+# The sweep both fixture stores were made from: Prove's keyless mock agent over two tasks and
+# two tool failure rates, 40 replicates each, 160 rollouts a run. No key, no account, no network.
+# Read by proofload 0.0.1 and by poisson-prove alike; the target is given on the command line.
+target_id = "mock-agent"
+t_unit = "tool_calls"
+replicates = 40
+
+[axes.task_id]
+type = "categorical"
+values = ["search", "refund"]
+
+[axes.tool_fail_rate]
+type = "continuous"
+values = [0.0, 0.55]

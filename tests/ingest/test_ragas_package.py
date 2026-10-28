@@ -20,7 +20,7 @@ from typing import Any
 
 import pandas as pd
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 from support import read_rows, run_import
 
 pytestmark = pytest.mark.lane_j

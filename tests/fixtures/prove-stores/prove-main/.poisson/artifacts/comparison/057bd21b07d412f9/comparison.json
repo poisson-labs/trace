@@ -1,0 +1,856 @@
+{
+  "schema": "poisson-prove.comparison/1",
+  "verdict": "lower",
+  "sentence": "violated: 2 lower, 0 higher (paired test on shared seeds)",
+  "method": "mcnemar_bh",
+  "method_chosen": "default",
+  "seed_identity_match": true,
+  "unpaired_analysis": false,
+  "q": 0.05,
+  "t_unit": "tool_calls",
+  "horizon": 20.0,
+  "n_tests": 4,
+  "n_not_comparable": 0,
+  "dropped_a": 0,
+  "dropped_b": 0,
+  "truncated": 0,
+  "inferred": false,
+  "non_event": null,
+  "events": [
+    "violated"
+  ],
+  "by_event": {
+    "violated": {
+      "event": "violated",
+      "n_safer": null,
+      "n_worse": null,
+      "n_unchanged": 2,
+      "max_mde": 0.2454,
+      "max_mde_unchanged": 0.2454,
+      "max_mde_unchanged_cell": "b4a971a744b471f8",
+      "cause_specific": false,
+      "kind": null,
+      "n_higher": 0,
+      "n_lower": 2,
+      "n_holm_higher": 0,
+      "n_holm_lower": 2,
+      "n_holm_safer": null,
+      "n_holm_worse": null,
+      "n_unflaggable": 0,
+      "together_needed": null,
+      "replicates_for_lone_flag": null,
+      "cells": [
+        {
+          "config_hash": "7b806df50938571e",
+          "config": {
+            "task_id": "refund",
+            "tool_fail_rate": 0.55
+          },
+          "n_a": 40,
+          "n_b": 40,
+          "events_a": 34,
+          "events_b": 11,
+          "rate_a": 0.8500000000000001,
+          "rate_b": 0.275,
+          "delta": -0.575,
+          "stat": 23.0,
+          "p": 2.384185791015625e-07,
+          "q": 9.5367431640625e-07,
+          "verdict": "lower",
+          "mde": null,
+          "direction": "lower",
+          "direction_note": null,
+          "pairs": 40,
+          "n01": 0,
+          "n10": 23,
+          "mde_note": "none detectable",
+          "q_holm": 9.5367431640625e-07,
+          "holm": true,
+          "mde_rise": null,
+          "mde_fall": 0.37320000000000003,
+          "mde_rise_note": "none detectable",
+          "mde_fall_note": null,
+          "mde_test": "mcnemar",
+          "mde_basis": "test",
+          "mde_level": 0.0125,
+          "mde_family": 4,
+          "mde_power": 0.8,
+          "mde_anchor": "observed baseline",
+          "mde_hr": null,
+          "p_min": 1.8189894035458565e-12,
+          "flaggable": true,
+          "mde_moves_with": null,
+          "mde_rise_verdict": null,
+          "mde_fall_verdict": 0.37320000000000003,
+          "competing_shift": null,
+          "ci_lo": -0.7319735321565533,
+          "ci_hi": -0.39925726841744147,
+          "ci_level": 0.975,
+          "ci_method": "tango",
+          "share_a": {
+            "value": 0.85,
+            "lo": 0.709276756335103,
+            "hi": 0.9293881228267964,
+            "level": 0.95,
+            "method": "wilson"
+          },
+          "share_a_differs": false,
+          "share_b": {
+            "value": 0.275,
+            "lo": 0.16108016247667337,
+            "hi": 0.42834955806210573,
+            "level": 0.95,
+            "method": "wilson"
+          },
+          "share_b_differs": false
+        },
+        {
+          "config_hash": "b4a971a744b471f8",
+          "config": {
+            "task_id": "refund",
+            "tool_fail_rate": 0.0
+          },
+          "n_a": 40,
+          "n_b": 40,
+          "events_a": 0,
+          "events_b": 0,
+          "rate_a": 0.0,
+          "rate_b": 0.0,
+          "delta": 0.0,
+          "stat": 0.0,
+          "p": 1.0,
+          "q": 1.0,
+          "verdict": "unchanged",
+          "mde": 0.2454,
+          "direction": "unchanged",
+          "direction_note": null,
+          "pairs": 40,
+          "n01": 0,
+          "n10": 0,
+          "mde_note": null,
+          "q_holm": 1.0,
+          "holm": false,
+          "mde_rise": 0.2454,
+          "mde_fall": null,
+          "mde_rise_note": null,
+          "mde_fall_note": "no room",
+          "mde_test": "mcnemar",
+          "mde_basis": "test",
+          "mde_level": 0.0125,
+          "mde_family": 4,
+          "mde_power": 0.8,
+          "mde_anchor": "observed baseline",
+          "mde_hr": null,
+          "p_min": 1.8189894035458565e-12,
+          "flaggable": true,
+          "mde_moves_with": null,
+          "mde_rise_verdict": 0.2454,
+          "mde_fall_verdict": null,
+          "competing_shift": null,
+          "ci_lo": -0.1115826867190848,
+          "ci_hi": 0.1115826867190848,
+          "ci_level": 0.975,
+          "ci_method": "tango",
+          "share_a": {
+            "value": 0.0,
+            "lo": 0.0,
+            "hi": 0.08762160119728664,
+            "level": 0.95,
+            "method": "wilson"
+          },
+          "share_a_differs": false,
+          "share_b": {
+            "value": 0.0,
+            "lo": 0.0,
+            "hi": 0.08762160119728664,
+            "level": 0.95,
+            "method": "wilson"
+          },
+          "share_b_differs": false
+        },
+        {
+          "config_hash": "b67467242f0e71da",
+          "config": {
+            "task_id": "search",
+            "tool_fail_rate": 0.55
+          },
+          "n_a": 40,
+          "n_b": 40,
+          "events_a": 32,
+          "events_b": 10,
+          "rate_a": 0.8,
+          "rate_b": 0.24999999999999997,
+          "delta": -0.55,
+          "stat": 22.0,
+          "p": 4.76837158203125e-07,
+          "q": 9.5367431640625e-07,
+          "verdict": "lower",
+          "mde": null,
+          "direction": "lower",
+          "direction_note": null,
+          "pairs": 40,
+          "n01": 0,
+          "n10": 22,
+          "mde_note": "none detectable",
+          "q_holm": 1.430511474609375e-06,
+          "holm": true,
+          "mde_rise": null,
+          "mde_fall": 0.38580000000000003,
+          "mde_rise_note": "none detectable",
+          "mde_fall_note": null,
+          "mde_test": "mcnemar",
+          "mde_basis": "test",
+          "mde_level": 0.0125,
+          "mde_family": 4,
+          "mde_power": 0.8,
+          "mde_anchor": "observed baseline",
+          "mde_hr": null,
+          "p_min": 1.8189894035458565e-12,
+          "flaggable": true,
+          "mde_moves_with": null,
+          "mde_rise_verdict": null,
+          "mde_fall_verdict": 0.38580000000000003,
+          "competing_shift": null,
+          "ci_lo": -0.7106972671854648,
+          "ci_hi": -0.3770468355854186,
+          "ci_level": 0.975,
+          "ci_method": "tango",
+          "share_a": {
+            "value": 0.8,
+            "lo": 0.652426936536005,
+            "hi": 0.895000102745623,
+            "level": 0.95,
+            "method": "wilson"
+          },
+          "share_a_differs": false,
+          "share_b": {
+            "value": 0.25,
+            "lo": 0.14187118639096302,
+            "hi": 0.40193961420768026,
+            "level": 0.95,
+            "method": "wilson"
+          },
+          "share_b_differs": false
+        },
+        {
+          "config_hash": "c9d973c669310f5d",
+          "config": {
+            "task_id": "search",
+            "tool_fail_rate": 0.0
+          },
+          "n_a": 40,
+          "n_b": 40,
+          "events_a": 0,
+          "events_b": 0,
+          "rate_a": 0.0,
+          "rate_b": 0.0,
+          "delta": 0.0,
+          "stat": 0.0,
+          "p": 1.0,
+          "q": 1.0,
+          "verdict": "unchanged",
+          "mde": 0.2454,
+          "direction": "unchanged",
+          "direction_note": null,
+          "pairs": 40,
+          "n01": 0,
+          "n10": 0,
+          "mde_note": null,
+          "q_holm": 1.0,
+          "holm": false,
+          "mde_rise": 0.2454,
+          "mde_fall": null,
+          "mde_rise_note": null,
+          "mde_fall_note": "no room",
+          "mde_test": "mcnemar",
+          "mde_basis": "test",
+          "mde_level": 0.0125,
+          "mde_family": 4,
+          "mde_power": 0.8,
+          "mde_anchor": "observed baseline",
+          "mde_hr": null,
+          "p_min": 1.8189894035458565e-12,
+          "flaggable": true,
+          "mde_moves_with": null,
+          "mde_rise_verdict": 0.2454,
+          "mde_fall_verdict": null,
+          "competing_shift": null,
+          "ci_lo": -0.1115826867190848,
+          "ci_hi": 0.1115826867190848,
+          "ci_level": 0.975,
+          "ci_method": "tango",
+          "share_a": {
+            "value": 0.0,
+            "lo": 0.0,
+            "hi": 0.08762160119728664,
+            "level": 0.95,
+            "method": "wilson"
+          },
+          "share_a_differs": false,
+          "share_b": {
+            "value": 0.0,
+            "lo": 0.0,
+            "hi": 0.08762160119728664,
+            "level": 0.95,
+            "method": "wilson"
+          },
+          "share_b_differs": false
+        }
+      ]
+    }
+  },
+  "trades": [],
+  "coverage": [
+    {
+      "config_hash": "7b806df50938571e",
+      "config": {
+        "task_id": "refund",
+        "tool_fail_rate": 0.55
+      },
+      "rows_a": 40,
+      "rows_b": 40,
+      "no_outcome_a": 0,
+      "no_outcome_b": 0,
+      "comparable": true,
+      "cause": null
+    },
+    {
+      "config_hash": "b4a971a744b471f8",
+      "config": {
+        "task_id": "refund",
+        "tool_fail_rate": 0.0
+      },
+      "rows_a": 40,
+      "rows_b": 40,
+      "no_outcome_a": 0,
+      "no_outcome_b": 0,
+      "comparable": true,
+      "cause": null
+    },
+    {
+      "config_hash": "b67467242f0e71da",
+      "config": {
+        "task_id": "search",
+        "tool_fail_rate": 0.55
+      },
+      "rows_a": 40,
+      "rows_b": 40,
+      "no_outcome_a": 0,
+      "no_outcome_b": 0,
+      "comparable": true,
+      "cause": null
+    },
+    {
+      "config_hash": "c9d973c669310f5d",
+      "config": {
+        "task_id": "search",
+        "tool_fail_rate": 0.0
+      },
+      "rows_a": 40,
+      "rows_b": 40,
+      "no_outcome_a": 0,
+      "no_outcome_b": 0,
+      "comparable": true,
+      "cause": null
+    }
+  ],
+  "intervals": [
+    {
+      "event": "violated",
+      "config_hash": "7b806df50938571e",
+      "config": {
+        "task_id": "refund",
+        "tool_fail_rate": 0.55
+      },
+      "ci_lo": -0.7319735321565533,
+      "ci_hi": -0.39925726841744147,
+      "basis": "score_rd_paired"
+    },
+    {
+      "event": "violated",
+      "config_hash": "b4a971a744b471f8",
+      "config": {
+        "task_id": "refund",
+        "tool_fail_rate": 0.0
+      },
+      "ci_lo": -0.1115826867190848,
+      "ci_hi": 0.1115826867190848,
+      "basis": "score_rd_paired"
+    },
+    {
+      "event": "violated",
+      "config_hash": "b67467242f0e71da",
+      "config": {
+        "task_id": "search",
+        "tool_fail_rate": 0.55
+      },
+      "ci_lo": -0.7106972671854648,
+      "ci_hi": -0.3770468355854186,
+      "basis": "score_rd_paired"
+    },
+    {
+      "event": "violated",
+      "config_hash": "c9d973c669310f5d",
+      "config": {
+        "task_id": "search",
+        "tool_fail_rate": 0.0
+      },
+      "ci_lo": -0.1115826867190848,
+      "ci_hi": 0.1115826867190848,
+      "basis": "score_rd_paired"
+    }
+  ],
+  "interval_level": 0.975,
+  "interval_rule": "benjamini-yekutieli",
+  "alpha_star": 0.025,
+  "n_rejected": 2,
+  "n_interval_only": 0,
+  "n_verdict_only": 0,
+  "threshold": 0.5,
+  "threshold_source": "recorded",
+  "comparison_verdict": "lower",
+  "flag_rule": "benjamini-hochberg",
+  "verdict_rule": "holm",
+  "n_flagged_only": 0,
+  "verdict_limit": 0.2454,
+  "fragility": 7,
+  "fragility_flips": [
+    {
+      "config_hash": "b4a971a744b471f8",
+      "event": "violated",
+      "run": "b",
+      "replicate_index": 0,
+      "to": "event"
+    },
+    {
+      "config_hash": "b4a971a744b471f8",
+      "event": "violated",
+      "run": "b",
+      "replicate_index": 1,
+      "to": "event"
+    },
+    {
+      "config_hash": "b4a971a744b471f8",
+      "event": "violated",
+      "run": "b",
+      "replicate_index": 2,
+      "to": "event"
+    },
+    {
+      "config_hash": "b4a971a744b471f8",
+      "event": "violated",
+      "run": "b",
+      "replicate_index": 3,
+      "to": "event"
+    },
+    {
+      "config_hash": "b4a971a744b471f8",
+      "event": "violated",
+      "run": "b",
+      "replicate_index": 4,
+      "to": "event"
+    },
+    {
+      "config_hash": "b4a971a744b471f8",
+      "event": "violated",
+      "run": "b",
+      "replicate_index": 5,
+      "to": "event"
+    },
+    {
+      "config_hash": "b4a971a744b471f8",
+      "event": "violated",
+      "run": "b",
+      "replicate_index": 6,
+      "to": "event"
+    }
+  ],
+  "fragility_note": null,
+  "fragility_exact": true,
+  "peeking": [],
+  "errors_differ": [],
+  "headline": "violated: 2 lower, 0 higher\n(aalen_johansen + mcnemar_bh, BH q<0.05 over 4 tests, paired)",
+  "trade_line": null,
+  "omnibus": {
+    "events": [
+      "violated"
+    ],
+    "method": "mcnemar_bh",
+    "scheme": "pair_swap",
+    "q": 0.05,
+    "n_cells": 4,
+    "n_informative_cells": 2,
+    "n_uninformative_cells": 2,
+    "n_discordant": 48,
+    "n_permutations": 4000,
+    "p_floor": 0.00024993751562109475,
+    "seed": 0,
+    "units": [
+      {
+        "event": "violated",
+        "config_hash": "7b806df50938571e",
+        "config": {
+          "task_id": "refund",
+          "tool_fail_rate": 0.55
+        },
+        "n_a": 40,
+        "n_b": 40,
+        "events_a": 34,
+        "events_b": 11,
+        "delta": -0.575
+      },
+      {
+        "event": "violated",
+        "config_hash": "b4a971a744b471f8",
+        "config": {
+          "task_id": "refund",
+          "tool_fail_rate": 0.0
+        },
+        "n_a": 40,
+        "n_b": 40,
+        "events_a": 0,
+        "events_b": 0,
+        "delta": 0.0
+      },
+      {
+        "event": "violated",
+        "config_hash": "b67467242f0e71da",
+        "config": {
+          "task_id": "search",
+          "tool_fail_rate": 0.55
+        },
+        "n_a": 40,
+        "n_b": 40,
+        "events_a": 32,
+        "events_b": 10,
+        "delta": -0.55
+      },
+      {
+        "event": "violated",
+        "config_hash": "c9d973c669310f5d",
+        "config": {
+          "task_id": "search",
+          "tool_fail_rate": 0.0
+        },
+        "n_a": 40,
+        "n_b": 40,
+        "events_a": 0,
+        "events_b": 0,
+        "delta": 0.0
+      }
+    ],
+    "location": {
+      "violated": -0.28125
+    },
+    "dispersion": {
+      "violated": 0.3978457615709887
+    },
+    "p_location": {
+      "violated": 0.00024993751562109475
+    },
+    "p_dispersion": {
+      "violated": 0.00024993751562109475
+    },
+    "p_omnibus": 0.00024993751562109475,
+    "rejects": true,
+    "headline": "\"no cell changed\" is rejected (p = 0.000249938 < q 0.05) over 4 cells x 1 event"
+  },
+  "tree": {
+    "root": {
+      "events": [
+        "violated"
+      ],
+      "method": "mcnemar_bh",
+      "scheme": "pair_swap",
+      "q": 0.05,
+      "n_cells": 4,
+      "n_informative_cells": 2,
+      "n_uninformative_cells": 2,
+      "n_discordant": 48,
+      "n_permutations": 4000,
+      "p_floor": 0.00024993751562109475,
+      "seed": 0,
+      "units": [
+        {
+          "event": "violated",
+          "config_hash": "7b806df50938571e",
+          "config": {
+            "task_id": "refund",
+            "tool_fail_rate": 0.55
+          },
+          "n_a": 40,
+          "n_b": 40,
+          "events_a": 34,
+          "events_b": 11,
+          "delta": -0.575
+        },
+        {
+          "event": "violated",
+          "config_hash": "b4a971a744b471f8",
+          "config": {
+            "task_id": "refund",
+            "tool_fail_rate": 0.0
+          },
+          "n_a": 40,
+          "n_b": 40,
+          "events_a": 0,
+          "events_b": 0,
+          "delta": 0.0
+        },
+        {
+          "event": "violated",
+          "config_hash": "b67467242f0e71da",
+          "config": {
+            "task_id": "search",
+            "tool_fail_rate": 0.55
+          },
+          "n_a": 40,
+          "n_b": 40,
+          "events_a": 32,
+          "events_b": 10,
+          "delta": -0.55
+        },
+        {
+          "event": "violated",
+          "config_hash": "c9d973c669310f5d",
+          "config": {
+            "task_id": "search",
+            "tool_fail_rate": 0.0
+          },
+          "n_a": 40,
+          "n_b": 40,
+          "events_a": 0,
+          "events_b": 0,
+          "delta": 0.0
+        }
+      ],
+      "location": {
+        "violated": -0.28125
+      },
+      "dispersion": {
+        "violated": 0.3978457615709887
+      },
+      "p_location": {
+        "violated": 0.00024993751562109475
+      },
+      "p_dispersion": {
+        "violated": 0.00024993751562109475
+      },
+      "p_omnibus": 0.00024993751562109475,
+      "rejects": true,
+      "headline": "\"no cell changed\" is rejected (p = 0.000249938 < q 0.05) over 4 cells x 1 event"
+    },
+    "grouping": {
+      "key": "whole_grid",
+      "resolved_by": "whole_grid",
+      "requested": null,
+      "labels": [
+        "all"
+      ],
+      "groups": {
+        "all": [
+          "7b806df50938571e",
+          "b4a971a744b471f8",
+          "b67467242f0e71da",
+          "c9d973c669310f5d"
+        ]
+      },
+      "n_groups": 1,
+      "group_sizes": [
+        4
+      ],
+      "size_min": 4,
+      "size_median": 4.0,
+      "size_max": 4,
+      "alpha_floor": 0.05,
+      "max_group_mde": 0.2,
+      "group_mde": [
+        0.10350000000000001
+      ],
+      "n_resolvable_groups": 1,
+      "refused": [
+        {
+          "key": "task_id",
+          "rung": "axis",
+          "reason": "underpowered",
+          "detail": "1 of 2 groups can resolve a change of 20.0 points in a group's event rate (group MDE 0.2424 at 80 and 80 units per arm, alpha 0.025 = q/2), and you accepted 20.0 points (--max-group-mde 0.2000). --max-group-mde 0.2424 admits this grouping as it stands.",
+          "next_rung": "axis",
+          "n_groups": 2,
+          "n_resolvable_groups": 1,
+          "offered_max_group_mde": 0.2424
+        },
+        {
+          "key": "tool_fail_rate",
+          "rung": "axis",
+          "reason": "underpowered",
+          "detail": "1 of 2 groups can resolve a change of 20.0 points in a group's event rate (group MDE 0.2366 at 80 and 80 units per arm, alpha 0.025 = q/2), and you accepted 20.0 points (--max-group-mde 0.2000). --max-group-mde 0.2366 admits this grouping as it stands.",
+          "next_rung": "task_family",
+          "n_groups": 2,
+          "n_resolvable_groups": 1,
+          "offered_max_group_mde": 0.2366
+        }
+      ]
+    },
+    "fault_lines": {
+      "tested": false,
+      "reason": "one_group",
+      "null": "no cell in the group changed",
+      "q": 0.05,
+      "n_groups": 1,
+      "n_degenerate_groups": 0,
+      "n_rejected_groups": 0,
+      "rejected_groups": [],
+      "groups": [
+        {
+          "label": "all",
+          "key": "whole_grid",
+          "cells": [
+            "7b806df50938571e",
+            "b4a971a744b471f8",
+            "b67467242f0e71da",
+            "c9d973c669310f5d"
+          ],
+          "n_cells": 4,
+          "n_informative_cells": 2,
+          "n_uninformative_cells": 2,
+          "n_discordant": 48,
+          "n_a": 160,
+          "n_b": 160,
+          "mde": 0.10350000000000001,
+          "degenerate": false,
+          "location": {
+            "violated": -0.28125
+          },
+          "dispersion": {
+            "violated": 0.3978457615709887
+          },
+          "p_location": null,
+          "p_dispersion": null,
+          "p_group": null,
+          "q_group": null,
+          "rejects": null
+        }
+      ],
+      "mde_basis": "unconditional"
+    },
+    "leaves": {
+      "tested": true,
+      "reason": null,
+      "null": "this cell did not change",
+      "q": 0.05,
+      "n_families": 1,
+      "n_tests": 4,
+      "n_rejected": 2,
+      "families": [
+        {
+          "label": "all",
+          "key": "whole_grid",
+          "n_tests": 4,
+          "n_rejected": 2,
+          "rejected": [
+            [
+              "7b806df50938571e",
+              "violated"
+            ],
+            [
+              "b67467242f0e71da",
+              "violated"
+            ]
+          ],
+          "mde_median": 0.2454,
+          "mde_max": 0.2454,
+          "cells": [
+            {
+              "config_hash": "7b806df50938571e",
+              "config": {
+                "task_id": "refund",
+                "tool_fail_rate": 0.55
+              },
+              "event": "violated",
+              "group": "all",
+              "n_a": 40,
+              "n_b": 40,
+              "events_a": 34,
+              "events_b": 11,
+              "delta": -0.575,
+              "p": 2.384185791015625e-07,
+              "q_within": 9.5367431640625e-07,
+              "rejects": true,
+              "mde": null,
+              "mde_note": "none detectable"
+            },
+            {
+              "config_hash": "b4a971a744b471f8",
+              "config": {
+                "task_id": "refund",
+                "tool_fail_rate": 0.0
+              },
+              "event": "violated",
+              "group": "all",
+              "n_a": 40,
+              "n_b": 40,
+              "events_a": 0,
+              "events_b": 0,
+              "delta": 0.0,
+              "p": 1.0,
+              "q_within": 1.0,
+              "rejects": false,
+              "mde": 0.2454,
+              "mde_note": null
+            },
+            {
+              "config_hash": "b67467242f0e71da",
+              "config": {
+                "task_id": "search",
+                "tool_fail_rate": 0.55
+              },
+              "event": "violated",
+              "group": "all",
+              "n_a": 40,
+              "n_b": 40,
+              "events_a": 32,
+              "events_b": 10,
+              "delta": -0.55,
+              "p": 4.76837158203125e-07,
+              "q_within": 9.5367431640625e-07,
+              "rejects": true,
+              "mde": null,
+              "mde_note": "none detectable"
+            },
+            {
+              "config_hash": "c9d973c669310f5d",
+              "config": {
+                "task_id": "search",
+                "tool_fail_rate": 0.0
+              },
+              "event": "violated",
+              "group": "all",
+              "n_a": 40,
+              "n_b": 40,
+              "events_a": 0,
+              "events_b": 0,
+              "delta": 0.0,
+              "p": 1.0,
+              "q_within": 1.0,
+              "rejects": false,
+              "mde": 0.2454,
+              "mde_note": null
+            }
+          ]
+        }
+      ]
+    },
+    "bound": {
+      "depth_configured": 3,
+      "depth": 2,
+      "q": 0.05,
+      "delta_star": 1.44,
+      "bound": 0.288,
+      "discoveries": "outer_nodes"
+    },
+    "agreement": "959db66865623e42a6a15a53e5d29fcb1633cd2eda0af9cf83811f6d9204b88f"
+  },
+  "next": [
+    "poisson-prove report \"agent before\" \"agent after\" --x task_id --y tool_fail_rate"
+  ]
+}

@@ -22,7 +22,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 from support import IMPORT_MAIN, holds, read_rows, refused, run_import, run_python, scalars, tree
 
 STARTED = ["--started", "2026-09-30T09:00:00Z"]

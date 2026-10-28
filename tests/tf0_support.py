@@ -152,14 +152,14 @@ COMMANDS = {"trace": "poisson_trace.cli", "import": "poisson_trace.ingest.cli"}
 
 def script(command: str, *, prove: str = "present") -> str:
     """The console script's body for ``python -c``: ``prove`` is ``present``, ``absent`` (the
-    import fails) or a version string (a fake ``proofload`` at that version is put first)."""
+    import fails) or a version string (a fake ``poisson_prove`` at that version is put first)."""
     head = "import sys\n"
     if prove == "absent":
-        head += "sys.modules['proofload'] = None\n"
+        head += "sys.modules['poisson_prove'] = None\n"
     elif prove != "present":
         head += (
-            "import types\nfake = types.ModuleType('proofload')\n"
-            f"fake.__version__ = {prove!r}\nsys.modules['proofload'] = fake\n"
+            "import types\nfake = types.ModuleType('poisson_prove')\n"
+            f"fake.__version__ = {prove!r}\nsys.modules['poisson_prove'] = fake\n"
         )
     return head + f"from {COMMANDS[command]} import main\nsys.exit(main(sys.argv[1:]))\n"
 

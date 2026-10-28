@@ -23,8 +23,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from proofload.store import EpisodeRecord, RunManifest, Store, config_hash
-from proofload.trace import Trace
+from poisson_prove.store import EpisodeRecord, RunManifest, Store, config_hash
+from poisson_prove.trace import Trace
 
 from conftest import TAU2, roots
 from tf0_support import RUN_ID, VERDICT_LINE, Ran, trace, trace_import

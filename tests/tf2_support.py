@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from proofload.store import EpisodeRecord, RunManifest, Store, config_hash
+from poisson_prove.store import EpisodeRecord, RunManifest, Store, config_hash
 
 from tf0_support import DEEPEVAL, RAGAS, ESCAPED, Ran, chdir, script, trace, trace_import
 from tf1_support import R, make_runs, shell_words, snapshot, stamp, tau2_copy

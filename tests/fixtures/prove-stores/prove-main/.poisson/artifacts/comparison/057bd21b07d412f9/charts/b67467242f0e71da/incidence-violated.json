@@ -1,0 +1,85 @@
+{
+  "schema": "poisson-prove.chart/1",
+  "event": "violated",
+  "condition": "b67467242f0e71da",
+  "kind": "incidence",
+  "title": "Cumulative incidence of violated, each run: task_id search · tool_fail_rate 0.55",
+  "caption": "The share of each run's episodes in task_id search · tool_fail_rate 0.55 that had ended in violated by each time, before in grey and after in violet, to the horizon (20 tool_calls).",
+  "columns": [
+    "t",
+    "before",
+    "after"
+  ],
+  "rows": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      3.0,
+      0.15,
+      0.025
+    ],
+    [
+      4.0,
+      0.25,
+      0.075
+    ],
+    [
+      5.0,
+      0.325,
+      0.075
+    ],
+    [
+      6.0,
+      0.375,
+      0.125
+    ],
+    [
+      7.0,
+      0.45,
+      0.125
+    ],
+    [
+      8.0,
+      0.45,
+      0.15
+    ],
+    [
+      9.0,
+      0.575,
+      0.15
+    ],
+    [
+      10.0,
+      0.6749999999999999,
+      0.175
+    ],
+    [
+      11.0,
+      0.7,
+      0.19999999999999998
+    ],
+    [
+      12.0,
+      0.725,
+      0.19999999999999998
+    ],
+    [
+      13.0,
+      0.775,
+      0.22499999999999998
+    ],
+    [
+      14.0,
+      0.8,
+      0.24999999999999997
+    ],
+    [
+      20.0,
+      0.8,
+      0.24999999999999997
+    ]
+  ]
+}

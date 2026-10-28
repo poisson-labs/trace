@@ -16,9 +16,9 @@ its parser takes is still wrong, exit 2). It may also define ``FURTHER``, a mapp
 further command name to ``(add_arguments, run)`` with ``run(ns) -> int``, for a command that
 writes no store and takes its own flags.
 
-``proofload`` is imported by the writer alone, and the writer is imported after the check that
-``proofload`` is present at the version this package reads, which runs once the command line
-is read and before any file is opened.
+``poisson_prove`` is imported by the writer alone, and the writer is imported after the check
+that ``poisson_prove`` is present at the version this package reads, which runs once the command
+line is read and before any file is opened.
 """
 
 from __future__ import annotations

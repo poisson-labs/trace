@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from tf0_support import Ran, chdir, examples, ragas_import, run_module, run_sub, trace
 from tf1_support import shell_words

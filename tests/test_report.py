@@ -10,8 +10,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
-from proofload.steps import declaration_check
-from proofload.store import Store
+from poisson_prove.steps import declaration_check
+from poisson_prove.store import Store
 
 from conftest import (
     CANNOT_SAY, COMPARE_KEYS, CS, CS_EVENTS, CS_RECORD, SYNTH_CAP,

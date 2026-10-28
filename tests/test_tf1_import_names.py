@@ -13,7 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from tf0_support import deepeval_import, trace_import
 from tf1_support import T_A, T_NAMES, refused, snapshot, tau2_copy, write_names

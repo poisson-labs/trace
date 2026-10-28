@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from conftest import FIXTURES
 from tf0_support import HE_A, HE_B, HUMANEVAL, chdir, trace

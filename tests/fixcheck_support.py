@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from proofload.store import EpisodeRecord, RunManifest, Store, config_hash
+from poisson_prove.store import EpisodeRecord, RunManifest, Store, config_hash
 
 from conftest import FIXTURES, CliResult, events_args, run_cli
 

@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from tf0_support import INSTALL_PROVE, RUN_ID, VERDICT_LINE
 from tf1_support import shell_words, tau2_copy, write_names
@@ -382,7 +382,7 @@ def test_tf2_14_stdin_not_a_terminal_is_refused_before_the_search(tmp_path: Path
 
 
 def test_tf2_14_json_is_one_document_with_the_keys_in_order(tmp_path: Path) -> None:
-    import proofload
+    import poisson_prove
 
     folder = work(tmp_path)
     tau2_copy(folder, "proofload-runs")
@@ -393,7 +393,7 @@ def test_tf2_14_json_is_one_document_with_the_keys_in_order(tmp_path: Path) -> N
     assert (folder / data["config_path"]).resolve() == (folder / CONFIG).resolve()
     assert data["stores"] == [{"name": None, "path": "proofload-runs", "runs": 3}]
     assert data["events"] == ["unsolved"] and data["named"] == 0
-    assert data["prove"] == {"installed": True, "version": proofload.__version__}
+    assert data["prove"] == {"installed": True, "version": poisson_prove.__version__}
     assert data["equivalent_command"][:2] == ["poisson-trace", "init"] and "--yes" in data["equivalent_command"]
     assert data["next"] == "poisson-trace runs"
 

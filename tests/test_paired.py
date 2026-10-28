@@ -98,7 +98,7 @@ def test_tr44_the_worked_example() -> None:
 @given(st.integers(1, 40).flatmap(lambda na: st.tuples(st.integers(0, na), st.just(na))),
        st.integers(1, 40).flatmap(lambda nb: st.tuples(st.integers(0, nb), st.just(nb))))
 def test_tr45_one_input_is_fisher(a, b) -> None:  # type: ignore[no-untyped-def]
-    from proofload.diff import _fisher
+    from poisson_prove.diff import _fisher
 
     (xa, na), (xb, nb) = a, b
     p = paired_test([Counts("h", xa, na, xb, nb)]).p
@@ -113,7 +113,7 @@ def test_tr45_one_input_is_fisher(a, b) -> None:  # type: ignore[no-untyped-def]
 @SETTINGS
 @given(st.lists(st.tuples(st.booleans(), st.booleans()), min_size=1, max_size=40))
 def test_tr46_one_run_per_arm_is_mcnemar(pairs) -> None:  # type: ignore[no-untyped-def]
-    from proofload.diff import _mcnemar
+    from poisson_prove.diff import _mcnemar
 
     cell_a = pd.DataFrame({"replicate_index": range(len(pairs)), "observed": [a for a, _ in pairs]})
     cell_b = pd.DataFrame({"replicate_index": range(len(pairs)), "observed": [b for _, b in pairs]})
@@ -520,10 +520,42 @@ def test_tr56_deaths_needed_on_the_tau2_pair() -> None:
 # ---------- TR57, TR58 (the functions) ----------
 
 
+def _prove_0_0_1_limit(p_a: float, n_a: int, n_b: int, *, alpha: float, power: float) -> float:
+    """Prove 0.0.1's per-cell limit (``proofload.diff.mde_two_proportion`` at 98dc6af, its power
+    function inlined), the number ``limit_rise`` gives. Prove's main pairs the two arms' sizes the
+    other way round and gives NaN at a share of 1, which Trace has not followed (TF16 Session A
+    yes/no 7); with ``proofload`` no longer installed, the reference is kept here."""
+
+    def power_at(delta: float, p: float) -> float:
+        p_alt = p + delta
+        pooled = (p_alt * n_a + p * n_b) / (n_a + n_b)
+        se_null = math.sqrt(pooled * (1.0 - pooled) * (1.0 / n_a + 1.0 / n_b))
+        se_alt = math.sqrt(p_alt * (1.0 - p_alt) / n_a + p * (1.0 - p) / n_b)
+        z = float(stats.norm.isf(alpha / 2.0))
+        if se_alt == 0.0:
+            return 1.0 if delta > z * se_null else 0.0
+        return float(stats.norm.sf((z * se_null - delta) / se_alt)) + float(stats.norm.cdf((-z * se_null - delta) / se_alt))
+
+    guarded = 0.5 / n_a if p_a <= 0.0 else (1.0 - 0.5 / n_a if p_a >= 1.0 else p_a)
+    cap = 1.0 - guarded
+    if power_at(cap, guarded) < power:
+        return (1.0 - p_a) if p_a < 1.0 else cap
+    lo, hi = 0.0, cap
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if power_at(mid, guarded) >= power:
+            hi = mid
+        else:
+            lo = mid
+        if hi - lo < 1e-12:
+            break
+    return hi
+
+
 @SETTINGS
 @given(tables(min_inputs=1, max_inputs=12, max_runs=12), st.sampled_from([0.05, 0.1, 0.2]))
 def test_tr57_flags_are_fisher_then_benjamini_hochberg(tab, alpha) -> None:  # type: ignore[no-untyped-def]
-    from proofload.diff import _fisher, bh, mde_two_proportion
+    from poisson_prove.diff import _fisher, bh
 
     c = counts_of(tab)
     got = {f.config_hash: f for f in flags(c, alpha=alpha)}
@@ -541,7 +573,7 @@ def test_tr57_flags_are_fisher_then_benjamini_hochberg(tab, alpha) -> None:  # t
         else:
             assert f.flag is None
         assert f.limit_rise == pytest.approx(
-            mde_two_proportion(x.failed_old / x.runs_old, x.runs_old, x.runs_new, alpha=alpha, power=0.8), abs=1e-12)
+            _prove_0_0_1_limit(x.failed_old / x.runs_old, x.runs_old, x.runs_new, alpha=alpha, power=0.8), abs=1e-12)
 
 
 def test_tr57_a_real_flag_fires_in_each_direction() -> None:
@@ -556,8 +588,6 @@ def test_tr57_a_real_flag_fires_in_each_direction() -> None:
 @given(st.integers(1, 60).flatmap(lambda n: st.tuples(st.integers(0, n), st.just(n))), st.integers(1, 60),
        st.sampled_from([0.01, 0.05, 0.1]), st.sampled_from([0.8, 0.9]))
 def test_tr58_limit_rise_is_proves_mde_two_proportion(old, runs_new, alpha, power) -> None:  # type: ignore[no-untyped-def]
-    from proofload.diff import mde_two_proportion
-
     failed, runs = old
     got = limit_rise(failed / runs, runs, runs_new, alpha=alpha, power=power)
-    assert got == pytest.approx(mde_two_proportion(failed / runs, runs, runs_new, alpha=alpha, power=power), abs=1e-12)
+    assert got == pytest.approx(_prove_0_0_1_limit(failed / runs, runs, runs_new, alpha=alpha, power=power), abs=1e-12)

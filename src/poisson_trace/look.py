@@ -31,6 +31,10 @@ FAILED = 3
 CHECK_FAILED = 4
 INTERRUPTED = 130
 
+# The one Prove this package reads: poisson-prove, imported as poisson_prove. Prove's main states
+# 0.0.1 until its release, so this pin is the build of Prove's main at
+# fa31d791d87f0582b7642511cb4e263e49515765 (fa31d79). The TestPyPI rehearsal (spec section 16.1
+# step 14) sets the released version here.
 PROVE_VERSION = "0.0.1"
 INSTALL_PROVE = "pip install git+https://github.com/poisson-labs/prove"
 NOTHING_WRITTEN = "stopped  interrupted; nothing was written"
@@ -226,11 +230,11 @@ def version_line() -> str:
     import poisson_trace
 
     try:
-        import proofload
+        import poisson_prove
     except ImportError:
         prove = "poisson-prove not installed"
     else:
-        prove = "poisson-prove " + (_found(proofload) or "of no version")
+        prove = "poisson-prove " + (_found(poisson_prove) or "of no version")
     python = ".".join(str(n) for n in sys.version_info[:3])
     return f"poisson-trace {poisson_trace.__version__} ({prove}, Python {python})\n"
 
@@ -240,17 +244,18 @@ def prove_refusal(does: str) -> str | None:
     ``does`` is what the command does through Prove, as the sentence's opening words. The line
     that installs it is the command to run next, under the sentence, and not in it."""
     try:
-        import proofload
+        import poisson_prove
     except ImportError:
         return (
-            f"{does} through Prove (the proofload package, version {PROVE_VERSION}), which is "
-            "not installed here"
+            f"{does} through Prove (the poisson-prove package, version {PROVE_VERSION}), which "
+            "is not installed here"
         )
-    found = _found(proofload)
+    found = _found(poisson_prove)
     if found != PROVE_VERSION:
+        saw = f"poisson-prove {found}" if found else "a poisson-prove that states no version"
         return (
-            f"{does} through Prove (the proofload package, version {PROVE_VERSION}) and found "
-            f"{f'proofload {found}' if found else 'a proofload that states no version'}"
+            f"{does} through Prove (the poisson-prove package, version {PROVE_VERSION}) and "
+            f"found {saw}"
         )
     return None
 
@@ -258,10 +263,10 @@ def prove_refusal(does: str) -> str | None:
 def prove_found() -> str | None:
     """The version of Prove this interpreter imports, or None when there is none."""
     try:
-        import proofload
+        import poisson_prove
     except ImportError:
         return None
-    return _found(proofload)
+    return _found(poisson_prove)
 
 
 def _found(module: Any) -> str | None:

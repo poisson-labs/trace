@@ -65,7 +65,7 @@ def test_tf2_18_the_text_is_the_verdict_then_the_six_lines_then_next(ready: Path
 
 
 def test_tf2_18_each_line_says_what_it_found(tmp_path: Path) -> None:
-    import proofload
+    import poisson_prove
 
     folder = work(tmp_path)
     store_of(folder / "store", [R("a1", stamp(1, 9)), R("a2", stamp(1, 10)), R("a3", stamp(1, 11)), R("half", stamp(1, 12), status="partial")])
@@ -78,7 +78,7 @@ def test_tf2_18_each_line_says_what_it_found(tmp_path: Path) -> None:
     package = check(data, "package")["line"]
     folder = Path(poisson_trace.__file__).parent
     assert poisson_trace.__version__ in package and (str(folder) in package or str(folder.resolve()) in package), package
-    assert proofload.__version__ in check(data, "prove")["line"]
+    assert poisson_prove.__version__ in check(data, "prove")["line"]
     line = check(data, "config")["line"]
     assert "store" in line and "fail" in line, line
     found = counts(line)

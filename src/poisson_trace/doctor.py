@@ -62,7 +62,7 @@ def _prove() -> dict[str, Any]:
         return _check("prove", True, f"poisson-prove {found} (the version Trace reads)")
     if found is None:
         try:
-            import proofload  # noqa: F401
+            import poisson_prove  # noqa: F401
         except ImportError:
             line = (
                 f"poisson-prove is not installed, and Trace reads stores through it (version "
@@ -83,7 +83,7 @@ def _readers() -> dict[str, Any]:
 
 
 def _held(path: str) -> list[str]:
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     try:
         return Store(path).runs()
@@ -145,7 +145,7 @@ def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]
             _check("config", events is not None and held.store is not None, line, init),
             _names_unchecked(held),
         ]
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     described: list[str] = []
     indexes: list[tuple[str | None, str, Any]] = []
@@ -248,7 +248,7 @@ _RUNS_NAMED = 3
 def _store_beside(path: Path, form: str) -> tuple[str, str] | None:
     """The store init's import writes beside the config, when it holds runs: what it holds, by
     what wrote them and the runs' names, and the store as the current folder reads it."""
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     from poisson_trace.setup import IMPORTED_STORE
 

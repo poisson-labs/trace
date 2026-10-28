@@ -201,7 +201,7 @@ def test_tf1_06_a_name_beginning_with_a_dash_is_never_written(tmp_path: Path) ->
 
 
 def test_tf1_06_ctrl_c_writes_no_name(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     store = tau2_copy(tmp_path)
     assert name(store, T_B, "kept").code == 0

@@ -20,9 +20,10 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Typing :: Typed",
 ]
-# Prove (the `proofload` package) is read at runtime and is not listed here: it is not on
-# any package index yet, and an unresolvable name would break every pip and uv resolution
-# of this wheel. The README gives the two install lines; the CLI refuses at start without it.
+# Prove (the `poisson-prove` package, imported as `poisson_prove`) is read at runtime and is not
+# listed here: it is not released yet, and a name that does not resolve to it would break every
+# pip and uv resolution of this wheel. The README gives the two install lines; the CLI refuses
+# at start without it.
 dependencies = ["numpy", "scipy", "pandas>=2"]
 
 [project.optional-dependencies]

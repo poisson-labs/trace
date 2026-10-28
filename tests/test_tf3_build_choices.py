@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from tf0_support import chdir, run_sub, trace
 from tf1_support import shell_words

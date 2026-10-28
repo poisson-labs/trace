@@ -31,7 +31,7 @@ def samples(draw, min_size: int = 1, max_size: int = 60):  # type: ignore[no-unt
 
 
 def _placed(root, run, events):  # type: ignore[no-untyped-def]
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     from poisson_trace.clock import place
 
@@ -85,7 +85,7 @@ def test_tr12_ties_at_one_step_are_one_factor() -> None:
 @SLOW
 @given(samples())
 def test_tr13_kaplan_meier_matches_prove_and_lifelines(sample) -> None:  # type: ignore[no-untyped-def]
-    from proofload.survival import kaplan_meier as prove_km
+    from poisson_prove.survival import kaplan_meier as prove_km
 
     from poisson_trace.survival import kaplan_meier
 
@@ -353,7 +353,7 @@ def test_tr19_excluded_cells_are_counted_in_the_comparison(two_run_store) -> Non
 
 
 def test_tr19_one_cell_equals_the_pooled_test() -> None:
-    from proofload.diff import _logrank
+    from poisson_prove.diff import _logrank
 
     from poisson_trace.survival import logrank_stratified
 
@@ -375,7 +375,7 @@ def test_tr19_one_cell_equals_the_pooled_test() -> None:
 @SLOW
 @given(samples(min_size=2), samples(min_size=2))
 def test_tr20_one_cell_logrank_matches_prove_and_lifelines(sa, sb) -> None:  # type: ignore[no-untyped-def]
-    from proofload.diff import _logrank
+    from poisson_prove.diff import _logrank
 
     from poisson_trace.survival import logrank_stratified
 
@@ -413,7 +413,7 @@ def test_tr22_schoenfeld_minimum_detectable_hazard_ratio() -> None:
 @SLOW
 @given(st.lists(st.floats(0.0, 1.0), min_size=1, max_size=12))
 def test_tr24_benjamini_hochberg_matches_prove_and_is_monotone(p) -> None:  # type: ignore[no-untyped-def]
-    from proofload.diff import bh as prove_bh
+    from poisson_prove.diff import bh as prove_bh
 
     from poisson_trace.survival import bh
 

@@ -13,7 +13,7 @@ Where a test makes a failure happen, it does so at a seam the code reads at call
 ``Store`` methods (``runs`` is how a store's runs are listed, outside any refusal; ``read``,
 ``manifest``, ``create_run`` and ``append`` as today), and a reader module's ``read(ns)``, which
 the import calls by module attribute (the reader contract in ``ingest/cli.py``). Prove's presence
-and version are read from the imported ``proofload`` module, as the check does today and as
+and version are read from the imported ``poisson_prove`` module, as the check does today and as
 TR31 and TR41 already pin; the wrong-version line names the version found, as TR31 pins. No
 progress lines are printed off a terminal, so stderr is empty on success."""
 
@@ -27,7 +27,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from conftest import CS, CS_RECORD, TAU2
 from tf0_support import (

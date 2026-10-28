@@ -12,7 +12,7 @@ import re
 import shutil
 from pathlib import Path
 
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from conftest import FIXTURES, TAU2, TAU2_A, TAU2_B, where
 from fixcheck_support import PILOT, TAU2_EVENTS, changes, fix_check, ok
@@ -135,7 +135,7 @@ def test_tf15_l6_a_deepeval_run_imported_before_this_pair(tmp_path: Path) -> Non
         dst.create_run(dataclasses.replace(manifest, environment=environment, status="partial"))
         frame = src.read(run, meta=True, trace="none")
         from fixcheck_support import EpisodeRecord  # noqa: F401  (Prove's record, through the support module)
-        from proofload.store import EpisodeRecord as Record
+        from poisson_prove.store import EpisodeRecord as Record
 
         records = [
             Record(run_id=run, config_hash=str(h), config=dict(c), seed=int(s), replicate_index=int(r),

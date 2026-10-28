@@ -19,7 +19,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
-from proofload.store import Store
+from poisson_prove.store import Store
 
 from tf0_support import chdir
 from tf2_support import scratch_home  # noqa: F401
