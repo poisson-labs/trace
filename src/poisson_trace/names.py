@@ -40,6 +40,50 @@ IMPORTED = "import:"
 SHOWN = 10
 
 
+def _listed(words: Sequence[str]) -> str:
+    """Runs a refusal lists by name: each quoted, and said to be in no order but their names'."""
+    quoted = [f'"{w}"' for w in words]
+    joined = quoted[0] if len(quoted) == 1 else ", ".join(quoted[:-1]) + " and " + quoted[-1]
+    if len(quoted) == 1:
+        return joined
+    return f"{joined} (listed by name; Trace doesn't know which is older)"
+
+
+# an example of a start given by flag, as a refusal offers it
+STARTED_EXAMPLE = "2026-01-31T09:00:00Z"
+
+
+class Unordered(look.Refused):
+    """latest or previous refused: the start times cannot order the runs the word ranks. The
+    sentence here is the one a verb of one run prints; a verb of two runs words its own, with
+    the command line that gives the two by name (``sentence``)."""
+
+    def __init__(self, word: str, runs: Sequence[str], cause: str, filed: bool, listing: str):
+        self.word = word
+        self.runs = list(runs)
+        self.cause = cause
+        self.filed = filed
+        self.listing = listing
+        super().__init__(self.sentence(two=False), listing)
+
+    def sentence(self, *, two: bool) -> str:
+        """The refusal: the cause, and what the user can do, for a verb of one run or two."""
+        if two:
+            means = "so Trace cannot tell which is the older version; you can: give the two by "
+            means += "name, the older version first"
+        else:
+            means = (
+                f"so Trace cannot tell which run {self.word} means; you can: give the run you "
+                "mean by name"
+            )
+        if self.filed:
+            means += (
+                f", or import them again with --started (for example --started "
+                f"{STARTED_EXAMPLE}, the time that run really started)"
+            )
+        return f"{self.word} goes by when each run started, and {self.cause}, {means}"
+
+
 class Damaged(look.Refused):
     """The names file is not one: every verb that reads names refuses it."""
 
@@ -275,6 +319,8 @@ class Named:
     target_id: str
     backend: str
     number: int | None = None
+    # where an imported run's start came from (the import's word); None for a run Prove stored
+    started_from: str | None = None
 
     @property
     def target(self) -> str:
@@ -398,6 +444,7 @@ class Index:
         pool = self.complete if target is None else [r for r in self.complete if r.target == target]
         rank = 0 if form == "latest" else 1
         if len(pool) > rank:
+            self._ordered(form if target is None else f"{form}:{target}", pool[: rank + 2])
             return pool[rank]
         if target is not None and "/" in target:
             raise look.Refused(
@@ -420,6 +467,38 @@ class Index:
             f"the store holds {held}",
             self.listing("--all"),
         )
+
+    def _ordered(self, word: str, ranked: Sequence[Named]) -> None:
+        """Refused when the start times cannot order the runs ``word`` ranks, newest first: one
+        took its start from its file's modification time, which says when the file was written
+        or copied, not when the run ran, or two of them started at the same moment. Either way
+        the word could pick the older run as the newer, so the runs are listed by name, which
+        says nothing of their order. The file time is named first where both hold, since it is
+        the cause."""
+        if len(ranked) < 2:
+            return
+        filed = [r for r in ranked if r.started_from == FILE_TIME]
+        tied = [(a, b) for a, b in zip(ranked, ranked[1:], strict=False) if a.started == b.started]
+        if filed:
+            runs = sorted(self.word_for(r) for r in (filed if len(filed) > 1 else ranked))
+            listed = _listed(sorted(self.word_for(r) for r in filed))
+            if len(filed) == 1:
+                cause = (
+                    f"the start of {listed} is its file's modification time, which says when a "
+                    "file was written or copied, not when the run ran"
+                )
+            else:
+                cause = (
+                    f"the starts of {listed} are their files' modification times, which say "
+                    "when a file was written or copied, not when the run ran"
+                )
+            raise Unordered(word, runs, cause, True, self.listing())
+        if tied:
+            a, b = tied[0]
+            runs = sorted((self.word_for(a), self.word_for(b)))
+            raise Unordered(
+                word, runs, f"{_listed(runs)} started at the same moment", False, self.listing()
+            )
 
     def _numbered(self, text: str) -> Named:
         digits = text[1:]
@@ -488,6 +567,22 @@ def shown_file(store: str) -> str:
     return f"{store.rstrip('/') or '/'}/{NAMES_FILE}" if store else NAMES_FILE
 
 
+# the word an import records when a run's start is its file's modification time
+FILE_TIME = "file time"
+
+
+def _started_from(manifest: Any) -> str | None:
+    """Where an imported run's start came from, as its import recorded it; None for any other."""
+    environment = getattr(manifest, "environment", None)
+    if not isinstance(environment, Mapping):
+        return None
+    recorded = environment.get("import")
+    if not isinstance(recorded, Mapping):
+        return None
+    word = recorded.get("started_from")
+    return word if isinstance(word, str) else None
+
+
 def index(
     store: Any,
     held: Sequence[str],
@@ -527,6 +622,7 @@ def index(
                 status=str(manifest.status),
                 target_id=str(manifest.target_id),
                 backend=str(manifest.backend),
+                started_from=_started_from(manifest),
             )
         )
     runs.sort(key=lambda r: (r.started, r.run_id))

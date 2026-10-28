@@ -188,6 +188,7 @@ def read(ns: argparse.Namespace) -> Run:
     formats = [tabular.format_of(path) for path in paths]
     files, rows = [], []
     matched: Counter[str] = Counter()
+    cells: Counter[str] = Counter()
     first_modified = 0.0
     for at, (path, (fmt, gzipped)) in enumerate(zip(paths, formats, strict=True)):
         raw, modified = tabular.read_bytes(path)
@@ -205,6 +206,8 @@ def read(ns: argparse.Namespace) -> Run:
                     rows.append(Row(case, cut.outcome(score), None, score, None, detail))
                 continue
             text = spelt(cell)
+            if text is not None:
+                cells[text] += 1
             if text is None:
                 rows.append(Row(case, None, NO_OUTCOME, None, None, detail))
             elif text in failed:
@@ -226,4 +229,5 @@ def read(ns: argparse.Namespace) -> Run:
         declared={"case_column": case_column, **detail},
         files=tuple(files),
         counts=counts,
+        cells=dict(cells),
     )

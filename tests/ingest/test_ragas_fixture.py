@@ -161,8 +161,10 @@ def test_ir7_fix_check_on_recall_reads_different_the_new_version_failed_less(
     assert t["expected_new"] == pytest.approx(570.0, abs=1e-9)
     assert t["variance"] == pytest.approx(285.0, abs=1e-9)
     assert d["difference"]["points"] == pytest.approx(-0.633333, abs=1e-6)
-    assert d["difference"]["lo"] == pytest.approx(-0.655595, abs=1e-4)
-    assert d["difference"]["hi"] == pytest.approx(-0.611071, abs=1e-4)
+    # ST3 (ruled 2026-10-20): the stratified Miettinen-Nurminen interval (the statistics check's
+    # simlib.mn_stratified on these per-input counts; Session A log, ragas_mn.md)
+    assert d["difference"]["lo"] == pytest.approx(-0.666486, abs=1e-4)
+    assert d["difference"]["hi"] == pytest.approx(-0.598057, abs=1e-4)
     assert d["limits"]["drop"] == pytest.approx(0.0509, abs=1e-4)
     assert (d["verdict"], d["direction"]) == ("different", "failed less in new")
     assert "different: the new version failed less" in text
@@ -284,8 +286,9 @@ def test_ir9_fix_check_on_faithfulness_is_too_small_to_tell(
 @pytest.mark.parametrize(
     "metric,old,new,expected,variance,p,points,lo,hi",
     [
-        ("answer_correctness", 107, 87, 97.0, 14.3333, 0.011, -0.133333, -0.231, -0.036),
-        ("answer_relevancy", 49, 32, 40.5, 9.75, 0.009, -0.113333, -0.193, -0.034),
+        # ST3 (ruled 2026-10-20): the Miettinen-Nurminen ranges (simlib; Session A log, ragas_mn.md)
+        ("answer_correctness", 107, 87, 97.0, 14.3333, 0.011, -0.133333, -0.255, -0.030),
+        ("answer_relevancy", 49, 32, 40.5, 9.75, 0.009, -0.113333, -0.226, -0.026),
     ],
 )
 def test_ir9_fix_check_on_answer_correctness_and_relevancy_reads_failed_less(

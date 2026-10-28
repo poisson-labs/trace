@@ -81,9 +81,10 @@ BY_INPUT_KEYS = {"moved", "p", "method", "draws", "seed"}
 CONSISTENCY_KEYS = {"failure_share", "fails_again", "kappa", "within", "pooled"}
 LIMITS_KEYS = {"drop", "rise", "power", "max_mde"}
 GUIDANCE_KEYS = {"repeats", "inputs", "accepts_at"}
+# ST9 (ruled 2026-10-20): the per-input "could not have detected a rise below" and its key went
 FLAG_ROW_KEYS = {
     "config_hash", "config", "failed_a", "runs_a", "failed_b", "runs_b", "change", "p", "q",
-    "flag", "limit_rise",
+    "flag",
 }
 COMPARE_GUIDANCE_KEYS = {"deaths", "runs", "inputs", "repeats", "accepts_at"}
 

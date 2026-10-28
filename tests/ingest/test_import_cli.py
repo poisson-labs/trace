@@ -451,22 +451,24 @@ def test_ic14_changes_reads_the_counts_the_rows_hold(tmp_path: Path) -> None:
 
 
 FROZEN = {
-    "conftest.py": "8e1c607fb68eefcc1136d8d8f83499a00e0ce50c56c09ed9d6edfcc6240e70ff",
-    "fixcheck_support.py": "995b657e14edc88500b126c7ea3a1debdadd59c17a20e1fef1b83f52a64cb0cf",
-    "test_changes.py": "e41d94f97999a0af4f0f0da582a8ca769562f9e496eff5920f4856c5e531cf03",
+    "conftest.py": "aef2c826e49141f374a1997ebc289b2e8dbe6c0e1f10f256395297219763538e",
+    "fixcheck_support.py": "926eaba653082b815f23c479a224565f8bfe3675713e53e9588b063fdd2ba2c3",
+    "test_changes.py": "7f6693e5492627ed592b4134af16d4a61057e671c4783d5e3703d4ae3c3055a1",
     "test_cli.py": "cce2a562d498ecf83a46e139389a27033cab6c260af9b9ff8fd1952550701fea",
     "test_clock.py": "298568af543464a27a9ebd0e9ab65bc80ba1401149684179cbc7f2c35b9186da",
-    "test_fix_check_cli.py": "d0f80bba6d18d054992995eb6ad9bd2b1f4f559eae455edbbc891d302158a77d",
-    "test_fix_check_golden.py": "64df819c30cecd3201d160f608a62a091213472ea3ef00cf17545ce2d318862d",
-    "test_golden.py": "185fb329331102f395b689f8a53f7a285842568b8bde3a290b9d282ec62a7efd",
-    "test_paired.py": "638d78c064f92e4fd0030c738c597f4244c2bf8fa1c298944ef3c5008d0c9c06",
-    "test_report.py": "ed38b258317459c2db6be0134aa98cb8b5460f69cf66f2e3b4cd875c966aeb4f",
-    "test_survival.py": "e6335bd46e7f0dcb33a2e685f8c9aa914b8cac464faf98249e86b918d475ef9b",
+    "test_fix_check_cli.py": "2d9917bf879686828528d38a95b8ec227d3c7033beffa3cf9f4aba206fefd741",
+    "test_fix_check_golden.py": "9b851201ed0b74bf04b2a28a5f3b83fdc85175bd929c6e7db72a8a21889262a3",
+    "test_golden.py": "018426df4ef416749a1a34a0faba02d1cddb35ac73df9ed791367f175af25cae",
+    "test_paired.py": "7e646ce3511bbfa567a69bcde9d785fc6d384e78fc670850d6166de3f86f0519",
+    "test_report.py": "97b58893f8f63696713c516fefb44f3a7b2f286cf2e977ed878c28ddac1b4448",
+    "test_survival.py": "aebe33482d972def820b148a7fbb18882e83ea23dd738975620a058effe552a9",
 }
 
 
 def test_ic14_no_frozen_trace_test_is_edited() -> None:
-    """Green by construction: the digests of Trace's test files as they stood at main 42456f7."""
+    """Green by construction: the digests of Trace's test files as they stood at main 42456f7, and
+    as TF15 Session A moved them under Taylor's rulings of 2026-10-20 (each move commit names its
+    ruling and updates the digest of the file it moves)."""
     got = {name: hashlib.sha256((TESTS / name).read_bytes()).hexdigest() for name in FROZEN}
     assert got == FROZEN
 

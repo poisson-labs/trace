@@ -77,8 +77,9 @@ def test_id11_fix_check_on_the_pair_reads_different_failed_more(pair: Path) -> N
     assert t["variance"] == pytest.approx(131.1389, abs=1e-4)
     assert t["p"] == pytest.approx(0.036024, abs=1e-6)
     assert d["difference"]["points"] == pytest.approx(0.004668, abs=1e-6)
-    assert d["difference"]["lo"] == pytest.approx(0.000364, abs=1e-6)
-    assert d["difference"]["hi"] == pytest.approx(0.008973, abs=1e-6)
+    # ST3 (ruled 2026-10-20): simlib.mn_stratified on the statistics check's dump he-fixcheck
+    assert d["difference"]["lo"] == pytest.approx(0.000378, abs=2e-6)
+    assert d["difference"]["hi"] == pytest.approx(0.009263, abs=2e-6)
     assert (d["verdict"], d["direction"]) == ("different", "failed more in new")
     assert d["limits"]["drop"] == pytest.approx(0.006436, abs=1e-6)
     assert d["limits"]["rise"] == pytest.approx(0.006575, abs=1e-6)

@@ -1,6 +1,93 @@
 # Changelog
 
-## Unreleased
+## 0.1.0rc2 — pre-release
+
+A second private pre-release for design partners, rebuilt from the first partner's hands-on
+test. Not on PyPI and not yet released. Everything under 0.1.0rc1 is in it too.
+
+### Every report opens in plain words
+
+- **`compare`, `fix-check`, `where`, `changes` and the import** open with the verdict in plain
+  words, the title on line 3, a summary of four lines (what was compared, the question, the
+  answer, what to do next) and a section *Before you act on this* holding every caveat; the
+  statistics follow as before. The technical sentence stays on the bold line inside. The
+  summary is not in `--json`, whose `sentence` is the first line's.
+- The report's last `next:` line is the summary's command, where one can run as written.
+- Headers say where each imported start came from (a file's modification time, `--started`,
+  a JUnit suite timestamp, a DeepEval file name and the zone it was read in), say *not known*
+  rather than a gap where both starts are file times, and call an imported run's tally the
+  run's own. `runs` marks a start that is a file time. The import records the zone a DeepEval
+  file name was read in, says *passed* and *failed*, and the table import lists every value
+  of its outcome column with its rows.
+
+### fix-check
+
+- The range of the difference is the stratified Miettinen–Nurminen score interval, with
+  Mantel–Haenszel weights, in place of Sato's; it is named at its own level and marked
+  *rough here*, with the reason, where it cannot be relied on.
+- *No significant difference* now means a reliable range inside plus or minus `--max-mde`;
+  where the range is rough the detection limit decides, as before. The detection limit is for
+  planning. A *too small to tell* whose reliable range leaves out a drop of the size asked
+  says so. A ceiling offered is the smallest that accepts the design; no repeats are offered
+  where the range decided and the tries already reach the size asked.
+- A *different* the by-input check does not confirm names the inputs carrying it and gives
+  the gap and p without them.
+- The per-input column *could not have detected a rise below* and its JSON key `limit_rise`
+  are gone; the schemas of `fix-check` and `changes` are `/2`.
+
+### compare and where
+
+- `compare`'s detection limit comes from the log-rank's own information, in place of
+  Schoenfeld's, and so does each kind's; its tries per input are those whose expected
+  information under no change reaches the ratio asked, and always more than the runs had. It
+  prints the hazard ratio after against before with its range (JSON `hazard_ratio`,
+  `hazard_ratio_lo`, `hazard_ratio_hi`). The guidance keys `deaths`, `runs` and `inputs` stay,
+  with no value.
+- `where` reads finishing and timing out as ends of their own, with only capped tries
+  censored (Aalen–Johansen): its curve is the share not yet failed, its band resamples
+  inputs, its median is that of the failed tries, and it says when half of all tries had
+  failed. It says *turn* for runs counted in turns. `compare`'s `--at` rows give the same
+  share, banded by resampling the two runs' shared inputs together.
+
+### Setting up
+
+- **`init`** on a folder of several tools' files prints one import line per file, a word it
+  cannot read left in capitals; `--no-import` lists them, and keeps the link to Prove only
+  where it found nothing at all. A store Trace's import wrote is named by what wrote it, not
+  as a Prove store.
+- **`doctor`** notices a store beside a `trace.toml` that names none and gives the command
+  that sets Trace up with it.
+- **`latest` and `previous`**, where start times cannot order the runs, are refused with a
+  command that has `OLDER` and `NEWER` in their place.
+
+## 0.1.0rc1 — pre-release
+
+A private pre-release for design partners, installed from its wheel; not on PyPI and not yet
+released. Everything below is in it, newest first.
+
+### A failure value that matches nothing; latest and previous on imported runs
+
+- **`init`** refuses a `--failed` value that no cell of the outcome column carries in any
+  table it found, naming the value and the column and listing the column's values; nothing is
+  written. Before, it said ok, imported every row as met, and set no failure. A value that one
+  version carries and the other does not is taken.
+- Where a store's runs carry only words for success, `init` says so, where it said the runs
+  carried no outcome, and `doctor` no longer points back to `init`: for imported runs it points
+  to importing them again into a new store with the values that mean a failure and setting up
+  with it, and for Prove's runs it names no command.
+- **`latest` and `previous`** are refused, naming the runs to give instead, where the start
+  times cannot order the runs they rank: two that started at the same moment, or an imported
+  run whose start is its file's modification time. Before, a tie fell to the run id, so two
+  tables `init` imported together could be compared the wrong way round.
+
+### An empty JUnit report left out by init
+
+- **`init`** leaves out a JUnit report that holds no test case, as a runner writes when it
+  collected no test, says so in one line naming the file, and imports the other files it
+  found. Before, that one report stopped the import of every file. Such a report no longer
+  counts as a second tool's file beside a table or DeepEval's results, and a report that cannot
+  be read still stops the import, naming it. `poisson-trace import junit` given an empty report
+  still refuses it.
 
 ### The import under the main command; tables and JUnit reports
 
@@ -169,7 +256,7 @@ written down in `docs/cli-look.md`, which every Poisson Labs tool follows.
 - `--help` and `--version` work without Prove: Prove is checked once the command line is
   read, and a command that needs it, without it or at another version, names the install
   command `pip install git+https://github.com/poisson-labs/prove` and the version it found.
-- `--version` prints one line: `poisson-trace 0.1.0 (poisson-prove 0.0.1, Python 3.11.7)`,
+- `--version` prints one line: `poisson-trace 0.1.0rc1 (poisson-prove 0.0.1, Python 3.11.7)`,
   with Prove's version as installed, or `poisson-prove not installed`.
 - `python -m poisson_trace` is the same command as `poisson-trace`.
 - `--seed` below 0 is refused, and `--boot` above 1,000,000; a store that cannot be read, a
@@ -203,9 +290,9 @@ written down in `docs/cli-look.md`, which every Poisson Labs tool follows.
 - The README and the two integration pages give the install line above, and their example
   outputs are re-run.
 
-## 0.1.0 — 2026-10-01
+### The first slice
 
-First release, three parts. The first two read Prove's stored runs; the third writes a
+Three parts. The first two read Prove's stored runs; the third writes a
 store in Prove's format from the result files of another tool.
 
 Where runs die: `where` and `compare` over leaf-span index; Kaplan–Meier with Greenwood;

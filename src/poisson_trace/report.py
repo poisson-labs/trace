@@ -13,15 +13,35 @@ from poisson_trace.look import count
 CANNOT_SAY: tuple[str, ...] = (
     "The step index is where the run stopped, not why. A run that died at a tool step may "
     "have gone wrong three steps earlier.",
-    "Timed-out and capped runs are censored at their last recorded step. If they would have "
-    "died soon after, the curve is optimistic by that much; the header counts them.",
+    "Capped runs are censored at their last recorded step. If they would have died soon after, "
+    "the curve is optimistic by that much. A run that timed out ends where it stopped, counted "
+    "beside the kinds and not as a death; the header counts both.",
     "Excluded rows are not on the curve; the header counts them by reason.",
     "On one run, this is a description. Only a comparison of two stored runs on the same "
     "cells says whether anything moved, and only within what it could not have detected.",
 )
 
-KM_CAPTION = "Kaplan–Meier over leaf-span index; band: Greenwood, plain, 95%"
-AJ_CAPTION = "Aalen–Johansen cumulative incidence; band: bootstrap 95%, B = {b}, seed = {seed}"
+CURVE_CAPTION = (
+    "Aalen–Johansen over leaf-span index: finishing without failing and timing out are ends of "
+    "their own, and only capped tries are censored; band: bootstrap 95%, resampling inputs, "
+    "B = {b}, seed = {seed}"
+)
+AJ_CAPTION = (
+    "Aalen–Johansen: each kind's share of tries failed by {last}, and the share that timed "
+    "out; band: bootstrap 95%, resampling inputs, B = {b}, seed = {seed}"
+)
+SVG_CURVE_CAPTION = "Aalen–Johansen share not yet failed; band: bootstrap 95%, resampling inputs"
+SVG_CAUSE_CAPTION = (
+    "Aalen–Johansen share failed by kind; band at the last failure: bootstrap 95%, resampling "
+    "inputs, B = {b}, seed = {seed}"
+)
+
+
+def _unit(run: Mapping[str, Any]) -> str:
+    """The word for the run's clock: turn for a run counted in turns, step otherwise."""
+    return "turn" if run.get("t_unit") == "turns" else "step"
+
+
 LOGRANK_CAPTION = (
     "log-rank, stratified by config cell over {cells} common {cell_word} "
     "(excluded: {a_only} in A only, {b_only} in B only), unpaired{salt}; α = {alpha}"
@@ -31,8 +51,26 @@ PER_CAUSE_CAPTION = (
     "their step; Benjamini–Hochberg at q = {alpha}"
 )
 MDE_LINE = (
-    "could not have detected a hazard ratio below {mde} (Schoenfeld, 80% power, α = {alpha}, "
-    "{deaths} deaths over the common cells, allocation {share})"
+    "could not have detected a hazard ratio below {mde} (from the log-rank's own information, "
+    "its variance {variance} over the common cells; 80% power, α = {alpha})"
+)
+NO_INFORMATION = (
+    "no detection limit: the log-rank's variance is 0 over the common cells, so it carries no "
+    "information on these runs"
+)
+RANGE_DECIDES = (
+    "The line below follows the range, which is reliable here; these limits are for planning "
+    "the next run."
+)
+TEST_AND_CURVES = (
+    "The test compares, step by step, the failure rate among tries still going; the rows by "
+    "step below and the curves `poisson-trace where` draws give the share of tries failed by "
+    "a step. A version whose tries finish sooner can differ in one and not the other."
+)
+AT_CAPTION = (
+    "Share of tries not yet failed by a step (Aalen-Johansen, finishing and timing out as ends "
+    "of their own); band: bootstrap 95%, resampling inputs, both runs' tries on an input drawn "
+    "together, B = {draws}, seed = 0"
 )
 
 
@@ -90,7 +128,7 @@ def _header_lines(run: Mapping[str, Any], events: Sequence[str]) -> list[str]:
     lines = [
         f"- run: {_named(run)} · target: {run['target_id']} · t_unit: {run['t_unit']} · "
         f"status: {run['status']} · {cap}",
-        "- Prove's tally: "
+        f"- {_tallied(run)}: "
         + " · ".join(
             f"{label} {count(tally[key])}"
             for label, key in (
@@ -118,6 +156,19 @@ def _header_lines(run: Mapping[str, Any], events: Sequence[str]) -> list[str]:
     return lines
 
 
+def _plain_lines(d: Mapping[str, Any]) -> list[str]:
+    """The plain parts under a report's title: the four labelled lines of the summary, and the
+    caveats where there are any, each part closed by a blank line. Empty where none was made."""
+    summary = d.get("_summary")
+    if not summary:
+        return []
+    lines = ["## Summary", "", *[f"- {label}: {text}" for label, text in summary], ""]
+    caveats = d.get("_before_you_act") or ()
+    if caveats:
+        lines += ["## Before you act on this", "", *[f"- {caveat}" for caveat in caveats], ""]
+    return lines
+
+
 def _cannot_say_lines(sentences: Sequence[str] = CANNOT_SAY) -> list[str]:
     return ["## What this cannot say", ""] + [f"- {sentence}" for sentence in sentences]
 
@@ -135,7 +186,10 @@ CMH_CAPTION = (
     "exact conditional Cochran-Mantel-Haenszel test, stratified by input over {inputs} "
     "{input_word} ({informative} informative), two-sided; α = {alpha}"
 )
-DIFFERENCE_CAPTION = "Mantel-Haenszel weights; interval: Sato variance, large-sample, {level}%"
+DIFFERENCE_CAPTION = (
+    "Mantel-Haenszel weights; range: stratified Miettinen-Nurminen score interval, {level}%, "
+    "for these inputs as run"
+)
 LIMIT_CAPTION = (
     "proportional change on every input, 80% power, α = {alpha}, continuity-corrected normal "
     "approximation to the stratified statistic"
@@ -189,8 +243,64 @@ def _gap(seconds: float) -> str:
     return f"{count(hours)} h {minutes} min" if hours else f"{minutes} min"
 
 
-def _tally_line(label: str, tally: Mapping[str, Any]) -> str:
-    return f"- Prove's tally ({label}): " + " · ".join(
+def _tallied(run: Mapping[str, Any]) -> str:
+    """Whose tally a run's header prints: Prove's for a run Prove stored, the run's own for one
+    Trace's import wrote, whose counts Prove did not make."""
+    return "the run's tally" if run.get("_imported") else "Prove's tally"
+
+
+def started_from(start: Mapping[str, Any] | None) -> str | None:
+    """Where an imported run's start came from, as a header says it; None for a run Prove
+    stored, whose start is its own."""
+    if start is None:
+        return None
+    source, zone = start.get("from"), start.get("zone")
+    if source == "file time":
+        return "the file's modification time"
+    if source == "given":
+        return "given with --started"
+    if source == "file name":
+        if isinstance(zone, Mapping):
+            return (
+                "the time in the file's name, read in this machine's zone, "
+                f"{zone.get('name')}, {zone.get('offset')}"
+            )
+        return "the time in the file's name, read in the zone of the machine that imported it"
+    if source == "file":
+        if start.get("tool") == "junit":
+            return "the report's earliest suite timestamp"
+        return "a time the tool wrote in the file"
+    if source == "earliest span":
+        return "the earliest span's start"
+    return None
+
+
+def file_timed(run: Mapping[str, Any]) -> bool:
+    """Whether a run's start is its file's modification time, which says when the file was
+    written or copied, not when the run ran."""
+    start = run.get("_start")
+    return isinstance(start, Mapping) and start.get("from") == "file time"
+
+
+def _when_line(runs: Sequence[Mapping[str, Any]], gap: float) -> str:
+    """When the two ran: the gap between their starts, or not known where a start is a file's
+    modification time."""
+    filed = [_name(run) for run in runs if file_timed(run)]
+    if len(filed) == 1:
+        return (
+            f"- when the two ran: not known; the start of {filed[0]} is when its file was "
+            "written or copied"
+        )
+    if filed:
+        return (
+            f"- when the two ran: not known; the starts of {filed[0]} and {filed[1]} are when "
+            "their files were written or copied"
+        )
+    return f"- the two runs started {_gap(gap)} apart"
+
+
+def _tally_line(label: str, tally: Mapping[str, Any], whose: str = "Prove's tally") -> str:
+    return f"- {whose} ({label}): " + " · ".join(
         f"{name} {count(tally[key])}"
         for name, key in (
             ("rows", "rows"),
@@ -205,12 +315,27 @@ def _tally_line(label: str, tally: Mapping[str, Any]) -> str:
 
 def _run_lines(label: str, run: Mapping[str, Any]) -> list[str]:
     declared = run["declared_repeats"]
+    source = started_from(run.get("_start"))
+    started = run["created_at"] if source is None else f"{run['created_at']} ({source})"
     return [
         f"- {label}: {_named(run)} · target: {run['target_id']} · status: {run['status']} · "
-        f"started: {run['created_at']} · declared repeats: "
+        f"started: {started} · declared repeats: "
         f"{'not recorded' if declared is None else count(declared)}",
-        _tally_line(label, run["tally"]),
+        _tally_line(label, run["tally"], _tallied(run)),
     ]
+
+
+def value_words(value: Any) -> str:
+    """A config value as a sentence says it: a string as it is, any other value as JSON."""
+    return value if isinstance(value, str) else json.dumps(value)
+
+
+def input_words(config: Any) -> str:
+    """An input as a sentence names it, never as JSON: its first key and value, then each
+    further one after "at" (``task_id HumanEval/129 at temperature 0.7``)."""
+    if not isinstance(config, Mapping) or not config:
+        return str(config)
+    return " at ".join(f"{k} {value_words(v)}" for k, v in config.items())
 
 
 def _config_cell(config: Any) -> str:
@@ -231,9 +356,8 @@ def _flag_lines(block: Mapping[str, Any], top: int, first: str, second: str) -> 
         )
         + ".",
         "",
-        f"| input | {first} failed/runs | {second} failed/runs | change | p | q | flag | "
-        "could not have detected a rise below |",
-        "|---|---|---|---|---|---|---|---|",
+        f"| input | {first} failed/runs | {second} failed/runs | change | p | q | flag |",
+        "|---|---|---|---|---|---|---|",
     ]
     flagged = [r for r in block["rows"] if r["flag"] is not None]
     rest = [r for r in block["rows"] if r["flag"] is None]
@@ -244,8 +368,7 @@ def _flag_lines(block: Mapping[str, Any], top: int, first: str, second: str) -> 
             f"| {_config_cell(r['config'])} | {count(r['failed_a'])}/{count(r['runs_a'])} | "
             f"{count(r['failed_b'])}/{count(r['runs_b'])} | "
             f"{_points(r['change'], signed=True, places=1)} points | "
-            f"{_p(r['p'])} | {_p(r['q'])} | {flag} | "
-            f"{_points(r['limit_rise'], places=1)} points |"
+            f"{_p(r['p'])} | {_p(r['q'])} | {flag} |"
         )
     if len(shown) < tested:
         lines += [
@@ -290,14 +413,27 @@ class WhereReport:
         by = d["clock"]["by"]
         by_label = "kind of step" if by == "kind" else "step name"
         cause_word = "kind" if by == "kind" else "step"
-        lines = [f"# Poisson Trace · where runs die · {_name(run)}", "", "## Run", ""]
+        lines = [
+            f"# Poisson Trace · where runs die · {_name(run)}",
+            "",
+            *_plain_lines(d),
+            "## Run",
+            "",
+        ]
         lines += _header_lines(run, d["events"])
         if d.get("note") is not None:
             # a run with no traces: its one line, in place of an empty curve and causes table
             lines += ["", d["note"], "", *_cannot_say_lines(), ""]
             return "\n".join(lines)
-        lines += ["", "## Survival over step index", "", f"{KM_CAPTION}.", ""]
-        lines += ["| step | at risk | died | S | 95% band |", "|---|---|---|---|---|"]
+        unit = _unit(run)
+        boot = d["bootstrap"]
+        b, seed = count(boot["b"]), boot["seed"]
+        lines += ["", f"## Share not yet failed, by {unit}", ""]
+        lines += [CURVE_CAPTION.format(b=b, seed=seed) + ".", ""]
+        lines += [
+            f"| {unit} | at risk | failed | not yet failed | 95% band |",
+            "|---|---|---|---|---|",
+        ]
         for row in d["curve"]:
             lines.append(
                 f"| {count(row['step'])} | {count(row['at_risk'])} | {count(row['died'])} | "
@@ -308,17 +444,31 @@ class WhereReport:
             lines.append("| – | – | 0 | 1.000 | 1.000 – 1.000 |")
         lines.append("")
         median = d["median_step"]
-        lines.append(f"median step: {'not reached' if median is None else count(median)}")
+        lines.append(
+            f"median {unit} of the failed tries: "
+            + ("none failed" if median is None else count(median))
+        )
+        half = d.get("_half_step")
+        if half is not None:
+            lines.append(f"half of all tries had failed by {unit} {count(half)}")
+        elif d["curve"]:
+            lines.append(
+                f"the share failed stayed under one half: {_f(1.0 - d['curve'][-1]['survival'])} "
+                "by the last failure"
+            )
         for row in d["at"]:
             lines.append(
-                f"S({count(row['step'])}) = {_f(row['survival'])} ({_band(row['lo'], row['hi'])})"
+                f"not yet failed by {unit} {count(row['step'])}: {_f(row['survival'])} "
+                f"({_band(row['lo'], row['hi'])})"
             )
-        boot = d["bootstrap"]
         lines += ["", f"## Where they die, by {by_label}", ""]
-        lines += [AJ_CAPTION.format(b=count(boot["b"]), seed=boot["seed"]) + ".", ""]
-        last = d["curve"][-1]["step"] if d["curve"] else None
-        at_label = f"F at step {count(last)}" if last is not None else "F"
-        lines += [f"| {cause_word} | deaths | {at_label} | 95% band |", "|---|---|---|---|"]
+        last = d.get("_last_step")
+        by_last = f"{unit} {count(last)}" if last is not None else f"the last {unit}"
+        lines += [AJ_CAPTION.format(b=b, seed=seed, last=by_last) + ".", ""]
+        lines += [
+            f"| {cause_word} | tries | share by {by_last} | 95% band |",
+            "|---|---|---|---|",
+        ]
         for row in d["causes"]:
             lines.append(
                 f"| {row['cause']} | {count(row['deaths'])} | {_f(row['f'])} | "
@@ -326,9 +476,19 @@ class WhereReport:
             )
         if not d["causes"]:
             lines.append("| – | 0 | 0.000 | – |")
+        timed = d.get("_timed_out")
+        if timed is not None:
+            lines.append(
+                f"| timed out | {count(timed['count'])} | {_f(timed['f'])} | "
+                f"{_band(timed['lo'], timed['hi'])} |"
+            )
         total = sum(row["f"] for row in d["causes"])
         s_last = d["curve"][-1]["survival"] if d["curve"] else 1.0
-        lines += ["", f"sum of F = 1 − S = {_f(total)} (1 − {_f(s_last)})"]
+        lines += [
+            "",
+            f"the kinds' shares add to the share failed, 1 − not yet failed = {_f(total)} "
+            f"(1 − {_f(s_last)}); timed out is an end of its own and not among them",
+        ]
         if "declared" in d:
             lines += ["", "## Declared steps", ""]
             lines += self._declared_lines()
@@ -379,6 +539,7 @@ class CompareReport:
         lines = [
             f"# Poisson Trace · compare · {_name(a)} (before) and {_name(b)} (after)",
             "",
+            *_plain_lines(d),
             "## Run A (before)",
             "",
         ]
@@ -388,7 +549,7 @@ class CompareReport:
         lines += ["", "## Run B (after)", ""]
         lines += _header_lines(b, d["events"])
         lines += ["", "## Comparison", ""]
-        salt = " (the runs share a run_salt)" if d.get("_same_salt") else ""
+        salt = ", though the runs share a run_salt" if d.get("_same_salt") else ""
         lines.append(
             LOGRANK_CAPTION.format(
                 cells=count(c["cells"]),
@@ -416,10 +577,25 @@ class CompareReport:
             f"p = {_p(c['p'])}",
             f"direction: {c['direction']}",
         ]
-        for row in d["at"]:
+        if c["hazard_ratio"] is not None:
             lines.append(
-                f"S_B({count(row['step'])}) − S_A({count(row['step'])}) = {_f(row['diff'])} "
-                f"({_f(row['lo'])} – {_f(row['hi'])}, Wald 95%)"
+                f"hazard ratio, after against before: {c['hazard_ratio']:.2f} "
+                f"({c['hazard_ratio_lo']:.2f} to {c['hazard_ratio_hi']:.2f}, 95%); Peto's "
+                "one-step estimate from the observed, expected and variance above"
+            )
+        lines += ["", TEST_AND_CURVES]
+        if d["at"]:
+            lines += [
+                "",
+                AT_CAPTION.format(draws=count(d["_at_draws"])) + ".",
+                "",
+            ]
+        for row in d["at"]:
+            q = count(row["step"])
+            lines.append(
+                f"not yet failed by step {q}: after {_f(row['survival_b'])}, before "
+                f"{_f(row['survival_a'])}, after minus before {_f(row['diff'])} "
+                f"({_f(row['lo'])} – {_f(row['hi'])})"
             )
         lines += ["", f"### Per {cause_word}", ""]
         lines.append(PER_CAUSE_CAPTION.format(what=what, alpha=_g(c["alpha"])) + ".")
@@ -437,11 +613,14 @@ class CompareReport:
             )
         lines += [
             "",
-            MDE_LINE.format(
-                mde=_f(c["mde_hazard_ratio"]),
-                alpha=_g(c["alpha"]),
-                deaths=count(d["_deaths_common"]),
-                share=_f(d["_share_a"]),
+            (
+                MDE_LINE.format(
+                    mde=_f(c["mde_hazard_ratio"]),
+                    alpha=_g(c["alpha"]),
+                    variance=_f(c["variance"]),
+                )
+                if c["mde_hazard_ratio"] is not None
+                else NO_INFORMATION
             ),
             "",
             f"**{d['_verdict_line']}**",
@@ -459,25 +638,37 @@ class CompareReport:
         c = d["comparison"]
         asked = _g(c["max_mde_hr"])
         lines = ["## Guidance", ""]
-        if g["deaths"] is None:
-            lines.append(f"- no number of deaths reaches a hazard ratio of {asked}")
+        cells = count(c["cells"])
+        inputs = "input" if c["cells"] == 1 else "inputs"
+        if g["repeats"] is None:
+            lines.append(
+                f"- no number of tries per input per version on these {cells} {inputs} reaches a "
+                f"hazard ratio of {asked}"
+            )
         else:
-            lines += [
-                f"- deaths: {count(g['deaths'])} would bring the detectable hazard ratio to "
-                f"{asked}; this design has {count(d['_deaths_common'])}",
-                f"- runs: {count(g['runs'])} placed runs at the present share of deaths, which is "
-                f"{count(g['inputs'])} inputs at the present repeats, or {count(g['repeats'])} "
-                f"repeats per arm on these {count(c['cells'])}; this design has "
-                f"{count(d['_placed_common'])} placed runs",
-            ]
+            info = d.get("_information") or {}
+            have = d.get("_tries_per_input")
+            line = (
+                f"- tries: {count(g['repeats'])} per input per version on these {cells} {inputs} "
+                f"would bring the detectable hazard ratio to {asked}"
+            )
+            if info.get("expected") is not None and info.get("needed") is not None:
+                line += (
+                    f": the log-rank's expected information there, {info['expected']:.1f}, "
+                    f"reaches the {info['needed']:.1f} that {asked} needs"
+                )
+            if have is not None:
+                line += f"; this design has {count(have)}"
+            lines.append(line)
         if g["accepts_at"] is not None:
             lines.append(
                 f"- ceiling: --max-mde-hr {g['accepts_at']:.3f} accepts this design as it stands"
             )
         lines += [
             "",
-            "These numbers assume the share of runs that die holds in the next runs, and that "
-            "new inputs resemble the present ones. " + GUIDE_NOT_PROMISE,
+            "These numbers assume each input fails and finishes, step by step, at the rates "
+            "these two runs show (no change between the versions), and that the next runs are "
+            "on the same inputs. " + GUIDE_NOT_PROMISE,
         ]
         return lines
 
@@ -487,7 +678,7 @@ class CompareReport:
 
 @dataclass(frozen=True)
 class FixCheckReport:
-    """``data`` is the ``poisson-trace.fix-check/1`` structure, keys in order; keys that start
+    """``data`` is the ``poisson-trace.fix-check/2`` structure, keys in order; keys that start
     with an underscore serve the markdown only."""
 
     data: Mapping[str, Any]
@@ -498,11 +689,12 @@ class FixCheckReport:
         lines = [
             f"# Poisson Trace · fix check · {_name(old)} (old) and {_name(new)} (new)",
             "",
+            *_plain_lines(d),
             "## Runs",
             "",
         ]
         lines += self._header_lines()
-        lines += ["", "## The control", ""]
+        lines += ["", self._control_heading(), ""]
         lines += self._control_lines()
         lines += ["", "## The comparison", ""]
         lines += self._comparison_lines()
@@ -524,7 +716,7 @@ class FixCheckReport:
         d = self.data
         inputs, rows = d["inputs"], d["rows"]
         lines = _run_lines("old", d["runs"]["old"]) + _run_lines("new", d["runs"]["new"])
-        lines.append(f"- the two runs started {_gap(d['gap_seconds'])} apart")
+        lines.append(_when_line([d["runs"]["old"], d["runs"]["new"]], d["gap_seconds"]))
         lines.append(f"- events: {', '.join(d['events'])}")
         lines += [f"- {note}" for note in d.get("_event_notes", [])]
         if inputs["rule"] == "all":
@@ -549,9 +741,13 @@ class FixCheckReport:
                 for arm in ("old", "new")
             )
         )
+        declared = [d["runs"][arm]["declared_repeats"] for arm in ("old", "new")]
         lines.append(
             "- inputs short of the declared repeats: "
-            f"old {count(rows['old']['short'])} · new {count(rows['new']['short'])}"
+            + " · ".join(
+                f"{arm} {'no repeats declared' if held is None else count(rows[arm]['short'])}"
+                for arm, held in zip(("old", "new"), declared, strict=True)
+            )
         )
         lines.append(
             "- inputs with mixed outcomes across their repeats: "
@@ -560,12 +756,30 @@ class FixCheckReport:
         lines += [f"- {COPIES.format(arm=arm)}" for arm in d.get("_copies", [])]
         return lines
 
+    def _picked(self) -> bool:
+        """Whether the inputs are those that failed in a selecting run: only then is the old
+        version's run on them a control, a re-run where nothing changed."""
+        return bool(self.data["inputs"]["rule"] == "failing-from")
+
+    def _control_heading(self) -> str:
+        return "## The control" if self._picked() else "## The two versions"
+
     def _control_lines(self) -> list[str]:
         d = self.data
+        inputs = d["inputs"]
+        if self._picked():
+            times = inputs["min_failures"]
+            failed = "failed" if times in (None, 1) else f"failed at least {_count(times, 'time')}"
+            which = d.get("_failing_from") or inputs["failing_from"]
+            said = f"The old version's run on the inputs that {failed} in {which}, beside the new."
+            column = "did not fail on re-run"
+        else:
+            said = "The old version and the new on the same inputs."
+            column = "did not fail"
         lines = [
-            "The old version, re-run on the same inputs with nothing changed.",
+            said,
             "",
-            "| version | runs | failed | failure share | did not fail on re-run |",
+            f"| version | runs | failed | failure share | {column} |",
             "|---|---|---|---|---|",
         ]
         for arm in ("old", "new"):
@@ -575,13 +789,15 @@ class FixCheckReport:
                 f"| {arm} | {count(r['runs'])} | {count(r['failed'])} | {_percent(1.0 - stayed)} | "
                 f"{_percent(stayed)} |"
             )
-        lines += [
-            "",
-            "Re-running these inputs and counting the runs that did not fail would have read "
-            f"{_percent(d['control']['old_did_not_fail_share'])} on the old version, where "
-            "nothing changed.",
-        ]
-        return lines
+        old = _percent(d["control"]["old_did_not_fail_share"])
+        if self._picked():
+            closing = (
+                "Re-running these inputs and counting the runs that did not fail would have read "
+                f"{old} on the old version, where nothing changed."
+            )
+        else:
+            closing = f"The old version did not fail on {old} of its episodes on these inputs."
+        return [*lines, "", closing]
 
     def _comparison_lines(self) -> list[str]:
         d = self.data
@@ -609,7 +825,11 @@ class FixCheckReport:
             figures = (diff["points"], diff["lo"], diff["hi"])
             places = 2 if all(abs(100.0 * x) < 1.0 for x in figures) else 1
             point, lo, hi = (_points(x, signed=True, places=places) for x in figures)
-            lines.append(f"difference: {point} points, new minus old ({lo} to {hi}; {caption})")
+            rough = d.get("_rough") or []
+            why = f"; rough here: {' and '.join(rough)}" if rough else ""
+            lines.append(
+                f"difference: {point} points, new minus old ({lo} to {hi}; {caption}{why})"
+            )
         if by["method"] == "exact":
             how = "exact"
         else:
@@ -660,6 +880,8 @@ class FixCheckReport:
                     f"- a {name} in failure share: could not have detected one below "
                     f"{_points(limit)} points"
                 )
+        if self.data.get("_decided_by") == "range":
+            lines += ["", RANGE_DECIDES]
         return lines
 
     def _guidance_lines(self) -> list[str]:
@@ -668,6 +890,15 @@ class FixCheckReport:
         compared = d["inputs"]["compared"]
         asked = _g(100.0 * d["limits"]["max_mde"])
         lines = ["## Guidance", ""]
+        if all(g[key] is None for key in ("repeats", "inputs", "accepts_at")) and d.get(
+            "_tries_enough"
+        ):
+            # the range decided, and the tries were already enough for the drop limit
+            return lines + [
+                f"- none: the drop limit, {_points(d['limits']['drop'])} points, is already under "
+                f"the {asked} asked for; the range, not the number of tries, reads this answer, "
+                "and a plan for more tries of this design would not be one Trace can stand behind"
+            ]
         if g["repeats"] is None:
             lines.append(f"- no number of repeats on these inputs reaches {asked} points")
         else:
@@ -702,7 +933,7 @@ class FixCheckReport:
 
 @dataclass(frozen=True)
 class ChangesReport:
-    """``data`` is the ``poisson-trace.changes/1`` structure, keys in order; keys that start
+    """``data`` is the ``poisson-trace.changes/2`` structure, keys in order; keys that start
     with an underscore serve the markdown only."""
 
     data: Mapping[str, Any]
@@ -713,12 +944,13 @@ class ChangesReport:
         lines = [
             f"# Poisson Trace · changes · {_name(a)} (A) and {_name(b)} (B)",
             "",
+            *_plain_lines(d),
             "## Runs",
             "",
         ]
         lines += _run_lines("A", a) + _run_lines("B", b)
         if "_gap_seconds" in d:
-            lines.append(f"- the two runs started {_gap(d['_gap_seconds'])} apart")
+            lines.append(_when_line([a, b], d["_gap_seconds"]))
         lines.append(f"- events: {', '.join(d['events'])}")
         lines += [f"- {note}" for note in d.get("_event_notes", [])]
         held = d.get("_inputs")
@@ -816,8 +1048,8 @@ def _render_svg(report: WhereReport) -> str:
         f"events: {escape(', '.join(d['events']))}</text>"
     )
     for y0, h, sy, ylabel in (
-        (_TOP_Y, _TOP_H, sy_top, "share of runs still going"),
-        (_BOT_Y, _BOT_H, sy_bot, "share of runs died, cumulative"),
+        (_TOP_Y, _TOP_H, sy_top, "share of runs not yet failed"),
+        (_BOT_Y, _BOT_H, sy_bot, "share of runs failed, by kind"),
     ):
         for tick in (0.0, 0.25, 0.5, 0.75, 1.0):
             yy = sy(tick)
@@ -862,18 +1094,20 @@ def _render_svg(report: WhereReport) -> str:
         f'<polyline points="{pts(line)}" fill="none" stroke="{_CURVE}" stroke-width="2" '
         'stroke-linejoin="round"/>'
     )
-    parts.append(f'<text x="{_PAD_L}" y="{_TOP_Y - 8}" fill="{_INK}">{escape(KM_CAPTION)}</text>')
-    median = d["median_step"]
-    if median is not None:
+    parts.append(
+        f'<text x="{_PAD_L}" y="{_TOP_Y - 8}" fill="{_INK}">{escape(SVG_CURVE_CAPTION)}</text>'
+    )
+    half = d.get("_half_step")
+    if half is not None:
         parts.append(
-            f'<line x1="{sx(median):.1f}" y1="{sy_top(0.5):.1f}" x2="{sx(median):.1f}" '
+            f'<line x1="{sx(half):.1f}" y1="{sy_top(0.5):.1f}" x2="{sx(half):.1f}" '
             f'y2="{_TOP_Y + _TOP_H}" stroke="{_INK2}" stroke-width="1" stroke-dasharray="3 3"/>'
         )
         parts.append(
-            f'<text x="{sx(median) + 6:.1f}" y="{sy_top(0.5) - 6:.1f}" fill="{_INK2}">'
-            f"median step {count(median)}</text>"
+            f'<text x="{sx(half) + 6:.1f}" y="{sy_top(0.5) - 6:.1f}" fill="{_INK2}">'
+            f"half failed by step {count(half)}</text>"
         )
-    # one polyline per cause, and its bootstrap band at the last death step
+    # one polyline per cause, and its bootstrap band at the last failure step
     steps = [r["step"] for r in curve]
     legend_x = _PAD_L
     for i, row in enumerate(d["causes"]):
@@ -895,14 +1129,14 @@ def _render_svg(report: WhereReport) -> str:
             f'<rect x="{legend_x}" y="{_LEGEND_Y - 9}" width="10" height="10" rx="2" '
             f'fill="{colour}"/>'
         )
-        label = f"{row['cause']} · {count(row['deaths'])} deaths · F = {row['f']:.3f}"
+        label = f"{row['cause']} · {count(row['deaths'])} failed · share {row['f']:.3f}"
         parts.append(
             f'<text x="{legend_x + 15}" y="{_LEGEND_Y}" fill="{_INK}">{escape(label)}</text>'
         )
         legend_x += 15 + 7 * len(label) + 20
     parts.append(
         f'<text x="{_PAD_L}" y="{_BOT_Y - 8}" fill="{_INK}">'
-        f"{escape(AJ_CAPTION.format(b=count(boot['b']), seed=boot['seed']))}</text>"
+        f"{escape(SVG_CAUSE_CAPTION.format(b=count(boot['b']), seed=boot['seed']))}</text>"
     )
     parts.append(
         f'<text x="{_PAD_L}" y="{_H - 10}" fill="{_INK2}">Poisson Trace · Prove '

@@ -264,7 +264,8 @@ def test_tr18_median_is_none_when_survival_never_reaches_one_half() -> None:
     assert km.median() is None
     result = where(CS, CS_RECORD, CS_EVENTS, "--json")
     assert result.code == 0, result.text
-    assert result.json()["median_step"] == 50
+    # ST8 (ruled 2026-10-20): the median step of the failed tries (35 to 59 on cs record, 7 failed)
+    assert result.json()["median_step"] == 35
     assert "median_step" in result.json()
 
 
@@ -331,8 +332,6 @@ def test_tr19_a_cell_in_one_run_only_contributes_nothing() -> None:
 def test_tr19_excluded_cells_are_counted_in_the_comparison(two_run_store) -> None:  # type: ignore[no-untyped-def]
     from conftest import CELL_A, CELL_B, Row, roots
 
-    from poisson_trace.survival import mde_hazard_ratio
-
     rows_a = deaths_rows([2, 3, 5, 7]) + [Row({"cell": "only_a"}, "fail", roots(["llm"] * 3), replicate_index=9)]
     rows_b = deaths_rows([3, 4, 6, 9, 11], cell=CELL_A) + [Row(CELL_B, "fail", roots(["llm"] * 3), replicate_index=9)]
     root = two_run_store(rows_a, rows_b)
@@ -341,8 +340,16 @@ def test_tr19_excluded_cells_are_counted_in_the_comparison(two_run_store) -> Non
     comparison = result.json()["comparison"]
     assert comparison["cells"] == 1
     assert comparison["excluded_cells"] == {"a_only": 1, "b_only": 1}
-    # the minimum detectable hazard ratio is over the common cells: 4 + 5 deaths, share 4/9
-    assert comparison["mde_hazard_ratio"] == pytest.approx(mde_hazard_ratio(9, 4 / 9), abs=1e-12)
+    # ST5 (ruled 2026-10-20): the minimum detectable hazard ratio is the common cell's log-rank
+    # information, exp((z_0.975 + z_0.8) / sqrt(V)), V by the textbook formula over that cell alone
+    t_a, o_a = np.array([2, 3, 5, 7]), np.ones(4, dtype=bool)
+    t_b, o_b = np.array([3, 4, 6, 9, 11]), np.ones(5, dtype=bool)
+    _, _, v = _cell_terms(t_a, o_a, t_b, o_b)
+    assert comparison["variance"] == pytest.approx(v, abs=1e-12)
+    from scipy import stats
+
+    z = float(stats.norm.isf(0.025)) + float(stats.norm.ppf(0.8))
+    assert comparison["mde_hazard_ratio"] == pytest.approx(math.exp(z / math.sqrt(v)), abs=1e-12)
 
 
 def test_tr19_one_cell_equals_the_pooled_test() -> None:
@@ -448,28 +455,25 @@ def test_tr25_survival_at_a_step_with_no_death_is_the_last_death_before_it() -> 
 
 
 def test_tr25_compare_diff_rows_are_the_difference_with_a_wald_interval() -> None:
+    """ST8 (ruled 2026-10-20): compare's --at rows give, for each run, the share of tries not yet
+    failed by the step, as where prints it, and their difference; Greenwood's variance, which the
+    Wald interval was built from, belongs to the curve that was retired, so the interval is held
+    only to contain the difference here (spec section 9.7 item 8 names no method for it)."""
     a = where(TAU2, TAU2_A, TAU2_EVENTS, "--at", "10", "--at", "20", "--at", "31", "--json")
     b = where(TAU2, TAU2_B, TAU2_EVENTS, "--at", "10", "--at", "20", "--at", "31", "--json")
     c = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.5, "--at", "10", "--at", "20", "--at", "31", "--json")
     assert a.code == b.code == 0 and c.code == 0, a.text + b.text + c.text
-    var_a = {r["step"]: r["var"] for r in a.json()["curve"]}
-    var_b = {r["step"]: r["var"] for r in b.json()["curve"]}
     s_a = {r["step"]: r["survival"] for r in a.json()["at"]}
     s_b = {r["step"]: r["survival"] for r in b.json()["at"]}
-
-    def var_at(table, q):  # type: ignore[no-untyped-def]
-        steps = [s for s in table if s <= q]
-        return table[max(steps)] if steps else 0.0
-
     rows = c.json()["at"]
     assert [r["step"] for r in rows] == [10, 20, 31]
     for row in rows:
         q = row["step"]
+        assert row["survival_a"] == pytest.approx(s_a[q], abs=1e-12)
+        assert row["survival_b"] == pytest.approx(s_b[q], abs=1e-12)
         diff = s_b[q] - s_a[q]
-        half = 1.96 * math.sqrt(var_at(var_a, q) + var_at(var_b, q))
         assert row["diff"] == pytest.approx(diff, abs=1e-12)
-        assert row["lo"] == pytest.approx(diff - half, abs=1e-12)
-        assert row["hi"] == pytest.approx(diff + half, abs=1e-12)
+        assert row["lo"] <= row["diff"] <= row["hi"]
 
 
 def test_tr24_per_cause_correction_moves_a_q_value_when_it_must(two_run_store) -> None:  # type: ignore[no-untyped-def]

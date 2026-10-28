@@ -93,9 +93,22 @@ poisson-trace import deepeval tests/fixtures/ingest/deepeval/humaneval-a.json.gz
 
 <!-- output exit=0 -->
 ```
-ok  wrote run humaneval-a to ./store: 10,496 rows, 328 cases, 32 repeats each; met 9,158, missed 1,338
+ok  wrote run humaneval-a to ./store: 10,496 rows, 328 cases, 32 repeats each; 9,158 passed, 1,338 failed
 
 # Poisson Trace · import · humaneval-a
+
+## Summary
+
+- Wrote: humaneval-a into ./store, from humaneval-a.json.gz (deepeval): 10,496 tries on 328 inputs.
+- Failures: 1,338 failed and 9,158 passed. A try counts as failed when DeepEval marked its Tests Passed metric as not passed.
+- Compared: Nothing yet. One import is one version.
+- Next: Import the other version's file the same way: `poisson-trace import deepeval OTHER.json.gz --store ./store --run OTHER --metric "Tests Passed" --cut recorded --case name`.
+
+## Before you act on this
+
+- When you compare, choose the smallest drop that matters to you (--max-mde) before you look at any results; Trace then says whether these tries could catch it.
+
+## What was written
 
 - run written: humaneval-a · store: ./store
 - tool: deepeval
@@ -124,6 +137,19 @@ poisson-trace import deepeval tests/fixtures/ingest/deepeval/humaneval-b.json.gz
 ```
 # Poisson Trace · import · humaneval-b
 
+## Summary
+
+- Wrote: humaneval-b into ./store, from humaneval-b.json.gz (deepeval): 10,496 tries on 328 inputs.
+- Failures: 1,387 failed and 9,109 passed. A try counts as failed when DeepEval marked its Tests Passed metric as not passed.
+- Compared: Nothing yet. One import is one version.
+- Next: Import the other version's file the same way: `poisson-trace import deepeval OTHER.json.gz --store ./store --run OTHER --metric "Tests Passed" --cut recorded --case name`.
+
+## Before you act on this
+
+- When you compare, choose the smallest drop that matters to you (--max-mde) before you look at any results; Trace then says whether these tries could catch it.
+
+## What was written
+
 - run written: humaneval-b · store: ./store
 - tool: deepeval
 - file: humaneval-b.json.gz · sha256 c5577283c078591bd8cf719d1ebea95fcdcd75d018e5ccbadff629cc56bf2464
@@ -146,36 +172,54 @@ poisson-trace fix-check humaneval-a humaneval-b --store ./store --event missed \
 ```
 # Poisson Trace · fix check · humaneval-a (old) and humaneval-b (new)
 
+## Summary
+
+- Compared: old humaneval-a against new humaneval-b, on the same 328 inputs: 10,496 tries of each. A try counts as failed when DeepEval marked its Tests Passed metric as not passed.
+- Question: Did the new version fail more or less often than the old? You asked that the run be able to catch a 2-point drop in how often it fails.
+- Answer: Slightly more failures, if tries of an input count as independent (here they are much alike). The new version failed 1,387 of 10,496 tries and the old 1,338 of 10,496 (0.47 more per 100 tries; the 2 points you set was for a drop, not a rise); 32 of the net 49 extra failures come from case HumanEval/129@0.7 and case HumanEval/129@0.0.
+- Next: Run both versions side by side on these inputs with your own harness, then run `poisson-trace fix-check` on the two new runs.
+
+## Before you act on this
+
+- They started 56 min apart. Trace can't tell whether they were run side by side, so anything else that changed between them (the provider, the model behind the API, the day) may be part of the difference, in either direction.
+- Both runs name the same target (import/deepeval); Trace can't tell what differs between them, only what you tell it.
+- These results fit anything from 0.04 to 0.93 more failures per 100 tries (ranges built this way hold the true difference about 95 times in 100, if tries are independent), which does not include a 2-point drop.
+- Tries of the same input are counted as separate chances; here they are much alike (agreement 0.78, where 0 is no more alike than chance and 1 is identical), and if they are near copies the answer is more confident than it should be.
+- If each input failed equally often under both versions, a gap at least this big, either way, would turn up about 4 times in 100 (counting tries as independent).
+- A check of which inputs went up and which went down can't rule out chance on its own (p = 0.127 in the report), so the gap rests on case HumanEval/129@0.7 and case HumanEval/129@0.0. Without case HumanEval/129@0.7 and case HumanEval/129@0.0, the gap is 0.16 points (p = 0.47).
+- The whole range is at most 0.93 points, under the 2 points you set (you set it for a drop; this is a rise), if tries of an input are independent.
+- Before putting the difference down to the version, run both side by side.
+
 ## Runs
 
-- old: humaneval-a · target: import/deepeval · status: complete · started: 2026-09-05T18:54:07Z · declared repeats: not recorded
-- Prove's tally (old): rows 10,496 · with outcome 10,496 · no outcome 0 · timed out 0 · infra 0 · other 0
-- new: humaneval-b · target: import/deepeval · status: complete · started: 2026-09-05T19:50:09Z · declared repeats: not recorded
-- Prove's tally (new): rows 10,496 · with outcome 10,496 · no outcome 0 · timed out 0 · infra 0 · other 0
+- old: humaneval-a · target: import/deepeval · status: complete · started: 2026-09-05T18:54:07Z (given with --started) · declared repeats: not recorded
+- the run's tally (old): rows 10,496 · with outcome 10,496 · no outcome 0 · timed out 0 · infra 0 · other 0
+- new: humaneval-b · target: import/deepeval · status: complete · started: 2026-09-05T19:50:09Z (given with --started) · declared repeats: not recorded
+- the run's tally (new): rows 10,496 · with outcome 10,496 · no outcome 0 · timed out 0 · infra 0 · other 0
 - the two runs started 56 min apart
 - events: missed
 - inputs: every input either run carries · selected 328 · compared 328 · left out 0
 - rows used: old 10,496 (timed out 0, no outcome 0) · new 10,496 (timed out 0, no outcome 0)
-- inputs short of the declared repeats: old 0 · new 0
+- inputs short of the declared repeats: old no repeats declared · new no repeats declared
 - inputs with mixed outcomes across their repeats: old 54 · new 48
 
-## The control
+## The two versions
 
-The old version, re-run on the same inputs with nothing changed.
+The old version and the new on the same inputs.
 
-| version | runs | failed | failure share | did not fail on re-run |
+| version | runs | failed | failure share | did not fail |
 |---|---|---|---|---|
 | old | 10,496 | 1,338 | 12.7% | 87.3% |
 | new | 10,496 | 1,387 | 13.2% | 86.8% |
 
-Re-running these inputs and counting the runs that did not fail would have read 87.3% on the old version, where nothing changed.
+The old version did not fail on 87.3% of its episodes on these inputs.
 
 ## The comparison
 
 exact conditional Cochran-Mantel-Haenszel test, stratified by input over 328 inputs (58 informative), two-sided; α = 0.05.
 
 new failures: observed 1,387, expected 1,362.500, variance 131.139; p = 0.036
-difference: +0.47 points, new minus old (+0.04 to +0.90; Mantel-Haenszel weights; interval: Sato variance, large-sample, 95%)
+difference: +0.47 points, new minus old (+0.04 to +0.93; Mantel-Haenszel weights; range: stratified Miettinen-Nurminen score interval, 95%, for these inputs as run)
 by input: p = 0.127 (sign-flip over the 47 inputs that moved, 100,000 draws, seed = 0); not part of the line below
 
 ## Consistency
@@ -196,11 +240,11 @@ proportional change on every input, 80% power, α = 0.05, continuity-corrected n
 
 Fisher's exact test per input, Benjamini-Hochberg at q = 0.05 over 328 inputs; 2 flagged.
 
-| input | old failed/runs | new failed/runs | change | p | q | flag | could not have detected a rise below |
-|---|---|---|---|---|---|---|---|
-| {"case":"HumanEval/129@0.7"} | 12/32 | 32/32 | +62.5 points | 2.30e-08 | 7.55e-06 | failed more in new | 34.2 points |
-| {"case":"HumanEval/129@0.0"} | 20/32 | 32/32 | +37.5 points | 1.38e-04 | 0.023 | failed more in new | 28.9 points |
-| {"case":"HumanEval/91@0.7"} | 28/32 | 32/32 | +12.5 points | 0.113 | 1.000 | – | 12.5 points |
+| input | old failed/runs | new failed/runs | change | p | q | flag |
+|---|---|---|---|---|---|---|
+| {"case":"HumanEval/129@0.7"} | 12/32 | 32/32 | +62.5 points | 2.30e-08 | 7.55e-06 | failed more in new |
+| {"case":"HumanEval/129@0.0"} | 20/32 | 32/32 | +37.5 points | 1.38e-04 | 0.023 | failed more in new |
+| {"case":"HumanEval/91@0.7"} | 28/32 | 32/32 | +12.5 points | 0.113 | 1.000 | – |
 
 3 of 328 inputs shown, by ascending p; --json lists all.
 

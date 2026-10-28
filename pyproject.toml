@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "poisson-trace"
-version = "0.1.0"
+version = "0.1.0rc2"
 description = "Where in the workflow runs die, and whether a change made them fail less: survival curves and a controlled fix check, read from Prove's stored runs."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -39,6 +39,13 @@ Issues = "https://github.com/poisson-labs/trace/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/poisson_trace"]
+
+[tool.hatch.build.targets.sdist]
+# the repository's own working rules, and (with hatch_build.py) its ignore file, are not part of
+# the source a user gets
+exclude = ["docs/repo-hygiene.md", "/.gitignore"]
+
+[tool.hatch.build.targets.sdist.hooks.custom]
 
 [tool.ruff]
 line-length = 100

@@ -1,7 +1,7 @@
 """The fix check's statistics: the per-input counts, the exact conditional
-Cochran-Mantel-Haenszel test stratified by input, the Mantel-Haenszel difference with Sato's
-interval, the by-input sign-flip reading, consistency, the detection limits, the guidance, and
-the per-input flags.
+Cochran-Mantel-Haenszel test stratified by input, the Mantel-Haenszel difference with the
+stratified Miettinen-Nurminen interval, the by-input sign-flip reading, consistency, the
+detection limits, the guidance, and the per-input flags.
 
 numpy and scipy only.
 """
@@ -158,8 +158,8 @@ def difference(
     counts: Sequence[Counts], *, alpha: float = 0.05
 ) -> tuple[float, float | None, float | None, float | None]:
     """``(points, variance, lo, hi)``: the Mantel-Haenszel risk difference, new minus old, as a
-    fraction, with Sato's variance and the large-sample interval clipped to ``[-1, 1]``. The
-    last three are ``None`` when the variance is not positive."""
+    fraction, with Sato's variance, and the stratified Miettinen-Nurminen score interval at
+    level ``1 - alpha``. The last three are ``None`` where Sato's variance is not positive."""
     rows = [(c.failed_old, c.runs_old, c.failed_new, c.runs_new) for c in _checked(counts)]
     w = sum(na * nb / (na + nb) for _, na, _, nb in rows)
     d = sum((xb * na - xa * nb) / (na + nb) for xa, na, xb, nb in rows) / w
@@ -171,8 +171,102 @@ def difference(
     variance = (d * p_sum + q_sum) / w**2
     if not variance > 0.0:
         return d, None, None, None
-    half = float(stats.norm.isf(alpha / 2.0)) * math.sqrt(variance)
-    return d, variance, max(-1.0, d - half), min(1.0, d + half)
+    lo, hi = _miettinen_nurminen(counts, d, alpha)
+    return d, variance, lo, hi
+
+
+INTERVAL = "stratified Miettinen-Nurminen score interval, Mantel-Haenszel weights"
+# The range is reliable only where at least this many compared inputs vary (section 9.5).
+FEW_VARY = 10
+
+
+def rough(counts: Sequence[Counts], *, informative: int, disagree: bool) -> tuple[str, ...]:
+    """Why the range is rough on these counts, in words; empty where it is reliable. An input
+    varies when its tries, both versions together, neither all failed nor all did not. A
+    version ran once per input when fewer than half the inputs ran on it two or more times, as
+    consistency counts repeats; the words say how many inputs had one try where not all did."""
+    why = []
+    if informative < FEW_VARY:
+        why.append(f"fewer than {FEW_VARY} inputs vary")
+    for arm, runs in (("new", [c.runs_new for c in counts]), ("old", [c.runs_old for c in counts])):
+        once = sum(1 for n in runs if n == 1)
+        if 2 * (len(runs) - once) < len(runs):
+            whole = once == len(runs)
+            why.append(
+                f"one try per input on the {arm} version"
+                + ("" if whole else f" ({once} of {len(runs)} inputs)")
+            )
+    if disagree:
+        why.append("it and the exact test disagree")
+    return tuple(why)
+
+
+# The score is read this far inside the ends of [-1, 1], where a constrained rate meets 0 or 1.
+_EDGE = 1e-9
+
+
+def _restricted(
+    x1: np.ndarray, n1: np.ndarray, x2: np.ndarray, n2: np.ndarray, delta: float
+) -> tuple[np.ndarray, np.ndarray]:
+    """Each input's two failure rates at their maximum likelihood under ``p1 - p2 = delta``,
+    from the closed-form root of the likelihood's cubic (Miettinen and Nurminen 1985; Farrington
+    and Manning 1990). Arm 1 is the new version, arm 2 the old."""
+    p1, p2 = x1 / n1, x2 / n2
+    theta = n2 / n1
+    a = 1.0 + theta
+    b = -(1.0 + theta + p1 + theta * p2 + delta * (theta + 2.0))
+    c = delta * delta + delta * (2.0 * p1 + theta + 1.0) + p1 + theta * p2
+    d = -p1 * delta * (1.0 + delta)
+    v = b**3 / (27.0 * a**3) - b * c / (6.0 * a * a) + d / (2.0 * a)
+    u = np.where(v < 0.0, -1.0, 1.0) * np.sqrt(
+        np.maximum(b * b / (9.0 * a * a) - c / (3.0 * a), 0.0)
+    )
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ratio = np.where(u == 0.0, 0.0, v / u**3)
+    w = (math.pi + np.arccos(np.clip(ratio, -1.0, 1.0))) / 3.0
+    q1 = np.where(u == 0.0, -b / (3.0 * a), 2.0 * u * np.cos(w) - b / (3.0 * a))
+    q1 = np.clip(q1, max(0.0, delta), min(1.0, 1.0 + delta))
+    return q1, np.clip(q1 - delta, 0.0, 1.0)
+
+
+def _miettinen_nurminen(
+    counts: Sequence[Counts], estimate: float, alpha: float
+) -> tuple[float, float]:
+    """The stratified Miettinen-Nurminen score interval for new minus old: every difference
+    ``delta`` whose score, ``sum w (d_i - delta)`` over the square root of ``sum w^2 V_i(delta)``,
+    lies within the normal quantile. ``w`` are the Mantel-Haenszel weights, ``d_i`` each input's
+    difference, and ``V_i`` its variance at the rates constrained to ``delta``, times its
+    ``N / (N - 1)``. An end the score never reaches is the end of ``[-1, 1]``."""
+    from scipy import optimize
+
+    x1 = np.array([c.failed_new for c in counts], dtype=np.float64)
+    n1 = np.array([c.runs_new for c in counts], dtype=np.float64)
+    x2 = np.array([c.failed_old for c in counts], dtype=np.float64)
+    n2 = np.array([c.runs_old for c in counts], dtype=np.float64)
+    total = n1 + n2
+    w = n1 * n2 / total
+    each = x1 / n1 - x2 / n2
+    factor = total / (total - 1.0)
+
+    def score(delta: float) -> float:
+        num = float(np.sum(w * (each - delta)))
+        q1, q2 = _restricted(x1, n1, x2, n2, delta)
+        var = float(np.sum(w * w * (q1 * (1.0 - q1) / n1 + q2 * (1.0 - q2) / n2) * factor))
+        if var > 0.0:
+            return num / math.sqrt(var)
+        return math.copysign(math.inf, num) if num else 0.0
+
+    z = float(stats.norm.isf(alpha / 2.0))
+    low_end, high_end = -1.0 + _EDGE, 1.0 - _EDGE
+    if estimate <= low_end or score(low_end) <= z:
+        lo = -1.0
+    else:
+        lo = float(optimize.brentq(lambda x: score(x) - z, low_end, estimate, xtol=1e-14))
+    if estimate >= high_end or score(high_end) >= -z:
+        hi = 1.0
+    else:
+        hi = float(optimize.brentq(lambda x: score(x) + z, estimate, high_end, xtol=1e-14))
+    return lo, hi
 
 
 # ---------- the by-input reading ----------

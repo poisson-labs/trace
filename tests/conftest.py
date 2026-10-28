@@ -33,8 +33,10 @@ CS_EVENTS = ("forbidden_action", "unresolved", "max_turns", "app_error")
 CANNOT_SAY = (
     "The step index is where the run stopped, not why. A run that died at a tool step may "
     "have gone wrong three steps earlier.",
-    "Timed-out and capped runs are censored at their last recorded step. If they would have "
-    "died soon after, the curve is optimistic by that much; the header counts them.",
+    # PENDING (TF15 Session A yes/no): under ST8 a timed-out run is an end of its own, not censored
+    "Capped runs are censored at their last recorded step. If they would have died soon after, "
+    "the curve is optimistic by that much. A run that timed out ends where it stopped, counted "
+    "beside the kinds and not as a death; the header counts both.",
     "Excluded rows are not on the curve; the header counts them by reason.",
     "On one run, this is a description. Only a comparison of two stored runs on the same "
     "cells says whether anything moved, and only within what it could not have detected.",

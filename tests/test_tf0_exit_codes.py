@@ -20,7 +20,8 @@ from tf0_support import (
 
 @pytest.mark.parametrize(
     "argv",
-    [compare_tau2("1.3"), fix_check_tau2_all("0.10")],
+    # ST2 (ruled 2026-10-20): tau2 on all inputs at 0.10 reads no significant difference; 0.075 does not
+    [compare_tau2("1.3"), fix_check_tau2_all("0.075")],
     ids=["compare", "fix-check"],
 )
 def test_tf0_02_too_small_to_tell_exits_zero(argv: list[str]) -> None:

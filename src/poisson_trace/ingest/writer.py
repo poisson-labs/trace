@@ -19,7 +19,7 @@ from proofload.trace import CONTENT_KEYS, OBSERVATION_KEYS, Trace, from_otel
 
 import poisson_trace
 from poisson_trace.ingest.cut import MET, MISSED
-from poisson_trace.ingest.rows import STARTED_FROM, Refusal, Row, Run
+from poisson_trace.ingest.rows import STARTED_FROM, Refusal, Row, Run, zone_of
 from poisson_trace.look import why
 from poisson_trace.names import taken
 
@@ -136,6 +136,16 @@ def write(run: Run, root: Path, form: str = "target") -> Written:
             seen[row.case] += 1
     except (TypeError, ValueError) as e:
         raise Refusal(f"a row could not be written as Prove stores it ({why(e)})") from e
+    recorded: dict[str, Any] = {
+        "tool": run.tool,
+        "started_from": run.started_from,
+        "declared": dict(run.declared),
+        "files": [dict(f) for f in run.files],
+        "poisson_trace": poisson_trace.__version__,
+    }
+    if run.started_from == "file name":
+        # a time in a file's name carries no zone: the one it was read in is kept with it
+        recorded["zone"] = zone_of(run.started)
     manifest = RunManifest(
         run_id=run.name,
         target_id=f"import/{run.tool}",
@@ -143,15 +153,7 @@ def write(run: Run, root: Path, form: str = "target") -> Written:
         run_salt="import",
         axis_types={"case": "categorical"},
         backend=f"import:{run.tool}",
-        environment={
-            "import": {
-                "tool": run.tool,
-                "started_from": run.started_from,
-                "declared": dict(run.declared),
-                "files": [dict(f) for f in run.files],
-                "poisson_trace": poisson_trace.__version__,
-            }
-        },
+        environment={"import": recorded},
         created_at=run.started,
     )
     try:
