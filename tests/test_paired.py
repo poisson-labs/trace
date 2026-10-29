@@ -1,14 +1,13 @@
 """TR43 to TR53, and the function-level halves of TR55 to TR58: the statistics in
 ``poisson_trace.paired`` (and ``survival.deaths_needed``) against oracles written here from the
 spec's section 2: full enumeration in exact fractions, the section's own formulas restated, and
-Prove's private functions and scipy imported inside the tests as dev oracles."""
+Prove's public statistics and scipy imported inside the tests as dev oracles."""
 
 from __future__ import annotations
 
 import math
 
 import numpy as np
-import pandas as pd
 import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
@@ -98,13 +97,13 @@ def test_tr44_the_worked_example() -> None:
 @given(st.integers(1, 40).flatmap(lambda na: st.tuples(st.integers(0, na), st.just(na))),
        st.integers(1, 40).flatmap(lambda nb: st.tuples(st.integers(0, nb), st.just(nb))))
 def test_tr45_one_input_is_fisher(a, b) -> None:  # type: ignore[no-untyped-def]
-    from poisson_prove.diff import _fisher
+    from poisson_prove.stats import fisher_test
 
     (xa, na), (xb, nb) = a, b
     p = paired_test([Counts("h", xa, na, xb, nb)]).p
     scipy_p = stats.fisher_exact([[xa, na - xa], [xb, nb - xb]], alternative="two-sided")[1]
     assert p == pytest.approx(float(scipy_p), abs=1e-12)
-    assert p == pytest.approx(_fisher(xa, na, xb, nb)[1], abs=1e-12)
+    assert p == pytest.approx(fisher_test(xa, na, xb, nb)[1], abs=1e-12)
 
 
 # ---------- TR46 ----------
@@ -113,11 +112,11 @@ def test_tr45_one_input_is_fisher(a, b) -> None:  # type: ignore[no-untyped-def]
 @SETTINGS
 @given(st.lists(st.tuples(st.booleans(), st.booleans()), min_size=1, max_size=40))
 def test_tr46_one_run_per_arm_is_mcnemar(pairs) -> None:  # type: ignore[no-untyped-def]
-    from poisson_prove.diff import _mcnemar
+    from poisson_prove.stats import mcnemar_test
 
-    cell_a = pd.DataFrame({"replicate_index": range(len(pairs)), "observed": [a for a, _ in pairs]})
-    cell_b = pd.DataFrame({"replicate_index": range(len(pairs)), "observed": [b for _, b in pairs]})
-    expected = _mcnemar(cell_a, cell_b, "pairs")[1]
+    only_a = sum(1 for a, b in pairs if a and not b)
+    only_b = sum(1 for a, b in pairs if b and not a)
+    expected = mcnemar_test(only_a, only_b)[1]
     tab = [(int(a), 1, int(b), 1) for a, b in pairs]
     assert paired_test(counts_of(tab)).p == pytest.approx(expected, abs=1e-12)
 
@@ -220,6 +219,7 @@ def _mn_oracle(tab, alpha):  # type: ignore[no-untyped-def]
     return lo, hi
 
 
+@pytest.mark.math
 @SETTINGS
 @given(tables(max_inputs=8, max_runs=8), st.sampled_from([0.05, 0.1, 0.01]))
 def test_tr49_the_difference_is_mantel_haenszel_with_sato_variance(tab, alpha) -> None:  # type: ignore[no-untyped-def]
@@ -520,16 +520,16 @@ def test_tr56_deaths_needed_on_the_tau2_pair() -> None:
 # ---------- TR57, TR58 (the functions) ----------
 
 
+@pytest.mark.math
 @SETTINGS
 @given(tables(min_inputs=1, max_inputs=12, max_runs=12), st.sampled_from([0.05, 0.1, 0.2]))
 def test_tr57_flags_are_fisher_then_benjamini_hochberg(tab, alpha) -> None:  # type: ignore[no-untyped-def]
-    from poisson_prove.diff import _fisher, bh
-    from poisson_prove.stats import mde_two_proportion
+    from poisson_prove.stats import bh, fisher_test, mde_two_proportion
 
     c = counts_of(tab)
     got = {f.config_hash: f for f in flags(c, alpha=alpha)}
     assert set(got) == {x.config_hash for x in c}
-    p = np.array([_fisher(x.failed_old, x.runs_old, x.failed_new, x.runs_new)[1] for x in c])
+    p = np.array([fisher_test(x.failed_old, x.runs_old, x.failed_new, x.runs_new)[1] for x in c])
     q = bh(p, alpha)
     for x, pi, qi in zip(c, p, q):
         f = got[x.config_hash]
@@ -554,6 +554,7 @@ def test_tr57_a_real_flag_fires_in_each_direction() -> None:
     assert sum(v is not None for v in got.values()) == 2
 
 
+@pytest.mark.math
 @SETTINGS
 @given(st.integers(1, 60).flatmap(lambda n: st.tuples(st.integers(0, n - 1), st.just(n))), st.integers(1, 60),
        st.sampled_from([0.01, 0.05, 0.1]), st.sampled_from([0.8, 0.9]))

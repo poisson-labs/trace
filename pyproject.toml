@@ -27,7 +27,7 @@ classifiers = [
 dependencies = ["numpy", "scipy", "pandas>=2"]
 
 [project.optional-dependencies]
-dev = ["pytest", "hypothesis", "mypy", "ruff", "lifelines"]
+dev = ["pytest", "pytest-xdist", "hypothesis", "mypy", "ruff", "lifelines"]
 
 [project.scripts]
 poisson-trace = "poisson_trace.cli:main"
@@ -67,10 +67,15 @@ strict = true
 module = ["pandas", "pandas.*", "pyarrow", "pyarrow.*", "scipy", "scipy.*"]
 ignore_missing_imports = true
 
+# The lanes, named as Prove's are (spec section 17.5):
+#   code, on every pull request:  python -m pytest -n 10 -m "not math and not lane_j" tests
+#   math, the statistics:         python -m pytest -n 10 -m math tests
+#   lane_j, the real tools:       python -m pytest -m lane_j tests
+# A -m given on the command line replaces the one below, so the code lane names lane_j itself.
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-m", "not lane_j"]
 markers = [
     "lane_j: runs another tool itself (DeepEval, Ragas) at its pinned version, installed from PyPI; deselected unless -m lane_j",
-    "math: the math suite (spec section 17.5): a statistic against its reference, its properties and simulations",
+    "math: the math suite, a statistic's slow property checks against its reference where the pull-request lane keeps a fast test of the same invariant; runs on a pull request that changes the statistics code (src/poisson_trace/paired.py, survival.py), a test of the math suite, or the resolved numpy, scipy, pandas or lifelines, nightly and before every release",
 ]

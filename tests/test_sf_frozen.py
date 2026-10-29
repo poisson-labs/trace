@@ -11,7 +11,7 @@ TESTS = Path(__file__).resolve().parent
 
 FROZEN = {
     "sf_support.py": "8720c56540b7e3be466e0400e787e1e3e3ecb81ab42c1ba586676eee23ab49b4",
-    "test_sf_per_input_limit.py": "ae76bef77e80c34e854328b522b42a769f9c96ed96b4c0acbbb4dd707f76aa0a",
+    "test_sf_per_input_limit.py": "ed6b53803a7bc8859f4ae010f0817c5cb10157dc7053f35cbbcd97b65505572a",
 }
 
 

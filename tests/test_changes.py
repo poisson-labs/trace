@@ -1,5 +1,6 @@
 """TR57 to TR60 through the command line, and the ``changes`` verb's own JSON, bytes and
-refusals: the per-input flags against Prove's ``diff`` (a dev oracle, imported inside the test),
+refusals: the per-input flags against Prove's public statistics, Fisher's test on each input then
+Benjamini and Hochberg's correction (``poisson_prove.stats``, a dev oracle, imported inside the test),
 the per-row limit against Prove's ``mde_two_proportion``, the attainability numbers, and the
 order and length of the flags table."""
 
@@ -32,14 +33,23 @@ def _fisher(xa: int, na: int, xb: int, nb: int) -> float:
 
 
 def _prove_cells(root: Path, a: str, b: str, event: str, alpha: float):  # type: ignore[no-untyped-def]
-    from poisson_prove.diff import diff
+    from poisson_prove.stats import bh, fisher_test
     from poisson_prove.store import Store
-    from poisson_prove.survival import censor
 
     store = Store(root)
-    result = diff(censor(store.read(a), event), censor(store.read(b), event), event=event,
-                  method="fisher_bh", q=alpha)
-    return {str(r["config_hash"]): r for _, r in result.cells.iterrows()}
+
+    def counts(run: str) -> dict[str, tuple[int, int]]:
+        # a row with no outcome is left out, as Prove's own comparison leaves it out
+        rows = store.read(run)
+        rows = rows[rows["outcome"].notna()]
+        failed = (rows["outcome"] == event).groupby(rows["config_hash"].astype(str))
+        return {h: (int(f.sum()), int(len(f))) for h, f in failed}
+
+    ca, cb = counts(a), counts(b)
+    common = sorted(set(ca) & set(cb))
+    p = [fisher_test(*ca[h], *cb[h])[1] for h in common]
+    q = bh(p, alpha)
+    return {h: {"p": p[i], "q": float(q[i]), "flag": bool(q[i] < alpha)} for i, h in enumerate(common)}
 
 
 @pytest.mark.parametrize("alpha", [0.05, 0.2])
@@ -52,7 +62,7 @@ def test_tr57_the_flags_are_proves_on_the_tau2_pair(alpha: float) -> None:
         assert r["p"] == pytest.approx(float(prove[h]["p"]), abs=1e-12)
         assert r["q"] == pytest.approx(float(prove[h]["q"]), abs=1e-12)
     flagged = {h for h, r in rows.items() if r["flag"] is not None}
-    assert flagged == {h for h, c in prove.items() if c["verdict"] != "unchanged"}
+    assert flagged == {h for h, c in prove.items() if c["flag"]}
     assert d["flagged"] == len(flagged)
 
 
@@ -64,12 +74,12 @@ def test_tr57_the_flags_are_proves_on_the_humaneval_pair_for_one_event() -> None
     for h, r in rows.items():
         assert r["p"] == pytest.approx(float(prove[h]["p"]), abs=1e-12)
         assert r["q"] == pytest.approx(float(prove[h]["q"]), abs=1e-12)
-        assert (r["flag"] is not None) == (prove[h]["verdict"] != "unchanged")
+        assert (r["flag"] is not None) == prove[h]["flag"]
     assert {r["config"]["task_id"] for r in d["rows"] if r["flag"]} == {"HumanEval/129"}
 
 
 def test_tr57_each_row_is_fisher_on_its_counts_and_flagged_by_its_q(tmp_path: Path) -> None:
-    from poisson_prove.diff import bh
+    from poisson_prove.stats import bh
 
     tab = [(0, 12, 12, 12), (12, 12, 0, 12), (3, 6, 2, 5), (1, 3, 2, 7)] + [(4, 8, 4, 8)] * 6
     root = pair_store(tmp_path, tab)

@@ -453,15 +453,15 @@ def test_ic14_changes_reads_the_counts_the_rows_hold(tmp_path: Path) -> None:
 FROZEN = {
     "conftest.py": "1bd912be79bf064512efb1bfaf742713902c2bad8200feb80586d731d0e1e091",
     "fixcheck_support.py": "54fe40ac7a20f0f3cb08a790a02bfac2b04e91955d6e0a999896415500fac1ac",
-    "test_changes.py": "e2df5951fa8eb980cd78f6cf36d2a53833eec674150830d0bda17c53938c6aca",
+    "test_changes.py": "b60b8f37a4d67753e9d26b0bea5d70c2950c808cc365372f7bcaadf3350ec99a",
     "test_cli.py": "3c3a5a0d6d840f036f5532945609f9fe3e606e32879e5e516be5340a682e7295",
     "test_clock.py": "4c63abd620252f7dd4033f81403a3311af85e9161ad16e05ba372f36f798b8f2",
     "test_fix_check_cli.py": "c0e331c5f24525d29c6be8e87e0b23f266a1699335cbb05b2c69fdde51f0c30e",
     "test_fix_check_golden.py": "9b851201ed0b74bf04b2a28a5f3b83fdc85175bd929c6e7db72a8a21889262a3",
     "test_golden.py": "96336168933b628ccd373b58882dfa84d641872556a71567863fb2f90bc5fdcd",
-    "test_paired.py": "c06b4f39bbf83fa1dc8b54364aa6d621ace32ff43a20e22b4e5218340283bb8a",
+    "test_paired.py": "c21a6ea5e438be44f3d6b7332eefa7bc5dc5b209396084f7345e5f0c523ecbc5",
     "test_report.py": "a11a9bd2dee9950ddc871db2d45acf833572056efc5568c3ce35e99201c70784",
-    "test_survival.py": "a9052b14912434f0de116cfe8b19d76f9e48841fc4ec0fea6da7d3e3e4a67060",
+    "test_survival.py": "975c37e9344c4d62595e8cc37c0d4c2921ecd131d5985408520692a87ca5a51b",
 }
 
 

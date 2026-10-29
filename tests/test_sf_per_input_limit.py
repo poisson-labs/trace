@@ -63,7 +63,6 @@ def test_sf1_each_version_s_share_goes_with_its_own_tries(design, alpha, power) 
 # ---------- SF2 ----------
 
 
-@pytest.mark.math
 @SETTINGS
 @given(designs(low=1), ALPHAS, POWERS)
 def test_sf2_more_tries_never_raise_the_limit(design, alpha, power) -> None:  # type: ignore[no-untyped-def]
@@ -82,7 +81,6 @@ def test_sf2_more_tries_never_raise_the_limit(design, alpha, power) -> None:  # 
 # ---------- SF4 ----------
 
 
-@pytest.mark.math
 @SETTINGS
 @given(st.integers(1, 200), st.integers(1, 200), ALPHAS, POWERS)
 def test_sf4_a_version_that_failed_every_try_has_no_limit(runs_old, runs_new, alpha, power) -> None:  # type: ignore[no-untyped-def]
