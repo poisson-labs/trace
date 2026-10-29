@@ -563,11 +563,13 @@ def _power_two_proportion(
     delta: float, rate: float, runs_old: int, runs_new: int, alpha: float
 ) -> float:
     """Two-sided normal-approximation power to detect ``rate + delta`` against ``rate``: the
-    pooled standard error under the null, separate ones under the alternative."""
+    pooled standard error under the null, separate ones under the alternative. Each version's
+    share goes with its own tries: the baseline ``rate`` with ``runs_old``, the raised share with
+    ``runs_new`` (Prove's pairing since its ``b6d6292``)."""
     raised = rate + delta
-    pooled = (raised * runs_old + rate * runs_new) / (runs_old + runs_new)
+    pooled = (rate * runs_old + raised * runs_new) / (runs_old + runs_new)
     se_null = math.sqrt(pooled * (1.0 - pooled) * (1.0 / runs_old + 1.0 / runs_new))
-    se_alt = math.sqrt(raised * (1.0 - raised) / runs_old + rate * (1.0 - rate) / runs_new)
+    se_alt = math.sqrt(rate * (1.0 - rate) / runs_old + raised * (1.0 - raised) / runs_new)
     z = float(stats.norm.isf(alpha / 2.0))
     if se_alt == 0.0:
         return 1.0 if delta > z * se_null else 0.0
@@ -581,20 +583,19 @@ def limit_rise(
 ) -> float:
     """The smallest rise in failure share from ``rate_old`` that one input's own test detects
     at ``power``, two-sided at ``alpha``: Prove's per-cell limit, number for number. A rate of
-    exactly 0 or 1 is moved in by half a run; when even the largest rise is not detectable the
-    largest rise is returned."""
+    exactly 0 is moved in by half a run; at a rate of 1 no rise is possible and there is no limit
+    (NaN, as Prove gives); when even the largest rise is not detectable the largest rise is
+    returned."""
     if runs_old <= 0 or runs_new <= 0:
         raise ValueError("the per-input limit needs at least one run in each arm")
     if not 0.0 <= rate_old <= 1.0:
         raise ValueError("rate_old must lie in [0, 1]")
-    guarded = rate_old
-    if rate_old <= 0.0:
-        guarded = 0.5 / runs_old
-    elif rate_old >= 1.0:
-        guarded = 1.0 - 0.5 / runs_old
+    if rate_old >= 1.0:
+        return math.nan
+    guarded = 0.5 / runs_old if rate_old <= 0.0 else rate_old
     cap = 1.0 - guarded
     if _power_two_proportion(cap, guarded, runs_old, runs_new, alpha) < power:
-        return (1.0 - rate_old) if rate_old < 1.0 else cap
+        return 1.0 - rate_old
     lo, hi = 0.0, cap
     for _ in range(200):
         mid = 0.5 * (lo + hi)

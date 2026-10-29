@@ -459,7 +459,7 @@ FROZEN = {
     "test_fix_check_cli.py": "c0e331c5f24525d29c6be8e87e0b23f266a1699335cbb05b2c69fdde51f0c30e",
     "test_fix_check_golden.py": "9b851201ed0b74bf04b2a28a5f3b83fdc85175bd929c6e7db72a8a21889262a3",
     "test_golden.py": "96336168933b628ccd373b58882dfa84d641872556a71567863fb2f90bc5fdcd",
-    "test_paired.py": "ab96beeb0ff456d9e6649061c95e3d41af310cc7c1c5aa652131b73f17653795",
+    "test_paired.py": "c06b4f39bbf83fa1dc8b54364aa6d621ace32ff43a20e22b4e5218340283bb8a",
     "test_report.py": "a11a9bd2dee9950ddc871db2d45acf833572056efc5568c3ce35e99201c70784",
     "test_survival.py": "a9052b14912434f0de116cfe8b19d76f9e48841fc4ec0fea6da7d3e3e4a67060",
 }
