@@ -22,7 +22,7 @@ import pytest
 from tf3_support import OLD, PAGES, REPO, blocks, fenced, holds_block, page_root, run_page, shims
 
 FIXTURE = {"table": "tests/fixtures/ingest/table/humaneval-a.csv", "junit": "tests/fixtures/ingest/junit/humaneval-a.xml"}
-INSTALL = ("pip install poisson-trace", "pip install git+https://github.com/poisson-labs/prove")
+INSTALL = ("pip install poisson-trace",)  # one line: it brings the Prove Trace reads
 
 
 @pytest.mark.parametrize("tool", ["table", "junit"])

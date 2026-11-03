@@ -32,20 +32,20 @@ reader of stored runs: it runs nothing, captures nothing, patches nothing, phone
 ## Pre-release for design partners
 
 This is Poisson Trace `0.1.0rc2`, a private pre-release for design partners. It is not on
-PyPI: the `poisson-trace` and `proofload` you would get there by name are placeholders that do
-not run, so install from the files sent with this README. You get three:
+PyPI: the `poisson-trace` you would get there by name is a placeholder that does not run, so
+install from the files sent with this README. You get two:
 
 | File | What it is |
 |---|---|
 | `poisson_trace-0.1.0rc2-py3-none-any.whl` | Trace |
-| `proofload-0.0.1-py3-none-any.whl` | Prove, whose stores Trace reads, and writes other tools' results into |
 | `poisson_trace-0.1.0rc2.tar.gz` | Trace's source: this README, the pages under `docs/`, and the example files the commands below read |
 
-Prove goes by three names for now: Prove in these docs, `proofload` as its package and wheel,
-and `poisson-prove` in Trace's version line. They are the same thing.
+Prove, whose stored runs Trace reads, is the `poisson-prove` package on PyPI, and the Trace
+wheel brings it. Before it was published Prove was called `proofload`; you will still see that
+name in the older stored runs and in some example folder names below.
 
-The links to github.com/poisson-labs, on this page and in a few of Trace's own `next:` lines,
-lead to repositories that are private for now; every page they name is in the source archive.
+The links to github.com/poisson-labs/trace, on this page, lead to a repository that is
+private for now; every page of it that this README names is in the source archive.
 
 ### Install from the files
 
@@ -53,17 +53,17 @@ Trace needs Python 3.11 or newer. Check yours first: the `python3` that macOS sh
 and pip refuses this package on it. If `python3 --version` prints a version below 3.11, type
 `python3.11`, `python3.12` or `python3.13` where the first line says `python3`, whichever your
 machine has. If it has none of them, install Python 3.11 or newer first (python.org or your
-package manager). In the folder holding the three files:
+package manager). In the folder holding the two files:
 
 ```
 python3 -m venv trace-env
 . trace-env/bin/activate
-pip install ./poisson_trace-0.1.0rc2-py3-none-any.whl ./proofload-0.0.1-py3-none-any.whl
+pip install ./poisson_trace-0.1.0rc2-py3-none-any.whl
 poisson-trace --version
 ```
 
-pip takes numpy, scipy, pandas and pyarrow, and the few packages they need, from PyPI. The last line prints
-`poisson-trace 0.1.0rc2 (poisson-prove 0.0.1, Python 3.11.7)`, with your Python's version in
+pip takes Prove, numpy, scipy and pandas, and the few packages they need, from PyPI. The last line prints
+`poisson-trace 0.1.0rc2 (poisson-prove 0.1.2, Python 3.11.7)`, with your Python's version in
 place of 3.11.7. Then unpack the source archive and work inside it; every command below, and
 every page under `docs/`, runs from there:
 
@@ -73,9 +73,7 @@ cd poisson_trace-0.1.0rc2
 ```
 
 The [Install](#install) section further down, and the Install section at the top of each page
-under `docs/integrations/`, are for the public release and do not apply to this one. If a
-command says Prove is missing and names `pip install git+https://github.com/poisson-labs/prove`,
-install the Prove wheel as above instead.
+under `docs/integrations/`, are for the public release and do not apply to this one.
 
 ### A first result on each reader
 
@@ -259,26 +257,23 @@ Send them to work@poissonlabs.ai, with the command you typed, what it printed an
 
 ## Install
 
-Prove is not yet on PyPI, so it is installed from its repository and is not a declared
-dependency of this package:
-
 ```
 pip install poisson-trace
-pip install git+https://github.com/poisson-labs/prove
 ```
 
-Nobody outside Poisson Labs can run Trace until Prove is public. `--help` and `--version`
-work without it; a command that reads runs refuses, in one line that names the install
-command above, when the `proofload` package is missing or is not version 0.0.1.
+That one line is all Trace needs: it declares Prove (the `poisson-prove` package) at the one
+exact version it reads, and pip takes it from PyPI with the rest. `--help` and `--version`
+work without Prove; a command that reads runs refuses, in one line that names the command
+that mends it, when the `poisson-prove` package is missing or is not the version Trace reads.
+`poisson-trace doctor` shows which Prove it found.
 
-From a clone of this repository, with the same two lines:
+From a clone of this repository:
 
 ```
 git clone https://github.com/poisson-labs/trace
 cd trace
 python -m venv .venv && . .venv/bin/activate
 pip install .
-pip install git+https://github.com/poisson-labs/prove
 poisson-trace runs --store tests/fixtures/cs --event unresolved
 poisson-trace where "cs_agents 2026-09-25 a" --store tests/fixtures/cs --event unresolved
 ```
@@ -453,7 +448,7 @@ ok  this environment is ready
 
 <!-- excerpt exit=0 -->
 ```
-  prove     poisson-prove 0.0.1 (the version Trace reads)
+  prove     poisson-prove 0.1.2 (the version Trace reads)
   config    trace.toml: store proofload-runs (3 runs, 3 complete, 0 partial), failures unsolved
   names     proofload-runs: no names of yours yet
   readers   deepeval, ragas, table, junit
@@ -1275,7 +1270,6 @@ controlled re-run on the same inputs says whether a change moved anything.
 
 ```
 pip install -e '.[dev]'
-pip install git+https://github.com/poisson-labs/prove
 python -m pytest
 ruff check .
 mypy --strict src
@@ -1291,8 +1285,10 @@ takes for a run, `runs` and `name`, the verdict line and `next:`, and the import
 282 for the setup: `init`, `trace.toml` and how every verb reads it, the two further forms
 of a run's name, `doctor`, and the readers' `looks_like`; and 250 for `import` under the main
 command, its table and JUnit readers, `init`'s part in them, and runs with no traces.
-Four of the 1,485 run DeepEval or Ragas itself, installed from PyPI, and are left out
-unless asked for (`python -m pytest -m lane_j`). The figures the tests check against come
+The tests that read PyPI are left out unless asked for (`python -m pytest -m lane_j`):
+four run DeepEval or Ragas itself, and one installs the Trace wheel into a clean environment
+and checks that it brings the Prove it declares. On every pull request the suite checks that
+declaration against the Prove installed instead. The figures the tests check against come
 from lifelines, scipy, full enumeration in exact fractions, and Prove's own estimators. `tests/fixtures/SHA256SUMS` checks
 the fixtures (`cd tests/fixtures && shasum -a 256 -c SHA256SUMS`).
 

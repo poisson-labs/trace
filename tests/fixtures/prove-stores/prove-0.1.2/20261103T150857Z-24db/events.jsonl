@@ -1,0 +1,5 @@
+{"schema": "poisson.run-event/1", "at": "2026-11-03T15:08:57.785164Z", "kind": "planned", "detail": {"run_id": "20261103T150857Z-24db", "rollouts": 160, "backend": "local", "cost": "$0 (local)"}}
+{"schema": "poisson.run-event/1", "at": "2026-11-03T15:08:57.785376Z", "kind": "started", "detail": {"run_id": "20261103T150857Z-24db"}}
+{"schema": "poisson.run-event/1", "at": "2026-11-03T15:08:57.785442Z", "kind": "progress", "detail": {"done": 1, "kept": 1, "errored": 0, "total": 160}}
+{"schema": "poisson.run-event/1", "at": "2026-11-03T15:08:58.118019Z", "kind": "progress", "detail": {"done": 160, "kept": 160, "errored": 0, "total": 160}}
+{"schema": "poisson.run-event/1", "at": "2026-11-03T15:08:58.118204Z", "kind": "finished", "detail": {"status": "complete", "kept": 160}}

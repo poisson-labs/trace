@@ -36,7 +36,7 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
-from proofload.store import Store
+from poisson_prove.store import Store
 
 HERE = Path(__file__).resolve().parent
 WRITTEN_BY = "25.0.1"

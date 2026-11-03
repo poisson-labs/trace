@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import ast
 import contextlib
+import importlib.metadata
 import os
 import re
 import shlex
@@ -31,12 +32,30 @@ FAILED = 3
 CHECK_FAILED = 4
 INTERRUPTED = 130
 
-# The one Prove this package reads: poisson-prove, imported as poisson_prove. Prove's main states
-# 0.0.1 until its release, so this pin is the build of Prove's main at
-# fa31d791d87f0582b7642511cb4e263e49515765 (fa31d79). The TestPyPI rehearsal (spec section 16.1
-# step 14) sets the released version here.
-PROVE_VERSION = "0.0.1"
-INSTALL_PROVE = "pip install git+https://github.com/poisson-labs/prove"
+def _declared_prove() -> str:
+    """The version of Prove this package pins: the ``poisson-prove==X`` that ``pyproject.toml``
+    declares, read back from the installed package's own metadata, so it is written in one place
+    and what Trace checks for cannot drift from what it declares."""
+    try:
+        requires = importlib.metadata.requires("poisson-trace") or []
+    except importlib.metadata.PackageNotFoundError:
+        requires = []
+    pin = re.compile(r"\s*poisson[-_.]prove\s*==\s*([^\s;,]+)\s*(?:;|$)", re.IGNORECASE)
+    for requirement in requires:
+        pinned = pin.match(requirement)
+        if pinned:
+            return pinned.group(1)
+    raise RuntimeError(
+        "the installed poisson-trace does not state which poisson-prove it pins (the metadata "
+        "pip wrote when it installed this package has no poisson-prove==VERSION requirement); "
+        "install it again with pip"
+    )
+
+
+# The one Prove this package reads: poisson-prove, imported as poisson_prove, at the exact version
+# pyproject.toml declares, from PyPI.
+PROVE_VERSION = _declared_prove()
+INSTALL_PROVE = f"pip install poisson-prove=={PROVE_VERSION}"
 NOTHING_WRITTEN = "stopped  interrupted; nothing was written"
 
 
@@ -226,7 +245,7 @@ def why(e: BaseException) -> str:
 
 
 def version_line() -> str:
-    """``poisson-trace 0.1.0 (poisson-prove 0.0.1, Python 3.11.7)``: what is installed."""
+    """``poisson-trace 0.1.0 (poisson-prove X.Y.Z, Python 3.11.7)``: what is installed."""
     import poisson_trace
 
     try:

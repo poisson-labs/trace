@@ -21,7 +21,7 @@ refused unless their SHA-256 is the one pinned.
 Steps, because the rows are read through Prove and scored by Ragas, and the two need not share
 an environment:
 
-    python make.py memory-rows SOURCE CAUSAL STRONG WORK   # proofload importable
+    python make.py memory-rows SOURCE CAUSAL STRONG WORK   # poisson_prove importable
     python make.py memory-score WORK                       # ragas 0.4.3 importable
     python make.py memory-gzip WORK DEST
     python make.py pair WORK DEST                          # pandas and pyarrow; reads two URLs
@@ -88,7 +88,7 @@ def _one(meta: Mapping[str, Any], key: str) -> list[str]:
 
 
 def memory_rows(source: Path, runs: tuple[str, str], work: Path) -> None:
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     store = Store(source)
     work.mkdir(parents=True, exist_ok=True)

@@ -10,7 +10,6 @@ Poisson Trace reads the reports your runner already wrote. It runs no test.
 
 ```
 pip install poisson-trace
-pip install git+https://github.com/poisson-labs/prove
 ```
 
 Nothing here imports a test runner. Tested on reports written by pytest 9.1.1.

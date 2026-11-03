@@ -18,6 +18,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from pin_support import RECORDED
 from conftest import (
     FIXTURES, TAU2, TAU2_A, TAU2_B, chdir, compare, deaths_rows, norm,
 )
@@ -438,7 +439,7 @@ def test_tr41_without_prove_both_verbs_refuse_before_the_store(argv) -> None:  #
     proc = _sub(code, dict(os.environ))
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
     assert proc.returncode == 1 and lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
-    assert "poisson-prove" in lines[0] and "0.0.1" in lines[0] and "no-such-store" not in " ".join(lines)
+    assert "poisson-prove" in lines[0] and RECORDED in lines[0] and "no-such-store" not in " ".join(lines)
 
 
 @pytest.mark.parametrize("argv", NEW_CALLS)
@@ -452,7 +453,7 @@ def test_tr41_on_the_wrong_prove_both_verbs_refuse(tmp_path: Path, argv) -> None
     proc = _sub(f"import sys; from poisson_trace.cli import main; sys.exit(main({argv!r}))", env)
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
     assert proc.returncode == 1 and lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
-    assert "9.9.9" in lines[0] and "0.0.1" in lines[0]
+    assert "9.9.9" in lines[0] and RECORDED in lines[0]
 
 
 # ---------- TR42 ----------
@@ -717,7 +718,7 @@ def test_tr61_the_json_keys_bytes_and_numbers() -> None:
     d = a.json()
     assert tuple(d) == FIX_KEYS
     assert d["schema"] == "poisson-trace.fix-check/2"  # ST9 (ruled 2026-10-20)
-    assert set(d["prove"]) == {"version", "store"} and d["prove"]["version"] == "0.0.1"
+    assert set(d["prove"]) == {"version", "store"} and d["prove"]["version"] == RECORDED
     assert set(d["runs"]) == {"old", "new"} and all(set(h) == HEADER_KEYS for h in d["runs"].values())
     assert set(d["inputs"]) == INPUTS_KEYS
     assert set(d["rows"]) == {"old", "new"} and all(set(r) == ROWS_KEYS for r in d["rows"].values())

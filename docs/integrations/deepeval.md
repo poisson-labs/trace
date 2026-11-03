@@ -12,7 +12,6 @@ the metric is ours.
 
 ```
 pip install poisson-trace
-pip install git+https://github.com/poisson-labs/prove
 ```
 
 Nothing here imports DeepEval. Tested on files written by DeepEval 4.2.6.

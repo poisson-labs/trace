@@ -23,7 +23,7 @@ from pathlib import Path
 import pytest
 
 from tf16_support import (  # noqa: F401
-    COMPUTED, EVENT, NEW, NEW_AFTER, NEW_BEFORE, OLD, OLD_A, OLD_B, REPO, SWEEP_NAMES, Made,
+    COMPUTED, EVENT, NEW, NEW_AFTER, NEW_BEFORE, NEW_COMPUTED, OLD, OLD_A, OLD_B, REPO, SWEEP_NAMES, Made,
     copies, copy_store, make_store, resolved, run_names, scratch_home, snapshot, trace,
 )
 
@@ -72,7 +72,7 @@ def test_tf16_9_a_name_of_yours_ranks_above_the_sweep_time_name_and_every_name_s
     ran = trace(["name", "agent before", "baseline", "--store", store])
     assert ran.code == 0, ran.text
     assert run_names(store) == {NEW_BEFORE: "baseline", NEW_AFTER: "agent after"}
-    for word in ("baseline", "agent before", COMPUTED[0], NEW_BEFORE):
+    for word in ("baseline", "agent before", NEW_COMPUTED[0], NEW_BEFORE):
         assert resolved(store, word) == NEW_BEFORE, word
     ran = trace(["name", "baseline", "--forget", "--store", store])
     assert ran.code == 0, ran.text
@@ -177,7 +177,7 @@ def test_tf16_12_trace_and_prove_name_every_run_alike_and_resolve_every_word_ali
     words = {"latest", "previous", "#1", "#2", "#9", "twin", "padded", "baseline", "agent before"}
     for r in listed:
         words |= {r.run_id, r.run_name}
-    words |= {f"mock-agent 2026-10-0{d} {c}" for d in (1, 2) for c in "abc"} | set(COMPUTED)
+    words |= {f"mock-agent 2026-10-0{d} {c}" for d in (1, 2) for c in "abc"} | set(COMPUTED) | set(NEW_COMPUTED)
     for word in sorted(words):
         try:
             prove: str | None = compare.resolve(store, word)

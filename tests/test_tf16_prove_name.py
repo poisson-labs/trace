@@ -2,12 +2,12 @@
 as amended 2026-10-28, section 17.3).
 
 - TF16-1: no module of the package imports ``proofload``, and every name it imports from
-  ``poisson_prove`` is one Prove documents as public (Prove's ``docs/python.md`` at fa31d79);
+  ``poisson_prove`` is one Prove documents as public (Prove's ``docs/python.md`` in poisson-prove 0.1.2);
   none comes from a private module.
 - TF16-2: where ``poisson_prove`` cannot be imported at the version Trace reads, every command
   that reads or writes runs refuses before it opens anything: one ``error:`` line naming
   ``poisson-prove`` and the version, never ``proofload``, then the line that installs it from
-  Prove's repository. ``proofload`` 0.0.1, the pin Trace had before, does not satisfy it.
+  PyPI. ``proofload`` 0.0.1, the pin Trace had before, does not satisfy it.
 - TF16-3: ``--version`` names the ``poisson-prove`` it finds, and only that: with ``proofload``
   0.0.1 alone it says ``poisson-prove not installed``.
 """
@@ -24,7 +24,7 @@ from tf16_support import INSTALL_PROVE, NEW, PROVE_VERSION, REPO, fresh, scratch
 
 SOURCE = REPO / "src" / "poisson_trace"
 
-# Prove's public Python surface, as its docs/python.md lists it at fa31d79: each module and the
+# Prove's public Python surface, as its docs/python.md lists it in 0.1.2: each module and the
 # names it makes public. Everything else under poisson_prove is private.
 PUBLIC = {
     "poisson_prove": {"Episode", "EpisodeValidationError", "Rollout", "record", "step", "__version__"},

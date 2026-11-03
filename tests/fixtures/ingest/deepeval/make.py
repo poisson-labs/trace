@@ -9,7 +9,7 @@ fixed gzip header (no name, mtime 0), so the gzip adds nothing that varies.
 Three steps, because the rows are read through Prove and the file is written by DeepEval, and
 the two need not share an environment:
 
-    python make.py rows WORK                 # proofload importable: the pair's rows as JSON
+    python make.py rows WORK                 # poisson_prove importable: the pair's rows as JSON
     python make.py deepeval WORK             # deepeval 4.2.6 importable: one result file per run
     python make.py gzip WORK DEST            # each result file, gzipped, into DEST
     python make.py compare FILE FILE         # equal but for DeepEval's timings
@@ -40,7 +40,7 @@ TIMINGS = ("runDuration",)
 
 
 def rows(work: Path) -> None:
-    from proofload.store import Store
+    from poisson_prove.store import Store
 
     store = Store(HUMANEVAL)
     work.mkdir(parents=True, exist_ok=True)

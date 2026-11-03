@@ -9,7 +9,6 @@ Poisson Trace reads the score table you saved. It runs no metric and calls no mo
 
 ```
 pip install poisson-trace
-pip install git+https://github.com/poisson-labs/prove
 ```
 
 Nothing here imports Ragas. Tested on tables written by Ragas 0.4.3.

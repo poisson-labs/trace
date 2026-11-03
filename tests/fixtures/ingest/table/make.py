@@ -3,7 +3,7 @@
     python tests/fixtures/ingest/table/make.py SOURCE DEST
 
 SOURCE is ``tests/fixtures/humaneval`` (a Prove store); DEST the folder the two tables are
-written into. ``proofload`` must be importable. Each stored row of a run, in the order
+written into. ``poisson_prove`` must be importable. Each stored row of a run, in the order
 ``Store.read`` returns it (by config hash, then replicate index), becomes one line:
 ``case`` is ``<task_id>@<temperature>``, as the DeepEval fixture names its test cases;
 ``task_id``, ``temperature`` and ``replicate`` are the row's config and replicate index; and
@@ -17,7 +17,7 @@ import csv
 import sys
 from pathlib import Path
 
-from proofload.store import Store
+from poisson_prove.store import Store
 
 RUNS = {"humaneval-a.csv": "20260905T185407Z-0313", "humaneval-b.csv": "20260905T195009Z-18ac"}
 COLUMNS = ("case", "task_id", "temperature", "replicate", "outcome")

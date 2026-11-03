@@ -10,7 +10,6 @@ Poisson Trace reads the table as it is. It runs nothing and calls no model.
 
 ```
 pip install poisson-trace
-pip install git+https://github.com/poisson-labs/prove
 ```
 
 Nothing here imports the tool that wrote the table. Tested on CSV written by Python's `csv`

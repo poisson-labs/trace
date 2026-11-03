@@ -302,8 +302,10 @@ as CSV, for the `poisson-trace import table` tests. They are not Prove stores. T
 | `ingest/table/humaneval-a.csv` | `humaneval/20260905T185407Z-0313` | 10,496 | 328 | `case`, `task_id`, `temperature`, `replicate`, `outcome` | 1,330 / 8 / 9,158 | 478,807 B |
 | `ingest/table/humaneval-b.csv` | `humaneval/20260905T195009Z-18ac` | 10,496 | 328 | the same five | 1,376 / 11 / 9,109 | 479,270 B |
 
-**How.** Each stored row of the run, read through `proofload.store.Store` (Prove at `98dc6af`,
-its version 0.0.1) in the order `Store.read` returns it, became one line: `case` is
+**How.** Each stored row of the run, read through `proofload.store.Store` (Prove 0.0.1, under
+its name before it was published; read again through `poisson_prove.store.Store` of
+`poisson-prove==0.1.2` from PyPI on 2026-11-03, the recipe writes the same two files byte for
+byte) in the order `Store.read` returns it, became one line: `case` is
 `<task_id>@<temperature>`, as the DeepEval fixture names its test cases; `task_id`,
 `temperature` and `replicate` are the row's config and replicate index; `outcome` is the stored
 outcome word. Nothing else of the row is written. Python's `csv` module wrote the file, UTF-8,

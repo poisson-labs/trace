@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from conftest import CS, CS_EVENTS, CS_RECORD, FIXTURES, TAU2, TAU2_A, TAU2_B, CliResult, events_args
+from pin_support import INSTALL
 
 REPO = Path(__file__).resolve().parent.parent
 CLI_LOOK = REPO / "docs" / "cli-look.md"
@@ -39,7 +40,7 @@ TOOLS = ("deepeval", "ragas")
 
 # spec section 3.3, the Tasks table kept to the letter
 EXIT_CODES = frozenset({0, 1, 2, 3, 4, 130})
-INSTALL_PROVE = "pip install git+https://github.com/poisson-labs/prove"
+INSTALL_PROVE = INSTALL  # the one command that installs the Prove Trace reads (pin_support.py)
 PLACEHOLDER_INSTALL = "/path/to/prove"
 RUN_ID = re.compile(r"\d{8}T\d{6}Z-[0-9a-f]{4}")
 VERDICT_LINE = re.compile(r"^[a-z][a-z ]*  \S")

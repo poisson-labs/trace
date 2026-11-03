@@ -1,5 +1,5 @@
-"""TF16-4 to TF16-7: a store Prove 0.0.1 wrote and a store Prove's main writes read alike
-(spec section 16.1 step 1, section 17.3; Prove's docs/artifact-format.md at fa31d79).
+"""TF16-4 to TF16-7: a store Prove 0.0.1 wrote and a store the published Prove writes read alike
+(spec section 16.1 step 1, section 17.3; Prove's docs/artifact-format.md in poisson-prove 0.1.2).
 
 The two committed stores hold the same outcomes (one sweep spec, one salt, the same mock agent),
 one written by proofload 0.0.1 (no ``.poisson/``, no event logs, the version under the old key,

@@ -10,7 +10,7 @@ the episode failed its assertions, and errors in its setup when the episode cras
 import os
 
 import pytest
-from proofload.store import Store
+from poisson_prove.store import Store
 
 REPEATS = 4
 TEMPERATURE = 0.7

@@ -8,8 +8,9 @@ quoted from the licence file shipped in the named distribution, with the upstrea
 --------------------------------------------------------------------------------
 Prove (the `poisson-prove` package)
 https://github.com/poisson-labs/prove
-First party: Poisson Labs. Not yet public and not a declared dependency of this package
-(see README, "Install"). Poisson Trace reads Prove's stored runs through Prove's public
+First party: Poisson Labs. Distributed on PyPI as the poisson-prove distribution and a
+declared dependency of this package, pinned to one exact version in pyproject.toml (see
+README, "Install"). Poisson Trace reads Prove's stored runs through Prove's public
 API and copies none of its code; the estimators here are written independently and are
 pinned equal to Prove's on shared inputs by the test suite.
 

@@ -1,14 +1,14 @@
 {
   "format": "poisson.artifact/1",
   "kind": "comparison",
-  "id": "057bd21b07d412f9",
+  "id": "d5c40253d561dfd5",
   "tool": "poisson-prove",
-  "tool_version": "0.0.1",
-  "created_at": "2026-10-28T15:42:06Z",
+  "tool_version": "0.1.2",
+  "created_at": "2026-11-03T15:09:02Z",
   "inputs": {
     "runs": [
-      "20261028T154201Z-888d",
-      "20261028T154203Z-0132"
+      "20261103T150857Z-24db",
+      "20261103T150859Z-81ef"
     ]
   },
   "settings": {
@@ -76,14 +76,14 @@
       "role": "table",
       "media_type": "application/vnd.apache.parquet",
       "schema": "poisson.table/1",
-      "sha256": "13750d3aa137bcfa562f451272f694d8edf59338e8d5f95c9565811ce56ae678"
+      "sha256": "9923e925b6a1f8575f8f327454a4e31c07073c354b605dc77070a2845cb30802"
     },
     {
       "path": "charts/heatmap-violated.svg",
       "role": "chart",
       "media_type": "image/svg+xml",
       "data": "charts/heatmap-violated.json",
-      "sha256": "c0e3cc3e4e07e6a9c2cd4b7e97cbb3beb019d9f8f37d303c118a3868cd8b8f39"
+      "sha256": "bfee0f43d45dd00144cedf86291d3157bbe91c5e666627852d55ba601f61252c"
     },
     {
       "path": "charts/heatmap-violated.json",

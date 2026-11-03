@@ -13,6 +13,7 @@ import pytest
 from poisson_prove.steps import declaration_check
 from poisson_prove.store import Store
 
+from pin_support import RECORDED
 from conftest import (
     CANNOT_SAY, COMPARE_KEYS, CS, CS_EVENTS, CS_RECORD, SYNTH_CAP,
     SYNTH_DECLARED, SYNTH_EVENTS, TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, WHERE_KEYS, Row, build_store,
@@ -126,7 +127,7 @@ def test_tr26_keys_are_in_the_spec_order_and_nothing_is_nan(synth) -> None:  # t
     assert list(cmp.json()) == list(COMPARE_KEYS)
     assert declared.json()["schema"] == "poisson-trace.where/1"
     assert cmp.json()["schema"] == "poisson-trace.compare/1"
-    assert plain.json()["prove"] == {"version": "0.0.1", "store": str(TAU2)}
+    assert plain.json()["prove"] == {"version": RECORDED, "store": str(TAU2)}
     assert plain.json()["clock"] == {"unit": "leaf span index", "by": "kind"}
     for row in plain.json()["curve"]:
         assert list(row) == ["step", "at_risk", "died", "survival", "var", "lo", "hi"]

@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+from pin_support import RECORDED
 from conftest import (
     CELL_A, CELL_B, CS, CS_EVENTS, CS_RECORD, FIXTURES, SYNTH_EVENTS, TAU2, TAU2_A, TAU2_B,
     TAU2_EVENTS, compare, deaths_rows, run_cli, where,
@@ -276,7 +277,7 @@ def test_tr31_refuses_before_the_store_when_prove_is_unimportable(argv) -> None:
     assert proc.returncode == 1, proc.stderr + proc.stdout
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
     assert lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
-    assert "poisson-prove" in lines[0] and "0.0.1" in lines[0] and "pip install" in " ".join(lines)
+    assert "poisson-prove" in lines[0] and RECORDED in lines[0] and "pip install" in " ".join(lines)
     assert "no-such-store" not in " ".join(lines)
 
 
@@ -292,7 +293,7 @@ def test_tr31_refuses_on_the_wrong_prove_version(tmp_path: Path, argv) -> None: 
     assert proc.returncode == 1, proc.stderr + proc.stdout
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
     assert lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
-    assert "poisson-prove" in lines[0] and "0.0.1" in lines[0] and "9.9.9" in lines[0] and "pip install" in " ".join(lines)
+    assert "poisson-prove" in lines[0] and RECORDED in lines[0] and "9.9.9" in lines[0] and "pip install" in " ".join(lines)
 
 
 def test_tr31_prints_no_such_line_when_prove_is_present() -> None:

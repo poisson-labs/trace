@@ -20,11 +20,12 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Typing :: Typed",
 ]
-# Prove (the `poisson-prove` package, imported as `poisson_prove`) is read at runtime and is not
-# listed here: it is not released yet, and a name that does not resolve to it would break every
-# pip and uv resolution of this wheel. The README gives the two install lines; the CLI refuses
-# at start without it.
-dependencies = ["numpy", "scipy", "pandas>=2"]
+# Prove (the `poisson-prove` package, imported as `poisson_prove`) is the one thing Trace reads
+# stored runs through, so it is pinned exactly: Prove changes fast, and an exact pin keeps Trace
+# steady until the pin is moved on purpose. This is the one place the version is written;
+# `poisson_trace.look` reads it back from the installed package's metadata, so the version Trace
+# checks for, the refusal's install command and this line cannot drift apart.
+dependencies = ["numpy", "scipy", "pandas>=2", "poisson-prove==0.1.2"]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-xdist", "hypothesis", "mypy", "ruff", "lifelines"]
@@ -72,10 +73,13 @@ ignore_missing_imports = true
 #   math, the statistics:         python -m pytest -n 10 -m math tests
 #   lane_j, the real tools:       python -m pytest -m lane_j tests
 # A -m given on the command line replaces the one below, so the code lane names lane_j itself.
+# Lane J holds every test that reads PyPI: DeepEval and Ragas run themselves, and the Trace wheel
+# installed into a clean environment, which must bring the one Prove it declares. On every pull
+# request the code lane checks that declaration instead, against the Prove installed.
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-m", "not lane_j"]
 markers = [
-    "lane_j: runs another tool itself (DeepEval, Ragas) at its pinned version, installed from PyPI; deselected unless -m lane_j",
+    "lane_j: reads PyPI: runs another tool itself (DeepEval, Ragas) at its pinned version, or installs the Trace wheel into a clean environment; deselected unless -m lane_j",
     "math: the math suite, a statistic's slow property checks against its reference where the pull-request lane keeps a fast test of the same invariant; runs on a pull request that changes the statistics code (src/poisson_trace/paired.py, survival.py), a test of the math suite, or the resolved numpy, scipy, pandas or lifelines, nightly and before every release",
 ]
