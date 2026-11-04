@@ -1,6 +1,6 @@
-"""Make the Prove store TF16's tests and the pin's tests read, ``prove-0.1.2/``, by running the
-published Prove's own sweep on its keyless mock agent: poisson-prove 0.1.2 from PyPI
-(``poisson-prove==0.1.2``, installed with ``pip install poisson-prove==0.1.2``). Its runs are
+"""Make the Prove store TF16's tests and the pin's tests read, ``prove-0.1.3/``, by running the
+published Prove's own sweep on its keyless mock agent: poisson-prove 0.1.3 from PyPI
+(``poisson-prove==0.1.3``, installed with ``pip install poisson-prove==0.1.3``). Its runs are
 named at sweep time and a comparison of them is saved, so it holds the store descriptor, the event
 logs and an artifact under ``.poisson/``.
 
@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-PROVE = "0.1.2"  # poisson-prove==0.1.2, from PyPI
+PROVE = "0.1.3"  # poisson-prove==0.1.3, from PyPI
 SALT = "5eed000000000016"
 
 

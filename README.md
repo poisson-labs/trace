@@ -63,7 +63,7 @@ poisson-trace --version
 ```
 
 pip takes Prove, numpy, scipy and pandas, and the few packages they need, from PyPI. The last line prints
-`poisson-trace 0.1.0rc2 (poisson-prove 0.1.2, Python 3.11.7)`, with your Python's version in
+`poisson-trace 0.1.0rc2 (poisson-prove 0.1.3, Python 3.11.7)`, with your Python's version in
 place of 3.11.7. Then unpack the source archive and work inside it; every command below, and
 every page under `docs/`, runs from there:
 
@@ -448,7 +448,7 @@ ok  this environment is ready
 
 <!-- excerpt exit=0 -->
 ```
-  prove     poisson-prove 0.1.2 (the version Trace reads)
+  prove     poisson-prove 0.1.3 (the version Trace reads)
   config    trace.toml: store proofload-runs (3 runs, 3 complete, 0 partial), failures unsolved
   names     proofload-runs: no names of yours yet
   readers   deepeval, ragas, table, junit

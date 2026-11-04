@@ -68,14 +68,14 @@ def test_tf16_13_the_two_stores_hold_the_same_outcomes_row_for_row() -> None:
 # ---------- TF16-14 ----------
 
 FROZEN = {
-    "tf16_support.py": "d4a8bcc35fe72a405eccb132b368300564428f6af020bf8634024f28d954a5c7",
+    "tf16_support.py": "b9abe79cfe6ca56f41a0300ca2725e25cba71bb9674d3125fcbd7379e735c6e4",
     "test_tf16_prove_name.py": "8aabcd1b957512d6b35d982675728f4df09d48219c65ecce0760eaf10cfd5b48",
     "test_tf16_stores.py": "dc0db3c091b70b797a3786e484e6f84a8a6078847800ac712806324cf6e396da",
     "test_tf16_run_names.py": "509050fb9f722e73e94cf61b7093f58e5decb95f31f32f4b50feab174831709d",
-    "fixtures/prove-stores/make.py": "3181291ebde494ae353bff47fe6f0d6b065872b57048aa4454812bcccfed06a7",
+    "fixtures/prove-stores/make.py": "7bd1bddea06c3f53422cea5bc9d218f27bd4ca436f7a6ed60c922a8d9900968b",
     "fixtures/prove-stores/sweep.toml": "690368203d9ccf5d9542cfb95aec7b454c7a301b0eabee6fe94a06b9af18adff",
-    "fixtures/prove-stores/PROVENANCE.md": "628b0f46509f64acce196183252e33180616ccbe48648c97445ad8c496073366",
-    "fixtures/prove-stores/SHA256SUMS": "714b066814b7dc6402fbd04b079fe106caa05ce5d61fc0dbc73a475f32d863c2",
+    "fixtures/prove-stores/PROVENANCE.md": "9224415b17a18965b02f635a358a9563c6e4ea9b4156a400ddc708a3fc3f8a58",
+    "fixtures/prove-stores/SHA256SUMS": "ac5fdaad1c8f1b4132a16c4a9cceacf3553445d04a6af43c72223eab65b59d30",
 }
 
 

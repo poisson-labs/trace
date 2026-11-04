@@ -1,7 +1,7 @@
 """PIN-1 to PIN-6: Trace pins the published Prove (Taylor's ruling of 2026-11-03).
 
-Trace pins exactly ``poisson-prove`` 0.1.2, the newest on PyPI when these tests were frozen
-(``pin_support.RECORDED``), as a declared dependency, and the pin moves later only on purpose.
+Trace pins exactly ``poisson-prove`` 0.1.3, by Taylor's ruling of 2026-11-04 (``pin_support.RECORDED``;
+0.1.2 when these tests were frozen), as a declared dependency, and the pin moves later only on purpose.
 
 - PIN-1: ``pyproject.toml`` declares ``poisson-prove==`` the recorded version as a dependency, and
   installing the Trace wheel into a clean environment installs that Prove: nothing asks for a
@@ -183,7 +183,7 @@ def test_pin_2_the_pages_show_no_other_prove_as_the_one_trace_reads() -> None:
 
 # ---------- PIN-3 ----------
 
-OTHERS = ("0.1.1", "0.1.0", "0.0.1", "0.1.3", "1.0.0")
+OTHERS = ("0.1.2", "0.1.1", "0.1.0", "0.0.1", "0.1.4", "1.0.0")
 # each command, the module that runs it, and the words its refusal opens with, as Trace says
 # them today; only the version and the install command move
 FAMILIES = {
@@ -539,8 +539,8 @@ def test_pin_6_no_page_says_prove_is_off_the_index_or_installed_apart() -> None:
 # ---------- PIN-F ----------
 
 FROZEN = {
-    "pin_support.py": "7e13ac4069fe24f48e62ed19efa1a53d4a98f8fa7d9a85e87670fd9abc8c29d4",
-    "test_prove_pin.py": "e2345f458a98a23967025c7f456141f48830596fdb4b30223a07a33e00f930c6",
+    "pin_support.py": "740a7fa00730fdb7d26dc859f125a3f2cb835d2f7dce38369b950db9e7319f34",
+    "test_prove_pin.py": "5f1dcd324e7710d1cb80d1e283a1f96219ac45265e67c7998871074cddc2a61e",
 }
 
 

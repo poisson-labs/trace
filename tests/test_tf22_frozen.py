@@ -10,9 +10,9 @@ from pathlib import Path
 TESTS = Path(__file__).resolve().parent
 
 FROZEN = {
-    "tf22_support.py": "9882b7949abb377b5d71f89f5247ee6db4aeacb847b53b544f0f6d042bcb9d6c",
-    "test_tf22_folder.py": "ddab5dfbccda432316570d0da9587f304ba6df62ebf50526a29eb84f18a397e5",
-    "test_tf22_import.py": "5fedcee5706622b377c8ae2095db4a1b25951600c6e6f6cad6aafba9f0c448d5",
+    "tf22_support.py": "89e6b38826bb555452fd832053c8b9a11ebe6ae2c890885deb404245327f8e86",
+    "test_tf22_folder.py": "b396a76836f955dce4fdedf8be62d1b2c3d62ae09704d789985e48cf75e5c915",
+    "test_tf22_import.py": "facfda44788e56a75a428c66442fb2113799f8f7d2be95d57548ec85fd93a739",
     "test_tf22_verbs.py": "16e4d86a0a6591600a5062891a3458df71d58d1cefc52b4aefc2b709acf2f186",
     "test_tf22_verdicts.py": "d4f2d9c905d60b9cccc50096294656b6bb894d3e7c77ee1d84f278c5629f6d43",
 }

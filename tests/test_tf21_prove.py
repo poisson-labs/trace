@@ -1,7 +1,7 @@
 """TF21-37 to TF21-44: the Prove reader, ``ingest/prove.py`` (spec section 18.1.1 row 1, 18.5.2
 row Prove; SA1, SA6). A run read from a store becomes normalised rows: a run Trace imported comes
 back from its ``meta["trace_signals"]`` exactly as written; a run Prove swept is read from its
-own columns and trace, on the committed Prove stores (tau2, cs, prove-0.1.2)."""
+own columns and trace, on the committed Prove stores (tau2, cs, prove-0.1.3)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from typing import Any
 
 import pytest
 from poisson_prove.store import Store
-from tf21_support import CS, PROVE_012, STARTED, TAU2, ref_kind, ref_retry_storm
+from tf21_support import CS, PROVE_013, STARTED, TAU2, ref_kind, ref_retry_storm
 
 from poisson_trace.ingest.prove import read_rows
 from poisson_trace.ingest.rows import Row, Run, SpanRecord, ToolCallRecord
@@ -145,13 +145,13 @@ def test_tf21_39_cs_tool_calls_from_tool_spans() -> None:
         assert rows[(h, int(rep))].tool_calls == want
 
 
-# ---------- TF21-40: prove-0.1.2's own store: tool errors and the step cap ----------
+# ---------- TF21-40: prove-0.1.3's own store: tool errors and the step cap ----------
 
 
-@pytest.mark.parametrize("run", sorted(p.name for p in PROVE_012.iterdir() if p.is_dir() and not p.name.startswith(".")))
+@pytest.mark.parametrize("run", sorted(p.name for p in PROVE_013.iterdir() if p.is_dir() and not p.name.startswith(".")))
 def test_tf21_40_prove_0_1_2_kinds(run: str) -> None:
-    df = _frame(PROVE_012, run)
-    rows = {(r.case, r.repeat): r for r in read_rows(PROVE_012, run, failed=("violated", "timeout"))}
+    df = _frame(PROVE_013, run)
+    rows = {(r.case, r.repeat): r for r in read_rows(PROVE_013, run, failed=("violated", "timeout"))}
     for h, rep, o, t, hz, meta in zip(df["config_hash"], df["replicate_index"], df["outcome"],
                                       df["t"], df["horizon"], df["meta"], strict=True):
         row = rows[(h, int(rep))]
@@ -175,11 +175,11 @@ def test_tf21_40_prove_0_1_2_kinds(run: str) -> None:
 
 
 def test_tf21_40_prove_kinds_counted() -> None:
-    runs = sorted(p.name for p in PROVE_012.iterdir() if p.is_dir() and not p.name.startswith("."))
+    runs = sorted(p.name for p in PROVE_013.iterdir() if p.is_dir() and not p.name.startswith("."))
     got = []
     for run in runs:
         kinds: dict[str, int] = {}
-        for r in read_rows(PROVE_012, run, failed=("violated", "timeout")):
+        for r in read_rows(PROVE_013, run, failed=("violated", "timeout")):
             kinds[str(r.failure_kind)] = kinds.get(str(r.failure_kind), 0) + 1
         got.append(kinds)
     assert got == [{"None": 88, "tool_error": 66, "loop_detected": 6},
@@ -189,7 +189,7 @@ def test_tf21_40_prove_kinds_counted() -> None:
 def test_tf21_40_a_timeout_short_of_the_cap_stays_a_timeout(tmp_path: Path) -> None:
     """SA3 reading 6 as Taylor ruled it (2026-11-03): a Prove run's outcome word ``timeout`` is
     read as ``step_limit`` only when the try's steps reached its step cap; otherwise it stays
-    ``timeout``. The committed prove-0.1.2 store holds no timeout short of the cap, so one is
+    ``timeout``. The committed prove-0.1.3 store holds no timeout short of the cap, so one is
     written here through Prove's own store, beside one at the cap."""
     from poisson_prove.store import EpisodeRecord, RunManifest, config_hash
     from poisson_prove.trace import Span, Trace
@@ -281,7 +281,7 @@ def test_tf21_44_case_is_the_config_hash_for_a_swept_run() -> None:
 
 
 def test_tf21_44_a_swept_rows_signals_hold_nothing_it_did_not_record() -> None:
-    rows = read_rows(PROVE_012, sorted(p.name for p in PROVE_012.iterdir() if p.is_dir() and not p.name.startswith("."))[0],
+    rows = read_rows(PROVE_013, sorted(p.name for p in PROVE_013.iterdir() if p.is_dir() and not p.name.startswith("."))[0],
                      failed=("violated",))
     for r in rows:
         assert r.working_time_s is None and r.ttft_s is None and r.cached_tokens is None

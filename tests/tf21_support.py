@@ -81,7 +81,7 @@ INGEST = FIXTURES / "ingest"
 HUMANEVAL = FIXTURES / "humaneval"
 TAU2 = FIXTURES / "tau2"
 CS = FIXTURES / "cs"
-PROVE_012 = FIXTURES / "prove-stores" / "prove-0.1.2"
+PROVE_013 = FIXTURES / "prove-stores" / "prove-0.1.3"
 STARTED = "2026-09-05T18:54:07Z"
 
 # ---------- the shape (section 18.4.1) ----------
