@@ -21,7 +21,12 @@ Usage, from the repository root, with Prove and pyarrow installed:
 
 RUNS_ROOT is the Prove store that holds the tau2 and HumanEval runs, CS_ROOT the one that
 holds the two cs_agents runs. DEST must not exist or be empty; nothing outside it is written.
-Exit 0 when every file written has the digest ``SHA256SUMS`` lists for it, 1 otherwise.
+
+``SHA256SUMS`` also lists the import fixtures under ``ingest/``; this script does not write
+them (each has its own ``make.py``, and the tests check their digests), so it checks only the
+lines under ``tau2/``, ``cs/`` and ``humaneval/``. Exit 0 when every file written has the digest
+``SHA256SUMS`` lists for it and every file listed there under those three folders was written;
+otherwise 1, naming each file that differs or is missing.
 """
 
 from __future__ import annotations
@@ -51,6 +56,7 @@ RUNS = (
     ("humaneval", "20260905T185407Z-0313", "runs", "outcome-only"),
     ("humaneval", "20260905T195009Z-18ac", "runs", "outcome-only"),
 )
+GROUPS = frozenset(group for group, *_ in RUNS)  # the folders of SHA256SUMS this script writes
 TRACEBACK_EDIT = {"20260925T235434Z-af48"}
 HOME_PREFIX = re.compile(r"/(?:Users|home)/[^/\s\"']+/")
 ELEVEN = ("run_id", "config_hash", "config", "seed", "replicate_index", "outcome", "t",
@@ -133,15 +139,25 @@ def main() -> int:
     listed = {}
     for line in (HERE / "SHA256SUMS").read_text().splitlines():
         digest, name = line.split(maxsplit=1)
-        listed[name.removeprefix("./")] = digest
+        name = name.removeprefix("./")
+        if name.split("/", 1)[0] in GROUPS:
+            listed[name] = digest
     written = {str(p.relative_to(ns.dest)): sha(p) for p in sorted(ns.dest.rglob("*")) if p.is_file()}
     differ = sorted(n for n in written if listed.get(n) != written[n])
     missing = sorted(set(listed) - set(written))
-    print(f"{len(written)} files written, {len(listed)} listed in SHA256SUMS: "
-          f"{len(written) - len(differ)} equal, {len(differ)} differ, {len(missing)} not written")
-    for name in differ + missing:
-        print("  ", name)
-    return 1 if differ or missing else 0
+    print(f"{len(written)} files written, {len(listed)} listed in SHA256SUMS under "
+          f"{', '.join(sorted(GROUPS))}: {len(written) - len(differ)} equal, "
+          f"{len(differ)} differ, {len(missing)} missing")
+    if not (differ or missing):
+        print("OK: every file written has its SHA256SUMS digest, and every listed file was written")
+        return 0
+    for name in differ:
+        why = "" if name in listed else " (SHA256SUMS lists no digest for it)"
+        print(f"differs: {name}{why}", file=sys.stderr)
+    for name in missing:
+        print(f"missing: {name} (listed in SHA256SUMS, not written)", file=sys.stderr)
+    print(f"FAIL: {len(differ)} file(s) differ, {len(missing)} missing", file=sys.stderr)
+    return 1
 
 
 if __name__ == "__main__":
