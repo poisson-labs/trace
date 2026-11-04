@@ -2,8 +2,12 @@
 
 A table is told by its file's extension and by nothing else: ``.csv``, ``.jsonl``, ``.json`` (a
 list of objects), each also as ``.gz``, or ``.parquet``. A reader names two columns, the one it
-reads a result from and the one that identifies the case, and only those two are kept from any
-row. ``looks_like`` reads the columns a file's first 4 KB names, for init's search.
+reads a result from and the one that identifies the case. Beyond those two, a column named
+exactly as a signal field (``wall_time_s``, ``input_tokens``, ``failure_kind``, ...) is read into
+that signal, and the column a config's ``[signals] cost_field`` names is read as the cost; an
+empty cell is not recorded, a ``0`` is a recorded zero, and a cell that is not what the signal
+takes is refused naming the column and the cell. No other column's value is kept.
+``looks_like`` reads the columns a file's first 4 KB names, for init's search.
 """
 
 from __future__ import annotations
@@ -21,7 +25,15 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from poisson_trace.ingest.rows import Refusal, case_id
+from poisson_trace.ingest.rows import (
+    AMOUNT_SIGNALS,
+    COUNT_SIGNALS,
+    ERROR_SPAN_KINDS,
+    FAILURE_KINDS,
+    UNITS,
+    Refusal,
+    case_id,
+)
 from poisson_trace.look import why
 
 FORMATS: tuple[str, ...] = ("csv", "jsonl", "json", "parquet")
@@ -48,6 +60,13 @@ _CELL_LIMIT = 2**31 - 1
 
 # one table row as a reader keeps it: the result cell and the case cell, None where absent
 Pair = tuple[Any, Any]
+# one table row whole, by column; a column a row lacks is an empty cell
+Line = dict[str, Any]
+
+#: The signal fields a column is read into when it is named exactly so: the counts, the
+#: amounts and the three words (a failure kind, an error's type and the span kind it happened in).
+TEXT_SIGNALS: tuple[str, ...] = ("failure_kind", "error_type", "error_span_kind")
+SIGNAL_COLUMNS: tuple[str, ...] = (*COUNT_SIGNALS, *AMOUNT_SIGNALS, *TEXT_SIGNALS)
 
 
 def number(text: str) -> float:
@@ -109,9 +128,12 @@ def _columns_checked(path: Path, columns: tuple[str, ...], wanted: tuple[str, st
             )
 
 
-def _csv(path: Path, body: bytes, wanted: tuple[str, str]) -> list[Pair]:
+Read = tuple[tuple[str, ...], list[Line]]
+
+
+def _csv(path: Path, body: bytes, wanted: tuple[str, str]) -> Read:
     """Every cell of a CSV is text. A line with nothing on it, or with spaces alone, is not a
-    row."""
+    row. A row shorter than the header leaves its last cells empty."""
     source = csv.reader(io.StringIO(_text(path, "csv", body), newline=""), strict=True)
     limit = csv.field_size_limit(_CELL_LIMIT)
     try:
@@ -124,23 +146,21 @@ def _csv(path: Path, body: bytes, wanted: tuple[str, str]) -> list[Pair]:
         raise _not_a_table(path, "csv", "it has no header line")
     columns = tuple(lines[0])
     _columns_checked(path, columns, wanted)
-    value_at, case_at = columns.index(wanted[0]), columns.index(wanted[1])
-    pairs: list[Pair] = []
+    rows: list[Line] = []
     for n, cells in enumerate(lines[1:], start=1):
         if len(cells) > len(columns):
             raise _not_a_table(
                 path, "csv", f"row {n} has {len(cells)} cells and the header names {len(columns)}"
             )
-        pairs.append(
-            (
-                cells[value_at] if value_at < len(cells) else None,
-                cells[case_at] if case_at < len(cells) else None,
-            )
-        )
-    return pairs
+        row: Line = {}
+        for at, column in enumerate(columns):
+            # a column named twice: the first keeps its cell, as the readers check it is one
+            row.setdefault(column, cells[at] if at < len(cells) else None)
+        rows.append(row)
+    return columns, rows
 
 
-def _objects(path: Path, rows: list[Any], wanted: tuple[str, str]) -> list[Pair]:
+def _objects(path: Path, rows: list[Any], wanted: tuple[str, str]) -> Read:
     """The rows of a JSON table. A row need not carry every key another row has (an
     ``@experiment`` row is whatever the function returned), so the file's columns are the
     keys of all its rows, and a key a row lacks is an empty cell."""
@@ -149,10 +169,10 @@ def _objects(path: Path, rows: list[Any], wanted: tuple[str, str]) -> list[Pair]
         columns.update(dict.fromkeys(row))
     if rows:
         _columns_checked(path, tuple(columns), wanted)
-    return [(row.get(wanted[0]), row.get(wanted[1])) for row in rows]
+    return tuple(columns), [dict(row) for row in rows]
 
 
-def _jsonl(path: Path, body: bytes, wanted: tuple[str, str]) -> list[Pair]:
+def _jsonl(path: Path, body: bytes, wanted: tuple[str, str]) -> Read:
     """One object a line. A line that is not one refuses the file: a line cut short is a table
     cut short, and the rows that happened to parse say nothing about the rest."""
     rows: list[Any] = []
@@ -170,7 +190,7 @@ def _jsonl(path: Path, body: bytes, wanted: tuple[str, str]) -> list[Pair]:
     return _objects(path, rows, wanted)
 
 
-def _json(path: Path, body: bytes, wanted: tuple[str, str]) -> list[Pair]:
+def _json(path: Path, body: bytes, wanted: tuple[str, str]) -> Read:
     try:
         rows = json.loads(_text(path, "json", body))
     except (ValueError, RecursionError):
@@ -180,8 +200,7 @@ def _json(path: Path, body: bytes, wanted: tuple[str, str]) -> list[Pair]:
     return _objects(path, rows, wanted)
 
 
-def _parquet(path: Path, body: bytes, wanted: tuple[str, str]) -> list[Pair]:
-    """Only the two named columns are read from the file."""
+def _parquet(path: Path, body: bytes, wanted: tuple[str, str]) -> Read:
     import pyarrow as pa
     import pyarrow.parquet as pq
 
@@ -192,12 +211,11 @@ def _parquet(path: Path, body: bytes, wanted: tuple[str, str]) -> list[Pair]:
         raise _not_a_table(path, "parquet", "it could not be opened as one") from None
     _columns_checked(path, columns, wanted)
     try:
-        table = file.read(columns=list(wanted))
-        values, cases = (table.column(column).to_pylist() for column in wanted)
+        rows = file.read().to_pylist()
     except (pa.ArrowException, OSError, ValueError, KeyError, ArithmeticError):
         # ArithmeticError: a value Python cannot hold, such as a timestamp out of its range
         raise _not_a_table(path, "parquet", "its columns could not be read") from None
-    return list(zip(values, cases, strict=True))
+    return columns, [dict(row) for row in rows]
 
 
 _READ = {"csv": _csv, "jsonl": _jsonl, "json": _json, "parquet": _parquet}
@@ -214,14 +232,121 @@ def _gunzipped(path: Path, raw: bytes) -> bytes:
         raise Refusal(f"{path} is named .gz and is not a gzip file that can be read") from None
 
 
+def table(path: Path, fmt: str, gzipped: bool, raw: bytes, wanted: tuple[str, str]) -> Read:
+    """The file's columns and every row whole, in the order the file holds them, the two
+    columns ``wanted`` names (the result's and the case's) checked to be there once each. A file
+    with no row is refused."""
+    body = _gunzipped(path, raw) if gzipped else raw
+    columns, rows = _READ[fmt](path, body, wanted)
+    if not rows:
+        raise Refusal(f"{path} holds no row, so there is nothing to read from it")
+    return columns, rows
+
+
 def pairs(path: Path, fmt: str, gzipped: bool, raw: bytes, wanted: tuple[str, str]) -> list[Pair]:
     """Each row's cells of the two columns ``wanted`` names, the result's and the case's, in
     the order the file holds the rows. A file with no row is refused."""
-    body = _gunzipped(path, raw) if gzipped else raw
-    read = _READ[fmt](path, body, wanted)
-    if not read:
-        raise Refusal(f"{path} holds no row, so there is nothing to read from it")
-    return read
+    _, rows = table(path, fmt, gzipped, raw, wanted)
+    return [(row.get(wanted[0]), row.get(wanted[1])) for row in rows]
+
+
+# ---------- the signal columns ----------
+
+
+def signal_columns(
+    path: Path, columns: tuple[str, ...], cost_field: str | None, apart: tuple[str, ...] = ()
+) -> dict[str, str]:
+    """Which column is read into which signal: every column named exactly as a signal field,
+    and the column ``cost_field`` names into ``cost_usd``; none of ``apart`` (the two columns
+    the reader reads its result and case from). A signal column named twice is refused."""
+    found = {c: c for c in columns if c in SIGNAL_COLUMNS and c not in apart}
+    if cost_field is not None:
+        if cost_field not in columns:
+            raise Refusal(
+                f"{path} has no column named {cost_field}, which [signals] cost_field names; its "
+                f"columns are: {_named(columns) or 'none'}"
+            )
+        if cost_field in apart:
+            raise Refusal(
+                f"[signals] cost_field names the column {cost_field}, which this import reads "
+                "its result or case from"
+            )
+        found = {c: f for c, f in found.items() if f != "cost_usd"}
+        found[cost_field] = "cost_usd"
+    for column in found:
+        if columns.count(column) > 1:
+            raise Refusal(
+                f"{path} has {columns.count(column)} columns named {column}, so which one is "
+                "meant cannot be told"
+            )
+    return found
+
+
+def empty(cell: Any) -> bool:
+    """Whether a cell records nothing: an empty text, a null, or NaN."""
+    return cell is None or cell == "" or (isinstance(cell, float) and math.isnan(cell))
+
+
+def _amount_cell(cell: Any) -> float | None:
+    """The cell as a finite number from zero, or None when it is not one."""
+    if isinstance(cell, str):
+        value = number(cell)
+    elif isinstance(cell, bool) or not isinstance(cell, (int, float, Decimal)):
+        return None
+    else:
+        try:
+            value = float(cell)
+        except (OverflowError, ValueError):
+            return None
+    return value if math.isfinite(value) and value >= 0.0 else None
+
+
+def signal_cells(
+    path: Path, n: int, row: Mapping[str, Any], mapping: Mapping[str, str]
+) -> dict[str, Any]:
+    """Row ``n``'s signal cells as ``Row`` keywords, by ``signal_columns``' mapping: an empty
+    cell is left out (not recorded), a number is read as its signal's count or amount, a word
+    as its signal's word. A cell that is not what the signal takes is refused naming the row,
+    the column and the cell."""
+    out: dict[str, Any] = {}
+    for column, name in mapping.items():
+        cell = row.get(column)
+        if empty(cell):
+            continue
+        shown = cell if isinstance(cell, str) else json.dumps(cell, default=str)
+        if name in COUNT_SIGNALS:
+            value = _amount_cell(cell)
+            if value is None or not value.is_integer():
+                raise Refusal(
+                    f"row {n} of {path} holds {shown!r} in the column {column}, which is not a "
+                    f"whole number of {UNITS[name]}"
+                )
+            out[name] = int(value)
+        elif name in AMOUNT_SIGNALS:
+            value = _amount_cell(cell)
+            if value is None:
+                raise Refusal(
+                    f"row {n} of {path} holds {shown!r} in the column {column}, which is not a "
+                    f"number of {UNITS[name]}"
+                )
+            out[name] = value
+        elif name == "failure_kind":
+            if cell not in FAILURE_KINDS:
+                raise Refusal(
+                    f"row {n} of {path} holds {shown!r} in the column {column}, which is not one "
+                    f"of the failure kinds: {', '.join(FAILURE_KINDS)}"
+                )
+            out[name] = cell
+        elif name == "error_span_kind":
+            if cell not in ERROR_SPAN_KINDS:
+                raise Refusal(
+                    f"row {n} of {path} holds {shown!r} in the column {column}, which is not a "
+                    f"span kind: {', '.join(ERROR_SPAN_KINDS)}"
+                )
+            out[name] = cell
+        else:
+            out[name] = shown
+    return out
 
 
 def case(path: Path, n: int, column: str, cell: Any) -> str:

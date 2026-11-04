@@ -3,7 +3,10 @@
 One import reads one metric. The files are DeepEval's own: the results-folder file
 ``test_run_<YYYYMMDD_HHMMSS>.json``, ``.latest_run_full.json``, or the wrapped
 ``.latest_test_run.json``, as ``.json`` or ``.json.gz``. Nothing here imports DeepEval, and
-no text of a test case is kept: not its input, its outputs or a metric's reason.
+no text of a test case is kept: not its input, its outputs or a metric's reason. Of each test
+case the signals read are its ``runDuration`` as the time, the lengths of its ``input`` and
+``actualOutput``, and every metric's score (spec section 18.1.1 row 2, SA7). ``tokenCost`` is
+not read until a committed capture holds one (SA12).
 """
 
 from __future__ import annotations
@@ -177,10 +180,35 @@ def _case(path: Path, rule: str, held_in: str, test_case: Mapping[str, Any]) -> 
     return digest_id(text) if rule == "input" else case_id(text)
 
 
-def _row(path: Path, m: Mapping[str, Any], case: str, cut: Cut | None) -> Row:
-    score = m.get("score")
-    if isinstance(score, bool) or not isinstance(score, (int, float)) or math.isnan(score):
-        score = None
+def _number(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        return None
+    return float(value)
+
+
+def _signals(test_case: Mapping[str, Any], metrics: list[Mapping[str, Any]]) -> dict[str, Any]:
+    """What the test case records of the signals: its time, its lengths, every metric's score."""
+    out: dict[str, Any] = {}
+    duration = _number(test_case.get("runDuration"))
+    if duration is not None and duration >= 0.0:
+        out["wall_time_s"] = duration
+    for name, key in (("input_chars", "input"), ("output_chars", "actualOutput")):
+        text = test_case.get(key)
+        if isinstance(text, str):
+            out[name] = len(text)
+    scores: dict[str, float] = {}
+    for m in metrics:
+        score = _number(m.get("score"))
+        if isinstance(m.get("name"), str) and score is not None:
+            scores[m["name"]] = score
+    out["scores"] = scores
+    return out
+
+
+def _row(
+    path: Path, m: Mapping[str, Any], case: str, cut: Cut | None, signals: Mapping[str, Any]
+) -> Row:
+    score = _number(m.get("score"))
     success = m.get("success")
     detail = {
         "metric": m.get("name"),
@@ -190,9 +218,9 @@ def _row(path: Path, m: Mapping[str, Any], case: str, cut: Cut | None) -> Row:
         "deepeval_success": success if isinstance(success, bool) else None,
     }
     if score is None or m.get("error") is not None:
-        return Row(case, None, NO_SCORE, None, None, detail)
+        return Row(case, None, NO_SCORE, None, None, detail, result="censored", **signals)
     if cut is not None:
-        outcome = cut.outcome(float(score))
+        outcome = cut.outcome(score)
     elif isinstance(success, bool):
         outcome = MET if success else MISSED
     else:
@@ -200,7 +228,8 @@ def _row(path: Path, m: Mapping[str, Any], case: str, cut: Cut | None) -> Row:
             f"{path} holds a scored metric with no success recorded, so --cut recorded cannot "
             "read it; give the cut as a number with its side"
         )
-    return Row(case, outcome, None, float(score), None, detail)
+    result = "fail" if outcome == MISSED else "pass"
+    return Row(case, outcome, None, score, None, detail, result=result, **signals)
 
 
 def _utc(at: datetime) -> str:
@@ -287,7 +316,8 @@ def read(ns: argparse.Namespace) -> Run:
                 "both files list the cases in the same order"
             )
         for held_in, test_case, m in found:
-            rows.append(_row(path, m, _case(path, ns.case, held_in, test_case), cut))
+            signals = _signals(test_case, _metrics(path, test_case))
+            rows.append(_row(path, m, _case(path, ns.case, held_in, test_case), cut, signals))
             threshold = m.get("threshold")
             thresholds[
                 "no recorded threshold"

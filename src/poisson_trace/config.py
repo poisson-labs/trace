@@ -1,5 +1,6 @@
 """The config file, ``trace.toml``: where the results are, what counts as a failure, the
-check's ceilings, how runs are named when no name was given, and where an upload goes.
+check's ceilings, how runs are named when no name was given, where an upload goes, the signal
+field mappings and budgets, and the failure taxonomy's own rules.
 
 Read from the current folder, or from the file ``--config PATH`` names, and never from a folder
 above. A store path in it is read from the folder that holds the file. A file that is not a
@@ -7,7 +8,8 @@ version 1 config is refused in one sentence naming the file and the line the fau
 on, before anything else is read or written. ``poisson-trace init`` writes it; a user may edit it
 by hand, and ``poisson-trace doctor`` checks it.
 
-Standard library only: ``tomllib`` reads it, and nothing here reads a store.
+Standard library and the taxonomy's own rules (``ingest/taxonomy.py``, itself standard library
+only): ``tomllib`` reads the file, and nothing here reads a store.
 """
 
 from __future__ import annotations
@@ -26,6 +28,14 @@ from urllib.parse import urlsplit
 
 import poisson_trace
 from poisson_trace import look
+from poisson_trace.ingest.taxonomy import (
+    BUDGETS,
+    CONDITIONS,
+    FAILURE_KINDS,
+    Budgets,
+    Rule,
+    taxonomy_sha256,
+)
 from poisson_trace.names import toml_string
 
 CONFIG = "trace.toml"
@@ -48,8 +58,14 @@ _SETTINGS: dict[str, tuple[str, ...]] = {
     "check": ("max_mde", "max_mde_hr", "fail_on"),
     "names": ("from",),
     "upload": ("enabled", "url", "token_env"),
+    "signals": ("case_field", "outcome_field", "score_field", "cut", "cost_field", "budgets"),
+    "taxonomy": ("rules",),
 }
 _TOP = ("version", *_SETTINGS)
+# the [signals] settings that name a field or column of the source
+_FIELDS = ("case_field", "outcome_field", "score_field", "cost_field")
+# a word the spec once used for a budget, and the budget it means (SA9)
+_BUDGET_ALIASES = {"max_tokens": "max_total_tokens"}
 # the most edits between a word written and the setting it is taken to mean
 _NEAR = 2
 _VARIABLE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
@@ -75,10 +91,20 @@ class Config:
     fail_on: tuple[str, ...] | None = None
     names_from: str = "target"
     upload: Mapping[str, Any] = field(default_factory=dict)
+    # [signals]: the field mappings as written (read and checked; in TF21 the import's flags
+    # still say which columns it reads, SA8), the budgets and the taxonomy's rules
+    signals: Mapping[str, Any] = field(default_factory=dict)
+    budgets: Budgets | None = None
+    rules: tuple[Rule, ...] = ()
 
     @property
     def folder(self) -> Path:
         return self.path.parent
+
+    @property
+    def taxonomy_sha256(self) -> str:
+        """The digest of the rules and budgets this config classifies with (SA9)."""
+        return taxonomy_sha256(self.rules, self.budgets)
 
     def flags(self) -> tuple[str, ...]:
         """What a command carries to read this same file: ``--config PATH`` when the file was
@@ -157,11 +183,14 @@ def _parts(dotted: str) -> tuple[str, ...]:
     return tuple(out)
 
 
-def _lines(text: str) -> dict[tuple[str, ...], int]:
+def _lines(text: str) -> dict[tuple[Any, ...], int]:
     """Every table and setting the text writes, by its full key, with the line it is first
-    written on. Lines inside a string of several lines are not read as settings."""
-    found: dict[tuple[str, ...], int] = {}
-    table: tuple[str, ...] = ()
+    written on. Lines inside a string of several lines are not read as settings. An array of
+    tables (``[[taxonomy.rules]]``) is keyed as the array, and each of its tables also by its
+    number from zero, so a fault in the third rule names the third rule's lines."""
+    found: dict[tuple[Any, ...], int] = {}
+    table: tuple[Any, ...] = ()
+    arrays: dict[tuple[str, ...], int] = {}
     open_quote: str | None = None
     for n, line in enumerate(text.splitlines(), start=1):
         if open_quote is not None:
@@ -170,8 +199,15 @@ def _lines(text: str) -> dict[tuple[str, ...], int]:
             continue
         header = _TABLE.match(line)
         if header is not None:
-            table = _parts(header.group(1))
-            found.setdefault(table, n)
+            named = _parts(header.group(1))
+            found.setdefault(named, n)
+            if line.lstrip().startswith("[["):
+                at = arrays.get(named, 0)
+                arrays[named] = at + 1
+                table = (*named, at)
+                found.setdefault(table, n)
+            else:
+                table = named
             continue
         setting = _ASSIGNED.match(line)
         if setting is None:
@@ -271,7 +307,7 @@ class _Checker:
         self.lines = _lines(text)
         self.text = text
 
-    def fault(self, key: Sequence[str], why: str) -> ConfigError:
+    def fault(self, key: Sequence[Any], why: str) -> ConfigError:
         at = None
         for n in range(len(key), 0, -1):
             at = self.lines.get(tuple(key[:n]))
@@ -281,10 +317,10 @@ class _Checker:
         return ConfigError(f"{where}: {why}")
 
     def unknown(
-        self, key: Sequence[str], known: Sequence[str], table: str | None, *, whole: bool = False
+        self, key: Sequence[Any], known: Sequence[str], table: str | None, *, whole: bool = False
     ) -> ConfigError:
         """A table or setting version 1 does not have, with the one nearest it, if any is."""
-        word = key[-1]
+        word = str(key[-1])
         near = nearest(word, known)
         if table is None:
             written = f"[{word}] is not a table" if whole else f'"{word}" is not a setting'
@@ -336,6 +372,9 @@ class _Checker:
             fail_on=values.get("fail_on"),
             names_from=values.get("names_from", "target"),
             upload=values.get("upload", {}),
+            signals=values.get("signals", {}),
+            budgets=values.get("budgets"),
+            rules=values.get("rules", ()),
         )
 
     def version(self, value: Any) -> None:
@@ -494,6 +533,120 @@ class _Checker:
                 raise self.unknown(at, _SETTINGS["upload"], "upload")
             upload[key] = value
         return {"upload": upload}
+
+
+    def table_signals(self, table: Mapping[str, Any]) -> dict[str, Any]:
+        signals: dict[str, Any] = {}
+        out: dict[str, Any] = {"signals": signals}
+        for key, value in table.items():
+            at = ("signals", key)
+            if key in _FIELDS:
+                if not isinstance(value, str) or not value:
+                    raise self.fault(
+                        at,
+                        f"[signals] {key} is the field's or column's name in quotes, not "
+                        f"{_value(value)}",
+                    )
+                signals[key] = value
+            elif key == "cut":
+                if not _number(value):
+                    raise self.fault(at, f"[signals] cut is a number, not {_value(value)}")
+                signals[key] = float(value)
+            elif key == "budgets":
+                if not isinstance(value, dict):
+                    raise self.fault(
+                        at,
+                        "[signals] budgets is a table, written [signals.budgets] on a line of "
+                        "its own",
+                    )
+                out["budgets"] = self.budgets(value)
+            else:
+                raise self.unknown(at, _SETTINGS["signals"][:-1], "signals")
+        return out
+
+    def budgets(self, table: Mapping[str, Any]) -> Budgets:
+        """``[signals.budgets]``: each a number from zero; the token budget a whole number."""
+        kept: dict[str, Any] = {}
+        for key, value in table.items():
+            at = ("signals", "budgets", key)
+            if key not in BUDGETS:
+                meant = _BUDGET_ALIASES.get(key) or nearest(key, BUDGETS)
+                if meant is not None:
+                    raise self.fault(
+                        at, f'[signals.budgets] "{key}" is not a budget; did you mean "{meant}"?'
+                    )
+                raise self.fault(
+                    at,
+                    f'[signals.budgets] "{key}" is not a budget; the budgets are '
+                    f"{_and(list(BUDGETS))}",
+                )
+            if key == "max_total_tokens":
+                if type(value) is not int or value < 0:
+                    raise self.fault(
+                        at,
+                        f"[signals.budgets] max_total_tokens is a whole number of tokens from 0, "
+                        f"not {_value(value)}",
+                    )
+                kept[key] = value
+            else:
+                if not _number(value) or value < 0:
+                    raise self.fault(
+                        at, f"[signals.budgets] {key} is a number from 0, not {_value(value)}"
+                    )
+                kept[key] = float(value)
+        return Budgets(**kept)
+
+    def table_taxonomy(self, table: Mapping[str, Any]) -> dict[str, Any]:
+        for key, value in table.items():
+            if key != "rules":
+                raise self.unknown(("taxonomy", key), _SETTINGS["taxonomy"], "taxonomy")
+            if not isinstance(value, list) or not all(isinstance(r, dict) for r in value):
+                raise self.fault(
+                    ("taxonomy", "rules"),
+                    "[taxonomy] rules is an array of tables, each written [[taxonomy.rules]] on a "
+                    f"line of its own, not {_value(value)}",
+                )
+        rules = [self.rule(i, rule) for i, rule in enumerate(table.get("rules", []))]
+        return {"rules": tuple(rules)}
+
+    def rule(self, i: int, table: Mapping[str, Any]) -> Rule:
+        """One ``[[taxonomy.rules]]``: a failure_kind and at least one when_ condition."""
+        at = ("taxonomy", "rules", i)
+        known = ("failure_kind", *CONDITIONS)
+        for key, value in table.items():
+            if key not in known:
+                raise self.unknown((*at, key), known, "taxonomy.rules")
+            if key == "failure_kind" and value not in FAILURE_KINDS:
+                raise self.fault(
+                    (*at, key),
+                    f"[[taxonomy.rules]] failure_kind is one of {_and(list(FAILURE_KINDS))}, "
+                    f"not {_value(value)}",
+                )
+            if key in ("when_error_matches", "when_span_kind") and not isinstance(value, str):
+                raise self.fault(
+                    (*at, key), f"[[taxonomy.rules]] {key} is text in quotes, not {_value(value)}"
+                )
+            if key == "when_metric_below" and not isinstance(value, dict):
+                raise self.fault(
+                    (*at, key),
+                    '[[taxonomy.rules]] when_metric_below is { metric = "NAME", cut = X }, not '
+                    f"{_value(value)}",
+                )
+        if "failure_kind" not in table:
+            raise self.fault(at, "[[taxonomy.rules]] a rule names the failure_kind it gives")
+        if not any(c in table for c in CONDITIONS):
+            raise self.fault(
+                at, f"[[taxonomy.rules]] a rule needs at least one of {_and(list(CONDITIONS))}"
+            )
+        try:
+            return Rule(**{k: table[k] for k in known if k in table})
+        except (TypeError, ValueError) as e:
+            key = next((c for c in CONDITIONS if c in table), "failure_kind")
+            said = str(e)
+            for c in CONDITIONS:
+                if said.startswith(c):
+                    key = c
+            raise self.fault((*at, key), f"[[taxonomy.rules]] {said}") from None
 
 
 def _destination(url: str) -> bool:

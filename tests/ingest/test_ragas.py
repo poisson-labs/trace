@@ -713,7 +713,12 @@ def test_ir6_no_other_column_reaches_the_store_or_the_summary(tmp_path: Path, na
     js = _ok(ragas_argv(f, root, "v2", extra=("--json",)))
     assert len(read_rows(root, "v1")) == 4
     assert holds(root, SENTINEL) == []
-    assert holds(root, NUMBER) == []
+    # TF21 (SA7, ruled 2026-11-03): every numeric column but the case column is a score in the
+    # signals record, so the number reaches the store there, as the answer_relevancy score
+    from poisson_prove.store import Store
+
+    for meta in Store(root).read("v1", meta=True, trace="none")["meta"]:
+        assert meta["trace_signals"]["scores"]["answer_relevancy"] == float(NUMBER)
     for r in (md, js):
         assert SENTINEL not in r.out and NUMBER not in r.out
 

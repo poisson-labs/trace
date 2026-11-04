@@ -3,8 +3,11 @@
 The file is a table and nothing more: ``.csv``, ``.jsonl``, ``.json`` (a list of objects), each
 also as ``.gz``, or ``.parquet``, told by the file's extension. One column identifies the case,
 and one other column gives each row's result, read one of two ways: an outcome column whose
-cells the user names as failures, or a score column at a cut the user declares. No value of any
-other column is kept, and of the result column only met or missed.
+cells the user names as failures, or a score column at a cut the user declares. A column named
+exactly as a signal field (``wall_time_s``, ``input_tokens``, ``failure_kind``, ...) is read into
+that signal, and the column ``[signals] cost_field`` names is the cost (spec section 18.1.1 row
+5, SA7). No value of any other column is kept, and of the result column only met or missed. A
+failed row with no column saying how it failed is ``unclassified_error`` (SG11).
 """
 
 from __future__ import annotations
@@ -186,6 +189,7 @@ def read(ns: argparse.Namespace) -> Run:
         detail = {"outcome_column": column, "failed": list(failed)}
     paths = [Path(f) for f in ns.files]
     formats = [tabular.format_of(path) for path in paths]
+    cost_field = (getattr(ns, "signals", None) or {}).get("cost_field")
     files, rows = [], []
     matched: Counter[str] = Counter()
     cells: Counter[str] = Counter()
@@ -195,26 +199,38 @@ def read(ns: argparse.Namespace) -> Run:
         if at == 0:
             first_modified = modified
         files.append({"name": path.name, "sha256": hashlib.sha256(raw).hexdigest()})
-        pairs = tabular.pairs(path, fmt, gzipped, raw, (column, case_column))
-        for n, (cell, case_cell) in enumerate(pairs, start=1):
+        columns, lines = tabular.table(path, fmt, gzipped, raw, (column, case_column))
+        mapping = tabular.signal_columns(path, columns, cost_field, (column, case_column))
+        for n, line in enumerate(lines, start=1):
+            cell, case_cell = line.get(column), line.get(case_column)
             case = tabular.case(path, n, case_column, case_cell)
+            signals = tabular.signal_cells(path, n, line, mapping)
             if cut is not None:
                 score = _score(cell)
                 if score is None:
-                    rows.append(Row(case, None, NO_SCORE, None, None, detail))
+                    outcome, reason, result = None, NO_SCORE, "censored"
                 else:
-                    rows.append(Row(case, cut.outcome(score), None, score, None, detail))
-                continue
-            text = spelt(cell)
-            if text is not None:
-                cells[text] += 1
-            if text is None:
-                rows.append(Row(case, None, NO_OUTCOME, None, None, detail))
-            elif text in failed:
-                matched[text] += 1
-                rows.append(Row(case, MISSED, None, None, None, detail))
+                    outcome, reason, result = cut.outcome(score), None, None
             else:
-                rows.append(Row(case, MET, None, None, None, detail))
+                score = None
+                text = spelt(cell)
+                if text is not None:
+                    cells[text] += 1
+                if text is None:
+                    outcome, reason, result = None, NO_OUTCOME, None
+                elif text in failed:
+                    matched[text] += 1
+                    outcome, reason, result = MISSED, None, None
+                else:
+                    outcome, reason, result = MET, None, None
+            if outcome is not None:
+                result = "fail" if outcome == MISSED else "pass"
+            try:
+                rows.append(
+                    Row(case, outcome, reason, score, None, detail, result=result, **signals)
+                )
+            except ValueError as e:
+                raise Refusal(f"row {n} of {path} cannot be read: {e}") from None
     # each failure value's rows, so that a value that matched nothing shows as 0
     counts = {
         f"rows whose {column} is {json.dumps(value, ensure_ascii=False)}": matched[value]

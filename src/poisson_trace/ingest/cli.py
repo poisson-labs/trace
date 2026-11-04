@@ -16,9 +16,14 @@ its parser takes is still wrong, exit 2). It may also define ``FURTHER``, a mapp
 further command name to ``(add_arguments, run)`` with ``run(ns) -> int``, for a command that
 writes no store and takes its own flags.
 
-``poisson_prove`` is imported by the writer alone, and the writer is imported after the check
-that ``poisson_prove`` is present at the version this package reads, which runs once the command
-line is read and before any file is opened.
+``poisson_prove`` is imported by the writer (and by the Prove reader, which no tool here
+names), and the writer is imported after the check that ``poisson_prove`` is present at the
+version this package reads, which runs once the command line is read and before any file is
+opened.
+
+A config's ``[signals]`` field mappings reach a reader as ``ns.signals``; of them only
+``cost_field`` is read in TF21 (SA8). Its budgets and ``[[taxonomy.rules]]`` go to the writer,
+which classifies every row with them and records their digest.
 """
 
 from __future__ import annotations
@@ -467,11 +472,16 @@ def _main(session: look.Session) -> int:
     if getattr(ns, "json", False):
         session.render = _stopped_json
     form = "target"
+    rules: Sequence[Any] = ()
+    budgets = None
     if ns.tool not in further:
         from poisson_trace import config
 
         settings = config.load(ns.config)
         form = settings.names_from if settings is not None else "target"
+        ns.signals = dict(settings.signals) if settings is not None else {}
+        if settings is not None:
+            rules, budgets = settings.rules, settings.budgets
         typed = ns.store
         if typed is not None and settings is not None and typed in settings.named:
             ns.store = settings.named[typed]
@@ -516,7 +526,7 @@ def _main(session: look.Session) -> int:
         )
     from poisson_trace.ingest.writer import write
 
-    written = write(run, store, form)
+    written = write(run, store, form, rules=rules, budgets=budgets)
     data = _summary(run, written, str(ns.store), reach)
     look.out(
         json.dumps(data, indent=2, allow_nan=False) + "\n"

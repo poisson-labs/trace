@@ -3,15 +3,20 @@
 A report is a ``<testsuites>`` root holding ``<testsuite>`` elements, or a lone ``<testsuite>``
 root, suites possibly nested in suites; each ``<testcase>`` is one row. A test case with a
 ``<failure>`` or an ``<error>`` missed, one ``<skipped>`` has no outcome, and any other met. The
-case is the class name and the name, or the name alone. Nothing of a message, a failure's text,
-a test's output or a property is kept, and a report that declares a document type is refused
-before anything it names is read.
+case is the class name and the name, or the name alone. Of each test case the signals read are
+its ``time`` as the wall time (``0.000`` is a recorded zero), and of a failure or an error the
+exception class, from its ``type`` or the start of its ``message``: a ``<failure>`` is the
+grader's word and an ``<error>`` a crash of the test's lifecycle (spec section 18.1.1 row 4, SA3
+reading 5). Nothing of a message, a failure's text, a test's output or a property is kept, and a
+report that declares a document type is refused before anything it names is read.
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+import math
+import re
 import xml.parsers.expat as expat
 from collections import Counter
 from dataclasses import dataclass, field
@@ -43,6 +48,10 @@ SKIPPED = "skipped"
 _JOIN = "::"
 _MISSED_BY = ("failure", "error")
 UNZONED = "a suite timestamp carries no zone, so it was read as UTC"
+# the exception class a message opens with, as pytest and JUnit runners write it
+EXCEPTION = re.compile(r"^([A-Za-z_][\w.]*(?:Error|Exception|Exit|Interrupt|Failure|Warning)):")
+# where the error happened, by the kind of child that missed the test (SA3 reading 5)
+_SPAN_KIND = {"failure": "grader", "error": "lifecycle"}
 
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
@@ -73,11 +82,24 @@ class _Root(Exception):
 
 
 @dataclass
-class _Read:
-    """What one report holds that the import keeps: each test case's class name, name and the
-    kinds of child that decide its outcome, and each suite's timestamp."""
+class _Case:
+    """One test case as the import keeps it: its class name, its name, the kinds of child that
+    decide its outcome, its time, and of the first failure or error child its kind, its ``type``
+    and the class its message opens with (never the message itself)."""
 
-    cases: list[tuple[str | None, str | None, set[str]]] = field(default_factory=list)
+    classname: str | None
+    name: str | None
+    children: set[str] = field(default_factory=set)
+    time: str | None = None
+    missed_by: str | None = None
+    error_type: str | None = None
+
+
+@dataclass
+class _Read:
+    """What one report holds that the import keeps: each test case, and each suite's timestamp."""
+
+    cases: list[_Case] = field(default_factory=list)
     stamps: list[str] = field(default_factory=list)
     depth: int = 0
     open_case: int | None = None  # the depth of the test case being read
@@ -99,10 +121,16 @@ def _parser(read: _Read) -> Any:
         elif name == "testcase":
             if read.open_case is not None:
                 raise _Nested
-            read.cases.append((attrs.get("classname"), attrs.get("name"), set()))
+            read.cases.append(
+                _Case(attrs.get("classname"), attrs.get("name"), time=attrs.get("time"))
+            )
             read.open_case = read.depth
         elif read.open_case is not None and read.depth == read.open_case + 1:
-            read.cases[-1][2].add(name)
+            case = read.cases[-1]
+            case.children.add(name)
+            if name in _MISSED_BY and case.missed_by is None:
+                case.missed_by = name
+                case.error_type = _exception(attrs.get("type"), attrs.get("message"))
 
     def end(name: str) -> None:
         if read.open_case == read.depth:
@@ -114,6 +142,26 @@ def _parser(read: _Read) -> Any:
     parser.StartElementHandler = start
     parser.EndElementHandler = end
     return parser
+
+
+def _exception(declared: str | None, message: str | None) -> str | None:
+    """The exception class: the child's ``type``, else the class its message opens with."""
+    if declared:
+        return declared
+    found = EXCEPTION.match(message or "")
+    return found.group(1) if found else None
+
+
+def _time(text: str | None) -> float | None:
+    """The test case's ``time`` as seconds, when it is a number from zero; ``0.000`` is a
+    recorded zero."""
+    if text is None or not text.strip():
+        return None
+    try:
+        value = float(text)
+    except ValueError:
+        return None
+    return value if math.isfinite(value) and value >= 0.0 else None
 
 
 def _report(path: Path, raw: bytes) -> _Read:
@@ -264,16 +312,20 @@ def read(ns: argparse.Namespace) -> Run:
         files.append({"name": path.name, "sha256": hashlib.sha256(raw).hexdigest()})
         report = _report(path, raw)
         stamps += [_instant(path, stamp) for stamp in report.stamps]
-        for classname, name, children in report.cases:
-            case = _case(path, form, classname, name)
-            missed_by = [kind for kind in _MISSED_BY if kind in children]
-            if missed_by:
+        for held in report.cases:
+            case = _case(path, form, held.classname, held.name)
+            wall = _time(held.time)
+            missed_by = [kind for kind in _MISSED_BY if kind in held.children]
+            if missed_by and held.missed_by is not None:
                 kinds[missed_by[0]] += 1
-                rows.append(Row(case, MISSED, None, None, None, {"case": form}))
-            elif SKIPPED in children:
-                rows.append(Row(case, None, SKIPPED, None, None, {"case": form}))
+                rows.append(Row(case, MISSED, None, None, None, {"case": form}, result="fail",
+                                wall_time_s=wall, error_type=held.error_type,
+                                error_span_kind=_SPAN_KIND[held.missed_by]))
+            elif SKIPPED in held.children:
+                rows.append(Row(case, None, SKIPPED, None, None, {"case": form}, wall_time_s=wall))
             else:
-                rows.append(Row(case, MET, None, None, None, {"case": form}))
+                rows.append(Row(case, MET, None, None, None, {"case": form}, result="pass",
+                                wall_time_s=wall))
     if stamps:
         earliest = min(at for at, _ in stamps)
         started, started_from = _utc(earliest), "file"

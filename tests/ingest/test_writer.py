@@ -136,7 +136,9 @@ def test_ic5_the_manifest_carries_the_fields_of_section_2_5(tmp_path: Path) -> N
     imported = m.environment["import"]
     # spec section 9.6 item 2 (ruled 2026-10-20, item 5): a start read from a file's name records
     # the zone it was read in
-    assert set(imported) == {"tool", "started_from", "declared", "files", "poisson_trace", "zone"}
+    # TF21 (SA5, ruled 2026-11-03): the taxonomy's digest is recorded beside declared
+    assert set(imported) == {"tool", "started_from", "declared", "taxonomy_sha256", "files",
+                             "poisson_trace", "zone"}
     assert set(imported["zone"]) == {"name", "offset"}
     assert imported["tool"] == "deepeval"
     assert imported["started_from"] == "file name"

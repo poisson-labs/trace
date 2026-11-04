@@ -4,8 +4,12 @@ Ragas writes no result file of its own. A team saves the table ``to_pandas()`` g
 ``@experiment`` file whose columns are whatever its function returned, so this reader takes a
 table and not a Ragas format: ``.csv``, ``.jsonl``, ``.json`` (a list of objects), each also as
 ``.gz``, or ``.parquet``, told by the file's extension and by nothing else. One import reads
-one score column at a cut the user declares, and one column that identifies the case. No
-value of any other column is kept, and nothing here imports Ragas.
+one score column at a cut the user declares, and one column that identifies the case. Beyond
+the result, every numeric column but the case column is a score in the row's ``scores``, the
+length of ``user_input`` (or ``question``) and of ``response`` (or ``answer``) is measured and
+the text dropped, and a column named exactly as a signal field is read into that signal (spec
+section 18.1.1 row 3, SA7). No value of any other column is kept, and nothing here imports
+Ragas. A judge's NaN is a censored row with no score, unclassified (SG11).
 """
 
 from __future__ import annotations
@@ -19,9 +23,13 @@ from pathlib import Path
 from typing import Any
 
 from poisson_trace.ingest import tabular
-from poisson_trace.ingest.cut import Cut
+from poisson_trace.ingest.cut import MISSED, Cut
 from poisson_trace.ingest.rows import Refusal, Row, Run
 from poisson_trace.ingest.tabular import METRICS
+
+# the columns whose text is measured for the input's and the output's length, in the order tried
+INPUT_COLUMNS: tuple[str, ...] = ("user_input", "question")
+OUTPUT_COLUMNS: tuple[str, ...] = ("response", "answer")
 
 DESCRIPTION = """\
 Read the per-row score table saved from Ragas (.csv, .jsonl, .json as a list of objects, each
@@ -122,6 +130,7 @@ def read(ns: argparse.Namespace) -> Run:
         )
     paths = [Path(f) for f in ns.files]
     formats = [tabular.format_of(path) for path in paths]
+    cost_field = (getattr(ns, "signals", None) or {}).get("cost_field")
     detail = {"metric": metric, "cut": cut.cut, "side": cut.side}
     files, rows = [], []
     first_modified = 0.0
@@ -130,14 +139,32 @@ def read(ns: argparse.Namespace) -> Run:
         if at == 0:
             first_modified = modified
         files.append({"name": path.name, "sha256": hashlib.sha256(raw).hexdigest()})
-        pairs = tabular.pairs(path, fmt, gzipped, raw, (metric, case_column))
-        for n, (score_cell, case_cell) in enumerate(pairs, start=1):
-            case = tabular.case(path, n, case_column, case_cell)
-            score = _score(score_cell)
-            if score is None:
-                rows.append(Row(case, None, NO_SCORE, None, None, detail))
-            else:
-                rows.append(Row(case, cut.outcome(score), None, score, None, detail))
+        columns, lines = tabular.table(path, fmt, gzipped, raw, (metric, case_column))
+        mapping = tabular.signal_columns(path, columns, cost_field, (case_column,))
+        for n, line in enumerate(lines, start=1):
+            case = tabular.case(path, n, case_column, line.get(case_column))
+            score = _score(line.get(metric))
+            signals = tabular.signal_cells(path, n, line, mapping)
+            scores = {
+                c: s
+                for c, s in ((c, _score(line.get(c))) for c in columns)
+                if s is not None and c != case_column and c not in mapping
+            }
+            for name, named in (("input_chars", INPUT_COLUMNS), ("output_chars", OUTPUT_COLUMNS)):
+                text = next((line.get(c) for c in named if isinstance(line.get(c), str)), None)
+                if text is not None and name not in signals:
+                    signals[name] = len(text)
+            try:
+                if score is None:
+                    rows.append(Row(case, None, NO_SCORE, None, None, detail, result="censored",
+                                    scores=scores, **signals))
+                else:
+                    outcome = cut.outcome(score)
+                    rows.append(Row(case, outcome, None, score, None, detail,
+                                    result="fail" if outcome == MISSED else "pass", scores=scores,
+                                    **signals))
+            except ValueError as e:
+                raise Refusal(f"row {n} of {path} cannot be read: {e}") from None
     return Run(
         name=ns.run,
         tool=TOOL,
