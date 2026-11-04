@@ -26,6 +26,7 @@ from poisson_trace.ingest import tabular
 from poisson_trace.ingest.cut import MISSED, Cut
 from poisson_trace.ingest.rows import Refusal, Row, Run
 from poisson_trace.ingest.tabular import METRICS
+from poisson_trace.ingest.verdicts import input_case
 
 # the columns whose text is measured for the input's and the output's length, in the order tried
 INPUT_COLUMNS: tuple[str, ...] = ("user_input", "question")
@@ -133,6 +134,7 @@ def read(ns: argparse.Namespace) -> Run:
     cost_field = (getattr(ns, "signals", None) or {}).get("cost_field")
     detail = {"metric": metric, "cut": cut.cut, "side": cut.side}
     files, rows = [], []
+    inputs: dict[str, str] = {}
     first_modified = 0.0
     for at, (path, (fmt, gzipped)) in enumerate(zip(paths, formats, strict=True)):
         raw, modified = tabular.read_bytes(path)
@@ -154,6 +156,9 @@ def read(ns: argparse.Namespace) -> Run:
                 text = next((line.get(c) for c in named if isinstance(line.get(c), str)), None)
                 if text is not None and name not in signals:
                     signals[name] = len(text)
+                if text is not None and name == "input_chars":
+                    # the input's key alone is kept, for --verdicts; the first try's
+                    inputs.setdefault(case, input_case(text))
             try:
                 if score is None:
                     rows.append(Row(case, None, NO_SCORE, None, None, detail, result="censored",
@@ -173,4 +178,5 @@ def read(ns: argparse.Namespace) -> Run:
         started_from="file time",
         declared={**detail, "case_column": case_column},
         files=tuple(files),
+        inputs=inputs,
     )

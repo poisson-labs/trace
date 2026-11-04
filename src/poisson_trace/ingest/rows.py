@@ -401,6 +401,10 @@ class Run:
     cells: Mapping[str, int] = field(default_factory=dict)
     # what the summary adds to where the start came from, such as a zone the file left out
     started_note: str | None = None
+    # each case's input key (``input:`` and 12 hex characters), for a reader that reads an
+    # input: what ``--verdicts`` joins by when a verdict names no case (FI18, FI19); never the
+    # input's text
+    inputs: Mapping[str, str] = field(default_factory=dict)
 
 
 def digest_id(text: str) -> str:

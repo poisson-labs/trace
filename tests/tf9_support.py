@@ -292,7 +292,8 @@ def child_env(home: Path, extra: Mapping[str, str | None] = ()) -> dict[str, str
 @dataclass
 class Run:
     code: int
-    #: Everything written to stdout and to stderr, decoded; a terminal's ``\r\n`` read as ``\n``.
+    #: Everything written to stdout and to stderr, decoded; a terminal's ``\r\n`` read as ``\n``,
+    #: however many ``\r`` it wrote before the line feed.
     out: str
     err: str
     #: What each terminal shows when the command has ended (empty for a pipe).
@@ -385,7 +386,9 @@ def run(
                 os.close(controller)
 
     def text(name: str) -> str:
-        return raw.get(name, bytearray()).decode("utf-8", "replace").replace("\r\n", "\n")
+        # `\r+`, not `\r`: on macOS, when a line feed's `\r` takes the last slot of the terminal's
+        # 1024-character queue, the kernel retries the line feed and writes `\r` a second time
+        return re.sub(r"\r+\n", "\n", raw.get(name, bytearray()).decode("utf-8", "replace"))
 
     out = text("out") if stdout == "pty" else text("out-pipe")
     err = out if stderr == "pty" else text("err") if stderr == "own" else text("err-pipe")

@@ -41,6 +41,7 @@ from typing import TYPE_CHECKING, Any
 
 from poisson_trace import look
 from poisson_trace.ingest.cut import MET, MISSED
+from poisson_trace.ingest.folder import Resolved, is_folder, resolve
 from poisson_trace.ingest.rows import Refusal, Run, zone_of
 from poisson_trace.look import count
 from poisson_trace.names import import_name_refusal
@@ -65,6 +66,10 @@ Prove's format, for Poisson Trace's verbs to read. One import is one version: im
 version and the new one into the same store, then compare them with poisson-trace fix-check.
 A store is the folder Prove keeps runs in; a case is one test case or question of the tool's
 files, and the rows that share a case are its repeats.
+
+A folder of results may be given in place of the files, and in place of the tool too
+(poisson-trace import ./results --store trace-store): its files are found by the readers'
+own detectors and read as one run, named after the folder unless --run names it.
 """
 
 
@@ -105,7 +110,11 @@ def _build_parser(
             epilog=_examples([example] if example else []),
         )
         sub.add_argument(
-            "files", nargs="+", metavar="FILE", help="a result file of the tool's; repeatable"
+            "files",
+            nargs="+",
+            metavar="FILE",
+            help="a result file of the tool's, repeatable, or one folder of them: its files of "
+            "the tool's are read as one run, and a folder holding more than one run is refused",
         )
         sub.add_argument(
             "--store",
@@ -120,15 +129,22 @@ def _build_parser(
         )
         sub.add_argument(
             "--run",
-            required=True,
             metavar="NAME",
-            help="the new run's name, which the store must not hold yet (no default)",
+            help="the new run's name, which the store must not hold yet (default: the folder's "
+            "name, for a folder; for files there is none, and it is required)",
         )
         sub.add_argument(
             "--started",
             metavar="ISO-8601",
             help="when this version's run started, with its zone, such as "
             "2026-09-05T18:54:07Z (default: read from the files)",
+        )
+        sub.add_argument(
+            "--verdicts",
+            metavar="FILE",
+            help="a .csv or .jsonl file of outcomes, scores, failure kinds and feedback to join "
+            "onto the rows, by case or else by input; it fills what the files left out and is "
+            "refused where it differs from what they recorded (no default)",
         )
         sub.add_argument(
             "--json", action="store_true", help="print the summary as JSON instead of text"
@@ -397,6 +413,7 @@ def _written_lines(d: Mapping[str, Any], cells: Mapping[str, int]) -> list[str]:
         f"- run written: {d['run']} · store: {d['store']}",
         f"- tool: {d['tool']}",
         *[f"- file: {f['name']} · sha256 {f['sha256']}" for f in d["files"]],
+        *_verdicts_line(d),
         "- declared: " + " · ".join(f"{k} {_value(v)}" for k, v in declared.items()),
         f"- started: {started['at']} · from: {source}",
         f"- rows {count(d['rows'])} · cases {count(d['cases'])} · repeats of a case: smallest "
@@ -405,6 +422,18 @@ def _written_lines(d: Mapping[str, Any], cells: Mapping[str, int]) -> list[str]:
         "- rows with no outcome: "
         + (" · ".join(f"{reason} {count(n)}" for reason, n in none.items()) if none else "0"),
         *counted,
+    ]
+
+
+def _verdicts_line(d: Mapping[str, Any]) -> list[str]:
+    """The join, as one line of what was written, when ``--verdicts`` was given."""
+    if "verdicts" not in d:
+        return []
+    v = d["verdicts"]
+    return [
+        f"- verdicts: {v['name']} · sha256 {v['sha256']} · rows {count(v['rows'])} · joined by "
+        f"case {count(v['by_case'])} · by input {count(v['by_input'])} · matched no case "
+        f"{count(v['unmatched'])}"
     ]
 
 
@@ -449,6 +478,12 @@ def _main(session: look.Session) -> int:
         look.out(look.version_line())
         return look.DONE
     args, at = look.verb_first(session.argv, valued, _KEPT, look.options(every), PROG)
+    if at is not None and args[at] not in subs and is_folder(args[at]):
+        # a folder in the tool's place: the tool is the one whose files it holds
+        _prove_present()
+        holds = _resolved(args[at], None)
+        assert holds.tool is not None
+        args = [*args[:at], holds.tool, *args[at:]]
     if at is not None and args[at] not in subs:
         raise Refusal(
             f"unknown tool {look.shown(args[at])}; this install reads: "
@@ -463,6 +498,13 @@ def _main(session: look.Session) -> int:
         )
     if extra:
         subs[ns.tool].error(f"unrecognized arguments: {' '.join(extra)}")
+    folders = [] if ns.tool in further else [f for f in ns.files if is_folder(f)]
+    if ns.tool not in further and not folders and ns.run is None:
+        subs[ns.tool].error("the following arguments are required: --run")
+    if len(folders) > 1 or (folders and len(ns.files) > 1):
+        subs[ns.tool].error(
+            "a folder is given alone, in place of the files: give one folder, or files"
+        )
     if ns.tool not in further:
         wrong = getattr(import_module(f"{__package__}.{ns.tool}"), "usage", None)
         said = wrong(ns) if wrong is not None else None
@@ -498,14 +540,25 @@ def _main(session: look.Session) -> int:
         reach = [look.option("--store", typed)] if typed is not None else []
         reach += list(settings.flags()) if settings is not None else []
         # a run's name is its folder and the word for it: checked before Prove is asked anything
-        hole = import_name_refusal(ns.run)
-        if hole is not None:
-            raise Refusal(hole)
-    refusal = look.prove_refusal(_DOES)
-    if refusal is not None:
-        raise Refusal(refusal, look.INSTALL_PROVE)
+        # (a folder's own name, once Prove has said the folder is not one of its own)
+        if ns.run is not None:
+            hole = import_name_refusal(ns.run)
+            if hole is not None:
+                raise Refusal(hole)
+    _prove_present()
     if ns.tool in further:
         return further[ns.tool](ns)
+    found: Resolved | None = None
+    if folders:
+        found = _resolved(folders[0], ns.tool)
+        ns.files = [str(f) for f in found.files]
+        if ns.run is None:
+            ns.run = found.name
+            hole = import_name_refusal(ns.run)
+            if hole is not None:
+                raise Refusal(
+                    f"the folder's name is the run's when --run is not given, and {hole}",
+                )
     store = Path(ns.store)
     try:
         held = (store / ns.run).exists()
@@ -517,6 +570,59 @@ def _main(session: look.Session) -> int:
     run: Run = import_module(f"{__package__}.{ns.tool}").read(ns)
     if given is not None:
         run = replace(run, started=given, started_from="given", started_note=None)
+    if found is not None:
+        one_run(ns.tool, ns, found, run, reach)
+    if not run.rows:
+        raise Refusal("no row was read from the files, so there is no run to write")
+    joined = None
+    if ns.verdicts is not None:
+        from poisson_trace.ingest import verdicts
+
+        result = verdicts.join(run.rows, Path(ns.verdicts), run.inputs or None)
+        run = replace(run, rows=result.rows)
+        joined = verdicts.block(Path(ns.verdicts), result)
+    checked(run)
+    from poisson_trace.ingest.writer import write
+
+    written = write(run, store, form, rules=rules, budgets=budgets, verdicts=joined)
+    data = _summary(run, written, str(ns.store), reach)
+    if joined is not None:
+        data = _with_verdicts(data, joined)
+    look.out(
+        json.dumps(data, indent=2, allow_nan=False) + "\n"
+        if ns.json
+        else _markdown(data, run.cells, reach)
+    )
+    return look.DONE
+
+
+def _prove_present() -> None:
+    """Refused when ``poisson_prove`` is not present at the version this package reads."""
+    refusal = look.prove_refusal(_DOES)
+    if refusal is not None:
+        raise Refusal(refusal, look.INSTALL_PROVE)
+
+
+def _resolved(path: str, tool: str | None) -> Resolved:
+    """What the folder given holds, through the folder resolver; a folder Prove stored is
+    already a store, and is not imported (FI15)."""
+    found = resolve(Path(path), tool)
+    if found.kind in ("run", "store"):
+        assert found.store is not None
+        what = (
+            f"{path} is a run Prove stored, in the store {found.store}"
+            if found.kind == "run"
+            else f"{path} is a store Prove wrote, holding the run {found.run_id}"
+        )
+        raise Refusal(
+            f"{what}; it is read where it is, so there is nothing to import",
+            look.command("poisson-trace", "runs", look.option("--store", str(found.store))),
+        )
+    return found
+
+
+def checked(run: Run) -> None:
+    """Refused when the run read holds no row, or no row with an outcome."""
     if not run.rows:
         raise Refusal("no row was read from the files, so there is no run to write")
     if all(row.outcome is None for row in run.rows):
@@ -524,16 +630,62 @@ def _main(session: look.Session) -> int:
             f"none of the {count(len(run.rows))} rows read has an outcome, so there is nothing "
             "to compare and no run was written"
         )
-    from poisson_trace.ingest.writer import write
 
-    written = write(run, store, form, rules=rules, budgets=budgets)
-    data = _summary(run, written, str(ns.store), reach)
-    look.out(
-        json.dumps(data, indent=2, allow_nan=False) + "\n"
-        if ns.json
-        else _markdown(data, run.cells, reach)
-    )
-    return look.DONE
+
+def one_run(
+    tool: str, ns: argparse.Namespace, found: Resolved, run: Run, reach: Sequence[str]
+) -> None:
+    """Refused when a folder's files are more than one run (FI6): several DeepEval test runs,
+    or a case in two files. Shards hold each case once; two versions or two re-runs of one
+    suite hold the same cases. A pull's files are one run by its own record."""
+    files = found.files
+    if found.kind != "files" or len(files) < 2:
+        return
+    flags = _import_flags(run.declared)
+
+    def nexts() -> list[str]:
+        out = []
+        for f in files:
+            name = f.name.split(".", 1)[0]
+            name = name if import_name_refusal(name) is None else "NAME"
+            out.append(
+                look.command(
+                    "poisson-trace", "import", tool, look.word(str(f)), *reach,
+                    look.option("--run", name), *flags,
+                )
+            )
+        return out
+
+    listed = _and([f.name for f in files])
+    if tool == "deepeval":
+        raise Refusal(
+            f"{found.path} holds {len(files)} DeepEval test runs, {listed}; each test run "
+            "DeepEval saves is one run, and one import is one version, so import each on its own",
+            *nexts(),
+        )
+    reader = import_module(f"{__package__}.{tool}")
+    seen: dict[str, Path] = {}
+    for f in files:
+        one = reader.read(argparse.Namespace(**{**vars(ns), "files": [str(f)]}))
+        for case in dict.fromkeys(row.case for row in one.rows):
+            if case in seen:
+                raise Refusal(
+                    f"{found.path} holds more than one run: the case {case} is in both "
+                    f"{seen[case].name} and {f.name}, so its files ({listed}) are not shards of "
+                    "one run; one import is one version, so import each on its own",
+                    *nexts(),
+                )
+            seen[case] = f
+
+
+def _with_verdicts(data: Mapping[str, Any], joined: Mapping[str, Any]) -> dict[str, Any]:
+    """The summary with what the join did, after the files it read (FI20)."""
+    out: dict[str, Any] = {}
+    for key, value in data.items():
+        out[key] = value
+        if key == "files":
+            out["verdicts"] = dict(joined)
+    return out
 
 
 def _stopped_json(line: str) -> str:
