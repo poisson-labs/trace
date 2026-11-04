@@ -20,8 +20,8 @@ from conftest import CS, TAU2
 from tf22_support import (
     CS_RUNS,
     JUNIT,
-    PROVE_012,
-    PROVE_012_RUNS,
+    PROVE_013,
+    PROVE_013_RUNS,
     RAGAS,
     TABLE,
     TAU2_RUNS,
@@ -56,8 +56,8 @@ def test_tf22_1_kinds_are_the_four() -> None:
 
 @pytest.mark.parametrize(
     ("store", "run_id"),
-    [(PROVE_012, PROVE_012_RUNS[0]), (CS, CS_RUNS[0]), (TAU2, TAU2_RUNS[1])],
-    ids=["prove-0.1.2", "cs", "tau2"],
+    [(PROVE_013, PROVE_013_RUNS[0]), (CS, CS_RUNS[0]), (TAU2, TAU2_RUNS[1])],
+    ids=["prove-0.1.3", "cs", "tau2"],
 )
 def test_tf22_1_a_prove_run_folder_is_read_where_it_is(store: Path, run_id: str) -> None:
     got = _resolve(store / run_id)
@@ -89,8 +89,8 @@ def test_tf22_1_a_run_folder_is_known_by_its_manifest_and_episodes(tmp_path: Pat
 
 @pytest.mark.parametrize(
     ("source", "run_id"),
-    [(PROVE_012, PROVE_012_RUNS[1]), (CS, CS_RUNS[1]), (TAU2, TAU2_RUNS[0])],
-    ids=["prove-0.1.2", "cs", "tau2"],
+    [(PROVE_013, PROVE_013_RUNS[1]), (CS, CS_RUNS[1]), (TAU2, TAU2_RUNS[0])],
+    ids=["prove-0.1.3", "cs", "tau2"],
 )
 def test_tf22_2_a_store_of_one_run_is_that_run(tmp_path: Path, source: Path, run_id: str) -> None:
     store = one_run_store(tmp_path / "one", source, run_id)
@@ -104,8 +104,8 @@ def test_tf22_2_a_store_of_one_run_is_that_run(tmp_path: Path, source: Path, run
 
 @pytest.mark.parametrize(
     ("store", "runs"),
-    [(PROVE_012, PROVE_012_RUNS), (CS, CS_RUNS), (TAU2, TAU2_RUNS)],
-    ids=["prove-0.1.2", "cs", "tau2"],
+    [(PROVE_013, PROVE_013_RUNS), (CS, CS_RUNS), (TAU2, TAU2_RUNS)],
+    ids=["prove-0.1.3", "cs", "tau2"],
 )
 def test_tf22_3_a_store_of_several_runs_is_refused_naming_each(store: Path, runs: tuple[str, ...]) -> None:
     with pytest.raises(Refusal) as e:
@@ -336,7 +336,7 @@ def test_tf22_14_resolving_writes_nothing(tmp_path: Path) -> None:
     before = tree(tmp_path)
     for f in folders:
         _resolve(f)
-    for store in (CS, TAU2, PROVE_012):
+    for store in (CS, TAU2, PROVE_013):
         with pytest.raises(Refusal):
             _resolve(store)
     assert tree(tmp_path) == before

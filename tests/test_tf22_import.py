@@ -6,7 +6,7 @@ pull's in its listed order), and write the same run. ``--run`` may be left out f
 the run takes the folder's name. A Prove folder is not imported (it is already a store). A
 folder holding two runs, two tools or nothing is refused, exit 1, with nothing written. The
 reader's own flags are still required, exit 2 without them, as for files. Everything written
-goes through the TF21 writer, so Prove 0.1.2 reads it (TF22-45).
+goes through the TF21 writer, so Prove 0.1.3 reads it (TF22-45).
 """
 
 from __future__ import annotations
@@ -337,7 +337,7 @@ def test_tf22_23_a_folder_leaves_its_files_as_they_were(tmp_path: Path) -> None:
     assert tree(folder) == before
 
 
-# ---------- TF22-45: what is written, Prove 0.1.2 reads ----------
+# ---------- TF22-45: what is written, Prove 0.1.3 reads ----------
 
 
 @pytest.mark.parametrize("kind", FAST_BUILT)
