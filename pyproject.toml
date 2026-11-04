@@ -85,6 +85,6 @@ testpaths = ["tests"]
 addopts = ["-m", "not lane_j"]
 markers = [
     "lane_j: reads PyPI: runs another tool itself (DeepEval, Ragas) at its pinned version, or installs the Trace wheel into a clean environment; deselected unless -m lane_j",
-    "slow: a test that runs every invocation of a corpus where the pull-request lane keeps a fast test of the same invariant on a few (the clean look over the whole conformance corpus; a statistics scenario at the check's seeds); nightly and before every release",
+    "slow: a test that runs every invocation of a corpus where the pull-request lane keeps a fast test of the same invariant on a few (the clean look over the whole conformance corpus; a statistics scenario at the check's seeds; a wide Hypothesis property check, test_hy_*.py); nightly and before every release",
     "math: the math suite, a statistic's slow property checks against its reference where the pull-request lane keeps a fast test of the same invariant; runs on a pull request that changes the statistics code (src/poisson_trace/paired.py, survival.py), a test of the math suite, or the resolved numpy, scipy, pandas or lifelines, nightly and before every release",
 ]
