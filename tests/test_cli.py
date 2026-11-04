@@ -100,6 +100,9 @@ def test_tr9_src_writes_nothing_but_the_svg_and_the_json(synth) -> None:  # type
             in_names = any("names_file" in f for f in fns)
             # R18: the config file's writer, a function named for it (init writes trace.toml)
             in_config = any("config_file" in f for f in fns)
+            # TF6 (P-3, R18, AD8, AD11): --save and --out write the saved verdict, in functions
+            # named for the artifact, the bundle or the store descriptor they write
+            in_saved = any(w in f for f in fns for w in ("artifact", "bundle", "descriptor"))
             if name.endswith("to_parquet"):
                 raise AssertionError(f"{path.name}:{call.lineno}: to_parquet")
             if name == "open" or name.endswith(".open"):
@@ -113,11 +116,12 @@ def test_tr9_src_writes_nothing_but_the_svg_and_the_json(synth) -> None:  # type
                 for kw in call.keywords:
                     if kw.arg == "mode" and isinstance(kw.value, ast.Constant):
                         mode = str(kw.value.value)
-                assert not set(mode) & set("wax+") or in_svg or ((in_names or in_config) and mode in ("w", "wt", "x", "xt")) or (in_log and mode in ("a", "at")), f"{path.name}:{call.lineno}: open for writing outside the svg writer, the names and config files' writers and the errors log"
+                assert not set(mode) & set("wax+") or in_svg or ((in_names or in_config or in_saved) and mode in ("w", "wt", "wb", "x", "xt", "xb")) or (in_log and mode in ("a", "at")), f"{path.name}:{call.lineno}: open for writing outside the svg writer, the names and config files' writers, the saved verdict's writers and the errors log"
             if name.endswith("write_text") or name.endswith("write_bytes"):
-                assert in_svg or in_names or in_config, f"{path.name}:{call.lineno}: a write outside the svg writer and the names and config files' writers"
+                assert in_svg or in_names or in_config or in_saved, f"{path.name}:{call.lineno}: a write outside the svg writer, the names and config files' writers and the saved verdict's writers"
             if name in ("json.dump", "json.dumps") or name.endswith(".dump"):
-                assert path.name in ("report.py", "cli.py"), f"{path.name}:{call.lineno}: json.dump outside the printers"
+                # TF6: saved.py writes the saved verdict's JSON files
+                assert path.name in ("report.py", "cli.py", "saved.py"), f"{path.name}:{call.lineno}: json.dump outside the printers and the saved verdict"
 
 
 # ---------- TR10 ----------
@@ -127,34 +131,41 @@ ALLOWED_PROVE_IMPORTS = {
     "poisson_prove": set(),
     "poisson_prove.store": {"Store", "RunManifest", "RunTally"},
     "poisson_prove.steps": {"declaration_check", "DeclarationCheck"},
-    "poisson_prove.trace": {"KINDS"},
+    # TF6: handover --check refuses a bundle holding Prove's content and observation keys (11.2)
+    "poisson_prove.trace": {"KINDS", "CONTENT_KEYS", "OBSERVATION_KEYS"},
 }
+
+
+# TF6 (section 17.3 item 1): the saved verdict's long-form table is table.parquet, written with
+# pyarrow by saved.py alone; writing an artifact is not reading a run, which goes through Prove
+WRITES_THE_TABLE = "saved.py"
 
 
 def test_tr10_reads_through_prove_only(synth) -> None:  # type: ignore[no-untyped-def]
     assert where(*synth, SYNTH_EVENTS).code == 0
     for path in src_files():
         text = path.read_text()
+        table = path.name == WRITES_THE_TABLE
         tree = ast.parse(text)
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    assert not alias.name.startswith("pyarrow"), path.name
+                    assert table or not alias.name.startswith("pyarrow"), path.name
                     assert alias.name == "poisson_prove" or not alias.name.startswith("poisson_prove"), (path.name, alias.name)
             if isinstance(node, ast.ImportFrom):
                 module = node.module or ""
-                assert not module.startswith("pyarrow"), path.name
+                assert table or not module.startswith("pyarrow"), path.name
                 if module.startswith("poisson_prove"):
                     assert module in ALLOWED_PROVE_IMPORTS, (path.name, module)
                     names = {alias.name for alias in node.names}
                     assert names <= ALLOWED_PROVE_IMPORTS[module], (path.name, module, names)
             if isinstance(node, ast.Constant) and isinstance(node.value, str):
                 low = node.value.lower()
-                assert "parquet" not in low, (path.name, node.value)
+                assert table or "parquet" not in low, (path.name, node.value)
                 assert "manifest.json" not in low, (path.name, node.value)
             if isinstance(node, ast.Attribute):
                 assert node.attr != "from_dict", (path.name, node.lineno)
-        assert "pyarrow" not in text
+        assert table or "pyarrow" not in text
         assert "from_dict" not in text
 
 

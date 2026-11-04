@@ -709,6 +709,10 @@ class FixCheckReport:
             lines += self._guidance_lines() + [""]
         lines += ["## Inputs that changed", ""]
         lines += _flag_lines(d["changes"], d["_top"], "old", "new")
+        if d.get("_measures_section"):
+            # the continuous measures, when asked for (CT2, SV2): its lines are made by the
+            # verb, so that this module reads no statistic
+            lines += ["", *d["_measures_section"]]
         lines += [""] + _cannot_say_lines(d["cannot_say"]) + [""]
         return "\n".join(lines)
 

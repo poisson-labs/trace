@@ -115,6 +115,7 @@ _SPELT = {
     "χ": "chi",
     "κ": "kappa",
     "²": "^2",
+    "±": "+/-",
 }
 
 
@@ -355,7 +356,7 @@ YELLOW_WORDS = (
     "no significant difference",
     "no control",
 )
-RED_WORDS = ("not ready", "not whole")
+RED_WORDS = ("not ready", "not whole", "not valid")
 
 
 def meaning(word: str) -> str:

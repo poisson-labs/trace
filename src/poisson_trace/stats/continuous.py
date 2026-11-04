@@ -88,6 +88,10 @@ HL_EXACT_MAX = 1000
 
 _BLOCK = 10_000
 _TIE = 1e-12
+#: A share of the old mean (the relative change, the smallest catchable change's share, the
+#: cases needed) is left out of the lines when it is not finite or is at least this large,
+#: past which it prints as hundreds of digits and says nothing (HY1, SV11).
+PRINTABLE = 1e12
 
 
 # ---------- the estimators ----------
@@ -234,13 +238,33 @@ def mde(d: npt.ArrayLike, alpha: float = 0.05) -> float:
     return factor * float(x.std(ddof=1)) / math.sqrt(k)
 
 
-def k_needed(k: int, mde: float, delta: float) -> int:
+def k_needed(k: int, mde: float, delta: float) -> int | None:
     """The cases a run would need to catch a change of ``delta`` when ``k`` cases caught
-    ``mde``: ``ceil(k (mde / delta)^2)``."""
+    ``mde``: ``ceil(k (mde / delta)^2)``. None where that is not a finite number a run could
+    hold (a ceiling set against a near-zero old mean, HY1 as SV11 reads it)."""
     if delta <= 0.0:
         raise ValueError("the change to catch must be above zero")
-    x = k * (mde / delta) ** 2
+    try:
+        x = k * (mde / delta) ** 2
+    except (OverflowError, ZeroDivisionError):
+        return None
+    if not math.isfinite(x) or x >= PRINTABLE:
+        return None
     return max(1, math.ceil(x - 1e-9 * max(1.0, x)))
+
+
+def share_of(part: float, whole: float) -> float | None:
+    """``part / whole`` where that is a finite share a line can print; None where ``whole`` is
+    zero or the share is not finite or too large to print (HY1)."""
+    if whole == 0.0:
+        return None
+    try:
+        share = part / whole
+    except (OverflowError, ZeroDivisionError):
+        return None
+    if not math.isfinite(share) or abs(share) >= PRINTABLE:
+        return None
+    return share
 
 
 def _holm_steps(p: Mapping[str, float], alpha: float) -> dict[str, tuple[bool, float]]:
@@ -644,7 +668,7 @@ def _described(measure: str, g: _Gathered, status: str) -> Measure:
     if k:
         m.mean_a, m.mean_b = float(ya.mean()), float(yb.mean())
         m.change = float(d.mean())
-        m.relative = m.change / m.mean_a if m.mean_a != 0.0 else None
+        m.relative = share_of(m.change, m.mean_a)
         m.p50_a, m.p50_b = float(np.median(ya)), float(np.median(yb))
         if k >= QUANTILES_FROM:
             m.p90_a, m.p90_b = (float(np.quantile(v, 0.9)) for v in (ya, yb))
@@ -949,7 +973,8 @@ def _speak_tested(
         else:
             m.verdict = "too small to tell"
             if m.k_paired >= MDE_SIZE_FROM:
-                pct = f" ({_num(m.mde / m.mean_a * 100.0, 2)}%)" if m.mean_a > 0.0 else ""
+                mde_share = share_of(m.mde, m.mean_a) if m.mean_a > 0.0 else None
+                pct = f" ({_num(mde_share * 100.0, 2)}%)" if mde_share is not None else ""
                 lines.append(
                     f"too small to tell: {quiet}, and changes smaller than about "
                     f"±{_amount(measure, m.mde)}{pct} could easily go unseen in a run like this."
@@ -964,11 +989,22 @@ def _speak_tested(
                 )
             if delta is not None and fraction is not None:
                 m.k_needed = k_needed(m.k_paired, m.mde, delta)
-                lines.append(
-                    f"To tell a change of ±{_amount(measure, delta)} ({_num(fraction * 100.0, 3)}% "
-                    f"of the old mean) from none, about {m.k_needed} cases would be needed. Runs "
-                    f"built to an estimate like this often end up a little too small."
-                )
+                if m.k_needed is not None:
+                    lines.append(
+                        f"To tell a change of ±{_amount(measure, delta)} "
+                        f"({_num(fraction * 100.0, 3)}% of the old mean) from none, about "
+                        f"{m.k_needed} cases would be needed. Runs built to an estimate like "
+                        f"this often end up a little too small."
+                    )
+                else:
+                    # the ceiling is a share of an old mean so near zero that no run could
+                    # hold the cases needed (HY1, SV11)
+                    lines.append(
+                        f"To tell a change of ±{_amount(measure, delta)} "
+                        f"({_num(fraction * 100.0, 3)}% of the old mean) from none would take "
+                        f"more cases than a run could hold: the old mean is too near zero for "
+                        f"a share of it to be caught."
+                    )
             else:
                 lines.append(
                     f"To decide, choose how much change would not matter before you look, as a "

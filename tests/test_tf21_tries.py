@@ -153,7 +153,7 @@ def test_tf21_49_per_try_values_match_the_store(measure: str) -> None:
     assert got == want
 
 
-# ---------- TF21-50: no verb prints it (CT2) ----------
+# ---------- TF21-50: no verb but fix-check's module prints it (CT2; TF6 wires it) ----------
 
 
 def test_tf21_50_no_verb_imports_the_conversion() -> None:
@@ -162,8 +162,8 @@ def test_tf21_50_no_verb_imports_the_conversion() -> None:
     import poisson_trace
 
     package = Path(poisson_trace.__file__).resolve().parent
-    for path in [package / "cli.py", package / "summary.py", package / "report.py",
-                 package / "ingest" / "cli.py"]:
+    # TF6 wires the table into fix-check (CT2, ruled 2026-11-03): cli.py may import them now
+    for path in [package / "summary.py", package / "report.py", package / "ingest" / "cli.py"]:
         tree = ast.parse(path.read_text(encoding="utf-8"))
         names = {node.module for node in ast.walk(tree)
                  if isinstance(node, ast.ImportFrom) and node.module}

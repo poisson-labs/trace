@@ -1,5 +1,5 @@
 """The console script: ``poisson-trace init``, ``runs``, ``name``, ``where``, ``compare``,
-``fix-check``, ``changes``, ``import`` and ``doctor``.
+``fix-check``, ``changes``, ``handover``, ``import`` and ``doctor``.
 
 ``import`` is the import's own command (``poisson_trace.ingest.cli``), handed every word of the
 command line but ``import`` itself, so that it prints what ``poisson-trace-import`` prints.
@@ -32,8 +32,8 @@ _DRAWS = 100_000
 # The most bootstrap resamples where takes: a thousand times the default.
 _MOST_BOOT = 1_000_000
 _DOES = "Poisson Trace reads stored runs"
-_VERBS = ("runs", "name", "where", "compare", "fix-check", "changes")
-_NAMED = "init, runs, name, where, compare, fix-check, changes, import and doctor"
+_VERBS = ("runs", "name", "where", "compare", "fix-check", "changes", "handover")
+_NAMED = "init, runs, name, where, compare, fix-check, changes, handover, import and doctor"
 # the verbs that count failures, and so need them from a flag or the config
 _COUNTING = ("where", "compare", "fix-check", "changes")
 # the complete runs the listing shows, newest first, before it says how many more there are
@@ -84,6 +84,18 @@ _RUN_HELP = 'by its name, latest, previous or its number in the runs listing ("#
 _RUN_OR_FOLDER = (
     'by its name, latest, previous or its number in the runs listing ("#3"), or a folder of '
     "results"
+)
+_SAVE_HELP = (
+    "save the verdict as an artifact in the runs' store, under .poisson/artifacts (no default: "
+    "nothing is written without it)"
+)
+_OUT_HELP = (
+    "also write the saved verdict as a handover bundle into DIR, created; a DIR that exists is "
+    "refused without --force (no default)"
+)
+_VERDICTS_HELP = (
+    "a .csv or .jsonl of verdicts (case, outcome, score, failure_kind) joined onto both runs "
+    "where they recorded none; nothing is written (no default)"
 )
 
 
@@ -191,6 +203,17 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             help="a step to read the curve at; repeatable (no default)",
         )
 
+    def saving(p: argparse.ArgumentParser, force: bool = True) -> None:
+        p.add_argument("--save", action="store_true", help=_SAVE_HELP)
+        p.add_argument("--out", metavar="DIR", help=_OUT_HELP)
+        if force:
+            p.add_argument(
+                "--force", action="store_true", help="let --out replace a folder that exists"
+            )
+
+    def verdicts(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--verdicts", metavar="FILE", help=_VERDICTS_HELP)
+
     def tail(p: argparse.ArgumentParser) -> None:
         p.add_argument(
             "--json", action="store_true", help="print the JSON structure instead of the report"
@@ -234,7 +257,10 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         help="also write the curve as an SVG file; a file that exists is refused without "
         "--force (no default)",
     )
-    where.add_argument("--force", action="store_true", help="let --svg replace a file that exists")
+    where.add_argument(
+        "--force", action="store_true", help="let --svg or --out replace what exists"
+    )
+    saving(where, force=False)
     tail(where)
 
     compare = verbs.add_parser(
@@ -267,6 +293,8 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
     compare.add_argument(
         "--alpha", type=float, default=0.05, metavar="A", help="the test's level (default: 0.05)"
     )
+    verdicts(compare)
+    saving(compare)
     tail(compare)
 
     def paired(p: argparse.ArgumentParser) -> None:
@@ -339,6 +367,24 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         metavar="S",
         help="the seed of the by-input reading's draws (default: 0)",
     )
+    fix.add_argument(
+        "--measures",
+        action="store_true",
+        help="also compare the runs' time, length, tokens and cost, case by case, in a section "
+        "of the report (no default: the section prints only when asked)",
+    )
+    fix.add_argument(
+        "--max-change",
+        action="append",
+        type=_max_change,
+        default=[],
+        metavar="MEASURE=N%",
+        help="the change in a measure's mean you accept as none, as a share of the old mean, "
+        "such as wall_time_s=10%%; repeatable, and implies --measures (default: max_change in "
+        "trace.toml's [check], else none)",
+    )
+    verdicts(fix)
+    saving(fix)
     tail(fix)
 
     changes = verbs.add_parser(
@@ -356,6 +402,8 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
     changes.add_argument("a", metavar="A", help=f"the first run, {_RUN_OR_FOLDER}")
     changes.add_argument("b", metavar="B", help="the second run")
     paired(changes)
+    verdicts(changes)
+    saving(changes)
     tail(changes)
     tail(runs)
     name.add_argument(
@@ -384,6 +432,26 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
     )
     doctor.add_argument("--config", metavar="PATH", help=_CONFIG_HELP)
     tail(doctor)
+    handover = verbs.add_parser(
+        "handover",
+        help="check a handover bundle --out wrote: every file, digest and promised key",
+        description=(
+            "Checks a handover bundle that where, compare, fix-check or changes wrote with\n"
+            "--out DIR: every file handover.json and artifact.json list is there with its\n"
+            "digest and size, result.json is the verb's JSON with every key the handover\n"
+            "promises, report.md opens with the verdict line, and nothing in it is content\n"
+            "Trace never hands over. It exits 4 with the first failing line when the bundle\n"
+            "does not hold what it promises, and 1 when DIR is not a bundle."
+        ),
+        epilog=_example("poisson-trace handover --check verdicts/fix-check-2026-11-04"),
+    )
+    checked = handover.add_argument("--check", metavar="DIR", help="the bundle to check")
+    handover.show_required(checked)
+    handover.add_argument(
+        "--debug",
+        action="store_true",
+        help="on an unexpected failure, print its details on stderr as well as in the log",
+    )
     return parser, {
         "init": init,
         "runs": runs,
@@ -392,6 +460,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         "compare": compare,
         "fix-check": fix,
         "changes": changes,
+        "handover": handover,
         "doctor": doctor,
     }
 
@@ -418,6 +487,17 @@ def _fail_on(text: str) -> tuple[str, ...]:
             f'takes failed-more, too-small or both, comma-separated, not "{text}"'
         )
     return tuple(dict.fromkeys(picked))
+
+
+def _max_change(text: str) -> tuple[str, float]:
+    """``--max-change MEASURE=N%``: the measure and its ceiling as a share, or a wrong command
+    line (TF23's reading of the words, CS10)."""
+    from poisson_trace.stats.continuous import parse_max_change
+
+    try:
+        return parse_max_change(text)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(str(e)) from None
 
 
 def _init_parser(verbs: Any) -> look.Parser:
@@ -598,13 +678,18 @@ def _main(session: look.Session) -> int:
         session.render = lambda line: _stopped_json(schema, line)
     if ns.verb == "doctor":
         return _doctor(ns)
-    if ns.verb != "init":
+    # the options the command line gave, for the saved verdict's record of where each setting
+    # came from (SV5)
+    ns.typed_flags = {w.split("=", 1)[0] for w in args if w.startswith("--")}
+    if ns.verb not in ("init", "handover"):
         _from_config(ns, folders=bool(words) and len(folders) == len(words))
     refusal = look.prove_refusal(_DOES if ns.verb != "init" else "poisson-trace init reads stores")
     if refusal is not None:
         raise _Refusal(refusal, look.INSTALL_PROVE)
     if ns.verb == "init":
         return _init(session, ns)
+    if ns.verb == "handover":
+        return _handover(ns)
     _validate(ns)
     verb: Callable[[argparse.Namespace], int] = {
         "runs": _runs,
@@ -766,6 +851,23 @@ def _from_config(ns: argparse.Namespace, *, folders: bool = False) -> None:
             ns.max_mde_hr = held.max_mde_hr
         if ns.verb == "fix-check" and ns.max_mde is None:
             ns.max_mde = held.max_mde
+    # the continuous measures' ceilings: the config's, a flag winning for its measure (CT2,
+    # CS10); every verb of two runs saves the measures with them, fix-check prints them
+    ns.ceilings = _ceilings(held, getattr(ns, "max_change", None) or [])
+    ns.joined = None  # the --verdicts join, once made (SV10)
+    ns.temp_store = False  # the runs were read from tool folders into a store that does not last
+    ns.save = getattr(ns, "save", False)
+    ns.out = getattr(ns, "out", None)
+    ns.verdicts = getattr(ns, "verdicts", None)
+
+
+def _ceilings(held: Any, flags: Sequence[tuple[str, float]]) -> dict[str, float]:
+    from poisson_trace.stats.continuous import MEASURES
+
+    merged: dict[str, float] = dict(held.max_change) if held is not None else {}
+    for measure, fraction in flags:
+        merged[measure] = fraction
+    return {m: merged[m] for m in MEASURES if m in merged}
 
 
 def _init(session: look.Session, ns: argparse.Namespace) -> int:
@@ -821,8 +923,15 @@ def _validate(ns: argparse.Namespace) -> None:
             raise _Refusal(f"--boot takes 1 to {count(_MOST_BOOT)} resamples, not {ns.boot}")
         if ns.svg == "":
             raise _Refusal("--svg takes the name of the file to write")
-        if ns.force and ns.svg is None:
-            raise _Refusal("--force applies to --svg and was given without it")
+        if ns.force and ns.svg is None and ns.out is None:
+            raise _Refusal("--force applies to --svg and --out and was given without either")
+    elif ns.verb in _TWO_RUNS and ns.force and ns.out is None:
+        raise _Refusal("--force applies to --out and was given without it")
+    if ns.verb in _COUNTING:
+        if ns.out == "":
+            raise _Refusal("--out takes the name of the folder to write")
+        if ns.verdicts == "":
+            raise _Refusal("--verdicts takes the name of the file to read")
     if ns.verb in ("where", "fix-check") and ns.seed < 0:
         raise _Refusal(f"--seed takes 0 or more, not {ns.seed}")
     if ns.verb == "compare":
@@ -1077,6 +1186,7 @@ def _read_tool_folders(
     settings = ns.settings
     held = tempfile.mkdtemp(prefix="poisson-trace-")
     try:
+        read: list[tuple[str, Any, Any]] = []
         for attr, _, r in found:
             read_ns = argparse.Namespace(
                 **vars(flags),
@@ -1087,6 +1197,12 @@ def _read_tool_folders(
             )
             run = module.read(read_ns)
             importer.one_run(tool, read_ns, r, run, ())
+            read.append((attr, r, run))
+        if ns.verdicts is not None:
+            # the join as the folders are read, so a verdict joins by the input key the reader
+            # computed as well as by case (SV10 item 8); over both runs' rows at once
+            read = _join_read(ns, read)
+        for attr, r, run in read:
             importer.checked(run)
             write(
                 run,
@@ -1097,6 +1213,7 @@ def _read_tool_folders(
             )
             setattr(ns, attr, r.name)
         ns.store = held
+        ns.temp_store = True
         ns.typed_store = None
         ns.folder_words = {r.name: word for _, word, r in found}
         ns.reader_flags = _typed(extra)
@@ -1104,6 +1221,38 @@ def _read_tool_folders(
         return verb(ns)
     finally:
         shutil.rmtree(held, ignore_errors=True)
+
+
+def _join_read(
+    ns: argparse.Namespace, read: Sequence[tuple[str, Any, Any]]
+) -> list[tuple[str, Any, Any]]:
+    """The verdicts file joined onto the runs read from folders that the verb compares (the
+    two arms, not a selecting run), by case then by input key, in memory."""
+    from dataclasses import replace
+
+    from poisson_trace.ingest import verdicts
+
+    arms = [(attr, r, run) for attr, r, run in read if attr in _ARMS]
+    rows: list[Any] = []
+    inputs: dict[str, str] = {}
+    for _, _, run in arms:
+        rows.extend(run.rows)
+        for case, key in run.inputs.items():
+            inputs.setdefault(case, key)
+    joined = verdicts.join(rows, Path(ns.verdicts), inputs or None)
+    ns.joined = verdicts.block(Path(ns.verdicts), joined)
+    out: list[tuple[str, Any, Any]] = []
+    at = 0
+    for attr, r, run in read:
+        if attr in _ARMS:
+            run = replace(run, rows=joined.rows[at : at + len(run.rows)])
+            at += len(run.rows)
+        out.append((attr, r, run))
+    return out
+
+
+# the attributes that hold a verb's two compared runs, which --verdicts joins onto
+_ARMS = ("a", "b", "old", "new")
 
 
 # ---------- reading through Prove ----------
@@ -1230,12 +1379,10 @@ def _start_of(manifest: Any) -> dict[str, Any] | None:
     }
 
 
-def _said(
-    verdict: str, sentence: str, report: str, following: str, wrote: str | None = None
-) -> str:
-    """The text: the verdict line, what was written, a blank line, the report and the next
-    command."""
-    head = f"{verdict}  {sentence}\n" + (f"  wrote  {wrote}\n" if wrote is not None else "")
+def _said(verdict: str, sentence: str, report: str, following: str, *details: str) -> str:
+    """The text: the verdict line, each detail line under it (what was joined, what was
+    written, what was saved), a blank line, the report and the next command."""
+    head = f"{verdict}  {sentence}\n" + "".join(f"{line}\n" for line in details)
     return f"{head}\n{report}\nnext: {following}\n"
 
 
@@ -1312,6 +1459,571 @@ def _arrays(placement: Any) -> tuple[Any, Any, Any]:
     died = np.array([p.died for p in placement.rows], dtype=bool)
     cause = np.array([p.cause for p in placement.rows], dtype=object)
     return index, died, cause
+
+
+# ---------- the saved verdict, the handover bundle and the measures (TF6) ----------
+
+
+def _check_out(path: str, force: bool) -> None:
+    """Refuse, before any work, a bundle folder that is there already without --force, a file
+    in its place, or a parent that cannot be written to."""
+    target = Path(path)
+    try:
+        there = target.exists() or target.is_symlink()
+        if there and (not target.is_dir() or target.is_symlink()):
+            raise _Refusal(f"cannot write {path}: it is a file, not a folder for a bundle")
+        if there and not force:
+            raise _Refusal(f"{path} exists; add --force to replace it with the bundle")
+        parent = target.parent
+        if parent.exists() and not parent.is_dir():
+            raise _Refusal(f"cannot write {path}: {parent} is not a folder")
+        if parent.is_dir() and not os.access(parent, os.W_OK):
+            raise _Refusal(f"cannot write {path}: the folder {parent} cannot be written to")
+    except OSError as e:
+        raise _Refusal(f"cannot write {path} ({look.why(e)})") from e
+
+
+def _signals(
+    ns: argparse.Namespace, arms: Sequence[tuple[str, Any]], events: frozenset[str]
+) -> tuple[dict[str, tuple[Any, ...]], dict[str, tuple[Any, ...]]]:
+    """Each arm's rows as TF21's reader classifies them, before and after the ``--verdicts``
+    join (the same rows when there is no file). On stored runs the join is made here, over both
+    runs' rows at once, by case (SV10); on tool folders it was made as they were read."""
+    from poisson_trace.ingest.prove import read_rows
+
+    root = Path(ns.store)
+    before = {arm: read_rows(root, run.run_id, sorted(events)) for arm, run in arms}
+    after = dict(before)
+    if ns.verdicts is not None and ns.joined is None:
+        from poisson_trace.ingest import verdicts
+        from poisson_trace.ingest.rows import Refusal
+
+        rows = [row for arm, _ in arms for row in before[arm]]
+        try:
+            joined = verdicts.join(rows, Path(ns.verdicts), None)
+        except Refusal as e:
+            raise _Refusal(str(e), *e.nexts) from None
+        ns.joined = verdicts.block(Path(ns.verdicts), joined)
+        at = 0
+        for arm, _ in arms:
+            n = len(before[arm])
+            after[arm] = tuple(joined.rows[at : at + n])
+            at += n
+    return before, after
+
+
+_MISALIGNED = "the run's rows and its signals do not line up; the report was not printed"
+
+
+def _filled(frame: Any, before: Sequence[Any], after: Sequence[Any], events: frozenset[str]) -> Any:
+    """The run's frame with the outcomes a verdict filled: a filled ``fail`` counts as failed
+    whatever the run's failure words, a filled success as not (SV10 item 4); a try with a
+    recorded outcome is as it was, since a verdict that differed was refused."""
+    changed = [
+        (i, a)
+        for i, (b, a) in enumerate(zip(before, after, strict=True))
+        if (a.outcome, a.error) != (b.outcome, b.error)
+    ]
+    if not changed:
+        return frame
+    if len(frame) != len(before):
+        raise look.Failed(_MISALIGNED)
+    frame = frame.copy()
+    for column in ("outcome", "error"):
+        frame[column] = frame[column].astype(object)
+    words = sorted(events)
+    at_outcome, at_error = frame.columns.get_loc("outcome"), frame.columns.get_loc("error")
+    for i, row in changed:
+        config = frame["config"].iloc[i]
+        same = frame["config_hash"].iloc[i] == row.case or (
+            isinstance(config, Mapping) and config.get("case") == row.case
+        )
+        if not same:
+            raise look.Failed(_MISALIGNED)
+        outcome = row.outcome
+        if row.result == "fail" and outcome not in events:
+            outcome = words[0]
+        frame.iat[i, at_outcome] = outcome
+        frame.iat[i, at_error] = None
+    return frame
+
+
+def _verdicts_line(block: Mapping[str, Any]) -> str:
+    return (
+        f"  verdicts  {block['name']} · rows {count(block['rows'])} · joined by case "
+        f"{count(block['by_case'])} · by input {count(block['by_input'])} · matched no case "
+        f"{count(block['unmatched'])}"
+    )
+
+
+def _absolute(ns: argparse.Namespace) -> dict[str, str]:
+    """Each absolute path the command carried, and the name it is written as in what is saved:
+    its last folder's or file's name (section 11.2's rule, SV7; section 17.3 item 9)."""
+    paths: list[str] = []
+    for word in (ns.store, ns.typed_store, ns.config):
+        if isinstance(word, str) and word:
+            paths.append(word)
+    held = ns.settings
+    if held is not None and held.given:
+        paths.append(str(held.path))
+    paths.extend(w for w in ns.folder_words.values() if isinstance(w, str))
+    out: dict[str, str] = {}
+    for path in paths:
+        if os.path.isabs(path):
+            name = Path(path).name or Path(path).resolve().name
+            out[path] = name
+    return out
+
+
+def _came(ns: argparse.Namespace, flag: str, in_config: bool = False) -> str:
+    """Where a setting came from: the flag, trace.toml or the default (SV5)."""
+    if flag in ns.typed_flags:
+        return "flag"
+    return "trace.toml" if in_config else "default"
+
+
+def _file_digest(path: str) -> str:
+    import hashlib
+
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def _settings(ns: argparse.Namespace, verb: str, selecting: Any = None) -> dict[str, Any]:
+    """The result-changing settings of a verb, in their order (SV5), then where each came from
+    and the config's names of the stores read."""
+    held = ns.settings
+    events = sorted(ns.event)
+    verdicts = None if ns.verdicts is None else _file_digest(ns.verdicts)
+    settings: dict[str, Any] = {"events": events}
+    came: dict[str, str] = {
+        "events": _came(ns, "--event", held is not None and held.events is not None)
+    }
+    if verb in ("where", "compare"):
+        settings["by"], came["by"] = ns.by, _came(ns, "--by")
+        settings["at"], came["at"] = list(ns.at), _came(ns, "--at")
+    if verb == "where":
+        settings.update({"boot": ns.boot, "seed": ns.seed})
+        came.update({"boot": _came(ns, "--boot"), "seed": _came(ns, "--seed")})
+    if verb == "compare":
+        settings["max_mde_hr"] = ns.max_mde_hr
+        in_config = held is not None and held.max_mde_hr is not None
+        came["max_mde_hr"] = _came(ns, "--max-mde-hr", in_config)
+    if verb == "fix-check":
+        settings["inputs"], came["inputs"] = ns.inputs, _came(ns, "--inputs")
+        settings["failing_from"] = None if selecting is None else selecting.run_id
+        came["failing_from"] = _came(ns, "--failing-from")
+        settings["min_failures"] = (
+            None if selecting is None else (1 if ns.min_failures is None else ns.min_failures)
+        )
+        came["min_failures"] = _came(ns, "--min-failures")
+        settings["max_mde"] = ns.max_mde
+        came["max_mde"] = _came(ns, "--max-mde", held is not None and held.max_mde is not None)
+    if verb in _TWO_RUNS:
+        settings["alpha"], came["alpha"] = ns.alpha, _came(ns, "--alpha")
+    if verb == "fix-check":
+        settings.update({"seed": ns.seed, "max_change": dict(ns.ceilings)})
+        came.update({"seed": _came(ns, "--seed")})
+        came["max_change"] = _came(ns, "--max-change", held is not None and bool(held.max_change))
+    if verb in _TWO_RUNS:
+        settings["verdicts"], came["verdicts"] = verdicts, _came(ns, "--verdicts")
+    settings["from"] = came
+    settings["stores"] = (
+        [ns.typed_store] if held is not None and ns.typed_store in held.named else []
+    )
+    return settings
+
+
+def _digest_of(manifest: Any) -> str:
+    """The digest of the rules a run's failure types were decided by: the one its import
+    recorded, or the built-in rules' for a run Prove swept (SV4 item 4)."""
+    from poisson_trace.ingest.taxonomy import taxonomy_sha256
+
+    environment = getattr(manifest, "environment", None)
+    recorded = environment.get("import") if isinstance(environment, Mapping) else None
+    digest = recorded.get("taxonomy_sha256") if isinstance(recorded, Mapping) else None
+    return digest if isinstance(digest, str) else taxonomy_sha256((), None)
+
+
+DIFFERENT_RULES = (
+    "The failure types of the two runs were decided by different rules, so their counts are "
+    "not set side by side; the digest of each run's rules is given."
+)
+
+
+def _taxonomy_diff(
+    arms: Sequence[str], rows: Mapping[str, Sequence[Any]], manifests: Mapping[str, Any]
+) -> tuple[dict[str, Any], str | None]:
+    """The saved verdict's failure-type diff (SV4 item 4, SV9): each run's taxonomy digest,
+    whether the rules are the same, the tries, and each kind's and signal's count in each run
+    in section 18.5.1's order; no counts, and a note, when the rules differ."""
+    from poisson_trace.ingest.rows import FAILURE_KINDS, SIGNALS
+
+    digests = {arm: _digest_of(manifests[arm]) for arm in arms}
+    same = len(set(digests.values())) == 1
+    kinds = signals = None
+    if same:
+        kinds = [
+            {
+                "failure_kind": k,
+                **{arm: sum(1 for r in rows[arm] if r.failure_kind == k) for arm in arms},
+            }
+            for k in FAILURE_KINDS
+            if any(r.failure_kind == k for arm in arms for r in rows[arm])
+        ]
+        signals = [
+            {"signal": s, **{arm: sum(1 for r in rows[arm] if s in r.signals) for arm in arms}}
+            for s in SIGNALS
+            if any(s in r.signals for arm in arms for r in rows[arm])
+        ]
+    diff = {
+        "taxonomy_sha256": digests,
+        "same_rules": same,
+        "tries": {arm: len(rows[arm]) for arm in arms},
+        "kinds": kinds,
+        "signals": signals,
+    }
+    return diff, None if same else DIFFERENT_RULES
+
+
+def _measures(
+    ns: argparse.Namespace,
+    rows: Mapping[str, Sequence[Any]],
+    arms: Sequence[tuple[str, Any]],
+    labels: tuple[str, str],
+) -> Any:
+    """TF23's comparison of the two runs' time, length, tokens and cost over every case both
+    hold (SV6), at the verb's level, the ceilings the config and the flags set."""
+    from poisson_trace.ingest.tries import version_of
+    from poisson_trace.stats.continuous import compare
+
+    (arm_a, run_a), (arm_b, run_b) = arms
+    return compare(
+        version_of(rows[arm_a], run_a.run_id, labels[0]),
+        version_of(rows[arm_b], run_b.run_id, labels[1]),
+        ceilings=ns.ceilings or None,
+        alpha=ns.alpha,
+    )
+
+
+MEASURES_HEADING = "## Time, length, tokens and cost"
+NOTHING_MEASURED = "No try in either run recorded a time, a length, tokens or a cost."
+
+
+def _measures_section(comparison: Any) -> list[str]:
+    """The report's section: the heading, the table, and each measure shown with its lines."""
+    from poisson_trace.stats.continuous import table
+
+    header, rows = table(comparison)
+    if not rows:
+        return [MEASURES_HEADING, "", NOTHING_MEASURED]
+    body = look.table(header, rows).rstrip("\n").split("\n")
+    bullets = [f"- {row[0]}: " + " ".join(comparison.measures[row[0]].lines) for row in rows]
+    return [MEASURES_HEADING, "", *body, "", *bullets]
+
+
+def _none(x: Any) -> float | None:
+    return None if x is None else float(x)
+
+
+def _where_rows(data: Mapping[str, Any]) -> list[Any]:
+    from poisson_trace.saved import Row
+
+    placement = data["run"]["placement"]
+    band = 0.95
+    rows = [Row("tries", placement["placed"], "a"), Row("failed", placement["died"], "a")]
+    for point in data["curve"]:
+        step = int(point["step"])
+        rows.append(Row("survival", point["survival"], "a", step=step))
+        for bound in ("lo", "hi"):
+            value = _none(point[bound])
+            rows.append(Row(f"survival_{bound}", value, "a", level=band, step=step, note="no band"))
+    rows.append(Row("median_step", _none(data["median_step"]), "a", note="none failed"))
+    for cause in data["causes"]:
+        k = cause["cause"]
+        rows.append(Row("share", cause["f"], "a", cause=k))
+        rows.append(Row("share_lo", _none(cause["lo"]), "a", level=band, cause=k, note="no band"))
+        rows.append(Row("share_hi", _none(cause["hi"]), "a", level=band, cause=k, note="no band"))
+    return rows
+
+
+def _compare_rows(data: Mapping[str, Any]) -> list[Any]:
+    from poisson_trace.saved import Row
+
+    c = data["comparison"]
+    band = 0.95
+    rows = []
+    for arm in ("a", "b"):
+        placement = data["runs"][arm]["placement"]
+        rows += [Row("tries", placement["placed"], arm), Row("failed", placement["died"], arm)]
+    rows += [
+        Row("p", c["p"]),
+        Row("hr", _none(c["hazard_ratio"]), note="no information"),
+        Row("hr_lo", _none(c["hazard_ratio_lo"]), level=band, note="no information"),
+        Row("hr_hi", _none(c["hazard_ratio_hi"]), level=band, note="no information"),
+        Row("mde_hr", _none(c["mde_hazard_ratio"]), note="no information"),
+        Row("max_mde_hr", c["max_mde_hr"]),
+    ]
+    for per in data["per_cause"]:
+        k = per["cause"]
+        rows += [
+            Row("failed", per["deaths_a"], "a", cause=k),
+            Row("failed", per["deaths_b"], "b", cause=k),
+            Row("p", per["p"], cause=k),
+            Row("q", _none(per["q"]), cause=k, note="no correction"),
+            Row("mde_hr", _none(per["mde_hazard_ratio"]), cause=k, note="no information"),
+        ]
+    for at in data["at"]:
+        step = int(at["step"])
+        rows += [
+            Row("survival", at["survival_a"], "a", step=step),
+            Row("survival", at["survival_b"], "b", step=step),
+            Row("diff", at["diff"], step=step),
+            Row("diff_lo", at["lo"], level=band, step=step),
+            Row("diff_hi", at["hi"], level=band, step=step),
+        ]
+    return rows
+
+
+def _input_rows(input_: Mapping[str, Any]) -> list[Any]:
+    from poisson_trace.saved import Row
+
+    condition, h = input_["config"], input_["config_hash"]
+    rows = []
+    for arm, key in (("a", "a"), ("b", "b")):
+        runs, failed = input_[f"runs_{key}"], input_[f"failed_{key}"]
+        rows += [
+            Row("tries", runs, arm, condition, h),
+            Row("failed", failed, arm, condition, h),
+            Row("share", failed / runs if runs else None, arm, condition, h, note="no try"),
+        ]
+    rows.append(Row("p", input_["p"], "both", condition, h))
+    rows.append(Row("q", _none(input_["q"]), "both", condition, h, note="no correction"))
+    return rows
+
+
+def _fix_check_rows(data: Mapping[str, Any]) -> list[Any]:
+    from poisson_trace.saved import Row
+
+    level = 1.0 - data["test"]["alpha"]
+    rows = []
+    for arm, key in (("a", "old"), ("b", "new")):
+        held = data["rows"][key]
+        runs, failed = held["runs"], held["failed"]
+        rows += [
+            Row("tries", runs, arm),
+            Row("failed", failed, arm),
+            Row("share", failed / runs if runs else None, arm, note="no try"),
+        ]
+    d, limits = data["difference"], data["limits"]
+    rows += [
+        Row("difference", d["points"]),
+        Row("range_lo", _none(d["lo"]), level=level, note="no interval"),
+        Row("range_hi", _none(d["hi"]), level=level, note="no interval"),
+        Row("p", data["test"]["p"]),
+        Row("drop_limit", _none(limits["drop"]), level=level, note="none detectable"),
+        Row("rise_limit", _none(limits["rise"]), level=level, note="none detectable"),
+        Row("max_mde", limits["max_mde"]),
+    ]
+    for input_ in data["changes"]["rows"]:
+        rows += _input_rows(input_)
+    return rows
+
+
+def _changes_rows(data: Mapping[str, Any]) -> list[Any]:
+    from poisson_trace.saved import Row
+
+    rows = []
+    for arm, key in (("a", "a"), ("b", "b")):
+        runs = sum(r[f"runs_{key}"] for r in data["rows"])
+        failed = sum(r[f"failed_{key}"] for r in data["rows"])
+        rows += [
+            Row("tries", runs, arm),
+            Row("failed", failed, arm),
+            Row("share", failed / runs if runs else None, arm, note="no try"),
+        ]
+    for input_ in data["rows"]:
+        rows += _input_rows(input_)
+    return rows
+
+
+_TABLE_ROWS: dict[str, Callable[[Mapping[str, Any]], list[Any]]] = {
+    "where": _where_rows,
+    "compare": _compare_rows,
+    "fix-check": _fix_check_rows,
+    "changes": _changes_rows,
+}
+
+
+def _with_tail(doc: Mapping[str, Any], tail: Mapping[str, Any]) -> dict[str, Any]:
+    """The verb's JSON with ``tail``'s keys before ``next``."""
+    out = {k: v for k, v in doc.items() if k != "next"}
+    out.update(tail)
+    out["next"] = doc["next"]
+    return out
+
+
+def _result_document(
+    printed: Mapping[str, Any],
+    data: Mapping[str, Any],
+    added: Mapping[str, Any],
+    notes: Sequence[str],
+    saved_at: str | None,
+) -> dict[str, Any]:
+    """``result.json``: the printed JSON with section 11.3's keys and TF6's (SV3, SV4): the
+    summary's lines, the caveats, ``note`` as a list, the versions, and the two-run blocks;
+    ``saved`` and ``next`` last."""
+    from poisson_trace import saved
+
+    body = {k: v for k, v in printed.items() if k not in ("saved", "next")}
+    out: dict[str, Any] = {}
+    for key, value in body.items():
+        if key == "note":
+            held = [value] if isinstance(value, str) else list(value)
+            out[key] = [*held, *[n for n in notes if n not in held]]
+        else:
+            out[key] = value
+    more = {
+        "summary": [[label, text] for label, text in data.get("_summary") or ()],
+        "before_you_act": list(data.get("_before_you_act") or ()),
+        "note": list(notes),
+        "versions": {"trace": saved.trace_version(), "prove": saved.prove_version()},
+        **added,
+    }
+    for key, value in more.items():
+        if key not in out:
+            out[key] = value
+    out["saved"] = saved_at
+    out["next"] = printed["next"]
+    return out
+
+
+def _deliver(
+    ns: argparse.Namespace,
+    data: dict[str, Any],
+    verdict: str,
+    sentence: str,
+    following: str,
+    *,
+    kind: str,
+    report: Any,
+    runs: Sequence[tuple[str, Any, Any]],
+    settings: Mapping[str, Any],
+    diff: tuple[Mapping[str, Any], str | None] | None = None,
+    measures: Any = None,
+    charts: Sequence[tuple[str, str, Mapping[str, Any]]] = (),
+    wrote_svg: str | None = None,
+) -> int:
+    """Print the verb's report or JSON, with what the new options add: the measures and the
+    join in the JSON before ``next``, the detail lines under the verdict line in their order
+    (verdicts, wrote, wrote, saved), and the verdict saved as an artifact and handed over as a
+    bundle where ``--save`` or ``--out`` asked (section 17.3 items 3 to 5)."""
+    import shutil
+    import tempfile
+
+    from poisson_trace import saved
+
+    tail: dict[str, Any] = {}
+    if measures is not None and getattr(ns, "measures", False):
+        tail["continuous_measures"] = measures.to_dict()
+    if ns.joined is not None:
+        tail["verdicts"] = ns.joined
+    enveloped = _enveloped(data, verdict, sentence, following)
+    doc = _with_tail({k: v for k, v in enveloped.items() if not k.startswith("_")}, tail)
+    markdown = report.to_markdown()
+    details = []
+    if ns.joined is not None:
+        details.append(_verdicts_line(ns.joined))
+    if wrote_svg is not None:
+        details.append(f"  wrote  {wrote_svg}")
+    saved_at = None
+    if ns.save or ns.out is not None:
+        absolute = _absolute(ns)
+        added: dict[str, Any] = {}
+        notes: list[str] = []
+        if diff is not None:
+            added["failure_taxonomy_diff"] = diff[0]
+            if diff[1] is not None:
+                notes.append(diff[1])
+        if measures is not None:
+            added["continuous_measures"] = measures.to_dict()
+        ids = [run.run_id for _, run, _ in runs]
+        identity = saved.artifact_id(kind, {"runs": ids}, settings)
+        place = None if ns.temp_store else saved.saved_path(kind, identity)
+        result = saved.shortened(_result_document(doc, data, added, notes, place), absolute)
+        joined_line = details[:1] if ns.joined is not None else []
+        text = saved.short(_said(verdict, sentence, markdown, following, *joined_line), absolute)
+        artifact = saved.Artifact(
+            kind=kind,
+            runs=ids,
+            settings=settings,
+            result=result,
+            report=text,
+            events=sorted(ns.event),
+            rows=_TABLE_ROWS[kind](result),
+            detail=[(label, text) for label, text in result["summary"]],
+            charts=charts,
+        )
+        staging = Path(tempfile.mkdtemp(prefix="poisson-trace-"))
+        try:
+            saved.build_artifact(staging, artifact)
+            if ns.temp_store:
+                look.err(
+                    "note: the verdict was not saved: the runs were read from folders, not a "
+                    "store\n"
+                )
+            else:
+                try:
+                    saved.save_artifact(Path(ns.store), staging, kind, identity)
+                except OSError as e:
+                    look.err(f"note: the verdict was not saved: {look.why(e)}\n")
+                else:
+                    saved_at = saved.saved_path(kind, identity)
+            if ns.out is not None:
+                held = None if ns.from_folders else saved.short(ns.store, absolute)
+                refs = [saved.RunRef(run.run_id, run.name, held) for _, run, _ in runs]
+                # the bundle is a copy of the artifact as the store holds it, so a second --out
+                # on the same runs hands over the same bytes (section 11.6, TF6-19); the
+                # staging folder stands in when the store could not be written to
+                source = staging if saved_at is None else Path(ns.store) / saved_at
+                try:
+                    saved.write_bundle(source, Path(ns.out), kind, refs, force=ns.force)
+                except OSError as e:
+                    raise look.Failed(
+                        f"could not write {ns.out} ({look.why(e)}); the report was not printed"
+                    ) from e
+                details.append(f"  wrote  {ns.out}")
+        finally:
+            shutil.rmtree(staging, ignore_errors=True)
+    if saved_at is not None:
+        doc["saved"] = saved_at
+        doc = _with_tail(doc, {})
+        details.append(f"  saved  {kind} {identity[:12]}")
+    if ns.json:
+        look.out(json.dumps(doc, indent=2, allow_nan=False) + "\n")
+    else:
+        look.out(_said(verdict, sentence, markdown, following, *details))
+    return look.DONE
+
+
+def _handover(ns: argparse.Namespace) -> int:
+    """``poisson-trace handover --check DIR``: ok and exit 0 on a bundle that holds what it
+    promises, ``not valid`` with the first failing line and exit 4 otherwise, a refusal when
+    DIR is not a bundle (section 11.2's validator, SV8)."""
+    from poisson_trace import saved
+
+    if ns.check is None:
+        raise look.Usage(
+            "--check DIR is required: the bundle to check", "poisson-trace handover --help"
+        )
+    try:
+        checked = saved.check_bundle(Path(ns.check))
+    except saved.NotABundle as e:
+        raise _Refusal(str(e)) from None
+    except saved.Invalid as e:
+        look.out(f"not valid  {e}\n")
+        return look.CHECK_FAILED
+    look.out(f"ok  {checked.sentence}\n")
+    return look.DONE
 
 
 # ---------- runs ----------
@@ -1586,6 +2298,8 @@ def _where(ns: argparse.Namespace) -> int:
 
     if ns.svg is not None:
         _check_svg(ns.svg, ns.force)
+    if ns.out is not None:
+        _check_out(ns.out, ns.force)
     store, index = _named(ns)
     run = index.resolve(ns.run)
     manifest, frame, tally = _load(store, run)
@@ -1711,11 +2425,23 @@ def _where(ns: argparse.Namespace) -> int:
     )
     if ns.svg is not None:
         _write_svg(ns.svg, report.to_svg())
-    if ns.json:
-        look.out(WhereReport(data=_enveloped(data, "ok", sentence, following)).to_json())
-    else:
-        look.out(_said("ok", sentence, report.to_markdown(), following, ns.svg))
-    return look.DONE
+    charts: list[tuple[str, str, dict[str, Any]]] = []
+    if traced and (ns.save or ns.out is not None):
+        chart = {"curve": data["curve"], "at": data["at"], "causes": data["causes"]}
+        charts.append(("curve", report.to_svg(), chart))
+    return _deliver(
+        ns,
+        data,
+        "ok",
+        sentence,
+        following,
+        kind="where",
+        report=report,
+        runs=[("a", run, manifest)],
+        settings=_settings(ns, "where"),
+        charts=charts,
+        wrote_svg=ns.svg,
+    )
 
 
 def _check_svg(path: str, force: bool) -> None:
@@ -1773,11 +2499,18 @@ def _compare(ns: argparse.Namespace) -> int:
         one_step,
     )
 
+    if ns.out is not None:
+        _check_out(ns.out, ns.force)
     store, index = _named(ns)
     # compare has never refused one run given twice; it reads the runs the words reach
     run_a, run_b = index.resolve(ns.a), index.resolve(ns.b)
     manifest_a, frame_a, tally_a = _load(store, run_a)
     manifest_b, frame_b, tally_b = _load(store, run_b)
+    signals = None
+    if ns.verdicts is not None or ns.save or ns.out is not None:
+        signals = _signals(ns, [("a", run_a), ("b", run_b)], frozenset(ns.event))
+        frame_a = _filled(frame_a, signals[0]["a"], signals[1]["a"], frozenset(ns.event))
+        frame_b = _filled(frame_b, signals[0]["b"], signals[1]["b"], frozenset(ns.event))
     untraced = [r for r, f in ((run_a, frame_a), (run_b, frame_b)) if not _traced(f)]
     if untraced:
         # compare places deaths at steps, which a run with no traces has none of; the fix check
@@ -1968,12 +2701,24 @@ def _compare(ns: argparse.Namespace) -> int:
     plain = summary.compare(data, verdict, following)
     data["_summary"], data["_before_you_act"] = plain.lines, plain.caveats
     sentence = plain.sentence
-    if ns.json:
-        look.out(CompareReport(data=_enveloped(data, verdict, sentence, following)).to_json())
-    else:
-        markdown = CompareReport(data=data).to_markdown()
-        look.out(_said(verdict, sentence, markdown, following))
-    return look.DONE
+    diff = measures = None
+    if signals is not None and (ns.save or ns.out is not None):
+        arms = [("a", run_a), ("b", run_b)]
+        diff = _taxonomy_diff(("a", "b"), signals[1], {"a": manifest_a, "b": manifest_b})
+        measures = _measures(ns, signals[1], arms, ("A", "B"))
+    return _deliver(
+        ns,
+        data,
+        verdict,
+        sentence,
+        following,
+        kind="compare",
+        report=CompareReport(data=data),
+        runs=[("a", run_a, manifest_a), ("b", run_b, manifest_b)],
+        settings=_settings(ns, "compare"),
+        diff=diff,
+        measures=measures,
+    )
 
 
 # compare's --at band: resamples of the inputs, and their seed
@@ -2206,6 +2951,9 @@ def _fix_check(ns: argparse.Namespace) -> int:
     from poisson_trace import paired, summary
     from poisson_trace.report import FixCheckReport, _p_is, _points
 
+    if ns.out is not None:
+        _check_out(ns.out, ns.force)
+    ns.measures = ns.measures or bool(ns.max_change)
     store, index = _named(ns)
     run_old, run_new = _two(index, ns.old, ns.new, ("OLD", "NEW"))
     selecting = None if ns.failing_from is None else index.resolve(ns.failing_from)
@@ -2219,6 +2967,11 @@ def _fix_check(ns: argparse.Namespace) -> int:
     manifest_old, frame_old, tally_old = _load(store, run_old, trace="none")
     manifest_new, frame_new, tally_new = _load(store, run_new, trace="none")
     events = frozenset(ns.event)
+    signals = None
+    if ns.verdicts is not None or ns.save or ns.out is not None or ns.measures:
+        signals = _signals(ns, [("old", run_old), ("new", run_new)], events)
+        frame_old = _filled(frame_old, signals[0]["old"], signals[1]["old"], events)
+        frame_new = _filled(frame_new, signals[0]["new"], signals[1]["new"], events)
     notes = _check_events(events, frame_old, frame_new, "old", "new")
     arm_old, arm_new = _by_input(frame_old, events), _by_input(frame_new, events)
     if selecting is not None:
@@ -2444,12 +3197,29 @@ def _fix_check(ns: argparse.Namespace) -> int:
     following = plain.follows or _fix_check_next(
         index, ns, run_old, run_new, guidance, len(compared)
     )
-    if ns.json:
-        look.out(FixCheckReport(data=_enveloped(data, verdict, sentence, following)).to_json())
-    else:
-        markdown = FixCheckReport(data=data).to_markdown()
-        look.out(_said(verdict, sentence, markdown, following))
-    return look.DONE
+    diff = measures = None
+    if signals is not None:
+        arms = [("old", run_old), ("new", run_new)]
+        measures = _measures(ns, signals[1], arms, ("old", "new"))
+        if ns.measures:
+            data["_measures_section"] = _measures_section(measures)
+        if ns.save or ns.out is not None:
+            diff = _taxonomy_diff(
+                ("old", "new"), signals[1], {"old": manifest_old, "new": manifest_new}
+            )
+    return _deliver(
+        ns,
+        data,
+        verdict,
+        sentence,
+        following,
+        kind="fix-check",
+        report=FixCheckReport(data=data),
+        runs=[("old", run_old, manifest_old), ("new", run_new, manifest_new)],
+        settings=_settings(ns, "fix-check", selecting),
+        diff=diff,
+        measures=measures,
+    )
 
 
 def _range_text(lo: float | None, hi: float | None, alpha: float) -> str:
@@ -2557,11 +3327,18 @@ def _changes(ns: argparse.Namespace) -> int:
     from poisson_trace import paired, summary
     from poisson_trace.report import ChangesReport
 
+    if ns.out is not None:
+        _check_out(ns.out, ns.force)
     store, index = _named(ns)
     run_a, run_b = _two(index, ns.a, ns.b, ("A", "B"))
     manifest_a, frame_a, tally_a = _load(store, run_a, trace="none")
     manifest_b, frame_b, tally_b = _load(store, run_b, trace="none")
     events = frozenset(ns.event)
+    signals = None
+    if ns.verdicts is not None or ns.save or ns.out is not None:
+        signals = _signals(ns, [("a", run_a), ("b", run_b)], events)
+        frame_a = _filled(frame_a, signals[0]["a"], signals[1]["a"], events)
+        frame_b = _filled(frame_b, signals[0]["b"], signals[1]["b"], events)
     notes = _check_events(events, frame_a, frame_b, "A", "B")
     arm_a, arm_b = _by_input(frame_a, events), _by_input(frame_b, events)
     compared = sorted(h for h in set(arm_a) & set(arm_b) if arm_a[h].runs and arm_b[h].runs)
@@ -2606,11 +3383,24 @@ def _changes(ns: argparse.Namespace) -> int:
     plain = summary.changes(data, following)
     data["_summary"], data["_before_you_act"] = plain.lines, plain.caveats
     sentence = plain.sentence
-    if ns.json:
-        look.out(ChangesReport(data=_enveloped(data, "ok", sentence, following)).to_json())
-    else:
-        look.out(_said("ok", sentence, ChangesReport(data=data).to_markdown(), following))
-    return look.DONE
+    diff = measures = None
+    if signals is not None and (ns.save or ns.out is not None):
+        arms = [("a", run_a), ("b", run_b)]
+        diff = _taxonomy_diff(("a", "b"), signals[1], {"a": manifest_a, "b": manifest_b})
+        measures = _measures(ns, signals[1], arms, ("A", "B"))
+    return _deliver(
+        ns,
+        data,
+        "ok",
+        sentence,
+        following,
+        kind="changes",
+        report=ChangesReport(data=data),
+        runs=[("a", run_a, manifest_a), ("b", run_b, manifest_b)],
+        settings=_settings(ns, "changes"),
+        diff=diff,
+        measures=measures,
+    )
 
 
 if __name__ == "__main__":

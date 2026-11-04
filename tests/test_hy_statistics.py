@@ -365,13 +365,10 @@ def _one_case(cost_old: float, cost_new: float) -> tuple[Version, Version]:
     return version("old", cost_old), version("new", cost_new)
 
 
-@pytest.mark.xfail(raises=OverflowError, strict=True,
-                   reason="finding HY1: compare raises when the old mean is so near zero that the "
-                          "relative change overflows to infinity")
 def test_hy11_finding_hy1_a_near_zero_old_mean_does_not_crash_compare() -> None:
     # HY11's wide run, shrunk by Hypothesis: one case, an old cost of 2.2e-309 dollars (a
-    # subnormal float), a new cost of 1 dollar. The relative change 1 / 2.2e-309 is infinite and
-    # the summary line's number formatting raises OverflowError.
+    # subnormal float), a new cost of 1 dollar. The relative change 1 / 2.2e-309 is infinite;
+    # HY1 (ruled 2026-11-04) leaves it out, and the summary line prints the change alone.
     a, b = _one_case(2.225073858507203e-309, 1.0)
     m = compare(a, b).measures["cost_usd"]
     assert m.relative is None or math.isfinite(m.relative)

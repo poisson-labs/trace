@@ -389,7 +389,8 @@ ALLOWED_PROVE_IMPORTS = {
     "poisson_prove": set(),
     "poisson_prove.store": {"Store", "RunManifest", "RunTally"},
     "poisson_prove.steps": {"declaration_check", "DeclarationCheck"},
-    "poisson_prove.trace": {"KINDS"},
+    # TF6: handover --check refuses a bundle holding Prove's content and observation keys (11.2)
+    "poisson_prove.trace": {"KINDS", "CONTENT_KEYS", "OBSERVATION_KEYS"},
 }
 
 
@@ -399,7 +400,10 @@ def test_tr41_every_read_is_a_prove_call() -> None:
 
     for path in sorted(Path(poisson_trace.__file__).resolve().parent.glob("*.py")):
         text = path.read_text()
-        assert "pyarrow" not in text and "from_dict" not in text, path.name
+        # TF6: saved.py writes the saved verdict's table.parquet with pyarrow (section 17.3 item 1);
+        # writing an artifact is not reading a run
+        table = path.name == "saved.py"
+        assert (table or "pyarrow" not in text) and "from_dict" not in text, path.name
         for node in ast.walk(ast.parse(text)):
             if isinstance(node, ast.Import):
                 for alias in node.names:
@@ -408,7 +412,7 @@ def test_tr41_every_read_is_a_prove_call() -> None:
                 assert node.module in ALLOWED_PROVE_IMPORTS, (path.name, node.module)
                 assert {a.name for a in node.names} <= ALLOWED_PROVE_IMPORTS[node.module], (path.name, node.module)
             if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                assert "parquet" not in node.value.lower() and "manifest.json" not in node.value.lower(), path.name
+                assert (table or "parquet" not in node.value.lower()) and "manifest.json" not in node.value.lower(), path.name
 
 
 def test_tr41_refusals_are_one_sentence_and_exit_one(store70: Path) -> None:

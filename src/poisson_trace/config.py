@@ -55,7 +55,7 @@ STORE_NAME_RULE = "a store name is 1 to 40 letters, digits, - and _"
 _SETTINGS: dict[str, tuple[str, ...]] = {
     "store": ("path",),
     "events": ("failed",),
-    "check": ("max_mde", "max_mde_hr", "fail_on"),
+    "check": ("max_mde", "max_mde_hr", "fail_on", "max_change"),
     "names": ("from",),
     "upload": ("enabled", "url", "token_env"),
     "signals": ("case_field", "outcome_field", "score_field", "cut", "cost_field", "budgets"),
@@ -89,6 +89,9 @@ class Config:
     max_mde: float | None = None
     max_mde_hr: float | None = None
     fail_on: tuple[str, ...] | None = None
+    # [check] max_change: each continuous measure's ceiling as a share of the old mean (CT2,
+    # CS10); empty when the file sets none
+    max_change: Mapping[str, float] = field(default_factory=dict)
     names_from: str = "target"
     upload: Mapping[str, Any] = field(default_factory=dict)
     # [signals]: the field mappings as written (read and checked; in TF21 the import's flags
@@ -370,6 +373,7 @@ class _Checker:
             max_mde=values.get("max_mde"),
             max_mde_hr=values.get("max_mde_hr"),
             fail_on=values.get("fail_on"),
+            max_change=values.get("max_change", {}),
             names_from=values.get("names_from", "target"),
             upload=values.get("upload", {}),
             signals=values.get("signals", {}),
@@ -469,9 +473,37 @@ class _Checker:
                 out["max_mde_hr"] = float(value)
             elif key == "fail_on":
                 out["fail_on"] = self.fail_on(value)
+            elif key == "max_change":
+                out["max_change"] = self.max_change(value)
             else:
                 raise self.unknown(at, _SETTINGS["check"], "check")
         return out
+
+    def max_change(self, value: Any) -> dict[str, float]:
+        """``[check] max_change``: a table of measure to ``"N%"``, each read as the flag
+        ``--max-change measure=N%`` is (TF23's ``parse_max_change``), in the measures' order."""
+        from poisson_trace.stats.continuous import MEASURES, parse_max_change
+
+        rule = (
+            '[check] max_change is a table of measure = "N%", such as '
+            '{ wall_time_s = "10%" }, each a share of the old mean'
+        )
+        key = ("check", "max_change")
+        if not isinstance(value, dict):
+            raise self.fault(key, f"{rule}, not {_value(value)}")
+        held: dict[str, float] = {}
+        for measure, share in value.items():
+            if not isinstance(share, str):
+                raise self.fault(
+                    (*key, measure),
+                    f"{rule}; {measure} is given {_value(share)}, not a percentage in quotes",
+                )
+            try:
+                name, fraction = parse_max_change(f"{measure}={share}")
+            except ValueError as e:
+                raise self.fault((*key, measure), f"{rule}; {e}") from None
+            held[name] = fraction
+        return {m: held[m] for m in MEASURES if m in held}
 
     def fail_on(self, value: Any) -> tuple[str, ...]:
         rule = (
