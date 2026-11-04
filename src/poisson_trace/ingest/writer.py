@@ -226,6 +226,18 @@ def stored(root: Path, name: str) -> Any:
     return Store(root).read(name, meta=True, trace="full")
 
 
+def runs_in(root: Path) -> list[str]:
+    """The runs Prove reads in the folder ``root`` as a store, by their folders' names in
+    order; none for a folder Prove does not read as one. A name starting with a dot (the store's
+    own ``.poisson`` folder) is never a run (SB1). Here so that the folder resolver
+    (``ingest/folder.py``) asks Prove without importing it."""
+    try:
+        held = Store(root).runs()
+    except OSError:
+        return []
+    return [run_id for run_id in held if not run_id.startswith(".")]
+
+
 def status(root: Path, name: str) -> str | None:
     """The status Prove records for a run of the store, or None when it cannot be read."""
     try:
@@ -241,11 +253,13 @@ def write(
     *,
     rules: Sequence[Rule] = (),
     budgets: Budgets | None = None,
+    verdicts: Mapping[str, Any] | None = None,
 ) -> Written:
     """Write ``run`` as one new run of the store at ``root``; ``form`` is how the store's runs
     are named from their manifests, for the check that no other run answers to its name. Each
     row is classified with ``rules`` and ``budgets`` (the config's, or none) before it is
-    written, and their digest is recorded in the manifest."""
+    written, and their digest is recorded in the manifest; so is ``verdicts``, what a
+    ``--verdicts`` join did, when one was given (FI20)."""
     if run.started_from not in STARTED_FROM:
         raise Refusal(f"the start time's source is one of {', '.join(STARTED_FROM)}")
     store = Store(root)
@@ -282,6 +296,8 @@ def write(
         "files": [dict(f) for f in run.files],
         "poisson_trace": poisson_trace.__version__,
     }
+    if verdicts is not None:
+        recorded["verdicts"] = dict(verdicts)
     if run.started_from == "file name":
         # a time in a file's name carries no zone: the one it was read in is kept with it
         recorded["zone"] = zone_of(run.started)

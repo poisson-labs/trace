@@ -60,7 +60,10 @@ latest:TARGET and previous:TARGET, a target's ("latest:tau2-airline"); by its nu
 runs listing ("#3"); or by its full id.
 
 Results another tool wrote (DeepEval, Ragas, a table of results, JUnit reports) are read in
-with poisson-trace import.
+with poisson-trace import. where, compare, fix-check and changes also take a folder in a run's
+place, when no stored run answers to the word: a run Prove stored, a store of one run, or one
+tool's result files, read with the flags poisson-trace import takes for that tool. Nothing is
+written; the folder's name is the run's name in the report.
 
 To begin, run poisson-trace init: it finds the results already here, asks what counts as a
 failure and writes trace.toml, from which every verb then takes its store and its failures.
@@ -78,6 +81,10 @@ _STORE_HELP = (
 )
 _CONFIG_HELP = "the config file to read (default: trace.toml in the current folder, if any)"
 _RUN_HELP = 'by its name, latest, previous or its number in the runs listing ("#3")'
+_RUN_OR_FOLDER = (
+    'by its name, latest, previous or its number in the runs listing ("#3"), or a folder of '
+    "results"
+)
 
 
 def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
@@ -208,7 +215,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "poisson-trace where previous --store proofload-runs --event unsolved --at 20",
         ),
     )
-    where.add_argument("run", metavar="RUN", help=f"the stored run, {_RUN_HELP}")
+    where.add_argument("run", metavar="RUN", help=f"the run, {_RUN_OR_FOLDER}")
     common(where, "a death")
     where_and_compare(where)
     where.add_argument(
@@ -245,7 +252,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "    --max-mde-hr 1.5",
         ),
     )
-    compare.add_argument("a", metavar="A", help=f"the run before the change, {_RUN_HELP}")
+    compare.add_argument("a", metavar="A", help=f"the run before the change, {_RUN_OR_FOLDER}")
     compare.add_argument("b", metavar="B", help="the run after the change")
     common(compare, "a death")
     where_and_compare(compare)
@@ -297,7 +304,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "    --inputs all --max-mde 0.2",
         ),
     )
-    fix.add_argument("old", metavar="OLD", help=f"the old version's run, {_RUN_HELP}")
+    fix.add_argument("old", metavar="OLD", help=f"the old version's run, {_RUN_OR_FOLDER}")
     fix.add_argument("new", metavar="NEW", help="the new version's run")
     paired(fix)
     fix.add_argument(
@@ -346,7 +353,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "poisson-trace changes previous latest --store proofload-runs --event unsolved",
         ),
     )
-    changes.add_argument("a", metavar="A", help=f"the first run, {_RUN_HELP}")
+    changes.add_argument("a", metavar="A", help=f"the first run, {_RUN_OR_FOLDER}")
     changes.add_argument("b", metavar="B", help="the second run")
     paired(changes)
     tail(changes)
@@ -577,7 +584,11 @@ def _main(session: look.Session) -> int:
         # "import" read as a verb here is an option's value: the import's own command takes the
         # verb wherever it stands
         raise look.Usage(f"no verb was given; the verbs are {_NAMED}", "poisson-trace --help")
-    if extra:
+    # a run word may name a folder of results, whose reader's flags the verb's parser leaves
+    # over; whether it is a folder is known once the store is (TF22)
+    words = _run_words(ns)
+    folders = [w for _, w in words if _is_folder(w)]
+    if extra and not folders:
         verbs[ns.verb].error(f"unrecognized arguments: {' '.join(extra)}")
     if ns.verb == "name":
         _name_line(ns)
@@ -588,7 +599,7 @@ def _main(session: look.Session) -> int:
     if ns.verb == "doctor":
         return _doctor(ns)
     if ns.verb != "init":
-        _from_config(ns)
+        _from_config(ns, folders=bool(words) and len(folders) == len(words))
     refusal = look.prove_refusal(_DOES if ns.verb != "init" else "poisson-trace init reads stores")
     if refusal is not None:
         raise _Refusal(refusal, look.INSTALL_PROVE)
@@ -606,6 +617,8 @@ def _main(session: look.Session) -> int:
     from poisson_trace.names import Unordered
 
     try:
+        if folders:
+            return _on_folders(ns, verb, extra, verbs[ns.verb])
         return verb(ns)
     except Unordered as e:
         raise _unordered(e, ns.verb, session.argv, valued) from None
@@ -710,12 +723,15 @@ def _first_verb(
     return None
 
 
-def _from_config(ns: argparse.Namespace) -> None:
+def _from_config(ns: argparse.Namespace, *, folders: bool = False) -> None:
     """The store, the failures and the ceilings a verb takes from the config when no flag gives
     them; a store name the config holds is that store. What neither gives is a wrong command
-    line, as it is with no config."""
+    line, as it is with no config, but for a store when every run is given as a folder."""
     from poisson_trace import config
 
+    ns.folder_words = {}
+    ns.reader_flags = []
+    ns.from_folders = False
     held = config.load(ns.config)
     ns.form = held.names_from if held is not None else "target"
     ns.typed_store = ns.store
@@ -729,7 +745,7 @@ def _from_config(ns: argparse.Namespace) -> None:
     if hasattr(ns, "event") and ns.event is None and held is not None and held.events is not None:
         ns.event = list(held.events)
     flags = []
-    if ns.store is None:
+    if ns.store is None and not folders:
         flags.append("--store")
     if ns.verb in _COUNTING and not ns.event:
         flags.append("--event")
@@ -861,6 +877,235 @@ def _validate_fix_check(ns: argparse.Namespace) -> None:
             )
 
 
+# ---------- runs given as folders (TF22, spec section 18.3.1) ----------
+
+# each verb's run words, by the attribute its parser gives them
+_RUN_WORDS: dict[str, tuple[str, ...]] = {
+    "where": ("run",),
+    "compare": ("a", "b"),
+    "fix-check": ("old", "new", "failing_from"),
+    "changes": ("a", "b"),
+}
+
+
+def _run_words(ns: argparse.Namespace) -> list[tuple[str, str]]:
+    """``(attribute, word)`` for each run the command line gives the verb."""
+    given = [(attr, getattr(ns, attr, None)) for attr in _RUN_WORDS.get(ns.verb, ())]
+    return [(attr, word) for attr, word in given if isinstance(word, str)]
+
+
+def _is_folder(word: str) -> bool:
+    from poisson_trace.ingest.folder import is_folder
+
+    return is_folder(word)
+
+
+def _typed(words: Sequence[str]) -> list[str]:
+    """Options and their values as typed, each quoted for a shell where it needs it."""
+    return [_typed_option(w) if w.startswith("-") and w != "-" else look.word(w) for w in words]
+
+
+def _reached(ns: argparse.Namespace, words: Sequence[str]) -> list[str]:
+    """The words that reach a stored run of the verb's store; none when there is no store or
+    it cannot be read, since a word that reaches nothing may still name a folder."""
+    if ns.store is None:
+        return []
+    try:
+        _, index = _named(ns)
+    except Exception:
+        return []
+    out = []
+    for word in words:
+        try:
+            index.resolve(word)
+        except Exception:
+            continue
+        out.append(word)
+    return out
+
+
+def _on_folders(
+    ns: argparse.Namespace,
+    verb: Callable[[argparse.Namespace], int],
+    extra: Sequence[str],
+    parser: look.Parser,
+) -> int:
+    """The verb on runs given as folders (FI8, FI12 to FI14). A word that reaches a stored run
+    is that run, as before; a word that reaches none and names a folder is the folder. A Prove
+    folder is read where it is. Tool folders are read by their reader, with its flags from the
+    verb's command line, into a store that does not outlive the command. Runs from two places
+    on one report are refused."""
+    from poisson_trace.ingest.rows import Refusal
+
+    words = _run_words(ns)
+    stored = set(_reached(ns, [w for _, w in words if _is_folder(w)]))
+    given = [(attr, w) for attr, w in words if _is_folder(w) and w not in stored]
+    if not given:
+        if extra:
+            parser.error(f"unrecognized arguments: {' '.join(extra)}")
+        return verb(ns)
+    others = [w for attr, w in words if (attr, w) not in given]
+    if others:
+        # each must reach a stored run, refused as before where it does not
+        _, index = _named(ns)
+        for word in others:
+            index.resolve(word)
+        folders = _listed([w for _, w in given])
+        raise _Refusal(
+            f"{folders} {'is a folder' if len(given) == 1 else 'are folders'} and "
+            f"{_listed(others)} a stored run; a report reads its runs from one place, so import "
+            "the folder into the store and give its run by name",
+            *(
+                look.command(
+                    "poisson-trace", "import", look.word(w), *_reach(ns), *_typed(extra)
+                )
+                for _, w in given
+            ),
+        )
+    try:
+        return _read_folders(ns, verb, extra, given, parser)
+    except Refusal as e:
+        raise _Refusal(str(e), *e.nexts) from None
+
+
+def _listed(words: Sequence[str]) -> str:
+    return words[0] if len(words) == 1 else ", ".join(words[:-1]) + " and " + words[-1]
+
+
+def _read_folders(
+    ns: argparse.Namespace,
+    verb: Callable[[argparse.Namespace], int],
+    extra: Sequence[str],
+    given: Sequence[tuple[str, str]],
+    parser: look.Parser,
+) -> int:
+    from poisson_trace.ingest.folder import resolve
+
+    found = [(attr, word, resolve(Path(word))) for attr, word in given]
+    prove = [(a, w, r) for a, w, r in found if r.kind in ("run", "store")]
+    tools = [(a, w, r) for a, w, r in found if r.kind not in ("run", "store")]
+    if prove and tools:
+        raise _Refusal(
+            f"{_listed([w for _, w, _ in prove])} {'is' if len(prove) == 1 else 'are'} Prove's "
+            f"and {_listed([w for _, w, _ in tools])} another tool's results; a report reads its "
+            "runs from one place, so import the results into that store and give the runs by "
+            "name"
+        )
+    if prove:
+        if extra:
+            # a Prove folder has no reader, so no reader's flag applies
+            parser.error(f"unrecognized arguments: {' '.join(extra)}")
+        return _read_prove_folders(ns, verb, prove)
+    return _read_tool_folders(ns, verb, extra, tools)
+
+
+def _read_prove_folders(
+    ns: argparse.Namespace,
+    verb: Callable[[argparse.Namespace], int],
+    found: Sequence[tuple[str, str, Any]],
+) -> int:
+    """Prove folders, read where they are: their one store, each run by its id."""
+    stores = {Path(r.store).resolve() for _, _, r in found}
+    if len(stores) > 1:
+        raise _Refusal(
+            f"{_listed([w for _, w, _ in found])} are runs of {len(stores)} different stores; "
+            "a report reads its runs from one store"
+        )
+    _, first, resolved = found[0]
+    ns.store = str(resolved.store)
+    words: dict[str, str] = {}
+    if resolved.kind == "run":
+        # every run of the store is a folder beside the one typed, and named so
+        from poisson_trace.ingest.writer import runs_in
+
+        for run_id in runs_in(Path(ns.store)):
+            words[run_id] = str(Path(first).parent / run_id)
+    for attr, word, r in found:
+        setattr(ns, attr, r.run_id)
+        words[r.run_id] = word
+    ns.typed_store = None
+    ns.folder_words = words
+    ns.from_folders = True
+    return verb(ns)
+
+
+def _read_tool_folders(
+    ns: argparse.Namespace,
+    verb: Callable[[argparse.Namespace], int],
+    extra: Sequence[str],
+    found: Sequence[tuple[str, str, Any]],
+) -> int:
+    """Tool folders, read by their reader with its flags into a store that does not outlive the
+    command, each run under its folder's name."""
+    import shutil
+    import tempfile
+    from importlib import import_module
+
+    from poisson_trace.ingest import cli as importer
+    from poisson_trace.names import import_name_refusal
+
+    tools = list(dict.fromkeys(str(r.tool) for _, _, r in found))
+    if len(tools) > 1:
+        each = ", ".join(f"{w} ({r.tool})" for _, w, r in found)
+        raise _Refusal(
+            f"the folders hold the results of {len(tools)} tools, {each}; a report compares "
+            "runs of one tool's, read with its reader's flags"
+        )
+    named: dict[str, str] = {}
+    for _, word, r in found:
+        if r.name in named:
+            raise _Refusal(
+                f"{named[r.name]} and {word} are both named {r.name}, and a run read from a "
+                "folder takes its folder's name; import them under two names and give the runs "
+                "by name"
+            )
+        named[r.name] = word
+        hole = import_name_refusal(r.name)
+        if hole is not None:
+            raise _Refusal(f"a run read from a folder takes its folder's name, and {hole}")
+    tool = tools[0]
+    module = import_module(f"poisson_trace.ingest.{tool}")
+    reader = look.Parser(prog=f"poisson-trace {ns.verb}", add_help=False)
+    module.add_arguments(reader)
+    flags = reader.parse_args(list(extra))
+    wrong = getattr(module, "usage", None)
+    said = wrong(flags) if wrong is not None else None
+    if said is not None:
+        reader.error(said)
+    from poisson_trace.ingest.writer import write
+
+    settings = ns.settings
+    held = tempfile.mkdtemp(prefix="poisson-trace-")
+    try:
+        for attr, _, r in found:
+            read_ns = argparse.Namespace(
+                **vars(flags),
+                files=[str(f) for f in r.files],
+                run=r.name,
+                store=held,
+                signals=dict(settings.signals) if settings is not None else {},
+            )
+            run = module.read(read_ns)
+            importer.one_run(tool, read_ns, r, run, ())
+            importer.checked(run)
+            write(
+                run,
+                Path(held),
+                ns.form,
+                rules=settings.rules if settings is not None else (),
+                budgets=settings.budgets if settings is not None else None,
+            )
+            setattr(ns, attr, r.name)
+        ns.store = held
+        ns.typed_store = None
+        ns.folder_words = {r.name: word for _, word, r in found}
+        ns.reader_flags = _typed(extra)
+        ns.from_folders = True
+        return verb(ns)
+    finally:
+        shutil.rmtree(held, ignore_errors=True)
+
+
 # ---------- reading through Prove ----------
 
 
@@ -887,6 +1132,12 @@ def _named(ns: argparse.Namespace, *, lenient: bool = False) -> tuple[Any, Any]:
     from poisson_trace import names
 
     store, held = _open(ns.store)
+    if ns.from_folders:
+        # the runs were read from folders: a command names each by its folder and carries no
+        # store, and one that names no run carries nothing
+        index = names.index(store, held, ns.store, lenient=lenient, form=ns.form, carried=())
+        index.given = dict(ns.folder_words)
+        return store, index
     return store, names.index(
         store, held, ns.store, lenient=lenient, form=ns.form, carried=tuple(_reach(ns))
     )
@@ -904,6 +1155,12 @@ def _load(store: Any, run: Any, *, trace: str = "envelope") -> tuple[Any, Any, A
         raise _Refusal(f"Prove could not read the run {run.shown()} ({look.why(e)})") from e
 
 
+def _store_shown(ns: argparse.Namespace) -> Any:
+    """The store a verb's JSON names: none when the runs were read from folders, since no
+    store the user has holds them (FI13)."""
+    return None if ns.from_folders else ns.store
+
+
 def _two(index: Any, first: str, second: str, labels: tuple[str, str]) -> tuple[Any, Any]:
     """The two runs two words reach, refused when they are one run."""
     a, b = index.resolve(first), index.resolve(second)
@@ -918,7 +1175,7 @@ def _reach(ns: argparse.Namespace) -> list[str]:
     """What a next command carries to read the same store: ``--store`` as it was typed, and
     the config file when it was named by flag; nothing for a store the config gave."""
     words = [] if ns.typed_store is None else [look.option("--store", ns.typed_store)]
-    return [*words, *ns.config_flags]
+    return [*words, *ns.config_flags, *ns.reader_flags]
 
 
 def _flags(ns: argparse.Namespace) -> list[str]:
@@ -928,7 +1185,7 @@ def _flags(ns: argparse.Namespace) -> list[str]:
     words = [] if ns.typed_store is None else [look.option("--store", ns.typed_store)]
     for event in dict.fromkeys(ns.typed_events):
         words.append(look.option("--event", event))
-    return [*words, *ns.config_flags]
+    return [*words, *ns.config_flags, *ns.reader_flags]
 
 
 def _next(index: Any, verb: str, runs: Sequence[Any], ns: argparse.Namespace, *extra: str) -> str:
@@ -1386,7 +1643,7 @@ def _where(ns: argparse.Namespace) -> int:
     median = failed_steps[(len(failed_steps) - 1) // 2] if failed_steps else None
     data: dict[str, Any] = {
         "schema": "poisson-trace.where/1",
-        "prove": {"version": poisson_prove.__version__, "store": ns.store},
+        "prove": {"version": poisson_prove.__version__, "store": _store_shown(ns)},
         "run": _header(run, manifest, placement),
         "events": sorted(events),
         "clock": {"unit": "leaf span index", "by": ns.by},
@@ -1652,7 +1909,7 @@ def _compare(ns: argparse.Namespace) -> int:
             row["q"] = float(q_value)
     data: dict[str, Any] = {
         "schema": "poisson-trace.compare/1",
-        "prove": {"version": poisson_prove.__version__, "store": ns.store},
+        "prove": {"version": poisson_prove.__version__, "store": _store_shown(ns)},
         "runs": {
             "a": _header(run_a, manifest_a, placement_a),
             "b": _header(run_b, manifest_b, placement_b),
@@ -2091,7 +2348,7 @@ def _fix_check(ns: argparse.Namespace) -> int:
     block = _changes_block(counts, configs, ns.alpha)
     data: dict[str, Any] = {
         "schema": "poisson-trace.fix-check/2",
-        "prove": {"version": poisson_prove.__version__, "store": ns.store},
+        "prove": {"version": poisson_prove.__version__, "store": _store_shown(ns)},
         "runs": {"old": header_old, "new": header_new},
         "gap_seconds": gap,
         "events": sorted(events),
@@ -2319,7 +2576,7 @@ def _changes(ns: argparse.Namespace) -> int:
     gap = abs((_started(run_b, manifest_b) - _started(run_a, manifest_a)).total_seconds())
     data: dict[str, Any] = {
         "schema": "poisson-trace.changes/2",
-        "prove": {"version": poisson_prove.__version__, "store": ns.store},
+        "prove": {"version": poisson_prove.__version__, "store": _store_shown(ns)},
         "runs": {
             "a": _paired_header(run_a, manifest_a, tally_a),
             "b": _paired_header(run_b, manifest_b, tally_b),

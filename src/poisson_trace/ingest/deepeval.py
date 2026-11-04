@@ -27,6 +27,7 @@ from typing import Any
 
 from poisson_trace.ingest.cut import MET, MISSED, Cut
 from poisson_trace.ingest.rows import Refusal, Row, Run, case_id, digest_id
+from poisson_trace.ingest.verdicts import input_case
 from poisson_trace.look import why
 
 ENVELOPES: tuple[str, ...] = ("test run", "wrapped test run")
@@ -286,6 +287,7 @@ def read(ns: argparse.Namespace) -> Run:
         files.append({"name": path.name, "sha256": hashlib.sha256(raw).hexdigest()})
         read_in.append((path, _entries(path, test_run)))
     rows: list[Row] = []
+    inputs: dict[str, str] = {}
     without = 0
     carried: set[str] = set()
     thresholds: Counter[str] = Counter()
@@ -317,7 +319,11 @@ def read(ns: argparse.Namespace) -> Run:
             )
         for held_in, test_case, m in found:
             signals = _signals(test_case, _metrics(path, test_case))
-            rows.append(_row(path, m, _case(path, ns.case, held_in, test_case), cut, signals))
+            case = _case(path, ns.case, held_in, test_case)
+            rows.append(_row(path, m, case, cut, signals))
+            if "input" in test_case:
+                # the input's key alone is kept, for --verdicts; the first try's, if they differ
+                inputs.setdefault(case, input_case(test_case["input"]))
             threshold = m.get("threshold")
             thresholds[
                 "no recorded threshold"
@@ -348,4 +354,5 @@ def read(ns: argparse.Namespace) -> Run:
         declared=declared,
         files=tuple(files),
         counts=counts,
+        inputs=inputs,
     )

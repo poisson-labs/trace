@@ -380,6 +380,8 @@ class Index:
     # what a command carries to reach this store: --store as given, or nothing (and the config
     # file named by flag) when the config gives it
     carried: tuple[str, ...] | None = None
+    # the word a command gives for a run a verb read from a folder: the folder's path as typed
+    given: dict[str, str] = field(default_factory=dict)
 
     def damage(self) -> Damaged | None:
         """The refusal a file with a stale entry, a name that cannot be one or two names for
@@ -557,7 +559,9 @@ class Index:
         """The word a command gives for ``run``: its name when that reaches it alone; else its
         number, or its id, which always does. Two runs can come to answer to one name when a
         name of yours or an import's name was given before a run with that computed name was
-        stored."""
+        stored. A run read from a folder is given by the folder, as it was typed."""
+        if run.run_id in self.given:
+            return self.given[run.run_id]
         if self.holder(run.name) == {run.run_id}:
             return run.name
         return f"#{run.number}" if run.number is not None else run.run_id
