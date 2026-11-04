@@ -34,15 +34,15 @@ STORES = TESTS / "fixtures" / "prove-stores"
 OLD = STORES / "prove-0.0.1"
 OLD_A = "20261028T154158Z-c830"  # the mock agent
 OLD_B = "20261028T154200Z-9ace"  # the patched mock agent, paired with OLD_A
-# written by poisson-prove 0.1.2 from PyPI (the Prove Trace pins), each run named at sweep time
+# written by poisson-prove 0.1.3 from PyPI (the Prove Trace pins), each run named at sweep time
 NEW = STORES / f"prove-{RECORDED}"
-NEW_BEFORE = "20261103T150857Z-24db"  # sweep --name "agent before", the mock agent
-NEW_AFTER = "20261103T150859Z-81ef"  # sweep --name "agent after", the patched mock agent
+NEW_BEFORE = "20261104T162926Z-b4d5"  # sweep --name "agent before", the mock agent
+NEW_AFTER = "20261104T162928Z-1596"  # sweep --name "agent after", the patched mock agent
 SWEEP_NAMES = {NEW_BEFORE: "agent before", NEW_AFTER: "agent after"}
 # the names Trace computes for runs of the target mock-agent on the day of each store (spec
 # section 5.2): the old store's runs, and the new store's
 COMPUTED = ("mock-agent 2026-10-28 a", "mock-agent 2026-10-28 b")
-NEW_COMPUTED = ("mock-agent 2026-11-03 a", "mock-agent 2026-11-03 b")
+NEW_COMPUTED = ("mock-agent 2026-11-04 a", "mock-agent 2026-11-04 b")
 EVENT = "violated"
 POISSON = ".poisson"
 
@@ -161,7 +161,7 @@ def copy_store(source: Path, dest: Path, runs: Sequence[str] | None = None) -> P
 
 
 def copies(tmp_path: Path) -> tuple[Path, Path]:
-    """Copies of the two committed stores, 0.0.1's and 0.1.2's, so no build under test can write
+    """Copies of the two committed stores, 0.0.1's and 0.1.3's, so no build under test can write
     into the committed ones."""
     return copy_store(OLD, tmp_path / "prove-0.0.1"), copy_store(NEW, tmp_path / f"prove-{RECORDED}")
 

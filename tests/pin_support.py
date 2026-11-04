@@ -3,13 +3,14 @@
 Taylor's ruling of 2026-11-03: Trace pins exactly the newest ``poisson-prove`` on PyPI at the
 start of the session that froze these tests, as a declared dependency, and the pin is moved later
 only on purpose, as Prove work lands. ``pip index versions poisson-prove`` at 2026-11-03 14:49
-UTC listed 0.1.2, 0.1.1 and 0.1.0, so the recorded version is 0.1.2. Moving the pin moves this
-file, the one place Trace writes it, and the digests that hold them.
+UTC listed 0.1.2, 0.1.1 and 0.1.0, so the recorded version was 0.1.2. Moving the pin moves this
+file, the one place Trace writes it, and the digests that hold them. Taylor's ruling of 2026-11-04
+moved it to 0.1.3.
 """
 
 from __future__ import annotations
 
-RECORDED = "0.1.2"
+RECORDED = "0.1.3"
 REQUIREMENT = f"poisson-prove=={RECORDED}"
 # the one command that installs the Prove Trace reads, from PyPI
 INSTALL = f"pip install {REQUIREMENT}"

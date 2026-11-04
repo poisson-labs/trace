@@ -6,15 +6,15 @@ was published. Nothing in either was written or edited by hand.
 
 | store | written by | when | how to get that Prove |
 |---|---|---|---|
-| `prove-0.1.2/` | `poisson-prove` 0.1.2 (import `poisson_prove`), from PyPI: `poisson-prove==0.1.2` | 2026-11-03 | `pip install poisson-prove==0.1.2` |
+| `prove-0.1.3/` | `poisson-prove` 0.1.3 (import `poisson_prove`), from PyPI: `poisson-prove==0.1.3` | 2026-11-04 | `pip install poisson-prove==0.1.3` |
 | `prove-0.0.1/` | `proofload` 0.0.1, Prove's name before it was published as `poisson-prove` | 2026-10-28 | never on a package index; its wheel was `proofload-0.0.1-py3-none-any.whl` (sha256 `f2fde54ca8bc1ae6ccbfa9f8d057904b526c8a11722360fbb7587e2b6f40a76d`) |
 
-`prove-0.1.2/` was made by `make.py` beside this file in a fresh Python 3.11.18 environment that
-held only `poisson-prove==0.1.2` from PyPI and what it pulls in (numpy 2.4.6, pandas 3.1.0,
+`prove-0.1.3/` was made by `make.py` beside this file in a fresh Python 3.11.7 environment that
+held only `poisson-prove==0.1.3` from PyPI and what it pulls in (numpy 2.4.6, pandas 3.1.1,
 pyarrow 26.0.1, scipy 1.17.1, rich 15.0.0, textual 8.2.8, threadpoolctl 3.7.0 and their own
-needs), with `HOME` a scratch folder. It replaces the store Prove's unreleased main wrote on
-2026-10-28, which stated the version 0.0.1 under the new name and which no published Prove
-could make again.
+needs), with `HOME` a scratch folder. It replaces the store `poisson-prove` 0.1.3 wrote on
+2026-11-03, by Taylor's ruling of 2026-11-04 moving the pin; each fixture store made with Prove is
+made by the Prove Trace pins.
 
 `prove-0.0.1/` is kept as Prove wrote it: it is the shape of a store from before Prove was
 published (no `.poisson/`, no event logs, no names, the version under the old key), which TF16's
@@ -22,22 +22,22 @@ tests read beside the new one. No published Prove writes that shape, so it is no
 
 ## The recipe
 
-`make.py` beside this file is the whole recipe for `prove-0.1.2/`, and `sweep.toml` the spec it
+`make.py` beside this file is the whole recipe for `prove-0.1.3/`, and `sweep.toml` the spec it
 reads (and the spec `prove-0.0.1/` was swept from): the mock agent over two tasks (`search`,
 `refund`) and two tool failure rates (0.0, 0.55), 40 replicates each, 160 rollouts a run,
 `t_unit = tool_calls`, target id `mock-agent`.
 
 ```
-pip install poisson-prove==0.1.2
+pip install poisson-prove==0.1.3
 python make.py DEST
 ```
 
-It refuses a Python whose `poisson_prove` is not 0.1.2 (`--python PYTHON` names another
+It refuses a Python whose `poisson_prove` is not 0.1.3 (`--python PYTHON` names another
 interpreter), and runs, in order:
 
-1. `python -m poisson_prove sweep sweep.toml --target poisson_prove.examples.mock_agent:rollout --salt 5eed000000000016 --name "agent before" --max-mde 0.5 --yes --store prove-0.1.2`
-2. `python -m poisson_prove sweep sweep.toml --target poisson_prove.examples.mock_agent:rollout_patched --pair-with latest --name "agent after" --max-mde 0.5 --yes --store prove-0.1.2`
-3. `python -m poisson_prove diff "agent before" "agent after" --event violated --save --store prove-0.1.2`
+1. `python -m poisson_prove sweep sweep.toml --target poisson_prove.examples.mock_agent:rollout --salt 5eed000000000016 --name "agent before" --max-mde 0.5 --yes --store prove-0.1.3`
+2. `python -m poisson_prove sweep sweep.toml --target poisson_prove.examples.mock_agent:rollout_patched --pair-with latest --name "agent after" --max-mde 0.5 --yes --store prove-0.1.3`
+3. `python -m poisson_prove diff "agent before" "agent after" --event violated --save --store prove-0.1.3`
 
 `prove-0.0.1/` was swept from the same spec with the same salt by `proofload` 0.0.1's own
 `sweep` (`python -m proofload --store prove-0.0.1 sweep sweep.toml --target
@@ -51,12 +51,12 @@ outcomes; the run ids, the times and the files that carry them differ.
 
 ## What each store holds
 
-- **`prove-0.1.2/`**: runs `20261103T150857Z-24db`, named `agent before` at sweep time, and
-  `20261103T150859Z-81ef`, named `agent after`, paired with it. As poisson-prove 0.1.2 writes a
-  store: a `manifest.json` with `poisson_prove_version` 0.1.2 and `name`, an `events.jsonl`
+- **`prove-0.1.3/`**: runs `20261104T162926Z-b4d5`, named `agent before` at sweep time, and
+  `20261104T162928Z-1596`, named `agent after`, paired with it. As poisson-prove 0.1.3 writes a
+  store: a `manifest.json` with `poisson_prove_version` 0.1.3 and `name`, an `events.jsonl`
   (`poisson.run-event/1`) beside it, traces under `poisson-prove.trace/1`; and `.poisson/` with
   the store descriptor `store.json` (`poisson.store/1`) and the saved comparison of step 3 under
-  `artifacts/comparison/d5c40253d561dfd5/` (its descriptor, result, table and charts).
+  `artifacts/comparison/19197f1deb19b9e3/` (its descriptor, result, table and charts).
 - **`prove-0.0.1/`**: runs `20261028T154158Z-c830` (the mock agent) and `20261028T154200Z-9ace`
   (the patched agent, paired with it). As 0.0.1 wrote a store: a `manifest.json` with the
   version under `proofload_version` and no `name`, the rows in three Parquet parts per run,
