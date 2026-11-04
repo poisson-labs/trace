@@ -533,6 +533,17 @@ poisson-trace import TOOL FILE [FILE ...] --store ROOT --run NAME [the reader's 
   each `run_id`. It is byte-identical across invocations on equal inputs.
 - Options may come before or after the verb. An option cut short (`--ev` for `--event`) is
   refused rather than guessed.
+- One result, two renderings ([`docs/cli-look.md`](docs/cli-look.md), rule 16). On a pipe,
+  and wherever a script reads it, the report is plain text with no escape sequence, one line
+  per fact: the rendering every example here shows and the tests pin. On a terminal the same
+  facts are drawn in the same order with the verdict word in its colour (green `ok`; yellow
+  *too small to tell*, *no significant difference* and `stopped`; red *not ready* and
+  `error:`; *different* bold), headings bold, labels dim, long lines wrapped at the terminal's
+  width with a command never broken, and a per-input table too wide for the terminal folded
+  (the unit into the header, the input's key one field per line). A number is never coloured.
+  `--plain`, before or after the verb, prints the plain rendering on a terminal too, wrapped at
+  its width; so does `NO_COLOR` set to anything, `CI` set, `TERM=dumb`, a stdout that is not
+  UTF-8 or a pipe on either stream. `--json` is one document everywhere.
 - A refusal or a mistake in the command line is one line on stderr that starts `error:`, and
   nothing on stdout; where there is a command that moves you on (the listing of the store's
   runs, the verb's help, the install line), it follows on a line of its own, `  next:`.

@@ -25,10 +25,13 @@ classifiers = [
 # steady until the pin is moved on purpose. This is the one place the version is written;
 # `poisson_trace.look` reads it back from the installed package's metadata, so the version Trace
 # checks for, the refusal's install command and this line cannot drift apart.
-dependencies = ["numpy", "scipy", "pandas>=2", "poisson-prove==0.1.2"]
+# Rich draws the pretty rendering on a terminal (docs/cli-look.md, rule 16) and is imported by
+# poisson_trace/_pretty.py alone; the floor is the one Prove declares
+dependencies = ["numpy", "scipy", "pandas>=2", "poisson-prove==0.1.2", "rich>=14.2.0"]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-xdist", "hypothesis", "mypy", "ruff", "lifelines"]
+# pyte reads a pseudo-terminal's screen back for the clean-look tests
+dev = ["pytest", "pytest-xdist", "hypothesis", "mypy", "ruff", "lifelines", "pyte"]
 
 [project.scripts]
 poisson-trace = "poisson_trace.cli:main"
@@ -69,8 +72,9 @@ module = ["pandas", "pandas.*", "pyarrow", "pyarrow.*", "scipy", "scipy.*"]
 ignore_missing_imports = true
 
 # The lanes, named as Prove's are (spec section 17.5):
-#   code, on every pull request:  python -m pytest -n 10 -m "not math and not lane_j" tests
+#   code, on every pull request:  python -m pytest -n 10 -m "not math and not lane_j and not slow" tests
 #   math, the statistics:         python -m pytest -n 10 -m math tests
+#   slow, the rest:               python -m pytest -n 10 -m slow tests
 #   lane_j, the real tools:       python -m pytest -m lane_j tests
 # A -m given on the command line replaces the one below, so the code lane names lane_j itself.
 # Lane J holds every test that reads PyPI: DeepEval and Ragas run themselves, and the Trace wheel
@@ -81,5 +85,6 @@ testpaths = ["tests"]
 addopts = ["-m", "not lane_j"]
 markers = [
     "lane_j: reads PyPI: runs another tool itself (DeepEval, Ragas) at its pinned version, or installs the Trace wheel into a clean environment; deselected unless -m lane_j",
+    "slow: a test that runs every invocation of a corpus where the pull-request lane keeps a fast test of the same invariant on a few (the clean look over the whole conformance corpus); nightly and before every release",
     "math: the math suite, a statistic's slow property checks against its reference where the pull-request lane keeps a fast test of the same invariant; runs on a pull request that changes the statistics code (src/poisson_trace/paired.py, survival.py), a test of the math suite, or the resolved numpy, scipy, pandas or lifelines, nightly and before every release",
 ]

@@ -81,6 +81,11 @@ def _build_parser(
     parser.add_argument(
         "--version", action="store_true", help="print the versions of Trace, Prove and Python"
     )
+    parser.add_argument(
+        "--plain",
+        action="store_true",
+        help="print plain text with no colour, as on a pipe; may come before or after the tool",
+    )
     parser.add_argument("--debug", action="store_true", help=argparse.SUPPRESS)
     tools = parser.add_subparsers(dest="tool", metavar="TOOL", title="tools")
     subs: dict[str, look.Parser] = {}

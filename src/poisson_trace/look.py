@@ -1,9 +1,13 @@
 """The command-line look both commands keep, as ``docs/cli-look.md`` writes it: the exit codes,
 the ``error:`` and ``stopped`` lines, the version line, counts with thousands separators, the
-ASCII fallback, a reader that has gone away, the errors log, and an argument parser that
-reads options before or after the verb and refuses abbreviations.
+ASCII fallback, a reader that has gone away, the errors log, an argument parser that reads
+options before or after the verb and refuses abbreviations, and the switch between the two
+renderings of a result (rule 16): plain, the contract, and pretty, drawn on a terminal.
 
-Standard library only. Every line a command prints goes through ``out`` or ``err``.
+Standard library only: the pretty rendering's styles and tables are ``_pretty``'s, the one
+module that imports Rich, and this module imports it only once the switch has chosen pretty.
+Every line a command prints goes through ``out`` or ``err``, which hand it to the rendering
+chosen for the process; on a pipe the text is written as it is.
 """
 
 from __future__ import annotations
@@ -15,6 +19,7 @@ import importlib.metadata
 import os
 import re
 import shlex
+import shutil
 import sys
 import traceback
 import unicodedata
@@ -22,7 +27,7 @@ from collections.abc import Callable, Collection, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, NoReturn, TextIO
+from typing import Any, NoReturn, Protocol, TextIO
 
 # the exit codes (docs/cli-look.md); 4 belongs to a check the user asks for (doctor)
 DONE = 0
@@ -156,11 +161,22 @@ def _write(stream: TextIO, text: str) -> None:
 
 
 def out(text: str) -> None:
-    _write(sys.stdout, text)
+    """A piece of stdout. On a pipe it is written as it is; on a terminal it goes through the
+    rendering the switch chose (``_Rendering``): plain, wrapped at the terminal's width, or
+    pretty."""
+    if _rendering is None:
+        _write(sys.stdout, text)
+    else:
+        _rendering.out(text)
 
 
 def err(text: str) -> None:
-    _write(sys.stderr, text)
+    """A piece of stderr: as it is on a pipe and in plain; its ``error:``, ``note:`` and
+    ``next:`` words in their styles in pretty. Never wrapped: each problem is one line."""
+    if _rendering is None:
+        _write(sys.stderr, text)
+    else:
+        _rendering.err(text)
 
 
 def _visible(ch: str) -> str:
@@ -326,6 +342,389 @@ def _append_errors_log(path: Path, entry: str) -> bool:
     return True
 
 
+# ---------- the two renderings (docs/cli-look.md, rule 16) ----------
+
+# The four meanings, mapped to Trace's verdict words: green, the command did what was asked;
+# yellow, it stopped short or cannot say; red, an error or a failed check. A verdict that is a
+# result and neither good nor bad (different, plan) is bold with no colour.
+GREEN_WORDS = ("ok", "done")
+YELLOW_WORDS = (
+    "stopped",
+    "refused",
+    "too small to tell",
+    "no significant difference",
+    "no control",
+)
+RED_WORDS = ("not ready", "not whole")
+
+
+def meaning(word: str) -> str:
+    """The style a verdict word is drawn in: ``green``, ``yellow``, ``red`` or ``bold``."""
+    if word in GREEN_WORDS:
+        return "green"
+    if word in YELLOW_WORDS:
+        return "yellow"
+    if word in RED_WORDS:
+        return "red"
+    return "bold"
+
+
+def table(header: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
+    """The plain face of a table: the markdown table the reports print, ``| a | b |``, then
+    ``|---|---|``, then one ``| … |`` line a row, each line ended. The pretty face is
+    ``_pretty.table``; every table goes through both, so a new table gets every rule."""
+    lines = ["| " + " | ".join(str(h) for h in header) + " |", "|" + "---|" * len(header)]
+    lines += ["| " + " | ".join(str(c) for c in row) + " |" for row in rows]
+    return "".join(line + "\n" for line in lines)
+
+
+#: The first line a verb prints: a lowercase verdict word or phrase, two spaces, one sentence.
+VERDICT_LINE = re.compile(r"^([a-z][a-z ]*?)  (\S.*)$")
+#: A command printed for the user to copy opens with the command's name and a verb or an option,
+#: or with pip install.
+_OPENS = (
+    r"(?:(?:poisson-trace|python -m poisson_trace)\s+"
+    r"(?:init|runs|name|where|compare|fix-check|changes|doctor|import|--?[a-z])"
+    r"|pip install\s)"
+)
+_NEXT = re.compile(r"^(\s*)(next:)( .*)$")
+_COMMAND_LINE = re.compile(rf"^\s*{_OPENS}")
+_DETAIL = re.compile(r"^(\s{2,})(\S+(?: \S+)?)(\s{2,})(\S.*)$")
+_DETAIL_COMMAND = re.compile(rf"^\s{{2,}}\S+(?: \S+)?\s{{2,}}{_OPENS}")
+_SPAN = re.compile(rf"`{_OPENS}[^`]*`")
+_TABLE_ROW = re.compile(r"^\s*\|.*\|\s*$")
+_RULE_ROW = re.compile(r"^\s*\|(?:\s*:?-+:?\s*\|)+\s*$")
+_HEADING = re.compile(r"^(\s*)#{1,6} (\S.*)$")
+_BOLD = re.compile(r"^(\s*)\*\*(\S.*?)\*\*$")
+_PROBLEM = re.compile(r"^(\s*)(error:|note:)( .*|)$")
+
+
+def terminal_width() -> int:
+    """The terminal's width in columns, from ``COLUMNS`` or stdout's terminal; 80 when neither
+    says."""
+    return max(20, shutil.get_terminal_size((80, 24)).columns)
+
+
+def wrap(line: str, width: int, hang: int, whole: Collection[str] = ()) -> list[str]:
+    """``line`` as rows no wider than ``width`` where its words allow: broken at spaces, every
+    run of spaces inside a row kept, the first row at the line's own indent and every row after
+    it indented by ``hang`` (deeper than the line, a hanging indent). A word is never broken,
+    and a span in ``whole`` (a command in backquotes) is one word. A line that fits is itself."""
+    if len(line) <= width:
+        return [line]
+    indent = len(line) - len(line.lstrip(" "))
+    if hang <= indent or hang >= width // 2:
+        hang = indent + 2
+    rest = line[indent:]
+    words: list[tuple[str, str]] = []  # each word with the spaces that follow it
+    at = 0
+    while at < len(rest):
+        span = next((s for s in whole if rest.startswith(s, at)), None)
+        end = at + len(span) if span else _word_end(rest, at)
+        gap = end
+        while gap < len(rest) and rest[gap] == " ":
+            gap += 1
+        words.append((rest[at:end], rest[end:gap]))
+        at = gap
+    rows: list[str] = []
+    row = " " * indent
+    first = True
+    for word, spaces in words:
+        if not first and len(row) + len(word) > width:
+            rows.append(row.rstrip(" "))
+            row = " " * hang
+        row += word + spaces
+        first = False
+    rows.append(row.rstrip(" ") if rows else row)
+    return rows
+
+
+def _word_end(text: str, at: int) -> int:
+    end = text.find(" ", at)
+    return len(text) if end < 0 else end
+
+
+def _holds_command(line: str, continued: bool) -> bool:
+    """Whether the line carries a command to copy, which is never broken: a ``next:`` line, a
+    command line or the line a command continues onto, a ``label  command`` detail line, or a
+    command in backquotes."""
+    return bool(
+        (continued and line.strip())
+        or _NEXT.match(line)
+        or _COMMAND_LINE.match(line)
+        or _DETAIL_COMMAND.match(line)
+        or _SPAN.search(line)
+    )
+
+
+def _take_plain(argv: Sequence[str]) -> tuple[list[str], bool]:
+    """The command line without ``--plain``, and whether it was given, anywhere before ``--``."""
+    kept: list[str] = []
+    plain = False
+    for i, word in enumerate(argv):
+        if word == "--":
+            kept += argv[i:]
+            break
+        if word == "--plain":
+            plain = True
+        else:
+            kept.append(word)
+    return kept, plain
+
+
+def _asked_json(argv: Sequence[str]) -> bool:
+    for word in argv:
+        if word == "--":
+            return False
+        if word == "--json":
+            return True
+    return False
+
+
+def _is_terminal(stream: Any) -> bool:
+    try:
+        return bool(stream is not None and stream.isatty())
+    except (AttributeError, ValueError, OSError):
+        return False
+
+
+def _utf8(stream: Any) -> bool:
+    import codecs
+
+    name = getattr(stream, "encoding", None)
+    if not name:
+        return False
+    try:
+        return codecs.lookup(name).name == "utf-8"
+    except LookupError:
+        return False
+
+
+class _Pretty(Protocol):
+    """What the pretty rendering module (``_pretty``) draws: a piece of text in a style, a verdict
+    line, and a table for a width."""
+
+    def style(self, text: str, meaning: str) -> str: ...
+
+    def verdict(self, word: str, sentence: str) -> str: ...
+
+    def table(self, header: Sequence[str], rows: Sequence[Sequence[str]], *, width: int) -> str: ...
+
+
+def _choose(plain: bool, as_json: bool) -> _Rendering | None:
+    """The rendering for this process, or None for a pipe's (text as it is). Pretty runs only
+    when stdout and stderr are both terminals, ``NO_COLOR`` is unset or empty, ``CI`` is unset,
+    ``TERM`` is not ``dumb``, stdout is UTF-8, and neither ``--json`` nor ``--plain`` was given;
+    anything else on a terminal is plain, wrapped at the terminal's width. ``--json`` is one
+    document, as on a pipe. A Trace that cannot import Rich prints plain and says nothing."""
+    if as_json or not _is_terminal(sys.stdout):
+        return None
+    pretty = (
+        not plain
+        and _is_terminal(sys.stderr)
+        and os.environ.get("NO_COLOR", "") == ""
+        and "CI" not in os.environ
+        and os.environ.get("TERM") != "dumb"
+        and _utf8(sys.stdout)
+    )
+    styles: _Pretty | None = None
+    if pretty:
+        try:
+            from poisson_trace import _pretty
+
+            styles = _pretty
+        except ImportError:
+            styles = None
+    return _Rendering(terminal_width(), styles)
+
+
+class _Rendering:
+    """One process's rendering on a terminal: plain, wrapping stdout's long lines at the width
+    with a hanging indent (``pretty`` None), or pretty, the same lines drawn through
+    ``_pretty``: the verdict word in its meaning, headings bold, a detail line's label and a
+    ``next:`` dim, the report's tables aligned or folded, ``error:`` red and ``note:`` yellow on
+    stderr. What each line is, is read from its shape: the first stdout line is the verdict
+    line; a line holding a command is never broken; a table's rows are gathered until the line
+    after them; stderr is never wrapped, each problem one line."""
+
+    def __init__(self, width: int, pretty: _Pretty | None) -> None:
+        self.width = width
+        self.pretty = pretty
+        self._out = ""  # the part of a stdout line not yet ended
+        self._err = ""
+        self._lines = 0  # stdout lines rendered
+        self._detail = False  # between the verdict line and the first blank line
+        self._continued = False  # the last stdout line was a command ending in a backslash
+        self._table: list[str] = []  # the rows of a table not yet drawn
+        self._err_mid = False  # stderr is in the middle of a line written as it was
+
+    # -- stdout --
+
+    def out(self, text: str) -> None:
+        self._out += text
+        while "\n" in self._out:
+            line, self._out = self._out.split("\n", 1)
+            self._line(line)
+
+    def _line(self, line: str) -> None:
+        if _TABLE_ROW.match(line) and (self.pretty is not None):
+            self._table.append(line)
+            return
+        self._draw_table()
+        n = self._lines
+        self._lines += 1
+        if not line.strip():
+            self._detail = False
+            self._continued = False
+            _write(sys.stdout, line + "\n")
+            return
+        if n == 0:
+            m = VERDICT_LINE.match(line)
+            if m:
+                self._detail = True
+            if self.pretty is not None and m:
+                _write(sys.stdout, self.pretty.verdict(m.group(1), m.group(2)) + "\n")
+            else:
+                _write(sys.stdout, line + "\n")
+            return
+        if self.pretty is None:
+            self._plain_line(line)
+        else:
+            self._pretty_line(line)
+
+    def _plain_line(self, line: str) -> None:
+        if _holds_command(line, self._continued) or line.lstrip().startswith("|"):
+            rows = [line]
+        else:
+            rows = wrap(line, self.width, self._hang(line))
+        self._continued = line.rstrip().endswith("\\") and _holds_command(line, self._continued)
+        _write(sys.stdout, "".join(r + "\n" for r in rows))
+
+    def _hang(self, line: str) -> int:
+        """Where a wrapped line's rows after the first start: under a detail line's value, else
+        two deeper than the line."""
+        indent = len(line) - len(line.lstrip(" "))
+        if self._detail:
+            m = _DETAIL.match(line)
+            if m:
+                return len(m.group(1)) + len(m.group(2)) + len(m.group(3))
+        return indent + 2
+
+    def _pretty_line(self, line: str) -> None:
+        assert self.pretty is not None
+        style = self.pretty.style
+        continued = self._continued
+        self._continued = line.rstrip().endswith("\\") and _holds_command(line, continued)
+        m = _NEXT.match(line)
+        if m:
+            _write(sys.stdout, m.group(1) + style(m.group(2), "dim") + m.group(3) + "\n")
+            return
+        if (continued and line.strip()) or _COMMAND_LINE.match(line):
+            _write(sys.stdout, line + "\n")
+            return
+        d = _DETAIL.match(line) if self._detail else None
+        if d:
+            label = style(d.group(2), "dim")
+            if _DETAIL_COMMAND.match(line):
+                rows = [line]
+            else:
+                rows = wrap(line, self.width, self._hang(line), _SPAN.findall(line))
+            rows[0] = d.group(1) + label + rows[0][len(d.group(1)) + len(d.group(2)) :]
+            _write(sys.stdout, "".join(r + "\n" for r in rows))
+            return
+        h = _HEADING.match(line) or _BOLD.match(line)
+        if h:
+            text = h.group(1) + h.group(2)
+            rows = wrap(text, self.width, len(h.group(1)) + 2, _SPAN.findall(text))
+            _write(sys.stdout, "".join(_styled_row(r, "bold", style) + "\n" for r in rows))
+            return
+        rows = wrap(line, self.width, self._hang(line), _SPAN.findall(line))
+        _write(sys.stdout, "".join(r + "\n" for r in rows))
+
+    def _draw_table(self) -> None:
+        """The gathered rows as the pretty table, or as they are when they are not one table."""
+        rows, self._table = self._table, []
+        if not rows:
+            return
+        self._lines += len(rows)
+        self._detail = False
+        cells = [_cells(r) for r in rows if not _RULE_ROW.match(r)]
+        if len(rows) < 2 or not cells or len({len(c) for c in cells}) != 1:
+            _write(sys.stdout, "".join(r + "\n" for r in rows))
+            return
+        indent = len(rows[0]) - len(rows[0].lstrip(" "))
+        assert self.pretty is not None
+        drawn = self.pretty.table(cells[0], cells[1:], width=self.width - indent)
+        if indent:
+            drawn = "".join(" " * indent + r + "\n" for r in drawn.split("\n") if r)
+        _write(sys.stdout, drawn)
+
+    # -- stderr --
+
+    def err(self, text: str) -> None:
+        self._flush_out()
+        if self.pretty is None:
+            _write(sys.stderr, text)
+            return
+        self._err += text
+        while "\n" in self._err:
+            line, self._err = self._err.split("\n", 1)
+            if self._err_mid:
+                _write(sys.stderr, line + "\n")
+                self._err_mid = False
+            else:
+                _write(sys.stderr, self._err_line(line) + "\n")
+        if self._err:
+            # a question, written as it is up to its answer
+            _write(sys.stderr, self._err)
+            self._err = ""
+            self._err_mid = True
+
+    def _err_line(self, line: str) -> str:
+        assert self.pretty is not None
+        style = self.pretty.style
+        m = _PROBLEM.match(line)
+        if m:
+            colour = "red" if m.group(2) == "error:" else "yellow"
+            return m.group(1) + style(m.group(2), colour) + m.group(3)
+        m = _NEXT.match(line)
+        if m:
+            return m.group(1) + style(m.group(2), "dim") + m.group(3)
+        return line
+
+    # -- the end --
+
+    def _flush_out(self) -> None:
+        """What stdout holds: a table not yet drawn and a line not yet ended."""
+        if self._out:
+            line, self._out = self._out, ""
+            self._line(line)
+            self._out = ""
+        self._draw_table()
+
+    def close(self) -> None:
+        self._flush_out()
+        if self._err:
+            _write(sys.stderr, self._err)
+            self._err = ""
+
+
+def _styled_row(row: str, meaning_: str, style: Callable[[str, str], str]) -> str:
+    lead = len(row) - len(row.lstrip(" "))
+    return row[:lead] + style(row[lead:], meaning_)
+
+
+def _cells(row: str) -> list[str]:
+    """A markdown row's cells, a ``\\|`` inside a cell read as a pipe."""
+    text = row.strip()
+    text = text[1:-1] if text.startswith("|") and text.endswith("|") else text
+    return [c.strip().replace("\\|", "|") for c in re.split(r"(?<!\\)\|", text)]
+
+
+_rendering: _Rendering | None = None
+_depth = 0
+
+
 # ---------- running a command ----------
 
 
@@ -351,29 +750,47 @@ def run(
 ) -> int:
     """``body`` under the look's rules: a refusal is one ``error:`` line and exit 1, a wrong
     command line exit 2, a failure after work started exit 3, Ctrl-C a ``stopped`` line on
-    stdout and exit 130, and anything unexpected one line naming the errors log, exit 3."""
+    stdout and exit 130, and anything unexpected one line naming the errors log, exit 3.
+
+    The outermost ``run`` of a process chooses the rendering (rule 16): it takes ``--plain``,
+    the tool's own option, off the command line wherever it stands before a ``--``, and decides
+    between plain and pretty from the streams and the environment. The command ``import`` hands
+    to the import's own ``run`` keeps the rendering already chosen."""
+    global _depth, _rendering
+    outer = _depth == 0
+    if outer:
+        argv, plain = _take_plain(argv)
+        _rendering = _choose(plain, _asked_json(argv))
     session = Session(tool, list(argv))
+    _depth += 1
     try:
-        return body(session)
-    except Usage as e:
-        error(str(e), e.nexts)
-        return USAGE
-    except Refused as e:
-        error(str(e), e.nexts)
-        return REFUSED
-    except refusals as e:
-        error(str(e), getattr(e, "nexts", ()))
-        return REFUSED
-    except Failed as e:
-        error(str(e))
-        return FAILED
-    except KeyboardInterrupt:
-        line = session.stopped()
-        out(line + "\n" if session.render is None else session.render(line))
-        return INTERRUPTED
-    except Exception as e:
-        _unexpected(session, e)
-        return FAILED
+        try:
+            return body(session)
+        except Usage as e:
+            error(str(e), e.nexts)
+            return USAGE
+        except Refused as e:
+            error(str(e), e.nexts)
+            return REFUSED
+        except refusals as e:
+            error(str(e), getattr(e, "nexts", ()))
+            return REFUSED
+        except Failed as e:
+            error(str(e))
+            return FAILED
+        except KeyboardInterrupt:
+            line = session.stopped()
+            out(line + "\n" if session.render is None else session.render(line))
+            return INTERRUPTED
+        except Exception as e:
+            _unexpected(session, e)
+            return FAILED
+    finally:
+        _depth -= 1
+        if outer:
+            if _rendering is not None:
+                _rendering.close()
+            _rendering = None
 
 
 def _unexpected(session: Session, e: Exception) -> None:
@@ -430,15 +847,68 @@ def _quotes(message: str) -> str:
     return _LITERAL.sub(quoted, message)
 
 
+#: The width the help is laid out at: what argparse takes on a pipe with no ``COLUMNS`` set.
+HELP_WIDTH = 78
+
+
+def _help_width() -> int:
+    """The help's width: ``COLUMNS`` less two when it is set, as argparse reads it, else 78. The
+    terminal's own width is not read, so the help's usage and options lay out the same on every
+    terminal and on a pipe, and its first line reads the same everywhere."""
+    columns = os.environ.get("COLUMNS")
+    if columns and columns.isdigit() and int(columns) > 2:
+        return int(columns) - 2
+    return HELP_WIDTH
+
+
+class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
+    """Argparse's formatter at ``_help_width``. Off a terminal the description and the examples
+    keep their lines, as written. On a terminal a paragraph written as unindented lines (the
+    description) is reflowed to the terminal's width, and a block with an indented line (the
+    examples) keeps its lines, so a command is never broken."""
+
+    def __init__(self, prog: str, **kwargs: Any) -> None:
+        kwargs.setdefault("width", _help_width())
+        super().__init__(prog, **kwargs)
+
+    def _fill_text(self, text: str, width: int, indent: str) -> str:
+        if _rendering is None:
+            return str(super()._fill_text(text, width, indent))
+        import textwrap
+
+        room = max(20, _rendering.width - len(indent))
+        head = text[: len(text) - len(text.lstrip("\n"))]
+        tail = text[len(text.rstrip("\n")) :]
+        blocks = re.split(r"\n[ \t]*\n", text.strip("\n"))
+        out = []
+        for block in blocks:
+            lines = block.split("\n")
+            if all(line == line.lstrip(" ") for line in lines):
+                out.append(
+                    textwrap.fill(
+                        " ".join(lines),
+                        width=room,
+                        initial_indent=indent,
+                        subsequent_indent=indent,
+                        break_long_words=False,
+                        break_on_hyphens=False,
+                    )
+                )
+            else:
+                out.append("".join(indent + line + "\n" for line in lines).rstrip("\n"))
+        return head + "\n\n".join(out) + tail
+
+
 class Parser(argparse.ArgumentParser):
-    """No abbreviations, help as written (description and examples keep their lines), help on
+    """No abbreviations, help laid out at one width everywhere (``_HelpFormatter``: the
+    examples keep their lines; the description does off a terminal and reflows on one), help on
     stdout through ``out``, and every error a ``Usage``. ``show_required`` names options the
     usage line shows as required that the command itself checks, so that a missing one is the
     command's own refusal."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("allow_abbrev", False)
-        kwargs.setdefault("formatter_class", argparse.RawDescriptionHelpFormatter)
+        kwargs.setdefault("formatter_class", _HelpFormatter)
         if sys.version_info >= (3, 14):
             kwargs.setdefault("color", False)
         super().__init__(*args, **kwargs)

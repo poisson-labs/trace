@@ -5,6 +5,24 @@
 A second private pre-release for design partners, rebuilt from the first partner's hands-on
 test. Not on PyPI and not yet released. Everything under 0.1.0rc1 is in it too.
 
+### The clean look on a terminal
+
+- On a terminal, every verb draws its result with the verdict word in its colour (green `ok`,
+  yellow *too small to tell*, *no significant difference* and `stopped`, red *not ready* and
+  `error:`; *different* bold with no colour), headings bold and labels dim, long lines
+  wrapped at the terminal's width, a command never broken, and the per-input table folded
+  when it is too wide for the terminal. A number is never coloured, and only the terminal's
+  16 named colours, bold and dim are used. The same facts come in the same order as the plain
+  text, whose first line and exit code are unchanged.
+- Plain stays the contract: on a pipe every byte is as before, and `--json` is one document
+  everywhere. A new top-level `--plain`, before or after the verb (and for the import),
+  forces plain text on a terminal, wrapped at the terminal's width with a hanging indent;
+  `NO_COLOR`, `CI`, `TERM=dumb` or a stdout that is not UTF-8 does the same.
+- The help lays out at the same width on every terminal and on a pipe, and on a terminal its
+  paragraphs reflow to the terminal's width.
+- Rich is a core dependency, imported by one private rendering module; a Trace that cannot
+  import it prints plain and says nothing.
+
 ### Every report opens in plain words
 
 - **`compare`, `fix-check`, `where`, `changes` and the import** open with the verdict in plain

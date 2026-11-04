@@ -94,6 +94,11 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
     parser.add_argument(
         "--version", action="store_true", help="print the versions of Trace, Prove and Python"
     )
+    parser.add_argument(
+        "--plain",
+        action="store_true",
+        help="print plain text with no colour, as on a pipe; may come before or after the verb",
+    )
     parser.add_argument("--debug", action="store_true", help=argparse.SUPPRESS)
     verbs = parser.add_subparsers(dest="verb", metavar="VERB", title="verbs")
     init = _init_parser(verbs)
