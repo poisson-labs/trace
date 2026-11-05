@@ -382,6 +382,8 @@ class Index:
     carried: tuple[str, ...] | None = None
     # the word a command gives for a run a verb read from a folder: the folder's path as typed
     given: dict[str, str] = field(default_factory=dict)
+    # where a note goes when the core collects them for the caller; None prints it
+    notes: list[str] | None = None
 
     def damage(self) -> Damaged | None:
         """The refusal a file with a stale entry, a name that cannot be one or two names for
@@ -419,10 +421,14 @@ class Index:
         text = given.strip()
         if reserved(text) and self.unreadable:
             unread = ", ".join(self.unreadable)
-            look.err(
-                f"note: latest, previous and the numbers leave out what Prove could not read: "
-                f"the record or the start time of {unread}\n"
+            said = (
+                "latest, previous and the numbers leave out what Prove could not read: "
+                f"the record or the start time of {unread}"
             )
+            if self.notes is not None:
+                self.notes.append(said)
+            else:
+                look.err(f"note: {said}\n")
         if text in ("latest", "previous"):
             return self._newest(text, None)
         for form in ("latest", "previous"):

@@ -19,8 +19,8 @@ section 18.3.1, SG8 and SG17, as FI1 to FI7 rule it).
    tool is named, which reads its files alone.
 
 Whether several files of one tool are one run or several (FI6) needs their cases, so the import
-decides it after reading them (``ingest/cli.py``). Resolving writes nothing, and Prove is asked
-through the writer, the one module under ``ingest/`` that imports it.
+decides it after reading them (``ingest/importing.py``). Resolving writes nothing, and Prove is
+asked through the writer, the one module under ``ingest/`` that imports it.
 """
 
 from __future__ import annotations
@@ -111,7 +111,7 @@ def resolve(path: Path | str, tool: str | None = None) -> Resolved:
 
 def _inspect(folder: Path, name: str, tool: str | None) -> Resolved:
     """An unpacked Inspect log: one run, read by the Inspect reader from the folder itself."""
-    from poisson_trace.ingest.cli import present
+    from poisson_trace.ingest.importing import present
 
     if "inspect" not in present():
         raise Refusal(
@@ -136,7 +136,7 @@ def _quoted(text: str) -> str:
 
 
 def _pull(folder: Path, name: str, tool: str | None) -> Resolved:
-    from poisson_trace.ingest.cli import present
+    from poisson_trace.ingest.importing import present
 
     said = folder / PULL
     try:
@@ -204,7 +204,7 @@ def _listed(folder: Path, inside: Path, said: Path, entry: Any) -> Path:
 
 def _detectors() -> dict[str, Any]:
     """Each reader in the install that has a detector, in the order the import names them."""
-    from poisson_trace.ingest.cli import present, reader
+    from poisson_trace.ingest.importing import present, reader
 
     out = {}
     for tool in present():

@@ -153,7 +153,7 @@ class Found:
 
 def present_readers() -> dict[str, Callable[[Path], str | None]]:
     """The readers of the install that say which files they read, each by its name."""
-    from poisson_trace.ingest.cli import present, reader
+    from poisson_trace.ingest.importing import present, reader
 
     out = {}
     for name in present():
@@ -708,13 +708,12 @@ def _prompts_in(path: str) -> int:
 def read_imports(files: Sequence[FoundFile], answers: Answers) -> list[Imported]:
     """Every file read by its reader before anything is written: a refusal on any file writes
     no run of the others."""
-    from poisson_trace.ingest.cli import parsers, reader
+    from poisson_trace.ingest.importing import reader, reader_defaults
     from poisson_trace.ingest.rows import Refusal
 
     made: list[Imported] = []
     seen: dict[str, str] = {}
     values = answers.values
-    _, readers, _ = parsers()
     for f in files:
         stem = run_name(f.path)
         # one promptfoo file holds every prompt: each is its own run, named by the file and the
@@ -735,9 +734,7 @@ def read_imports(files: Sequence[FoundFile], answers: Answers) -> list[Imported]
             seen[name] = f.path
             # the reader's own defaults, where it has them (the JUnit reader's case, promptfoo's
             # and Inspect's outcome), then the answers
-            given: dict[str, Any] = {
-                a.dest: a.default for a in readers[f.reader]._actions if a.dest != "help"
-            }
+            given: dict[str, Any] = dict(reader_defaults(f.reader))
             given.update(
                 files=[f.path],
                 run=name,

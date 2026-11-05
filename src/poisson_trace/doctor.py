@@ -85,7 +85,7 @@ def _prove() -> dict[str, Any]:
 
 
 def _readers() -> dict[str, Any]:
-    from poisson_trace.ingest.cli import present
+    from poisson_trace.ingest.importing import present
 
     found = present()
     return _check("readers", True, ", ".join(found) if found else "none in this install")

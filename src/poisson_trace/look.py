@@ -85,6 +85,16 @@ class Failed(Exception):
     """A failure after work started: one ``error:`` line, exit 3."""
 
 
+class Interrupted(KeyboardInterrupt):
+    """Ctrl-C inside work that may have written something: carries the ``stopped`` line that
+    says what was left behind, worked out where the writing happened, for the command line
+    to print (the look's rule 5)."""
+
+    def __init__(self, line: str) -> None:
+        super().__init__(line)
+        self.line = line
+
+
 # ---------- numbers ----------
 
 
@@ -779,8 +789,8 @@ def run(
         except Failed as e:
             error(str(e))
             return FAILED
-        except KeyboardInterrupt:
-            line = session.stopped()
+        except KeyboardInterrupt as e:
+            line = e.line if isinstance(e, Interrupted) else session.stopped()
             out(line + "\n" if session.render is None else session.render(line))
             return INTERRUPTED
         except Exception as e:
@@ -826,6 +836,12 @@ def _literal(text: str) -> str | None:
     except (ValueError, SyntaxError):
         return None
     return value if isinstance(value, str) else None
+
+
+def quoted(message: str) -> str:
+    """A parser's message as ``Parser.error`` prints it: the quotes argparse puts around a
+    value made the look's."""
+    return _quotes(message)
 
 
 def _quotes(message: str) -> str:

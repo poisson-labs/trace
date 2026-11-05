@@ -247,7 +247,7 @@ def failed_when(manifest: Any, events: Sequence[str]) -> str:
     recorded = environment.get("import") if isinstance(environment, Mapping) else None
     if isinstance(recorded, Mapping) and isinstance(recorded.get("declared"), Mapping):
         if list(events) == [MISSED]:
-            from poisson_trace.ingest.cli import _failed_when
+            from poisson_trace.ingest.importing import _failed_when
 
             return _failed_when({"declared": recorded["declared"], "tool": recorded.get("tool")})
     return "it ended " + or_list(sorted(events))

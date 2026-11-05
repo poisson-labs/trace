@@ -105,6 +105,11 @@ def _band(lo: float | None, hi: float | None) -> str:
     return "–" if lo is None or hi is None else f"{_f(lo)} – {_f(hi)}"
 
 
+def json_text(data: Mapping[str, Any]) -> str:
+    """A command's JSON document as it prints it: two-space indent, no NaN, one newline."""
+    return json.dumps(data, indent=2, allow_nan=False) + "\n"
+
+
 def _dumps(data: Mapping[str, Any]) -> str:
     return json.dumps(data, indent=2, allow_nan=False) + "\n"
 

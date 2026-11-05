@@ -127,7 +127,7 @@ def first_pair(held: Config) -> tuple[ImportEntry, ImportEntry] | None:
 def options_of(held: Config, entry: ImportEntry) -> dict[str, Any]:
     """The entry's options with what ``[signals]`` stands in for filled in where the entry
     leaves it out; a cut from ``[signals]`` with no side in the entry reads below."""
-    from poisson_trace.ingest.cli import stand_ins
+    from poisson_trace.ingest.importing import stand_ins
 
     options: dict[str, Any] = {}
     filled = stand_ins(entry.tool, held.signals)
@@ -148,7 +148,7 @@ def file_of(held: Config, entry: ImportEntry) -> str:
 
 def namespace(held: Config, entry: ImportEntry, files: Sequence[str]) -> argparse.Namespace:
     """What the reader reads: its parser's defaults, then the options as flags give them."""
-    from poisson_trace.ingest.cli import reader_defaults
+    from poisson_trace.ingest.importing import reader_defaults
 
     values: dict[str, Any] = dict(reader_defaults(entry.tool))
     for dest, value in options_of(held, entry).items():
@@ -183,7 +183,7 @@ def read(held: Config, entry: ImportEntry) -> Run:
     """The entry read with its reader, writing nothing: the file (or the folder, through the
     folder resolver, as the named tool's files alone), the reader's own usage rules, then its
     read; refused with the entry's file first when any of it fails."""
-    from poisson_trace.ingest import cli as importer
+    from poisson_trace.ingest import importing as importer
     from poisson_trace.ingest.folder import resolve
     from poisson_trace.ingest.writer import runs_in
 

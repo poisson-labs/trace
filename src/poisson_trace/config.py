@@ -11,7 +11,7 @@ by hand, and ``poisson-trace doctor`` checks it.
 
 Standard library and the taxonomy's own rules (``ingest/taxonomy.py``, itself standard library
 only): ``tomllib`` reads the file, and nothing here reads a store. An ``[[import]]`` entry's
-options are checked against its reader's own flags (``ingest/cli.py`` says which keys, types
+options are checked against its reader's own flags (``ingest/importing.py`` says which keys, types
 and choices each reader takes); no file an entry names is opened here.
 """
 
@@ -758,7 +758,7 @@ class _Checker:
         a reader in the install; the file a relative path inside the repository and not an
         address; the name one the import accepts, used once; the reader's options checked as
         its flags are, with what ``[signals]`` stands in for counted as given."""
-        from poisson_trace.ingest.cli import present, reader_options, stand_ins
+        from poisson_trace.ingest.importing import present, reader_options, stand_ins
 
         here = present()
         held: list[ImportEntry] = []
