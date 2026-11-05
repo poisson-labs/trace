@@ -9,15 +9,29 @@ the record's ``meta["trace_signals"]`` as the ``poisson.trace-signals/1`` record
 18.4.2 as SA1 reads it on the Prove Trace reads): ``wall_time``, ``t``, ``horizon`` and
 ``confidence`` take the row's signals where recorded, ``meta["cost_usd"]`` is written where a
 cost was recorded, a row without an outcome stays an errored record, and the digest of the rules
-that classified the run is recorded in the manifest beside what the import declared (SA5). The
-run's ``events.jsonl`` holds Prove's own ``started`` and ``finished`` events and nothing more
-(SA4).
+that classified the run is recorded in the manifest beside what the import declared (SA5).
+
+The run record (spec section 17.3 item 6, SV1; the artifact format sections 2 to 4): the store
+descriptor ``.poisson/store.json`` is written on the first write into a store, or Trace is added
+to its ``writers`` once, as a saved verdict writes it (``saved.write_store_descriptor``), after
+a descriptor in a newer major, or one that is not a descriptor, has been refused with nothing
+written. The run's ``events.jsonl`` is Prove's full log: ``planned``, ``started``, ``progress``
+at most once a second and once at the end, then ``finished``; or a closing ``progress`` and
+``interrupted`` when Ctrl-C stops the import after its run folder exists, with what Prove holds.
+Rows are counted as Prove counts its own: a row with no outcome is ``errored``, the rest
+``kept`` (RR1). Each manifest gains ``produced_by`` (Trace's version, the files the run was
+made from with the verdicts file last, the tool, the reader and the import's options; RR3, RR4),
+added after Prove's last write of the manifest, which does not carry the key. A row with an
+outcome and no recorded steps and no spans is stored as one step, so Prove's pages build over
+the store (RR5).
 """
 
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import time
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -29,6 +43,7 @@ from poisson_prove.store import EpisodeRecord, RunManifest, Store, config_hash
 from poisson_prove.trace import CONTENT_KEYS, OBSERVATION_KEYS, Trace, from_otel
 
 import poisson_trace
+from poisson_trace import saved
 from poisson_trace.ingest.cut import MET, MISSED
 from poisson_trace.ingest.rows import STARTED_FROM, Refusal, Row, Run, zone_of
 from poisson_trace.ingest.taxonomy import Budgets, Rule, classify, taxonomy_sha256
@@ -90,6 +105,9 @@ _COPIED: tuple[str, ...] = (
 )
 EVENT_SCHEMA = "poisson.run-event/1"
 EVENTS = "events.jsonl"
+MANIFEST = "manifest.json"
+#: The kind of store descriptor Trace writes, and the major it reads (the format's section 3).
+STORE_KIND, STORE_MAJOR = saved.STORE_FORMAT.rsplit("/", 1)
 
 
 @dataclass(frozen=True)
@@ -173,7 +191,8 @@ def _record(run: str, row: Row, repeat: int) -> EpisodeRecord:
     meta: dict[str, Any] = {"import": {"score": row.score, **row.detail}}
     if row.cost_usd is not None:
         meta["cost_usd"] = row.cost_usd
-    steps = 0.0
+    # no recorded steps and no spans: one step, so that Prove's pages build over the store (RR5)
+    steps = 1.0
     if row.spans:
         trace = from_otel([_without_content(span) for span in row.spans])
         meta["trace"] = trace.to_dict()
@@ -217,6 +236,98 @@ def _now() -> str:
 
 def _event(at: str, kind: str, detail: Mapping[str, Any]) -> str:
     return json.dumps({"schema": EVENT_SCHEMA, "at": at, "kind": kind, "detail": dict(detail)})
+
+
+class _Log:
+    """The run's event log, kept as Prove's own ``_Events`` keeps it: one line per event in
+    Prove's line format, each stamped when it is emitted; a line emitted before the run's
+    folder exists is held and written once the folder is there, ahead of the next; progress
+    at most once a second, plus the closing one the writer emits itself."""
+
+    def __init__(self, root: Path, run: str) -> None:
+        self.path = root / run / EVENTS
+        self.held: list[str] = []
+        self.last_progress: float | None = None
+
+    def emit(self, kind: str, detail: Mapping[str, Any]) -> None:
+        self.held.append(_event(_now(), kind, detail))
+        self.flush()
+
+    def flush(self) -> None:
+        if self.held and self.path.parent.is_dir():
+            with self.path.open("a", encoding="utf-8") as fh:
+                fh.write("".join(f"{line}\n" for line in self.held))
+                fh.flush()
+            self.held.clear()
+
+    def progress(self, done: int, kept: int, errored: int, total: int) -> None:
+        now = time.monotonic()
+        if self.last_progress is None or now - self.last_progress >= 1.0:
+            self.last_progress = now
+            self.emit("progress", {"done": done, "kept": kept, "errored": errored, "total": total})
+
+
+def _check_descriptor(root: Path) -> None:
+    """Refuse a store whose descriptor is in a newer major than Trace writes, or is not a
+    descriptor at all (the format's sections 3 and 9), before anything is written."""
+    path = saved.descriptor_path(root)
+    if not path.is_file():
+        return
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as e:
+        raise Refusal(f"{path} is not a store descriptor ({why(e)}); nothing was written") from e
+    if not isinstance(doc, Mapping):
+        raise Refusal(f"{path} is not a store descriptor (not a JSON object); nothing was written")
+    found = doc.get("format")
+    if isinstance(found, str) and found.rsplit("/", 1)[0] == STORE_KIND:
+        try:
+            major = int(found.rsplit("/", 1)[1])
+        except (IndexError, ValueError):
+            return
+        if major > int(STORE_MAJOR):
+            raise Refusal(
+                f"the store at {root} holds {found}, a newer format than this Trace writes "
+                f"({saved.STORE_FORMAT}); nothing was written"
+            )
+
+
+def _produced_by(run: Run, verdicts: Mapping[str, Any] | None) -> dict[str, Any]:
+    """The manifest's ``produced_by`` (the format's section 4.1; RR3, RR4): the shared
+    ``version`` and ``from``, then Trace's own ``tool``, ``reader`` and ``options``."""
+    made_from = [{"name": str(f["name"]), "sha256": str(f["sha256"])} for f in run.files]
+    if verdicts is not None:
+        made_from.append({"name": str(verdicts["name"]), "sha256": str(verdicts["sha256"])})
+    return {
+        "version": poisson_trace.__version__,
+        "from": made_from,
+        "tool": saved.TOOL,
+        "reader": run.tool,
+        "options": dict(run.declared),
+    }
+
+
+def _add_produced_by(path: Path, produced_by: Mapping[str, Any]) -> None:
+    """``produced_by`` added to the manifest at ``path`` as Prove last wrote it (Prove's
+    ``RunManifest`` does not carry the key), the document otherwise as Prove writes it, through
+    a temporary sibling renamed in."""
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    doc["produced_by"] = dict(produced_by)
+    staging = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        staging.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        os.replace(staging, path)
+    finally:
+        if staging.exists():
+            staging.unlink()
+
+
+def _held(store: Store, run: str) -> int:
+    """The rows Prove holds of a run stopped short, as Prove's own closing progress reads them."""
+    try:
+        return store.count(run)
+    except Exception:
+        return 0
 
 
 def stored(root: Path, name: str) -> Any:
@@ -280,12 +391,31 @@ def write(
     in_use = taken(store, stored, Path(root), run.name, form) if stored else None
     if in_use is not None:
         raise Refusal(in_use)
+    _check_descriptor(Path(root))
+    log = _Log(Path(root), run.name)
+    total = len(run.rows)
+    log.emit(
+        "planned",
+        {
+            "run_id": run.name,
+            "reader": run.tool,
+            "files": [str(f["name"]) for f in run.files],
+            "rows": total,
+        },
+    )
+    log.emit("started", {"run_id": run.name})
     seen: Counter[str] = Counter()
     records = []
+    kept = errored = 0
     try:
         for row in run.rows:
             records.append(_record(run.name, classify(row, rules, budgets), seen[row.case]))
             seen[row.case] += 1
+            if row.outcome is None:
+                errored += 1
+            else:
+                kept += 1
+            log.progress(kept + errored, kept, errored, total)
     except (TypeError, ValueError) as e:
         raise Refusal(f"a row could not be written as Prove stores it ({why(e)})") from e
     recorded: dict[str, Any] = {
@@ -311,22 +441,38 @@ def write(
         environment={"import": recorded},
         created_at=run.started,
     )
-    started_at = _now()
     try:
         store.create_run(manifest)
     except Exception as e:
         raise Refusal(
             f"Prove could not create the run {run.name} in {root} ({why(e)}); nothing was written"
         ) from e
+    # the descriptor once the run's folder is there, as Prove writes its own
     try:
+        saved.write_store_descriptor(Path(root))
+    except (OSError, ValueError) as e:
+        shutil.rmtree(Path(root) / run.name, ignore_errors=True)
+        raise Refusal(
+            f"the store at {root} cannot be written to ({why(e)}); nothing was written"
+        ) from e
+    ended = False
+    try:
+        log.flush()
         store.append(run.name, records)
         store.mark_complete(run.name)
-        lines = [
-            _event(started_at, "started", {"run_id": run.name}),
-            _event(_now(), "finished", {"status": "complete", "kept": len(records)}),
-        ]
-        text = "".join(f"{line}\n" for line in lines)
-        (Path(root) / run.name / EVENTS).write_text(text, encoding="utf-8")
+        log.emit("progress", {"done": total, "kept": kept, "errored": errored, "total": total})
+        ended = True
+        log.emit("finished", {"status": "complete", "kept": kept})
+        _add_produced_by(Path(root) / run.name / MANIFEST, _produced_by(run, verdicts))
+    except KeyboardInterrupt:
+        # the run stays, partial (section 9.1 L6); the closing count is what Prove holds
+        if not ended:
+            held_rows = _held(store, run.name)
+            log.emit(
+                "progress", {"done": held_rows, "kept": held_rows, "errored": 0, "total": total}
+            )
+            log.emit("interrupted", {"kept": held_rows, "status": "partial"})
+        raise
     except Exception as e:
         # the run directory is this call's own: it did not exist when the call began
         shutil.rmtree(Path(root) / run.name, ignore_errors=True)

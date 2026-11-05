@@ -164,7 +164,8 @@ def test_tf21_27_t_and_horizon_are_the_recorded_steps_else_as_today(tmp_path: Pa
     by = {m["trace_signals"]["case"]: (t, h) for m, t, h in
           zip(df["meta"], df["t"], df["horizon"], strict=True)}
     assert by["case_042"] == (3.0, 8.0)
-    assert by["case_007"] == (0.0, 0.0)  # no steps and no spans: as the import writes today
+    # no steps and no spans: one step, so Prove 0.1.3's pages build over the store (RR5)
+    assert by["case_007"] == (1.0, 1.0)
     assert by["s"] == (4.0, 4.0)
 
 
@@ -242,23 +243,30 @@ def test_tf21_29_the_case_id_column_stays_empty(tmp_path: Path) -> None:
     assert all(c is None for c in df["case_id"])
 
 
-# ---------- TF21-30: events.jsonl in Prove's own event shape (SA4) ----------
+# ---------- TF21-30: events.jsonl in Prove's own event shape (SA4; widened by SV1's run record) ----------
 
 
 AT = re.compile(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z")
 
 
-def test_tf21_30_the_import_writes_started_and_finished_events(tmp_path: Path) -> None:
+def test_tf21_30_the_import_writes_the_full_event_log(tmp_path: Path) -> None:
+    # the run record (section 17.3 item 6, SV1) widens SA4's two events to Prove's full log;
+    # a row with no outcome counts as errored, as Prove counts its own (RR1)
     root, _ = _stored(tmp_path, [FULL, BARE, Row("e", None, "timeout", result="censored")])
     lines = (root / "run" / "events.jsonl").read_text(encoding="utf-8").splitlines()
     events = [json.loads(line) for line in lines]
-    assert [e["kind"] for e in events] == ["started", "finished"]
+    kinds = [e["kind"] for e in events]
+    assert kinds[:2] == ["planned", "started"] and kinds[-1] == "finished"
+    assert set(kinds[2:-1]) == {"progress"}
     for e in events:
         assert tuple(e) == ("schema", "at", "kind", "detail")
         assert e["schema"] == "poisson.run-event/1" and AT.fullmatch(e["at"])
-    assert events[0]["detail"] == {"run_id": "run"}
-    assert events[1]["detail"] == {"status": "complete", "kept": 3}
-    assert events[0]["at"] <= events[1]["at"]
+    assert events[0]["detail"] == {"run_id": "run", "reader": "deepeval",
+                                   "files": ["results.json"], "rows": 3}
+    assert events[1]["detail"] == {"run_id": "run"}
+    assert events[-2]["detail"] == {"done": 3, "kept": 2, "errored": 1, "total": 3}
+    assert events[-1]["detail"] == {"status": "complete", "kept": 2}
+    assert [e["at"] for e in events] == sorted(e["at"] for e in events)
 
 
 def test_tf21_30_no_event_carries_a_signal_key(tmp_path: Path) -> None:

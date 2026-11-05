@@ -51,7 +51,11 @@ def test_ic3_write_creates_exactly_one_run_and_changes_no_byte_of_another(tmp_pa
     written = write(make_run(ROWS, name="imported"), root)
     after = tree(root)
     assert isinstance(written, Written) and written.run == "imported"
-    assert {k: v for k, v in after.items() if k != "imported" and not k.startswith("imported/")} == before
+    # a format 0 store also gains the store descriptor on Trace's first write (run record, SV1)
+    assert {k: v for k, v in after.items()
+            if k != "imported" and not k.startswith("imported/") and k != ".poisson"
+            and k != ".poisson/store.json"} == before
+    assert ".poisson/store.json" in after
     assert sorted(Store(root).runs()) == sorted([*Store(HUMANEVAL).runs(), "imported"])
     write(make_run(ROWS, name="second"), root)
     assert {k: v for k, v in tree(root).items() if k != "second" and not k.startswith("second/")} == after
@@ -110,7 +114,8 @@ def test_ic4_t_and_horizon_and_meta_import_are_as_section_2_5_says(tmp_path: Pat
     rows = [Row("c1", "met", None, 0.75, None, detail), Row("c2", None, "no score", None, None, detail)]
     write(make_run(rows), root)
     got = {r["case"]: r for r in read_rows(root, "run")}
-    assert (got["c1"]["t"], got["c1"]["horizon"]) == (0.0, 0.0)
+    # one step with no spans, so Prove 0.1.3's pages build over the store (RR5)
+    assert (got["c1"]["t"], got["c1"]["horizon"]) == (1.0, 1.0)
     assert got["c2"]["t"] is None and got["c2"]["horizon"] is None
     assert got["c1"]["import"] == {"score": 0.75, **detail}
     assert got["c2"]["import"] == {"score": None, **detail}

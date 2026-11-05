@@ -80,7 +80,10 @@ def test_tf10_47_prove_reads_each_new_run(tmp_path: Path, tool: str) -> None:
         part = next((tmp_path / "st" / run).rglob("*.parquet"))
         assert pq.read_schema(part).remove_metadata() == want_schema.remove_metadata()
         events = [json.loads(line) for line in (tmp_path / "st" / run / "events.jsonl").read_text().splitlines()]
-        assert [e["kind"] for e in events] == ["started", "finished"]
+        # the run record's full log (section 17.3 item 6, SV1), where SA4 had two events
+        kinds = [e["kind"] for e in events]
+        assert kinds[:2] == ["planned", "started"] and kinds[-1] == "finished"
+        assert set(kinds[2:-1]) == {"progress"}
         assert all(set(e) == {"schema", "at", "kind", "detail"} and e["schema"] == "poisson.run-event/1" for e in events)
         imported_block = manifest.to_dict()["environment"]["import"]
         assert imported_block["tool"] == tool and len(imported_block["taxonomy_sha256"]) == 64

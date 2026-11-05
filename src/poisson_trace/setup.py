@@ -1085,8 +1085,9 @@ def _write(
     budgets: Any = None,
 ) -> None:
     """The runs to import, then the config. On a refusal, a failure or Ctrl-C, every run this
-    wrote is removed, and so is the store folder it made, so nothing is left behind. ``rules``
-    and ``budgets`` are a config's, when the runs join one that has them."""
+    wrote is removed, and so is the store folder it made, with the store descriptor the first
+    run wrote into it (the run record, SV1), so nothing is left behind. ``rules`` and
+    ``budgets`` are a config's, when the runs join one that has them."""
     from poisson_trace.ingest.rows import Refusal
     from poisson_trace.ingest.writer import write
 
@@ -1106,6 +1107,10 @@ def _write(
         for run in written:
             shutil.rmtree(run, ignore_errors=True)
         if made_store:
+            with contextlib.suppress(OSError):
+                (store / ".poisson" / "store.json").unlink()
+            with contextlib.suppress(OSError):
+                (store / ".poisson").rmdir()
             with contextlib.suppress(OSError):
                 store.rmdir()
         if isinstance(e, Refusal):
