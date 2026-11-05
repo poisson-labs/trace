@@ -31,7 +31,9 @@ dependencies = ["numpy", "scipy", "pandas>=2", "poisson-prove==0.1.3", "rich>=14
 
 [project.optional-dependencies]
 # pyte reads a pseudo-terminal's screen back for the clean-look tests
-dev = ["pytest", "pytest-xdist", "hypothesis", "mypy", "ruff", "lifelines", "pyte"]
+# zstandard reads an Inspect .eval log, whose members are Zstandard-compressed
+inspect = ["zstandard>=0.22"]
+dev = ["pytest", "pytest-xdist", "hypothesis", "mypy", "ruff", "lifelines", "pyte", "zstandard>=0.22"]
 
 [project.scripts]
 poisson-trace = "poisson_trace.cli:main"

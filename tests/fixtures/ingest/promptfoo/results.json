@@ -1,0 +1,850 @@
+{
+  "evalId": "eval-EKq-2026-10-07T04:22:52",
+  "results": {
+    "version": 3,
+    "timestamp": "2026-10-07T04:22:52.124Z",
+    "prompts": [
+      {
+        "id": "8f30adc569d4ad431c7b3115454530422dc1772cedf7599b625beac5d12fbf4b",
+        "raw": "old: {{text}}",
+        "label": "old: {{text}}",
+        "provider": "echo",
+        "metrics": {
+          "score": 2,
+          "testPassCount": 2,
+          "testFailCount": 2,
+          "testErrorCount": 0,
+          "assertPassCount": 2,
+          "assertFailCount": 2,
+          "totalLatencyMs": 38,
+          "tokenUsage": {
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "total": 0,
+            "numRequests": 4,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0
+              }
+            }
+          },
+          "namedScores": {},
+          "namedScoresCount": {},
+          "cost": 0
+        }
+      },
+      {
+        "id": "31d1ddf9aadd7fdf005cb3eac7b8bf65c5a349cfa53023f764ccc105c766f859",
+        "raw": "new: {{text}} with the word banana",
+        "label": "new: {{text}} with the word banana",
+        "provider": "echo",
+        "metrics": {
+          "score": 4,
+          "testPassCount": 4,
+          "testFailCount": 0,
+          "testErrorCount": 0,
+          "assertPassCount": 4,
+          "assertFailCount": 0,
+          "totalLatencyMs": 47,
+          "tokenUsage": {
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "total": 0,
+            "numRequests": 4,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0
+              }
+            }
+          },
+          "namedScores": {},
+          "namedScoresCount": {},
+          "cost": 0
+        }
+      }
+    ],
+    "results": [
+      {
+        "cost": 0,
+        "error": "Expected output to contain \"banana\"",
+        "gradingResult": {
+          "pass": false,
+          "score": 0,
+          "reason": "Expected output to contain \"banana\"",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": false,
+              "score": 0,
+              "reason": "Expected output to contain \"banana\"",
+              "assertion": {
+                "type": "contains",
+                "value": "banana"
+              }
+            }
+          ]
+        },
+        "id": "8474fcf7-080b-4006-b2de-2b57b237d522",
+        "latencyMs": 11,
+        "namedScores": {},
+        "prompt": {
+          "raw": "old: the quick brown fox",
+          "label": "old: {{text}}",
+          "config": {}
+        },
+        "promptId": "8f30adc569d4ad431c7b3115454530422dc1772cedf7599b625beac5d12fbf4b",
+        "promptIdx": 0,
+        "provider": {
+          "id": "echo",
+          "label": "echo"
+        },
+        "response": {
+          "output": "old: the quick brown fox",
+          "raw": "old: the quick brown fox",
+          "cost": 0,
+          "cached": false,
+          "tokenUsage": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "numRequests": 1
+          },
+          "isRefusal": false,
+          "metadata": {}
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "vars": {
+            "case": "q1",
+            "text": "the quick brown fox"
+          },
+          "assert": [
+            {
+              "type": "contains",
+              "value": "banana"
+            }
+          ],
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 0,
+        "vars": {
+          "case": "q1",
+          "text": "the quick brown fox"
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 1
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "contains",
+                "value": "banana"
+              }
+            }
+          ]
+        },
+        "id": "5e899679-d758-4155-8153-ef66feac0cd3",
+        "latencyMs": 14,
+        "namedScores": {},
+        "prompt": {
+          "raw": "new: the quick brown fox with the word banana",
+          "label": "new: {{text}} with the word banana",
+          "config": {}
+        },
+        "promptId": "31d1ddf9aadd7fdf005cb3eac7b8bf65c5a349cfa53023f764ccc105c766f859",
+        "promptIdx": 1,
+        "provider": {
+          "id": "echo",
+          "label": "echo"
+        },
+        "response": {
+          "output": "new: the quick brown fox with the word banana",
+          "raw": "new: the quick brown fox with the word banana",
+          "cost": 0,
+          "cached": false,
+          "tokenUsage": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "numRequests": 1
+          },
+          "isRefusal": false,
+          "metadata": {}
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "vars": {
+            "case": "q1",
+            "text": "the quick brown fox"
+          },
+          "assert": [
+            {
+              "type": "contains",
+              "value": "banana"
+            }
+          ],
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 0,
+        "vars": {
+          "case": "q1",
+          "text": "the quick brown fox"
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "error": "Expected output to contain \"banana\"",
+        "gradingResult": {
+          "pass": false,
+          "score": 0,
+          "reason": "Expected output to contain \"banana\"",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": false,
+              "score": 0,
+              "reason": "Expected output to contain \"banana\"",
+              "assertion": {
+                "type": "contains",
+                "value": "banana"
+              }
+            }
+          ]
+        },
+        "id": "92bd1db9-019d-4d72-9b3e-264191115f02",
+        "latencyMs": 15,
+        "namedScores": {},
+        "prompt": {
+          "raw": "old: jumps over",
+          "label": "old: {{text}}",
+          "config": {}
+        },
+        "promptId": "8f30adc569d4ad431c7b3115454530422dc1772cedf7599b625beac5d12fbf4b",
+        "promptIdx": 0,
+        "provider": {
+          "id": "echo",
+          "label": "echo"
+        },
+        "response": {
+          "output": "old: jumps over",
+          "raw": "old: jumps over",
+          "cost": 0,
+          "cached": false,
+          "tokenUsage": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "numRequests": 1
+          },
+          "isRefusal": false,
+          "metadata": {}
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "vars": {
+            "case": "q2",
+            "text": "jumps over"
+          },
+          "assert": [
+            {
+              "type": "contains",
+              "value": "banana"
+            }
+          ],
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 1,
+        "vars": {
+          "case": "q2",
+          "text": "jumps over"
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 1
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "contains",
+                "value": "banana"
+              }
+            }
+          ]
+        },
+        "id": "429e4b96-f130-4d79-9cb0-38ef1fe20c0c",
+        "latencyMs": 17,
+        "namedScores": {},
+        "prompt": {
+          "raw": "new: jumps over with the word banana",
+          "label": "new: {{text}} with the word banana",
+          "config": {}
+        },
+        "promptId": "31d1ddf9aadd7fdf005cb3eac7b8bf65c5a349cfa53023f764ccc105c766f859",
+        "promptIdx": 1,
+        "provider": {
+          "id": "echo",
+          "label": "echo"
+        },
+        "response": {
+          "output": "new: jumps over with the word banana",
+          "raw": "new: jumps over with the word banana",
+          "cost": 0,
+          "cached": false,
+          "tokenUsage": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "numRequests": 1
+          },
+          "isRefusal": false,
+          "metadata": {}
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "vars": {
+            "case": "q2",
+            "text": "jumps over"
+          },
+          "assert": [
+            {
+              "type": "contains",
+              "value": "banana"
+            }
+          ],
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 1,
+        "vars": {
+          "case": "q2",
+          "text": "jumps over"
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "contains",
+                "value": "lazy"
+              }
+            }
+          ]
+        },
+        "id": "ac8ce4a0-68c6-4b45-a0ff-bc25a2eb23e4",
+        "latencyMs": 4,
+        "namedScores": {},
+        "prompt": {
+          "raw": "old: the lazy dog",
+          "label": "old: {{text}}",
+          "config": {}
+        },
+        "promptId": "8f30adc569d4ad431c7b3115454530422dc1772cedf7599b625beac5d12fbf4b",
+        "promptIdx": 0,
+        "provider": {
+          "id": "echo",
+          "label": "echo"
+        },
+        "response": {
+          "output": "old: the lazy dog",
+          "raw": "old: the lazy dog",
+          "cost": 0,
+          "cached": false,
+          "tokenUsage": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "numRequests": 1
+          },
+          "isRefusal": false,
+          "metadata": {}
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "vars": {
+            "case": "q3",
+            "text": "the lazy dog"
+          },
+          "assert": [
+            {
+              "type": "contains",
+              "value": "lazy"
+            }
+          ],
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 2,
+        "vars": {
+          "case": "q3",
+          "text": "the lazy dog"
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "contains",
+                "value": "lazy"
+              }
+            }
+          ]
+        },
+        "id": "6158c215-397c-4bfc-9389-b251f7c9b720",
+        "latencyMs": 7,
+        "namedScores": {},
+        "prompt": {
+          "raw": "new: the lazy dog with the word banana",
+          "label": "new: {{text}} with the word banana",
+          "config": {}
+        },
+        "promptId": "31d1ddf9aadd7fdf005cb3eac7b8bf65c5a349cfa53023f764ccc105c766f859",
+        "promptIdx": 1,
+        "provider": {
+          "id": "echo",
+          "label": "echo"
+        },
+        "response": {
+          "output": "new: the lazy dog with the word banana",
+          "raw": "new: the lazy dog with the word banana",
+          "cost": 0,
+          "cached": false,
+          "tokenUsage": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "numRequests": 1
+          },
+          "isRefusal": false,
+          "metadata": {}
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "vars": {
+            "case": "q3",
+            "text": "the lazy dog"
+          },
+          "assert": [
+            {
+              "type": "contains",
+              "value": "lazy"
+            }
+          ],
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 2,
+        "vars": {
+          "case": "q3",
+          "text": "the lazy dog"
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "contains",
+                "value": "banana"
+              }
+            }
+          ]
+        },
+        "id": "cbdb51f2-5ad2-4a77-9d4d-b4478ae62134",
+        "latencyMs": 8,
+        "namedScores": {},
+        "prompt": {
+          "raw": "old: a banana split",
+          "label": "old: {{text}}",
+          "config": {}
+        },
+        "promptId": "8f30adc569d4ad431c7b3115454530422dc1772cedf7599b625beac5d12fbf4b",
+        "promptIdx": 0,
+        "provider": {
+          "id": "echo",
+          "label": "echo"
+        },
+        "response": {
+          "output": "old: a banana split",
+          "raw": "old: a banana split",
+          "cost": 0,
+          "cached": false,
+          "tokenUsage": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "numRequests": 1
+          },
+          "isRefusal": false,
+          "metadata": {}
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "vars": {
+            "case": "q4",
+            "text": "a banana split"
+          },
+          "assert": [
+            {
+              "type": "contains",
+              "value": "banana"
+            }
+          ],
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 3,
+        "vars": {
+          "case": "q4",
+          "text": "a banana split"
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "contains",
+                "value": "banana"
+              }
+            }
+          ]
+        },
+        "id": "447f1f23-500d-42c3-9d22-6b62ea32af2a",
+        "latencyMs": 9,
+        "namedScores": {},
+        "prompt": {
+          "raw": "new: a banana split with the word banana",
+          "label": "new: {{text}} with the word banana",
+          "config": {}
+        },
+        "promptId": "31d1ddf9aadd7fdf005cb3eac7b8bf65c5a349cfa53023f764ccc105c766f859",
+        "promptIdx": 1,
+        "provider": {
+          "id": "echo",
+          "label": "echo"
+        },
+        "response": {
+          "output": "new: a banana split with the word banana",
+          "raw": "new: a banana split with the word banana",
+          "cost": 0,
+          "cached": false,
+          "tokenUsage": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "numRequests": 1
+          },
+          "isRefusal": false,
+          "metadata": {}
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "vars": {
+            "case": "q4",
+            "text": "a banana split"
+          },
+          "assert": [
+            {
+              "type": "contains",
+              "value": "banana"
+            }
+          ],
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 3,
+        "vars": {
+          "case": "q4",
+          "text": "a banana split"
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      }
+    ],
+    "stats": {
+      "successes": 6,
+      "failures": 2,
+      "errors": 0,
+      "tokenUsage": {
+        "prompt": 0,
+        "completion": 0,
+        "cached": 0,
+        "total": 0,
+        "numRequests": 8,
+        "completionDetails": {
+          "reasoning": 0,
+          "acceptedPrediction": 0,
+          "rejectedPrediction": 0
+        },
+        "assertions": {
+          "total": 0,
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "numRequests": 0,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0
+          }
+        }
+      },
+      "durationMs": 73
+    }
+  },
+  "config": {
+    "tags": {},
+    "description": "Trace fixture: the echo provider, two prompts as two versions",
+    "prompts": [
+      "old: {{text}}",
+      "new: {{text}} with the word banana"
+    ],
+    "providers": [
+      {
+        "id": "echo",
+        "label": "echo"
+      }
+    ],
+    "tests": [
+      {
+        "vars": {
+          "case": "q1",
+          "text": "the quick brown fox"
+        },
+        "assert": [
+          {
+            "type": "contains",
+            "value": "banana"
+          }
+        ]
+      },
+      {
+        "vars": {
+          "case": "q2",
+          "text": "jumps over"
+        },
+        "assert": [
+          {
+            "type": "contains",
+            "value": "banana"
+          }
+        ]
+      },
+      {
+        "vars": {
+          "case": "q3",
+          "text": "the lazy dog"
+        },
+        "assert": [
+          {
+            "type": "contains",
+            "value": "lazy"
+          }
+        ]
+      },
+      {
+        "vars": {
+          "case": "q4",
+          "text": "a banana split"
+        },
+        "assert": [
+          {
+            "type": "contains",
+            "value": "banana"
+          }
+        ]
+      }
+    ],
+    "scenarios": [],
+    "env": {},
+    "outputPath": [
+      "results.json",
+      "results.jsonl",
+      "results.csv"
+    ],
+    "extensions": [],
+    "metadata": {},
+    "evaluateOptions": {}
+  },
+  "shareableUrl": null,
+  "metadata": {
+    "promptfooVersion": "0.120.19",
+    "nodeVersion": "v22.14.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "exportedAt": "2026-10-07T04:22:52.272Z",
+    "evaluationCreatedAt": "2026-10-07T04:22:52.124Z"
+  }
+}

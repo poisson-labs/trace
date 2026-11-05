@@ -1,0 +1,2384 @@
+{
+  "version": 2,
+  "status": "success",
+  "eval": {
+    "eval_id": "8L7SCpJ8wxiMjy2LFo65qk",
+    "run_id": "RpEsvrzP4VenR9wz25Z8FU",
+    "created": "2026-10-07T04:23:51+00:00",
+    "task": "trace_fixture",
+    "task_id": "2nSEDuHHzKiTUjJW3kXknY",
+    "task_version": 0,
+    "task_file": "fixture_task.py",
+    "task_display_name": "trace_fixture",
+    "task_registry_name": "trace_fixture",
+    "task_attribs": {},
+    "task_args": {},
+    "task_args_passed": {},
+    "dataset": {
+      "samples": 3,
+      "sample_ids": [
+        "q1",
+        "q2",
+        "q3"
+      ],
+      "shuffled": false
+    },
+    "model": "mockllm/model",
+    "model_generate_config": {},
+    "model_args": {
+      "custom_outputs": [
+        {
+          "model": "mockllm/model",
+          "choices": [
+            {
+              "message": {
+                "id": "FaKNqaNkSR9ms2dMHFuxyj",
+                "content": "banana",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              },
+              "stop_reason": "stop"
+            }
+          ],
+          "completion": "banana",
+          "usage": {
+            "input_tokens": 3,
+            "output_tokens": 6,
+            "total_tokens": 9
+          },
+          "time": 0.00010499986819922924
+        },
+        {
+          "model": "mockllm/model",
+          "choices": [
+            {
+              "message": {
+                "id": "WekK2ka5txsQDdpkefzSUo",
+                "content": "apple",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              },
+              "stop_reason": "stop"
+            }
+          ],
+          "completion": "apple",
+          "usage": {
+            "input_tokens": 3,
+            "output_tokens": 5,
+            "total_tokens": 8
+          },
+          "time": 0.00005574990063905716
+        },
+        {
+          "model": "mockllm/model",
+          "choices": [
+            {
+              "message": {
+                "id": "Ag5v6XD5fEhxKxFLwBdFbf",
+                "content": "pear",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              },
+              "stop_reason": "stop"
+            }
+          ],
+          "completion": "pear",
+          "usage": {
+            "input_tokens": 3,
+            "output_tokens": 4,
+            "total_tokens": 7
+          },
+          "time": 0.00003804219886660576
+        },
+        {
+          "model": "mockllm/model",
+          "choices": [
+            {
+              "message": {
+                "id": "6b4bKAz6CUt9drFvodMHAi",
+                "content": "banana",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              },
+              "stop_reason": "stop"
+            }
+          ],
+          "completion": "banana",
+          "usage": {
+            "input_tokens": 3,
+            "output_tokens": 6,
+            "total_tokens": 9
+          },
+          "time": 0.00003533298149704933
+        },
+        {
+          "model": "mockllm/model",
+          "choices": [
+            {
+              "message": {
+                "id": "THdcn8MBC6ZEYwUmkspmpR",
+                "content": "apple",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              },
+              "stop_reason": "stop"
+            }
+          ],
+          "completion": "apple",
+          "usage": {
+            "input_tokens": 3,
+            "output_tokens": 5,
+            "total_tokens": 8
+          },
+          "time": 0.00004733400419354439
+        },
+        {
+          "model": "mockllm/model",
+          "choices": [
+            {
+              "message": {
+                "id": "m4xJgZ3yDPSLTRMXday6yq",
+                "content": "nope",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              },
+              "stop_reason": "stop"
+            }
+          ],
+          "completion": "nope",
+          "usage": {
+            "input_tokens": 3,
+            "output_tokens": 4,
+            "total_tokens": 7
+          },
+          "time": 0.0000439169816672802
+        }
+      ]
+    },
+    "config": {
+      "epochs": 2,
+      "fail_on_error": true,
+      "continue_on_fail": false,
+      "score_on_error": false,
+      "sandbox_cleanup": true,
+      "sandbox_prebuilt": false,
+      "log_samples": true,
+      "log_realtime": false,
+      "log_images": true,
+      "score_display": true
+    },
+    "packages": {
+      "inspect_ai": "0.3.277"
+    },
+    "scorers": [
+      {
+        "name": "includes",
+        "options": {},
+        "metrics": [
+          {
+            "name": "inspect_ai/accuracy",
+            "options": {}
+          },
+          {
+            "name": "inspect_ai/stderr",
+            "options": {}
+          }
+        ],
+        "metadata": {}
+      }
+    ]
+  },
+  "plan": {
+    "name": "plan",
+    "steps": [
+      {
+        "solver": "generate",
+        "params": {
+          "tool_calls": "loop"
+        },
+        "params_passed": {}
+      }
+    ],
+    "config": {}
+  },
+  "results": {
+    "total_samples": 6,
+    "completed_samples": 6,
+    "scores": [
+      {
+        "name": "includes",
+        "scorer": "includes",
+        "scored_samples": 3,
+        "unscored_samples": 0,
+        "params": {},
+        "metrics": {
+          "accuracy": {
+            "name": "accuracy",
+            "value": 0.8333333333333334,
+            "params": {}
+          },
+          "stderr": {
+            "name": "stderr",
+            "value": 0.16666666666666666,
+            "params": {}
+          }
+        }
+      }
+    ],
+    "headline": {
+      "scorer": "includes",
+      "score": "includes",
+      "metric": "accuracy"
+    }
+  },
+  "stats": {
+    "started_at": "2026-10-07T04:23:51+00:00",
+    "completed_at": "2026-10-07T04:23:51+00:00",
+    "model_usage": {
+      "mockllm/model": {
+        "input_tokens": 18,
+        "output_tokens": 30,
+        "total_tokens": 48
+      }
+    },
+    "role_usage": {},
+    "connection_limit_history": []
+  },
+  "invalidated": false,
+  "tags": [],
+  "metadata": {},
+  "samples": [
+    {
+      "id": "q1",
+      "epoch": 1,
+      "input": "Say banana.",
+      "target": "banana",
+      "messages": [
+        {
+          "id": "FLCtZseu9tTwMVzy8mSCpc",
+          "content": "Say banana.",
+          "source": "input",
+          "role": "user"
+        },
+        {
+          "id": "FaKNqaNkSR9ms2dMHFuxyj",
+          "content": "banana",
+          "source": "generate",
+          "role": "assistant",
+          "model": "mockllm/model"
+        }
+      ],
+      "output": {
+        "model": "mockllm/model",
+        "choices": [
+          {
+            "message": {
+              "id": "FaKNqaNkSR9ms2dMHFuxyj",
+              "content": "banana",
+              "source": "generate",
+              "role": "assistant",
+              "model": "mockllm/model"
+            },
+            "stop_reason": "stop"
+          }
+        ],
+        "completion": "banana",
+        "usage": {
+          "input_tokens": 3,
+          "output_tokens": 6,
+          "total_tokens": 9
+        },
+        "time": 0.00010499986819922924
+      },
+      "scores": {
+        "includes": {
+          "value": "C",
+          "answer": "banana",
+          "explanation": "banana",
+          "history": []
+        }
+      },
+      "metadata": {},
+      "store": {},
+      "events": [
+        {
+          "uuid": "TMtZ9mrknmnCFkgXWmtyyX",
+          "span_id": "QoqKku8TctrY3T5NqDK3sq",
+          "timestamp": "2026-10-07T04:23:51.420552+00:00",
+          "working_start": 1204732.380223,
+          "event": "span_begin",
+          "id": "QoqKku8TctrY3T5NqDK3sq",
+          "type": "init",
+          "name": "init"
+        },
+        {
+          "uuid": "YvYYr87dF96tyNTSaSZF9m",
+          "span_id": "QoqKku8TctrY3T5NqDK3sq",
+          "timestamp": "2026-10-07T04:23:51.421081+00:00",
+          "working_start": 1204732.380749916,
+          "event": "sample_init",
+          "sample": {
+            "input": "Say banana.",
+            "target": "banana",
+            "id": "q1"
+          },
+          "state": {
+            "messages": [
+              {
+                "id": "FLCtZseu9tTwMVzy8mSCpc",
+                "content": "Say banana.",
+                "source": "input",
+                "role": "user"
+              }
+            ],
+            "tools": [],
+            "tool_choice": null,
+            "store": {},
+            "output": {
+              "model": "mockllm/model",
+              "choices": [],
+              "completion": ""
+            },
+            "completed": false,
+            "metadata": {}
+          }
+        },
+        {
+          "uuid": "mKYpGGnTm9jwTBiMf2hK6k",
+          "span_id": "QoqKku8TctrY3T5NqDK3sq",
+          "timestamp": "2026-10-07T04:23:51.421175+00:00",
+          "working_start": 1204732.3808425,
+          "event": "span_end",
+          "id": "QoqKku8TctrY3T5NqDK3sq"
+        },
+        {
+          "uuid": "mHLtscMTx3YcR8tThUZbTF",
+          "span_id": "WgrrDsfmBcf5kEPnYmBvPd",
+          "timestamp": "2026-10-07T04:23:51.424545+00:00",
+          "working_start": 0.003349167061969638,
+          "event": "span_begin",
+          "id": "WgrrDsfmBcf5kEPnYmBvPd",
+          "type": "solvers",
+          "name": "solvers"
+        },
+        {
+          "uuid": "XpXuCZFAT2X9WkRYJen3Ra",
+          "span_id": "E8jdqL2SVpEytHXtz5M9P5",
+          "timestamp": "2026-10-07T04:23:51.424586+00:00",
+          "working_start": 0.0033904591109603643,
+          "event": "span_begin",
+          "id": "E8jdqL2SVpEytHXtz5M9P5",
+          "parent_id": "WgrrDsfmBcf5kEPnYmBvPd",
+          "type": "solver",
+          "name": "generate"
+        },
+        {
+          "uuid": "2VctQiTfpAB7b5ArVKPRrf",
+          "span_id": "E8jdqL2SVpEytHXtz5M9P5",
+          "timestamp": "2026-10-07T04:23:51.424713+00:00",
+          "working_start": 0.0035176670644432306,
+          "event": "model",
+          "model": "mockllm/model",
+          "input": [],
+          "input_refs": [
+            [
+              0,
+              1
+            ]
+          ],
+          "tools": [],
+          "tool_choice": "none",
+          "config": {},
+          "output": {
+            "model": "mockllm/model",
+            "choices": [
+              {
+                "message": {
+                  "id": "FaKNqaNkSR9ms2dMHFuxyj",
+                  "content": "banana",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            ],
+            "completion": "banana",
+            "usage": {
+              "input_tokens": 3,
+              "output_tokens": 6,
+              "total_tokens": 9
+            },
+            "time": 0.00010499986819922924
+          },
+          "call": {
+            "request": {
+              "model": "model"
+            },
+            "response": {
+              "content": "banana"
+            },
+            "call_refs": [
+              [
+                0,
+                1
+              ]
+            ],
+            "call_key": "messages"
+          },
+          "completed": "2026-10-07T04:23:51.427042+00:00",
+          "working_time": 0.00010499986819922924
+        },
+        {
+          "uuid": "YqEVQi4XbADxqsxjJibVRX",
+          "span_id": "E8jdqL2SVpEytHXtz5M9P5",
+          "timestamp": "2026-10-07T04:23:51.427212+00:00",
+          "working_start": 0.004384249914437532,
+          "event": "state",
+          "changes": [
+            {
+              "op": "add",
+              "path": "/messages/1",
+              "value": {
+                "id": "FaKNqaNkSR9ms2dMHFuxyj",
+                "content": "banana",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/time",
+              "value": 0.00010499986819922924
+            },
+            {
+              "op": "add",
+              "path": "/output/usage",
+              "value": {
+                "input_tokens": 3,
+                "output_tokens": 6,
+                "total_tokens": 9
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/choices/0",
+              "value": {
+                "message": {
+                  "id": "FaKNqaNkSR9ms2dMHFuxyj",
+                  "content": "banana",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            },
+            {
+              "op": "replace",
+              "path": "/output/completion",
+              "value": "banana",
+              "replaced": ""
+            }
+          ]
+        },
+        {
+          "uuid": "nSYa37iUYKzvMBsf9JoU3w",
+          "span_id": "E8jdqL2SVpEytHXtz5M9P5",
+          "timestamp": "2026-10-07T04:23:51.427244+00:00",
+          "working_start": 0.004415791016072035,
+          "event": "span_end",
+          "id": "E8jdqL2SVpEytHXtz5M9P5"
+        },
+        {
+          "uuid": "YAnaRh7LijhxtLjJYFNi9s",
+          "span_id": "WgrrDsfmBcf5kEPnYmBvPd",
+          "timestamp": "2026-10-07T04:23:51.427270+00:00",
+          "working_start": 0.004441790981218219,
+          "event": "span_end",
+          "id": "WgrrDsfmBcf5kEPnYmBvPd"
+        },
+        {
+          "uuid": "UxbNdyFQBQbamNXh57M5vt",
+          "span_id": "eLMkgXYzAbcajwELA2DVQq",
+          "timestamp": "2026-10-07T04:23:51.431321+00:00",
+          "working_start": 0.008493457920849323,
+          "event": "span_begin",
+          "id": "eLMkgXYzAbcajwELA2DVQq",
+          "type": "scorers",
+          "name": "scorers"
+        },
+        {
+          "uuid": "JKYnwmumtiKrz2t8epgEEh",
+          "span_id": "JQ2ReFHFM5jf7CZU8fSwUT",
+          "timestamp": "2026-10-07T04:23:51.431353+00:00",
+          "working_start": 0.008525250013917685,
+          "event": "span_begin",
+          "id": "JQ2ReFHFM5jf7CZU8fSwUT",
+          "parent_id": "eLMkgXYzAbcajwELA2DVQq",
+          "type": "scorer",
+          "name": "includes"
+        },
+        {
+          "uuid": "oBX6Ry4EgjTUTMUu5bfDnj",
+          "span_id": "JQ2ReFHFM5jf7CZU8fSwUT",
+          "timestamp": "2026-10-07T04:23:51.431401+00:00",
+          "working_start": 0.00857312511652708,
+          "event": "score",
+          "score": {
+            "value": "C",
+            "answer": "banana",
+            "explanation": "banana",
+            "history": []
+          },
+          "target": "banana",
+          "intermediate": false,
+          "scorer": "includes",
+          "scorer_args": {},
+          "model_usage": {
+            "mockllm/model": {
+              "input_tokens": 3,
+              "output_tokens": 6,
+              "total_tokens": 9
+            }
+          }
+        },
+        {
+          "uuid": "Fm8PWSyuVg5HqJuxGeLcQ4",
+          "span_id": "JQ2ReFHFM5jf7CZU8fSwUT",
+          "timestamp": "2026-10-07T04:23:51.431429+00:00",
+          "working_start": 0.008600624976679683,
+          "event": "span_end",
+          "id": "JQ2ReFHFM5jf7CZU8fSwUT"
+        },
+        {
+          "uuid": "naBeBprqBvD2vuYN4xDyG3",
+          "span_id": "eLMkgXYzAbcajwELA2DVQq",
+          "timestamp": "2026-10-07T04:23:51.431447+00:00",
+          "working_start": 0.008619165979325771,
+          "event": "span_end",
+          "id": "eLMkgXYzAbcajwELA2DVQq"
+        }
+      ],
+      "model_usage": {
+        "mockllm/model": {
+          "input_tokens": 3,
+          "output_tokens": 6,
+          "total_tokens": 9
+        }
+      },
+      "role_usage": {},
+      "started_at": "2026-10-07T04:23:51.421197+00:00",
+      "completed_at": "2026-10-07T04:23:51.432435+00:00",
+      "total_time": 0.011,
+      "working_time": 0.01,
+      "uuid": "VwpyWncM57KHcQSAgeHLB9",
+      "error_retries": [],
+      "attachments": {},
+      "events_data": {
+        "messages": [
+          {
+            "id": "FLCtZseu9tTwMVzy8mSCpc",
+            "content": "Say banana.",
+            "source": "input",
+            "role": "user"
+          }
+        ],
+        "calls": [
+          {
+            "id": "FLCtZseu9tTwMVzy8mSCpc",
+            "content": "Say banana.",
+            "source": "input",
+            "metadata": null,
+            "role": "user",
+            "tool_call_id": null
+          }
+        ]
+      },
+      "turn_count": 1
+    },
+    {
+      "id": "q2",
+      "epoch": 1,
+      "input": "Say apple.",
+      "target": "apple",
+      "messages": [
+        {
+          "id": "T5m69aNPL4o6GGyXKrXDA9",
+          "content": "Say apple.",
+          "source": "input",
+          "role": "user"
+        },
+        {
+          "id": "WekK2ka5txsQDdpkefzSUo",
+          "content": "apple",
+          "source": "generate",
+          "role": "assistant",
+          "model": "mockllm/model"
+        }
+      ],
+      "output": {
+        "model": "mockllm/model",
+        "choices": [
+          {
+            "message": {
+              "id": "WekK2ka5txsQDdpkefzSUo",
+              "content": "apple",
+              "source": "generate",
+              "role": "assistant",
+              "model": "mockllm/model"
+            },
+            "stop_reason": "stop"
+          }
+        ],
+        "completion": "apple",
+        "usage": {
+          "input_tokens": 3,
+          "output_tokens": 5,
+          "total_tokens": 8
+        },
+        "time": 0.00005574990063905716
+      },
+      "scores": {
+        "includes": {
+          "value": "C",
+          "answer": "apple",
+          "explanation": "apple",
+          "history": []
+        }
+      },
+      "metadata": {},
+      "store": {},
+      "events": [
+        {
+          "uuid": "moBFdy9yUoxxAjAVbQ9dJ5",
+          "span_id": "RebKy33XiaXTRpGUWpf2tT",
+          "timestamp": "2026-10-07T04:23:51.421765+00:00",
+          "working_start": 1204732.381434625,
+          "event": "span_begin",
+          "id": "RebKy33XiaXTRpGUWpf2tT",
+          "type": "init",
+          "name": "init"
+        },
+        {
+          "uuid": "4GuvQ8fdjc8KdWxAaLpVyR",
+          "span_id": "RebKy33XiaXTRpGUWpf2tT",
+          "timestamp": "2026-10-07T04:23:51.422040+00:00",
+          "working_start": 1204732.381707541,
+          "event": "sample_init",
+          "sample": {
+            "input": "Say apple.",
+            "target": "apple",
+            "id": "q2"
+          },
+          "state": {
+            "messages": [
+              {
+                "id": "T5m69aNPL4o6GGyXKrXDA9",
+                "content": "Say apple.",
+                "source": "input",
+                "role": "user"
+              }
+            ],
+            "tools": [],
+            "tool_choice": null,
+            "store": {},
+            "output": {
+              "model": "mockllm/model",
+              "choices": [],
+              "completion": ""
+            },
+            "completed": false,
+            "metadata": {}
+          }
+        },
+        {
+          "uuid": "SHgCH4e6ForcXJp786ixpF",
+          "span_id": "RebKy33XiaXTRpGUWpf2tT",
+          "timestamp": "2026-10-07T04:23:51.422141+00:00",
+          "working_start": 1204732.381812291,
+          "event": "span_end",
+          "id": "RebKy33XiaXTRpGUWpf2tT"
+        },
+        {
+          "uuid": "QfjSqF3us9ZcuQCr53jnAn",
+          "span_id": "ComqpSBKuVfFaKGczTQZ8Z",
+          "timestamp": "2026-10-07T04:23:51.424862+00:00",
+          "working_start": 0.002655250020325184,
+          "event": "span_begin",
+          "id": "ComqpSBKuVfFaKGczTQZ8Z",
+          "type": "solvers",
+          "name": "solvers"
+        },
+        {
+          "uuid": "nPC7WPjzgPJCs7BjHge8Vi",
+          "span_id": "Qbmc7BJruyBjyLXZWt8hhe",
+          "timestamp": "2026-10-07T04:23:51.424892+00:00",
+          "working_start": 0.0026859999634325504,
+          "event": "span_begin",
+          "id": "Qbmc7BJruyBjyLXZWt8hhe",
+          "parent_id": "ComqpSBKuVfFaKGczTQZ8Z",
+          "type": "solver",
+          "name": "generate"
+        },
+        {
+          "uuid": "R8rR5uf6uXNF9QymtPqwPg",
+          "span_id": "Qbmc7BJruyBjyLXZWt8hhe",
+          "timestamp": "2026-10-07T04:23:51.424984+00:00",
+          "working_start": 0.0027772500179708004,
+          "event": "model",
+          "model": "mockllm/model",
+          "input": [],
+          "input_refs": [
+            [
+              0,
+              1
+            ]
+          ],
+          "tools": [],
+          "tool_choice": "none",
+          "config": {},
+          "output": {
+            "model": "mockllm/model",
+            "choices": [
+              {
+                "message": {
+                  "id": "WekK2ka5txsQDdpkefzSUo",
+                  "content": "apple",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            ],
+            "completion": "apple",
+            "usage": {
+              "input_tokens": 3,
+              "output_tokens": 5,
+              "total_tokens": 8
+            },
+            "time": 0.00005574990063905716
+          },
+          "call": {
+            "request": {
+              "model": "model"
+            },
+            "response": {
+              "content": "apple"
+            },
+            "call_refs": [
+              [
+                0,
+                1
+              ]
+            ],
+            "call_key": "messages"
+          },
+          "completed": "2026-10-07T04:23:51.427836+00:00",
+          "working_time": 0.00005574990063905716
+        },
+        {
+          "uuid": "Mh8fgZzpBx4ja5ZXRyA4ME",
+          "span_id": "Qbmc7BJruyBjyLXZWt8hhe",
+          "timestamp": "2026-10-07T04:23:51.427950+00:00",
+          "working_start": 0.003044998971745372,
+          "event": "state",
+          "changes": [
+            {
+              "op": "add",
+              "path": "/messages/1",
+              "value": {
+                "id": "WekK2ka5txsQDdpkefzSUo",
+                "content": "apple",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/time",
+              "value": 0.00005574990063905716
+            },
+            {
+              "op": "add",
+              "path": "/output/usage",
+              "value": {
+                "input_tokens": 3,
+                "output_tokens": 5,
+                "total_tokens": 8
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/choices/0",
+              "value": {
+                "message": {
+                  "id": "WekK2ka5txsQDdpkefzSUo",
+                  "content": "apple",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            },
+            {
+              "op": "replace",
+              "path": "/output/completion",
+              "value": "apple",
+              "replaced": ""
+            }
+          ]
+        },
+        {
+          "uuid": "hwx5mE8XfgiYo9S7C8PL8N",
+          "span_id": "Qbmc7BJruyBjyLXZWt8hhe",
+          "timestamp": "2026-10-07T04:23:51.427975+00:00",
+          "working_start": 0.003070791019126773,
+          "event": "span_end",
+          "id": "Qbmc7BJruyBjyLXZWt8hhe"
+        },
+        {
+          "uuid": "m8kt35uZaXuukEuVL4KtC5",
+          "span_id": "ComqpSBKuVfFaKGczTQZ8Z",
+          "timestamp": "2026-10-07T04:23:51.427999+00:00",
+          "working_start": 0.003094583051279187,
+          "event": "span_end",
+          "id": "ComqpSBKuVfFaKGczTQZ8Z"
+        },
+        {
+          "uuid": "REmvuPczQ9cy5xmGUQSKBg",
+          "span_id": "RvRDyuYV7UEZK3E9qdysnK",
+          "timestamp": "2026-10-07T04:23:51.431540+00:00",
+          "working_start": 0.00663579092361033,
+          "event": "span_begin",
+          "id": "RvRDyuYV7UEZK3E9qdysnK",
+          "type": "scorers",
+          "name": "scorers"
+        },
+        {
+          "uuid": "dn3FYJHKK3bJqMPsg3UYx2",
+          "span_id": "FkKTibVhaHiNNLqSdqG8xi",
+          "timestamp": "2026-10-07T04:23:51.431566+00:00",
+          "working_start": 0.006661540828645229,
+          "event": "span_begin",
+          "id": "FkKTibVhaHiNNLqSdqG8xi",
+          "parent_id": "RvRDyuYV7UEZK3E9qdysnK",
+          "type": "scorer",
+          "name": "includes"
+        },
+        {
+          "uuid": "XS5hPBwhhkcfysC8JG3L9p",
+          "span_id": "FkKTibVhaHiNNLqSdqG8xi",
+          "timestamp": "2026-10-07T04:23:51.431590+00:00",
+          "working_start": 0.006685124011710286,
+          "event": "score",
+          "score": {
+            "value": "C",
+            "answer": "apple",
+            "explanation": "apple",
+            "history": []
+          },
+          "target": "apple",
+          "intermediate": false,
+          "scorer": "includes",
+          "scorer_args": {},
+          "model_usage": {
+            "mockllm/model": {
+              "input_tokens": 3,
+              "output_tokens": 5,
+              "total_tokens": 8
+            }
+          }
+        },
+        {
+          "uuid": "3LhApHQYFfknHGvtukHv8f",
+          "span_id": "FkKTibVhaHiNNLqSdqG8xi",
+          "timestamp": "2026-10-07T04:23:51.431614+00:00",
+          "working_start": 0.00670974887907505,
+          "event": "span_end",
+          "id": "FkKTibVhaHiNNLqSdqG8xi"
+        },
+        {
+          "uuid": "8cCMgDb5YmXFeLYdZ2p3Gc",
+          "span_id": "RvRDyuYV7UEZK3E9qdysnK",
+          "timestamp": "2026-10-07T04:23:51.431633+00:00",
+          "working_start": 0.006727915955707431,
+          "event": "span_end",
+          "id": "RvRDyuYV7UEZK3E9qdysnK"
+        }
+      ],
+      "model_usage": {
+        "mockllm/model": {
+          "input_tokens": 3,
+          "output_tokens": 5,
+          "total_tokens": 8
+        }
+      },
+      "role_usage": {},
+      "started_at": "2026-10-07T04:23:51.422209+00:00",
+      "completed_at": "2026-10-07T04:23:51.433091+00:00",
+      "total_time": 0.011,
+      "working_time": 0.008,
+      "uuid": "mzLjf8hEQWKtLaqGizSpwE",
+      "error_retries": [],
+      "attachments": {},
+      "events_data": {
+        "messages": [
+          {
+            "id": "T5m69aNPL4o6GGyXKrXDA9",
+            "content": "Say apple.",
+            "source": "input",
+            "role": "user"
+          }
+        ],
+        "calls": [
+          {
+            "id": "T5m69aNPL4o6GGyXKrXDA9",
+            "content": "Say apple.",
+            "source": "input",
+            "metadata": null,
+            "role": "user",
+            "tool_call_id": null
+          }
+        ]
+      },
+      "turn_count": 1
+    },
+    {
+      "id": "q3",
+      "epoch": 1,
+      "input": "Say pear.",
+      "target": "pear",
+      "messages": [
+        {
+          "id": "W8GYHLeyshdS9igejndRFr",
+          "content": "Say pear.",
+          "source": "input",
+          "role": "user"
+        },
+        {
+          "id": "Ag5v6XD5fEhxKxFLwBdFbf",
+          "content": "pear",
+          "source": "generate",
+          "role": "assistant",
+          "model": "mockllm/model"
+        }
+      ],
+      "output": {
+        "model": "mockllm/model",
+        "choices": [
+          {
+            "message": {
+              "id": "Ag5v6XD5fEhxKxFLwBdFbf",
+              "content": "pear",
+              "source": "generate",
+              "role": "assistant",
+              "model": "mockllm/model"
+            },
+            "stop_reason": "stop"
+          }
+        ],
+        "completion": "pear",
+        "usage": {
+          "input_tokens": 3,
+          "output_tokens": 4,
+          "total_tokens": 7
+        },
+        "time": 0.00003804219886660576
+      },
+      "scores": {
+        "includes": {
+          "value": "C",
+          "answer": "pear",
+          "explanation": "pear",
+          "history": []
+        }
+      },
+      "metadata": {},
+      "store": {},
+      "events": [
+        {
+          "uuid": "nEyNVLTdTX7LVT7N4XV7ch",
+          "span_id": "6KiMXdsLGHzuHJUf9YGj3U",
+          "timestamp": "2026-10-07T04:23:51.422643+00:00",
+          "working_start": 1204732.382311458,
+          "event": "span_begin",
+          "id": "6KiMXdsLGHzuHJUf9YGj3U",
+          "type": "init",
+          "name": "init"
+        },
+        {
+          "uuid": "a7Nsh7qZk2aceABsUNP72v",
+          "span_id": "6KiMXdsLGHzuHJUf9YGj3U",
+          "timestamp": "2026-10-07T04:23:51.422807+00:00",
+          "working_start": 1204732.382474083,
+          "event": "sample_init",
+          "sample": {
+            "input": "Say pear.",
+            "target": "pear",
+            "id": "q3"
+          },
+          "state": {
+            "messages": [
+              {
+                "id": "W8GYHLeyshdS9igejndRFr",
+                "content": "Say pear.",
+                "source": "input",
+                "role": "user"
+              }
+            ],
+            "tools": [],
+            "tool_choice": null,
+            "store": {},
+            "output": {
+              "model": "mockllm/model",
+              "choices": [],
+              "completion": ""
+            },
+            "completed": false,
+            "metadata": {}
+          }
+        },
+        {
+          "uuid": "ifBJwAMNsDUAAUn4eySS2Y",
+          "span_id": "6KiMXdsLGHzuHJUf9YGj3U",
+          "timestamp": "2026-10-07T04:23:51.422847+00:00",
+          "working_start": 1204732.382514625,
+          "event": "span_end",
+          "id": "6KiMXdsLGHzuHJUf9YGj3U"
+        },
+        {
+          "uuid": "ManvJCSqsCGuPG2GXbRFqz",
+          "span_id": "PzCP72sBZXZywASQBMnjLU",
+          "timestamp": "2026-10-07T04:23:51.425045+00:00",
+          "working_start": 0.0021820419933646917,
+          "event": "span_begin",
+          "id": "PzCP72sBZXZywASQBMnjLU",
+          "type": "solvers",
+          "name": "solvers"
+        },
+        {
+          "uuid": "eiC4aBTdLNYsnKMLhV5q4L",
+          "span_id": "A6QXE6iEEcfVZzDcHPexhH",
+          "timestamp": "2026-10-07T04:23:51.425073+00:00",
+          "working_start": 0.0022106668911874294,
+          "event": "span_begin",
+          "id": "A6QXE6iEEcfVZzDcHPexhH",
+          "parent_id": "PzCP72sBZXZywASQBMnjLU",
+          "type": "solver",
+          "name": "generate"
+        },
+        {
+          "uuid": "6wxdwSVgZmhsNSgQivwGfS",
+          "span_id": "A6QXE6iEEcfVZzDcHPexhH",
+          "timestamp": "2026-10-07T04:23:51.425153+00:00",
+          "working_start": 0.0022902090568095446,
+          "event": "model",
+          "model": "mockllm/model",
+          "input": [],
+          "input_refs": [
+            [
+              0,
+              1
+            ]
+          ],
+          "tools": [],
+          "tool_choice": "none",
+          "config": {},
+          "output": {
+            "model": "mockllm/model",
+            "choices": [
+              {
+                "message": {
+                  "id": "Ag5v6XD5fEhxKxFLwBdFbf",
+                  "content": "pear",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            ],
+            "completion": "pear",
+            "usage": {
+              "input_tokens": 3,
+              "output_tokens": 4,
+              "total_tokens": 7
+            },
+            "time": 0.00003804219886660576
+          },
+          "call": {
+            "request": {
+              "model": "model"
+            },
+            "response": {
+              "content": "pear"
+            },
+            "call_refs": [
+              [
+                0,
+                1
+              ]
+            ],
+            "call_key": "messages"
+          },
+          "completed": "2026-10-07T04:23:51.428429+00:00",
+          "working_time": 0.00003804219886660576
+        },
+        {
+          "uuid": "ipboqxMGBKVdfszLLb9HTv",
+          "span_id": "A6QXE6iEEcfVZzDcHPexhH",
+          "timestamp": "2026-10-07T04:23:51.428533+00:00",
+          "working_start": 0.002496876288205385,
+          "event": "state",
+          "changes": [
+            {
+              "op": "add",
+              "path": "/messages/1",
+              "value": {
+                "id": "Ag5v6XD5fEhxKxFLwBdFbf",
+                "content": "pear",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/time",
+              "value": 0.00003804219886660576
+            },
+            {
+              "op": "add",
+              "path": "/output/usage",
+              "value": {
+                "input_tokens": 3,
+                "output_tokens": 4,
+                "total_tokens": 7
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/choices/0",
+              "value": {
+                "message": {
+                  "id": "Ag5v6XD5fEhxKxFLwBdFbf",
+                  "content": "pear",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            },
+            {
+              "op": "replace",
+              "path": "/output/completion",
+              "value": "pear",
+              "replaced": ""
+            }
+          ]
+        },
+        {
+          "uuid": "XhwCy6BzM8bosRqpjPLi9q",
+          "span_id": "A6QXE6iEEcfVZzDcHPexhH",
+          "timestamp": "2026-10-07T04:23:51.428557+00:00",
+          "working_start": 0.002520418493077159,
+          "event": "span_end",
+          "id": "A6QXE6iEEcfVZzDcHPexhH"
+        },
+        {
+          "uuid": "nHPBQanmT5kPFNDi45Zrgj",
+          "span_id": "PzCP72sBZXZywASQBMnjLU",
+          "timestamp": "2026-10-07T04:23:51.428580+00:00",
+          "working_start": 0.002543751383200288,
+          "event": "span_end",
+          "id": "PzCP72sBZXZywASQBMnjLU"
+        },
+        {
+          "uuid": "LLc6VG4JzvWc4xxg7wzosj",
+          "span_id": "Gh9sbygUouEAyfSsKdw6v7",
+          "timestamp": "2026-10-07T04:23:51.431708+00:00",
+          "working_start": 0.005672001279890537,
+          "event": "span_begin",
+          "id": "Gh9sbygUouEAyfSsKdw6v7",
+          "type": "scorers",
+          "name": "scorers"
+        },
+        {
+          "uuid": "ZHhnqBoj3BqDwkxNsw7M4U",
+          "span_id": "fqRrh2jhjRr54AfaKVQW4V",
+          "timestamp": "2026-10-07T04:23:51.431733+00:00",
+          "working_start": 0.005697043379768729,
+          "event": "span_begin",
+          "id": "fqRrh2jhjRr54AfaKVQW4V",
+          "parent_id": "Gh9sbygUouEAyfSsKdw6v7",
+          "type": "scorer",
+          "name": "includes"
+        },
+        {
+          "uuid": "LnBQ2S6QZs8egmkAdjiyW4",
+          "span_id": "fqRrh2jhjRr54AfaKVQW4V",
+          "timestamp": "2026-10-07T04:23:51.431754+00:00",
+          "working_start": 0.005718126427382231,
+          "event": "score",
+          "score": {
+            "value": "C",
+            "answer": "pear",
+            "explanation": "pear",
+            "history": []
+          },
+          "target": "pear",
+          "intermediate": false,
+          "scorer": "includes",
+          "scorer_args": {},
+          "model_usage": {
+            "mockllm/model": {
+              "input_tokens": 3,
+              "output_tokens": 4,
+              "total_tokens": 7
+            }
+          }
+        },
+        {
+          "uuid": "hTp7LjapzL8TLwW644ceZt",
+          "span_id": "fqRrh2jhjRr54AfaKVQW4V",
+          "timestamp": "2026-10-07T04:23:51.431776+00:00",
+          "working_start": 0.005739793414250016,
+          "event": "span_end",
+          "id": "fqRrh2jhjRr54AfaKVQW4V"
+        },
+        {
+          "uuid": "3nUf4dUAnUT6gjEQwsdUuc",
+          "span_id": "Gh9sbygUouEAyfSsKdw6v7",
+          "timestamp": "2026-10-07T04:23:51.431793+00:00",
+          "working_start": 0.0057571264915168285,
+          "event": "span_end",
+          "id": "Gh9sbygUouEAyfSsKdw6v7"
+        }
+      ],
+      "model_usage": {
+        "mockllm/model": {
+          "input_tokens": 3,
+          "output_tokens": 4,
+          "total_tokens": 7
+        }
+      },
+      "role_usage": {},
+      "started_at": "2026-10-07T04:23:51.422864+00:00",
+      "completed_at": "2026-10-07T04:23:51.433539+00:00",
+      "total_time": 0.011,
+      "working_time": 0.007,
+      "uuid": "gBuzfBDpFbvb765H95a8PW",
+      "error_retries": [],
+      "attachments": {},
+      "events_data": {
+        "messages": [
+          {
+            "id": "W8GYHLeyshdS9igejndRFr",
+            "content": "Say pear.",
+            "source": "input",
+            "role": "user"
+          }
+        ],
+        "calls": [
+          {
+            "id": "W8GYHLeyshdS9igejndRFr",
+            "content": "Say pear.",
+            "source": "input",
+            "metadata": null,
+            "role": "user",
+            "tool_call_id": null
+          }
+        ]
+      },
+      "turn_count": 1
+    },
+    {
+      "id": "q1",
+      "epoch": 2,
+      "input": "Say banana.",
+      "target": "banana",
+      "messages": [
+        {
+          "id": "KULHUdPRs5oaqYQ5n37ZuN",
+          "content": "Say banana.",
+          "source": "input",
+          "role": "user"
+        },
+        {
+          "id": "6b4bKAz6CUt9drFvodMHAi",
+          "content": "banana",
+          "source": "generate",
+          "role": "assistant",
+          "model": "mockllm/model"
+        }
+      ],
+      "output": {
+        "model": "mockllm/model",
+        "choices": [
+          {
+            "message": {
+              "id": "6b4bKAz6CUt9drFvodMHAi",
+              "content": "banana",
+              "source": "generate",
+              "role": "assistant",
+              "model": "mockllm/model"
+            },
+            "stop_reason": "stop"
+          }
+        ],
+        "completion": "banana",
+        "usage": {
+          "input_tokens": 3,
+          "output_tokens": 6,
+          "total_tokens": 9
+        },
+        "time": 0.00003533298149704933
+      },
+      "scores": {
+        "includes": {
+          "value": "C",
+          "answer": "banana",
+          "explanation": "banana",
+          "history": []
+        }
+      },
+      "metadata": {},
+      "store": {},
+      "events": [
+        {
+          "uuid": "6U2qkmPZaQmwJnN6QTm4tT",
+          "span_id": "J93peDzQwrRxpBwkRkdgEX",
+          "timestamp": "2026-10-07T04:23:51.423346+00:00",
+          "working_start": 1204732.38301375,
+          "event": "span_begin",
+          "id": "J93peDzQwrRxpBwkRkdgEX",
+          "type": "init",
+          "name": "init"
+        },
+        {
+          "uuid": "ThrtXV9m4tPwUGwPkNaNGo",
+          "span_id": "J93peDzQwrRxpBwkRkdgEX",
+          "timestamp": "2026-10-07T04:23:51.423500+00:00",
+          "working_start": 1204732.383167625,
+          "event": "sample_init",
+          "sample": {
+            "input": "Say banana.",
+            "target": "banana",
+            "id": "q1"
+          },
+          "state": {
+            "messages": [
+              {
+                "id": "KULHUdPRs5oaqYQ5n37ZuN",
+                "content": "Say banana.",
+                "source": "input",
+                "role": "user"
+              }
+            ],
+            "tools": [],
+            "tool_choice": null,
+            "store": {},
+            "output": {
+              "model": "mockllm/model",
+              "choices": [],
+              "completion": ""
+            },
+            "completed": false,
+            "metadata": {}
+          }
+        },
+        {
+          "uuid": "AWiv9sngmc5z5o84muxrfi",
+          "span_id": "J93peDzQwrRxpBwkRkdgEX",
+          "timestamp": "2026-10-07T04:23:51.423534+00:00",
+          "working_start": 1204732.383200833,
+          "event": "span_end",
+          "id": "J93peDzQwrRxpBwkRkdgEX"
+        },
+        {
+          "uuid": "gjZCsjwp2gkHC5UvDBuhBB",
+          "span_id": "ad8xuxgn5swMDopsL2BwTC",
+          "timestamp": "2026-10-07T04:23:51.425209+00:00",
+          "working_start": 0.0016624999698251486,
+          "event": "span_begin",
+          "id": "ad8xuxgn5swMDopsL2BwTC",
+          "type": "solvers",
+          "name": "solvers"
+        },
+        {
+          "uuid": "XVGFDTAxyEjzVifUjYej54",
+          "span_id": "NKDXgSw85BSMwM9NBg8W3Y",
+          "timestamp": "2026-10-07T04:23:51.425237+00:00",
+          "working_start": 0.0016899998299777508,
+          "event": "span_begin",
+          "id": "NKDXgSw85BSMwM9NBg8W3Y",
+          "parent_id": "ad8xuxgn5swMDopsL2BwTC",
+          "type": "solver",
+          "name": "generate"
+        },
+        {
+          "uuid": "XYidKJHhF2Bccaz46BGATm",
+          "span_id": "NKDXgSw85BSMwM9NBg8W3Y",
+          "timestamp": "2026-10-07T04:23:51.425320+00:00",
+          "working_start": 0.0017730409745126963,
+          "event": "model",
+          "model": "mockllm/model",
+          "input": [],
+          "input_refs": [
+            [
+              0,
+              1
+            ]
+          ],
+          "tools": [],
+          "tool_choice": "none",
+          "config": {},
+          "output": {
+            "model": "mockllm/model",
+            "choices": [
+              {
+                "message": {
+                  "id": "6b4bKAz6CUt9drFvodMHAi",
+                  "content": "banana",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            ],
+            "completion": "banana",
+            "usage": {
+              "input_tokens": 3,
+              "output_tokens": 6,
+              "total_tokens": 9
+            },
+            "time": 0.00003533298149704933
+          },
+          "call": {
+            "request": {
+              "model": "model"
+            },
+            "response": {
+              "content": "banana"
+            },
+            "call_refs": [
+              [
+                0,
+                1
+              ]
+            ],
+            "call_key": "messages"
+          },
+          "completed": "2026-10-07T04:23:51.429343+00:00",
+          "working_time": 0.00003533298149704933
+        },
+        {
+          "uuid": "MsqbYPopguMbxZhgzD4MWn",
+          "span_id": "NKDXgSw85BSMwM9NBg8W3Y",
+          "timestamp": "2026-10-07T04:23:51.429488+00:00",
+          "working_start": 0.002023249864578247,
+          "event": "state",
+          "changes": [
+            {
+              "op": "add",
+              "path": "/messages/1",
+              "value": {
+                "id": "6b4bKAz6CUt9drFvodMHAi",
+                "content": "banana",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/time",
+              "value": 0.00003533298149704933
+            },
+            {
+              "op": "add",
+              "path": "/output/usage",
+              "value": {
+                "input_tokens": 3,
+                "output_tokens": 6,
+                "total_tokens": 9
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/choices/0",
+              "value": {
+                "message": {
+                  "id": "6b4bKAz6CUt9drFvodMHAi",
+                  "content": "banana",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            },
+            {
+              "op": "replace",
+              "path": "/output/completion",
+              "value": "banana",
+              "replaced": ""
+            }
+          ]
+        },
+        {
+          "uuid": "NtQhLV3FqxNQhQEvn8W3Uq",
+          "span_id": "NKDXgSw85BSMwM9NBg8W3Y",
+          "timestamp": "2026-10-07T04:23:51.429525+00:00",
+          "working_start": 0.0020599167328327894,
+          "event": "span_end",
+          "id": "NKDXgSw85BSMwM9NBg8W3Y"
+        },
+        {
+          "uuid": "9Bh32KmbCfZoiVUfmLuMDJ",
+          "span_id": "ad8xuxgn5swMDopsL2BwTC",
+          "timestamp": "2026-10-07T04:23:51.429553+00:00",
+          "working_start": 0.0020880417432636023,
+          "event": "span_end",
+          "id": "ad8xuxgn5swMDopsL2BwTC"
+        },
+        {
+          "uuid": "Au2XXjfvQVtYU8dyDX3378",
+          "span_id": "27HgJcFAc2EfEGBUjeu7xN",
+          "timestamp": "2026-10-07T04:23:51.431864+00:00",
+          "working_start": 0.004398999735713005,
+          "event": "span_begin",
+          "id": "27HgJcFAc2EfEGBUjeu7xN",
+          "type": "scorers",
+          "name": "scorers"
+        },
+        {
+          "uuid": "RfEyP5LXhWmE2UUUK5tzXp",
+          "span_id": "XaFNDdCvi9So97KUgW9rji",
+          "timestamp": "2026-10-07T04:23:51.431888+00:00",
+          "working_start": 0.004422833910211921,
+          "event": "span_begin",
+          "id": "XaFNDdCvi9So97KUgW9rji",
+          "parent_id": "27HgJcFAc2EfEGBUjeu7xN",
+          "type": "scorer",
+          "name": "includes"
+        },
+        {
+          "uuid": "eoUEWnrYKuSqQvsTB2YH7N",
+          "span_id": "XaFNDdCvi9So97KUgW9rji",
+          "timestamp": "2026-10-07T04:23:51.431908+00:00",
+          "working_start": 0.0044428338296711445,
+          "event": "score",
+          "score": {
+            "value": "C",
+            "answer": "banana",
+            "explanation": "banana",
+            "history": []
+          },
+          "target": "banana",
+          "intermediate": false,
+          "scorer": "includes",
+          "scorer_args": {},
+          "model_usage": {
+            "mockllm/model": {
+              "input_tokens": 3,
+              "output_tokens": 6,
+              "total_tokens": 9
+            }
+          }
+        },
+        {
+          "uuid": "buNPegpXSMRbZV5ccMvixW",
+          "span_id": "XaFNDdCvi9So97KUgW9rji",
+          "timestamp": "2026-10-07T04:23:51.431928+00:00",
+          "working_start": 0.004463166929781437,
+          "event": "span_end",
+          "id": "XaFNDdCvi9So97KUgW9rji"
+        },
+        {
+          "uuid": "UEqCZvnKRPYmwYQmmU8Mfw",
+          "span_id": "27HgJcFAc2EfEGBUjeu7xN",
+          "timestamp": "2026-10-07T04:23:51.431945+00:00",
+          "working_start": 0.004479708848521113,
+          "event": "span_end",
+          "id": "27HgJcFAc2EfEGBUjeu7xN"
+        }
+      ],
+      "model_usage": {
+        "mockllm/model": {
+          "input_tokens": 3,
+          "output_tokens": 6,
+          "total_tokens": 9
+        }
+      },
+      "role_usage": {},
+      "started_at": "2026-10-07T04:23:51.423548+00:00",
+      "completed_at": "2026-10-07T04:23:51.433945+00:00",
+      "total_time": 0.01,
+      "working_time": 0.006,
+      "uuid": "VgbZkxHLoctEJndnzQkHh7",
+      "error_retries": [],
+      "attachments": {},
+      "events_data": {
+        "messages": [
+          {
+            "id": "KULHUdPRs5oaqYQ5n37ZuN",
+            "content": "Say banana.",
+            "source": "input",
+            "role": "user"
+          }
+        ],
+        "calls": [
+          {
+            "id": "KULHUdPRs5oaqYQ5n37ZuN",
+            "content": "Say banana.",
+            "source": "input",
+            "metadata": null,
+            "role": "user",
+            "tool_call_id": null
+          }
+        ]
+      },
+      "turn_count": 1
+    },
+    {
+      "id": "q2",
+      "epoch": 2,
+      "input": "Say apple.",
+      "target": "apple",
+      "messages": [
+        {
+          "id": "P8GRaq3WY7wS2sJoxcQCiJ",
+          "content": "Say apple.",
+          "source": "input",
+          "role": "user"
+        },
+        {
+          "id": "THdcn8MBC6ZEYwUmkspmpR",
+          "content": "apple",
+          "source": "generate",
+          "role": "assistant",
+          "model": "mockllm/model"
+        }
+      ],
+      "output": {
+        "model": "mockllm/model",
+        "choices": [
+          {
+            "message": {
+              "id": "THdcn8MBC6ZEYwUmkspmpR",
+              "content": "apple",
+              "source": "generate",
+              "role": "assistant",
+              "model": "mockllm/model"
+            },
+            "stop_reason": "stop"
+          }
+        ],
+        "completion": "apple",
+        "usage": {
+          "input_tokens": 3,
+          "output_tokens": 5,
+          "total_tokens": 8
+        },
+        "time": 0.00004733400419354439
+      },
+      "scores": {
+        "includes": {
+          "value": "C",
+          "answer": "apple",
+          "explanation": "apple",
+          "history": []
+        }
+      },
+      "metadata": {},
+      "store": {},
+      "events": [
+        {
+          "uuid": "MsvpiuAToSHSuixEr2GiZ3",
+          "span_id": "PdaAu2TgCPtXvF9mAcGe8M",
+          "timestamp": "2026-10-07T04:23:51.423858+00:00",
+          "working_start": 1204732.383524541,
+          "event": "span_begin",
+          "id": "PdaAu2TgCPtXvF9mAcGe8M",
+          "type": "init",
+          "name": "init"
+        },
+        {
+          "uuid": "DowxrbcWvBBgtEVhTT2hEe",
+          "span_id": "PdaAu2TgCPtXvF9mAcGe8M",
+          "timestamp": "2026-10-07T04:23:51.423976+00:00",
+          "working_start": 1204732.383643125,
+          "event": "sample_init",
+          "sample": {
+            "input": "Say apple.",
+            "target": "apple",
+            "id": "q2"
+          },
+          "state": {
+            "messages": [
+              {
+                "id": "P8GRaq3WY7wS2sJoxcQCiJ",
+                "content": "Say apple.",
+                "source": "input",
+                "role": "user"
+              }
+            ],
+            "tools": [],
+            "tool_choice": null,
+            "store": {},
+            "output": {
+              "model": "mockllm/model",
+              "choices": [],
+              "completion": ""
+            },
+            "completed": false,
+            "metadata": {}
+          }
+        },
+        {
+          "uuid": "bkLmpShDAFw3sVt36qNWRF",
+          "span_id": "PdaAu2TgCPtXvF9mAcGe8M",
+          "timestamp": "2026-10-07T04:23:51.424005+00:00",
+          "working_start": 1204732.383671541,
+          "event": "span_end",
+          "id": "PdaAu2TgCPtXvF9mAcGe8M"
+        },
+        {
+          "uuid": "8uYFvCUZuZoa39KfuUswKR",
+          "span_id": "JDcYRPHqMwHwgKq62tAiEw",
+          "timestamp": "2026-10-07T04:23:51.425376+00:00",
+          "working_start": 0.001359707908704877,
+          "event": "span_begin",
+          "id": "JDcYRPHqMwHwgKq62tAiEw",
+          "type": "solvers",
+          "name": "solvers"
+        },
+        {
+          "uuid": "bN6fymiVoAbyMnfNLKfCTn",
+          "span_id": "DXvgrsc9Sw6SeC2hC7RBAQ",
+          "timestamp": "2026-10-07T04:23:51.425406+00:00",
+          "working_start": 0.0013889579568058252,
+          "event": "span_begin",
+          "id": "DXvgrsc9Sw6SeC2hC7RBAQ",
+          "parent_id": "JDcYRPHqMwHwgKq62tAiEw",
+          "type": "solver",
+          "name": "generate"
+        },
+        {
+          "uuid": "2jRvRDvr7TtmBjzsmWmiyd",
+          "span_id": "DXvgrsc9Sw6SeC2hC7RBAQ",
+          "timestamp": "2026-10-07T04:23:51.425487+00:00",
+          "working_start": 0.0014704579953104258,
+          "event": "model",
+          "model": "mockllm/model",
+          "input": [],
+          "input_refs": [
+            [
+              0,
+              1
+            ]
+          ],
+          "tools": [],
+          "tool_choice": "none",
+          "config": {},
+          "output": {
+            "model": "mockllm/model",
+            "choices": [
+              {
+                "message": {
+                  "id": "THdcn8MBC6ZEYwUmkspmpR",
+                  "content": "apple",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            ],
+            "completion": "apple",
+            "usage": {
+              "input_tokens": 3,
+              "output_tokens": 5,
+              "total_tokens": 8
+            },
+            "time": 0.00004733400419354439
+          },
+          "call": {
+            "request": {
+              "model": "model"
+            },
+            "response": {
+              "content": "apple"
+            },
+            "call_refs": [
+              [
+                0,
+                1
+              ]
+            ],
+            "call_key": "messages"
+          },
+          "completed": "2026-10-07T04:23:51.430071+00:00",
+          "working_time": 0.00004733400419354439
+        },
+        {
+          "uuid": "YjsCgQxh36pQXVKKPJaMeS",
+          "span_id": "DXvgrsc9Sw6SeC2hC7RBAQ",
+          "timestamp": "2026-10-07T04:23:51.430183+00:00",
+          "working_start": 0.0017077920492738485,
+          "event": "state",
+          "changes": [
+            {
+              "op": "add",
+              "path": "/messages/1",
+              "value": {
+                "id": "THdcn8MBC6ZEYwUmkspmpR",
+                "content": "apple",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/time",
+              "value": 0.00004733400419354439
+            },
+            {
+              "op": "add",
+              "path": "/output/usage",
+              "value": {
+                "input_tokens": 3,
+                "output_tokens": 5,
+                "total_tokens": 8
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/choices/0",
+              "value": {
+                "message": {
+                  "id": "THdcn8MBC6ZEYwUmkspmpR",
+                  "content": "apple",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            },
+            {
+              "op": "replace",
+              "path": "/output/completion",
+              "value": "apple",
+              "replaced": ""
+            }
+          ]
+        },
+        {
+          "uuid": "PehWujVmdzTMtEuz4VQZpn",
+          "span_id": "DXvgrsc9Sw6SeC2hC7RBAQ",
+          "timestamp": "2026-10-07T04:23:51.430209+00:00",
+          "working_start": 0.001733291894197464,
+          "event": "span_end",
+          "id": "DXvgrsc9Sw6SeC2hC7RBAQ"
+        },
+        {
+          "uuid": "4E6GqK3VaMC47qgHbESdTw",
+          "span_id": "JDcYRPHqMwHwgKq62tAiEw",
+          "timestamp": "2026-10-07T04:23:51.430233+00:00",
+          "working_start": 0.0017574590165168047,
+          "event": "span_end",
+          "id": "JDcYRPHqMwHwgKq62tAiEw"
+        },
+        {
+          "uuid": "bMjU7UhFUy2EAFKaoLzcrN",
+          "span_id": "6LLkDWYfSLhaq3gznzzwdD",
+          "timestamp": "2026-10-07T04:23:51.432014+00:00",
+          "working_start": 0.0035385419614613056,
+          "event": "span_begin",
+          "id": "6LLkDWYfSLhaq3gznzzwdD",
+          "type": "scorers",
+          "name": "scorers"
+        },
+        {
+          "uuid": "Jgt4fVVX9DgNsCfWiBy8LL",
+          "span_id": "iRFgskD8CXfxYyFWzAV9GK",
+          "timestamp": "2026-10-07T04:23:51.432037+00:00",
+          "working_start": 0.003562042023986578,
+          "event": "span_begin",
+          "id": "iRFgskD8CXfxYyFWzAV9GK",
+          "parent_id": "6LLkDWYfSLhaq3gznzzwdD",
+          "type": "scorer",
+          "name": "includes"
+        },
+        {
+          "uuid": "UAnXGsoKjHLXevVynSFg4L",
+          "span_id": "iRFgskD8CXfxYyFWzAV9GK",
+          "timestamp": "2026-10-07T04:23:51.432057+00:00",
+          "working_start": 0.003581834025681019,
+          "event": "score",
+          "score": {
+            "value": "C",
+            "answer": "apple",
+            "explanation": "apple",
+            "history": []
+          },
+          "target": "apple",
+          "intermediate": false,
+          "scorer": "includes",
+          "scorer_args": {},
+          "model_usage": {
+            "mockllm/model": {
+              "input_tokens": 3,
+              "output_tokens": 5,
+              "total_tokens": 8
+            }
+          }
+        },
+        {
+          "uuid": "hxpt93KXkwbxFDxoKfaKca",
+          "span_id": "iRFgskD8CXfxYyFWzAV9GK",
+          "timestamp": "2026-10-07T04:23:51.432080+00:00",
+          "working_start": 0.0036042090505361557,
+          "event": "span_end",
+          "id": "iRFgskD8CXfxYyFWzAV9GK"
+        },
+        {
+          "uuid": "BzzHXooAEZPUNVaTy2mcD9",
+          "span_id": "6LLkDWYfSLhaq3gznzzwdD",
+          "timestamp": "2026-10-07T04:23:51.432097+00:00",
+          "working_start": 0.0036216669250279665,
+          "event": "span_end",
+          "id": "6LLkDWYfSLhaq3gznzzwdD"
+        }
+      ],
+      "model_usage": {
+        "mockllm/model": {
+          "input_tokens": 3,
+          "output_tokens": 5,
+          "total_tokens": 8
+        }
+      },
+      "role_usage": {},
+      "started_at": "2026-10-07T04:23:51.424018+00:00",
+      "completed_at": "2026-10-07T04:23:51.434349+00:00",
+      "total_time": 0.01,
+      "working_time": 0.006,
+      "uuid": "E56p99Bu3nDZ7czixHrBTj",
+      "error_retries": [],
+      "attachments": {},
+      "events_data": {
+        "messages": [
+          {
+            "id": "P8GRaq3WY7wS2sJoxcQCiJ",
+            "content": "Say apple.",
+            "source": "input",
+            "role": "user"
+          }
+        ],
+        "calls": [
+          {
+            "id": "P8GRaq3WY7wS2sJoxcQCiJ",
+            "content": "Say apple.",
+            "source": "input",
+            "metadata": null,
+            "role": "user",
+            "tool_call_id": null
+          }
+        ]
+      },
+      "turn_count": 1
+    },
+    {
+      "id": "q3",
+      "epoch": 2,
+      "input": "Say pear.",
+      "target": "pear",
+      "messages": [
+        {
+          "id": "Q2CR43mQRYRXQzBN7iwQJZ",
+          "content": "Say pear.",
+          "source": "input",
+          "role": "user"
+        },
+        {
+          "id": "m4xJgZ3yDPSLTRMXday6yq",
+          "content": "nope",
+          "source": "generate",
+          "role": "assistant",
+          "model": "mockllm/model"
+        }
+      ],
+      "output": {
+        "model": "mockllm/model",
+        "choices": [
+          {
+            "message": {
+              "id": "m4xJgZ3yDPSLTRMXday6yq",
+              "content": "nope",
+              "source": "generate",
+              "role": "assistant",
+              "model": "mockllm/model"
+            },
+            "stop_reason": "stop"
+          }
+        ],
+        "completion": "nope",
+        "usage": {
+          "input_tokens": 3,
+          "output_tokens": 4,
+          "total_tokens": 7
+        },
+        "time": 0.0000439169816672802
+      },
+      "scores": {
+        "includes": {
+          "value": "I",
+          "answer": "nope",
+          "explanation": "nope",
+          "history": []
+        }
+      },
+      "metadata": {},
+      "store": {},
+      "events": [
+        {
+          "uuid": "QYTfvTtxqrxiTTDnQPyyVB",
+          "span_id": "XLRLoCobqcR3pRVk3yLpd5",
+          "timestamp": "2026-10-07T04:23:51.424239+00:00",
+          "working_start": 1204732.383905916,
+          "event": "span_begin",
+          "id": "XLRLoCobqcR3pRVk3yLpd5",
+          "type": "init",
+          "name": "init"
+        },
+        {
+          "uuid": "bvijHtPX6ioj63haYgwuej",
+          "span_id": "XLRLoCobqcR3pRVk3yLpd5",
+          "timestamp": "2026-10-07T04:23:51.424356+00:00",
+          "working_start": 1204732.384022958,
+          "event": "sample_init",
+          "sample": {
+            "input": "Say pear.",
+            "target": "pear",
+            "id": "q3"
+          },
+          "state": {
+            "messages": [
+              {
+                "id": "Q2CR43mQRYRXQzBN7iwQJZ",
+                "content": "Say pear.",
+                "source": "input",
+                "role": "user"
+              }
+            ],
+            "tools": [],
+            "tool_choice": null,
+            "store": {},
+            "output": {
+              "model": "mockllm/model",
+              "choices": [],
+              "completion": ""
+            },
+            "completed": false,
+            "metadata": {}
+          }
+        },
+        {
+          "uuid": "a5wLkquYGopSkMbFECkvoQ",
+          "span_id": "XLRLoCobqcR3pRVk3yLpd5",
+          "timestamp": "2026-10-07T04:23:51.424384+00:00",
+          "working_start": 1204732.384051208,
+          "event": "span_end",
+          "id": "XLRLoCobqcR3pRVk3yLpd5"
+        },
+        {
+          "uuid": "6ubzFiZFaojuVPzhmcnMev",
+          "span_id": "fNkvKzn4uaynC8u7PMU29s",
+          "timestamp": "2026-10-07T04:23:51.425543+00:00",
+          "working_start": 0.0011469998862594366,
+          "event": "span_begin",
+          "id": "fNkvKzn4uaynC8u7PMU29s",
+          "type": "solvers",
+          "name": "solvers"
+        },
+        {
+          "uuid": "CeaXBgKVhRtTRmG24TX2fq",
+          "span_id": "V6eqmEcxjkJCfc7NkMQTT7",
+          "timestamp": "2026-10-07T04:23:51.425572+00:00",
+          "working_start": 0.0011758338660001755,
+          "event": "span_begin",
+          "id": "V6eqmEcxjkJCfc7NkMQTT7",
+          "parent_id": "fNkvKzn4uaynC8u7PMU29s",
+          "type": "solver",
+          "name": "generate"
+        },
+        {
+          "uuid": "dCAXuoJTbNx2Qt2CR4RsKH",
+          "span_id": "V6eqmEcxjkJCfc7NkMQTT7",
+          "timestamp": "2026-10-07T04:23:51.425656+00:00",
+          "working_start": 0.001259583979845047,
+          "event": "model",
+          "model": "mockllm/model",
+          "input": [],
+          "input_refs": [
+            [
+              0,
+              1
+            ]
+          ],
+          "tools": [],
+          "tool_choice": "none",
+          "config": {},
+          "output": {
+            "model": "mockllm/model",
+            "choices": [
+              {
+                "message": {
+                  "id": "m4xJgZ3yDPSLTRMXday6yq",
+                  "content": "nope",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            ],
+            "completion": "nope",
+            "usage": {
+              "input_tokens": 3,
+              "output_tokens": 4,
+              "total_tokens": 7
+            },
+            "time": 0.0000439169816672802
+          },
+          "call": {
+            "request": {
+              "model": "model"
+            },
+            "response": {
+              "content": "nope"
+            },
+            "call_refs": [
+              [
+                0,
+                1
+              ]
+            ],
+            "call_key": "messages"
+          },
+          "completed": "2026-10-07T04:23:51.430802+00:00",
+          "working_time": 0.0000439169816672802
+        },
+        {
+          "uuid": "b6HdJKbE3gdQSdnnZqP4Yt",
+          "span_id": "V6eqmEcxjkJCfc7NkMQTT7",
+          "timestamp": "2026-10-07T04:23:51.430910+00:00",
+          "working_start": 0.001478208927437663,
+          "event": "state",
+          "changes": [
+            {
+              "op": "add",
+              "path": "/messages/1",
+              "value": {
+                "id": "m4xJgZ3yDPSLTRMXday6yq",
+                "content": "nope",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm/model"
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/time",
+              "value": 0.0000439169816672802
+            },
+            {
+              "op": "add",
+              "path": "/output/usage",
+              "value": {
+                "input_tokens": 3,
+                "output_tokens": 4,
+                "total_tokens": 7
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/choices/0",
+              "value": {
+                "message": {
+                  "id": "m4xJgZ3yDPSLTRMXday6yq",
+                  "content": "nope",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm/model"
+                },
+                "stop_reason": "stop"
+              }
+            },
+            {
+              "op": "replace",
+              "path": "/output/completion",
+              "value": "nope",
+              "replaced": ""
+            }
+          ]
+        },
+        {
+          "uuid": "o8k6PNFFwcRiNxd3X4gM67",
+          "span_id": "V6eqmEcxjkJCfc7NkMQTT7",
+          "timestamp": "2026-10-07T04:23:51.430937+00:00",
+          "working_start": 0.001504833810031414,
+          "event": "span_end",
+          "id": "V6eqmEcxjkJCfc7NkMQTT7"
+        },
+        {
+          "uuid": "S7yWrktqxU8W2C5wjxEDAs",
+          "span_id": "fNkvKzn4uaynC8u7PMU29s",
+          "timestamp": "2026-10-07T04:23:51.430962+00:00",
+          "working_start": 0.001529458910226822,
+          "event": "span_end",
+          "id": "fNkvKzn4uaynC8u7PMU29s"
+        },
+        {
+          "uuid": "ESPm36FHRzpLDQrQ7CTakJ",
+          "span_id": "jtW5xqwNU4PvbLJfHupNGw",
+          "timestamp": "2026-10-07T04:23:51.432165+00:00",
+          "working_start": 0.002732583787292242,
+          "event": "span_begin",
+          "id": "jtW5xqwNU4PvbLJfHupNGw",
+          "type": "scorers",
+          "name": "scorers"
+        },
+        {
+          "uuid": "mNsrf6qeVgJQz8QMEeyHte",
+          "span_id": "JVqPcPL2rcn8aQNRxjWPvS",
+          "timestamp": "2026-10-07T04:23:51.432187+00:00",
+          "working_start": 0.002754541812464595,
+          "event": "span_begin",
+          "id": "JVqPcPL2rcn8aQNRxjWPvS",
+          "parent_id": "jtW5xqwNU4PvbLJfHupNGw",
+          "type": "scorer",
+          "name": "includes"
+        },
+        {
+          "uuid": "JXJMg4RxziK3kZ3MPiN5fA",
+          "span_id": "JVqPcPL2rcn8aQNRxjWPvS",
+          "timestamp": "2026-10-07T04:23:51.432208+00:00",
+          "working_start": 0.0027755838818848133,
+          "event": "score",
+          "score": {
+            "value": "I",
+            "answer": "nope",
+            "explanation": "nope",
+            "history": []
+          },
+          "target": "pear",
+          "intermediate": false,
+          "scorer": "includes",
+          "scorer_args": {},
+          "model_usage": {
+            "mockllm/model": {
+              "input_tokens": 3,
+              "output_tokens": 4,
+              "total_tokens": 7
+            }
+          }
+        },
+        {
+          "uuid": "cY4dCNFwZoHEYFSxT6KYKt",
+          "span_id": "JVqPcPL2rcn8aQNRxjWPvS",
+          "timestamp": "2026-10-07T04:23:51.432228+00:00",
+          "working_start": 0.0027962089516222477,
+          "event": "span_end",
+          "id": "JVqPcPL2rcn8aQNRxjWPvS"
+        },
+        {
+          "uuid": "KBGEkgApUAj6aRXqAspWwL",
+          "span_id": "jtW5xqwNU4PvbLJfHupNGw",
+          "timestamp": "2026-10-07T04:23:51.432245+00:00",
+          "working_start": 0.0028132088482379913,
+          "event": "span_end",
+          "id": "jtW5xqwNU4PvbLJfHupNGw"
+        }
+      ],
+      "model_usage": {
+        "mockllm/model": {
+          "input_tokens": 3,
+          "output_tokens": 4,
+          "total_tokens": 7
+        }
+      },
+      "role_usage": {},
+      "started_at": "2026-10-07T04:23:51.424397+00:00",
+      "completed_at": "2026-10-07T04:23:51.434739+00:00",
+      "total_time": 0.01,
+      "working_time": 0.005,
+      "uuid": "PucqoKAm4XHeFQ2bB6dar9",
+      "error_retries": [],
+      "attachments": {},
+      "events_data": {
+        "messages": [
+          {
+            "id": "Q2CR43mQRYRXQzBN7iwQJZ",
+            "content": "Say pear.",
+            "source": "input",
+            "role": "user"
+          }
+        ],
+        "calls": [
+          {
+            "id": "Q2CR43mQRYRXQzBN7iwQJZ",
+            "content": "Say pear.",
+            "source": "input",
+            "metadata": null,
+            "role": "user",
+            "tool_call_id": null
+          }
+        ]
+      },
+      "turn_count": 1
+    }
+  ],
+  "reductions": [
+    {
+      "scorer": "includes",
+      "samples": [
+        {
+          "value": 1.0,
+          "answer": "banana",
+          "explanation": "banana",
+          "history": [],
+          "sample_id": "q1"
+        },
+        {
+          "value": 1.0,
+          "answer": "apple",
+          "explanation": "apple",
+          "history": [],
+          "sample_id": "q2"
+        },
+        {
+          "value": 0.5,
+          "history": [],
+          "sample_id": "q3"
+        }
+      ]
+    }
+  ]
+}

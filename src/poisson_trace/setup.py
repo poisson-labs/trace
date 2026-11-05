@@ -28,7 +28,6 @@ from collections import Counter, deque
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from importlib import import_module
 from pathlib import Path
 from typing import Any
 
@@ -55,10 +54,10 @@ SUCCESS_WORDS: tuple[str, ...] = (
 # most 10,000 entries read in all, files and folders alike
 DEPTH = 6
 ENTRIES = 10_000
-# the most candidate result files (.csv, .jsonl, .json, .xml) opened to see whether a reader
-# reads them
+# the most candidate result files (.csv, .jsonl, .json, .xml, .eval) opened to see whether a
+# reader reads them
 CANDIDATES = 200
-RESULT_FILES = (".csv", ".jsonl", ".json", ".xml")
+RESULT_FILES = (".csv", ".jsonl", ".json", ".xml", ".eval")
 # the runs whose outcomes the failure question reads, newest first
 NEWEST = 20
 # the folders never searched; every other folder whose name opens with a dot is skipped too,
@@ -146,13 +145,13 @@ class Found:
 
 def present_readers() -> dict[str, Callable[[Path], str | None]]:
     """The readers of the install that say which files they read, each by its name."""
-    from poisson_trace.ingest.cli import present
+    from poisson_trace.ingest.cli import present, reader
 
     out = {}
     for name in present():
-        reader = import_module(f"poisson_trace.ingest.{name}")
-        if hasattr(reader, "looks_like"):
-            out[name] = reader.looks_like
+        module = reader(name)
+        if hasattr(module, "looks_like"):
+            out[name] = module.looks_like
     return out
 
 
@@ -633,7 +632,7 @@ def answers_fit(readers: Sequence[str], answers: Answers) -> None:
 def run_name(path: str) -> str:
     """A run named after its file, without the extensions that say its format."""
     name = Path(path).name.lstrip(".")
-    for suffix in (".gz", ".csv", ".jsonl", ".json", ".xml"):
+    for suffix in (".gz", ".csv", ".jsonl", ".json", ".xml", ".eval"):
         if name.lower().endswith(suffix):
             name = name[: -len(suffix)]
     return name
@@ -649,7 +648,7 @@ class Imported:
 def read_imports(files: Sequence[FoundFile], answers: Answers) -> list[Imported]:
     """Every file read by its reader before anything is written: a refusal on any file writes
     no run of the others."""
-    from poisson_trace.ingest.cli import parsers
+    from poisson_trace.ingest.cli import parsers, reader
     from poisson_trace.ingest.rows import Refusal
 
     made: list[Imported] = []
@@ -684,7 +683,7 @@ def read_imports(files: Sequence[FoundFile], answers: Answers) -> list[Imported]
             score_column=None,
         )
         try:
-            run = import_module(f"poisson_trace.ingest.{f.reader}").read(ns)
+            run = reader(f.reader).read(ns)
         except Refusal as e:
             raise Refused(str(e), *e.nexts) from e
         if not run.rows:
@@ -795,6 +794,8 @@ def _guessed(found: FoundFile) -> dict[str, Any]:
     path = Path(found.path)
     if found.reader == "deepeval":
         return _deepeval_guess(path)
+    if found.reader == "promptfoo":
+        return _promptfoo_guess(path)
     if found.reader in ("ragas", "table"):
         try:
             head = _columns(path)
@@ -822,6 +823,29 @@ def _guessed(found: FoundFile) -> dict[str, Any]:
             "failed": failed or ["FAILED"],
         }
     return {}
+
+
+def _promptfoo_guess(path: Path) -> dict[str, Any]:
+    """A promptfoo file's prompt (PROMPT when it holds several: one import is one of them) and
+    its case: a test variable named as a case column is, in every result, else the test's
+    position."""
+    try:
+        if path.name.lower().endswith(".jsonl"):
+            text = path.read_bytes().decode("utf-8")
+            results = [json.loads(line) for line in text.splitlines() if line.strip()]
+        else:
+            results = json.loads(path.read_bytes().decode("utf-8"))["results"]["results"]
+        prompts = {r.get("promptIdx") for r in results}
+        named = [
+            c
+            for c in CASE_COLUMNS
+            if results and all(isinstance(r.get("vars"), dict) and c in r["vars"] for r in results)
+        ]
+    except Exception:
+        return {"prompt": "PROMPT", "case": "test"}
+    guess: dict[str, Any] = {} if len(prompts) == 1 else {"prompt": "PROMPT"}
+    guess["case"] = f"var:{named[0]}" if named else "test"
+    return guess
 
 
 def _columns(path: Path) -> list[str]:
@@ -908,6 +932,8 @@ def file_lines(files: Sequence[FoundFile], store: str) -> list[str]:
                 words += _pair(_FLAG[dest], str(guess[dest]))
         if "side" in guess:
             words.append(f"--{guess['side']}")
+        if "prompt" in guess:
+            words += _pair("--prompt", str(guess["prompt"]))
         for dest in ("case", "case_column", "outcome_column"):
             if dest in guess:
                 words += _pair(_FLAG[dest], str(guess[dest]))
@@ -1128,6 +1154,8 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
             if len(readers) > 1 and imported is not False:
                 _several_tools(ns, found.files, config.beside(path, IMPORTED_STORE), shown)
             if imported is not False:
+                _not_imported_here(ns, found.files, config.beside(path, IMPORTED_STORE), shown)
+            if imported is not False:
                 answers_fit(readers, answers)
             if imported is None:
                 imported = not terminal or _yes_no(
@@ -1172,6 +1200,32 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
     if found is not None and not imports:
         left = found.files if not found.stores else _not_empty(found.files)
     return _summary(ns, shown, setup, form, events, command, others, imports, "wrote", left)
+
+
+def _not_imported_here(
+    ns: argparse.Namespace, files: Sequence[FoundFile], store: str, shown: str
+) -> None:
+    """Refused: result files of a reader init does not import itself yet (promptfoo, Inspect,
+    OpenAI Evals: one promptfoo file holds both versions, which init's one run per file does
+    not fit), before any question is asked. The refusal carries one import line for each file,
+    and the way to write the config with no store."""
+    tools = [t for t in tools_of(files) if t not in _ASKED]
+    if not tools:
+        return
+    finish = look.command(
+        "poisson-trace",
+        "init",
+        "--force",
+        *(_shell_word(w) for w in _pair("--store", store)),
+        *_reach(ns),
+    )
+    raise Refused(
+        f"init lists the {_and(tools)} files it finds but does not import them itself; import "
+        "the old version's and the new one's with their lines below (a word in capitals is "
+        f"yours to fill in), then run {finish}; or give --no-import to write {shown} with no "
+        "store first",
+        *shown_lines(files, store),
+    )
 
 
 def _several_tools(

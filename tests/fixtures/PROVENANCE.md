@@ -388,3 +388,102 @@ outcome on that pair, and each test runs once. The replay pair has one error (in
 only), no skip and no test case without a class name. Suites nested in suites, a lone
 `<testsuite>` root, a timestamp with no zone, a test case with no name, and every refusal are
 built in the tests (`tests/test_tf3_junit.py`).
+
+## Added for the promptfoo import (2026-11-04)
+
+Three files promptfoo 0.120.19 (npm, Node v22.14.0) wrote in one evaluation on 2026-10-07, for the
+`poisson-trace import promptfoo` tests. They are not Prove stores. They were made by the front-door
+spec's session (vault `log/trace-front-door-spec/tool-exports/promptfoo/`, its `provenance.md`)
+and copied here byte for byte. The config is `promptfooconfig.yaml` beside them.
+
+| Fixture | What it is | Rows | Size |
+|---|---|---|---|
+| `ingest/promptfoo/results.json` | `-o results.json`: `evalId`, `results` (`version` 3, `timestamp` `2026-10-07T04:22:52.124Z`, `prompts`, `results`, `stats`), `config`, `shareableUrl` (null), `metadata` | 8 | 21,527 B |
+| `ingest/promptfoo/results.jsonl` | `-o results.jsonl`: one result object per line, no `evalId` and no timestamp | 8 | 10,818 B |
+| `ingest/promptfoo/results.csv` | `-o results.csv`: one row per test, one column group per prompt, `Status` and the rest repeated | 4 | 790 B |
+
+```
+PROMPTFOO_DISABLE_TELEMETRY=1 PROMPTFOO_DISABLE_UPDATE=1 PROMPTFOO_CONFIG_DIR=<a scratch folder> \
+  promptfoo eval -c promptfooconfig.yaml -o results.json -o results.jsonl -o results.csv --no-cache --no-progress-bar
+```
+
+The `echo` provider returns the rendered prompt as the output: no key, no model call, $0. Two
+prompts (`old: {{text}}` and `new: {{text}} with the word banana`, promptfoo's labels being the
+prompts themselves) by four tests (`case` q1 to q4), each with one `contains` assertion: the old
+prompt fails q1 and q2 (`failureReason` 1, an assertion) and passes q3 and q4; the new prompt passes
+all four. No row has `failureReason` 2 (an error). The provider records its tokens as zero and its
+cost as zero; it records no cached or reasoning tokens.
+
+**What a rebuild gives.** promptfoo records an `evalId`, ids, timestamps and latencies, so a rebuild
+differs in those and in nothing else.
+
+**Checks made.** Every string was scanned for key-like material, home-directory paths, the machine
+owner's name and email addresses: no hit.
+
+**What it cannot express.** One provider; no error row; no assertion other than `contains`; no
+named scores; no token, cost or latency a model gave. The other assertion types, an error row, a
+second provider and every refusal are built in the tests from this file with one field changed
+(`tests/test_tf10_promptfoo.py`).
+
+## Added for the Inspect import (2026-11-04)
+
+Two logs inspect_ai 0.3.277 (Python 3.11) wrote on 2026-10-07, for the `poisson-trace import
+inspect` tests, copied byte for byte from the front-door spec's session (vault
+`log/trace-front-door-spec/tool-exports/inspect/`). The task is `fixture_task.py` and the run
+`run_fixture.py`, beside them, with `INSPECT_DISABLE_TELEMETRY=1`; `run_fixture.py` is the vault's
+with its one unused import (`sys`) removed, so the repository's lint passes on it.
+
+| Fixture | What it is | Samples × epochs | Size |
+|---|---|---|---|
+| `ingest/inspect/2026-10-07T04-23-47-00-00_trace-fixture_CV3jq8f7FTjwkaYb3zj3m2.eval` | the old version, `log_format="eval"`: a zip whose every member is Zstandard-compressed (compress type 93), with `header.json`, `samples/<id>_epoch_<n>.json`, `summaries.json`, `reductions.json` and `_journal/` | 3 × 2 | 14,528 B |
+| `ingest/inspect/2026-10-07T04-23-51-00-00_trace-fixture_2nSEDuHHzKiTUjJW3kXknY.json` | the new version, `log_format="json"`: one object, `version` 2, `status` `success` | 3 × 2 | 68,795 B |
+
+```
+python run_fixture.py   # in a folder holding fixture_task.py, inspect_ai 0.3.277 installed
+```
+
+The model is `mockllm/model` with its outputs given (`custom_outputs`): no key, no model call, $0.
+Scored by `includes` (`C` or `I`). Old: q1 right twice, q2 wrong then right, q3 wrong twice. New:
+right on every sample but q3's second epoch. Python 3.11's `zipfile` cannot read the `.eval`
+members (`NotImplementedError`); the `zstandard` package can.
+
+**What a rebuild gives.** Inspect records ids, timestamps and timings, so a rebuild differs in
+those and in nothing else.
+
+**Checks made.** Every string, the `.eval` members decompressed, was scanned for key-like
+material, home-directory paths, the machine owner's name and email addresses: no hit.
+
+**What it cannot express.** One scorer with letter values; no sample error, no limit, no tool
+call, no stop reason but `stop`, no log whose status is `error`. Those and every refusal are built
+in the tests from these files with one field changed (`tests/test_tf10_inspect.py`).
+
+## Added for the OpenAI Evals import (2026-11-04)
+
+Two records evals 3.0.1.post1 (`oaieval`, Python 3.11) wrote on 2026-10-07, for the `poisson-trace
+import openai-evals` tests, from the front-door spec's session (vault
+`log/trace-front-door-spec/tool-exports/openai-evals/`).
+
+| Fixture | What it is | `match` events | Size |
+|---|---|---|---|
+| `ingest/openai-evals/old.jsonl` | `oaieval dummy test-match --record_path old.jsonl --max_samples 5` | 3 | 1,625 B |
+| `ingest/openai-evals/new.jsonl` | the same into `new.jsonl` | 3 | 1,625 B |
+
+The `dummy` completion function answers every sample with the same sentence: no model call, $0
+(the package constructs an OpenAI client when imported, so `OPENAI_API_KEY=placeholder-no-call` was
+set). The bundled `test-match` eval has three samples, so each file holds a `spec` line, a
+`final_report` line and three `match` events, every one with `data.correct` false: the pair shows
+the import and a fix check with nothing to compare, not a difference. No `sampling` event was
+written ("Found 0/0 sampling events with usage data").
+
+**One edit.** The `spec` line's `run_config.eval_spec.registry_path` named the scratch virtualenv
+the tool ran in, under the machine owner's home-derived temporary folder; that prefix is replaced
+by `/opt/venv` in both files, and nothing else is changed. The files as the tool wrote them have
+SHA-256 `661b49d0c386d7afe1d3f8558099c6ee356f5934c167f5d33d2a64275010e1d6` (old) and
+`087171f6390b76e0612402f30f88b73a15f15ddcd9bd789fdb4d1ddf60f93af2` (new), and are kept in the vault.
+
+**Checks made.** After the edit, every string was scanned for key-like material, home-directory
+paths, the machine owner's name and email addresses: no hit.
+
+**What it cannot express.** No passing sample, no repeat of a sample, no `sampling` or `metrics`
+event, no empty answer. Those and every refusal are built in the tests from these files with one
+line added or changed (`tests/test_tf10_openai_evals.py`).

@@ -1148,7 +1148,6 @@ def _read_tool_folders(
     command, each run under its folder's name."""
     import shutil
     import tempfile
-    from importlib import import_module
 
     from poisson_trace.ingest import cli as importer
     from poisson_trace.names import import_name_refusal
@@ -1173,7 +1172,7 @@ def _read_tool_folders(
         if hole is not None:
             raise _Refusal(f"a run read from a folder takes its folder's name, and {hole}")
     tool = tools[0]
-    module = import_module(f"poisson_trace.ingest.{tool}")
+    module = importer.reader(tool)
     reader = look.Parser(prog=f"poisson-trace {ns.verb}", add_help=False)
     module.add_arguments(reader)
     flags = reader.parse_args(list(extra))

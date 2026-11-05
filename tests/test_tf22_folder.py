@@ -309,19 +309,33 @@ def test_tf22_12_a_path_that_is_not_a_folder_is_refused(tmp_path: Path, what: st
         _resolve(path)
 
 
-def test_tf22_13_an_unpacked_inspect_log_is_named_and_refused_until_its_reader(tmp_path: Path) -> None:
+def test_tf22_13_an_unpacked_inspect_log_is_one_inspect_run(tmp_path: Path) -> None:
     """An unpacked Inspect log (``header.json`` and ``samples/*.json``) is one Inspect run
-    (section 18.3.1 3b). The Inspect reader is TF10's, after TF22 (FI3): until it is present
-    the folder is refused, saying it is Inspect's, rather than read as anything else."""
+    (section 18.3.1 3b). The Inspect reader is TF10's (FI3; TF10's RD7 moved this test from
+    the refusal TF22 froze to the reading): the folder resolves to the Inspect reader, with the
+    folder itself as what it reads, and imported, with the tool named or left out, it gives the
+    same records as the ``.eval`` it was unpacked from. Named as another tool's, it is refused,
+    saying it is Inspect's, rather than read as anything else."""
+    from tf10_support import IN_EVAL, eval_members, imported, in_argv, recs
+
     from poisson_trace.ingest.cli import present
 
-    assert "inspect" not in present()
+    assert "inspect" in present()
     folder = tmp_path / "inspect-log"
     (folder / "samples").mkdir(parents=True)
-    (folder / "header.json").write_text(json.dumps({"version": 2}) + "\n")
-    (folder / "samples" / "1_epoch_1.json").write_text(json.dumps({"id": 1, "epoch": 1}) + "\n")
+    for name, value in eval_members().items():
+        if name == "header.json" or name.startswith("samples/"):
+            (folder / name).write_text(json.dumps(value) + "\n")
+    got = _resolve(folder)
+    assert (got.kind, got.tool, got.files, got.name) == ("files", "inspect", (folder,), "inspect-log")
+    assert _resolve(folder, "inspect") == got
+    root = tmp_path / "st"
+    imported(in_argv(IN_EVAL, root, "eval"))
+    imported(in_argv(folder, root, "named"))
+    imported([str(folder), "--store", str(root), "--run", "found"])
+    assert recs(root, "named") == recs(root, "eval") == recs(root, "found")
     with pytest.raises(Refusal) as e:
-        _resolve(folder)
+        _resolve(folder, "junit")
     assert names(str(e.value), "Inspect", tmp=tmp_path)
 
 

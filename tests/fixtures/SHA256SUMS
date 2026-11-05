@@ -780,3 +780,10 @@ a6ab1f9d8ed0ffe149163202a6a5824159b739fb94264d786b9bd868bf84bf8b  ./ingest/junit
 a4b26c44a50edd5d71a6289ecac54874d35b4ae473486616431a8d3203426466  ./ingest/junit/trace-suite-2.xml
 c513d191ba7ac89a6ed35505ba67cd90d8a640037ed007548def0297f7dbbc3c  ./ingest/junit/humaneval-a.xml
 4483fefb85efbe4acea5cabb3e744ce6477467ccab21f7586c8ec8d5f39a2b64  ./ingest/junit/humaneval-b.xml
+97c14a69b337e987cba953997fea816e7894a88465f8c318604c6e4b85dd07a8  ./ingest/promptfoo/results.json
+0cfce548260e1512d2aa45ab7a07a1bfe354f6149506c1fad4296067fc97f308  ./ingest/promptfoo/results.jsonl
+b6ac598c8cbe7c1f29d5950a5a15f396e5f770a136953d9979cd395c544fa6a3  ./ingest/promptfoo/results.csv
+4d9922029b8b960f9ff1a5d4cf75df6900fb88921922d0ac2c454aca97ba69b0  ./ingest/inspect/2026-10-07T04-23-47-00-00_trace-fixture_CV3jq8f7FTjwkaYb3zj3m2.eval
+f2df35db42157c75254f464a4401695574d3c4a4721ac0e311402d65afff0959  ./ingest/inspect/2026-10-07T04-23-51-00-00_trace-fixture_2nSEDuHHzKiTUjJW3kXknY.json
+8c25e2fa6ab2e9e988b488b1992664408d51895dfa118495fe26c048867b0794  ./ingest/openai-evals/old.jsonl
+51558948238e77eb51c4821ea66c8ae9e4d3870df3b9a76257af12a94d785f45  ./ingest/openai-evals/new.jsonl

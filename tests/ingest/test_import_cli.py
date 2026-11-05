@@ -264,7 +264,8 @@ def _listed(text: str, name: str) -> bool:
 
 
 def test_ic11_help_lists_the_readers_present_and_no_other() -> None:
-    present = [n for n in READERS if (INGEST / f"{n}.py").exists()]
+    # a tool's module is its name with "-" as "_" (openai-evals is openai_evals.py), TF10's RD3
+    present = [n for n in READERS if (INGEST / f"{n.replace('-', '_')}.py").exists()]
     assert "deepeval" in present
     r = run_python(HELP)
     assert r.code == 0, r.text

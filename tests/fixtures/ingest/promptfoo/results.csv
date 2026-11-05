@@ -1,0 +1,5 @@
+case,text,[echo] old: {{text}},Status,Score,Named Scores,Grader Reason,Comment,[echo] new: {{text}} with the word banana,Status,Score,Named Scores,Grader Reason,Comment
+q1,the quick brown fox,old: the quick brown fox,FAIL,0.00,,"Expected output to contain ""banana""",,new: the quick brown fox with the word banana,PASS,1.00,,All assertions passed,
+q2,jumps over,old: jumps over,FAIL,0.00,,"Expected output to contain ""banana""",,new: jumps over with the word banana,PASS,1.00,,All assertions passed,
+q3,the lazy dog,old: the lazy dog,PASS,1.00,,All assertions passed,,new: the lazy dog with the word banana,PASS,1.00,,All assertions passed,
+q4,a banana split,old: a banana split,PASS,1.00,,All assertions passed,,new: a banana split with the word banana,PASS,1.00,,All assertions passed,

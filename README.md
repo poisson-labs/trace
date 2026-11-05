@@ -227,8 +227,10 @@ command and every flag.
 ### With your own results
 
 Run `poisson-trace init` in the folder that holds them: it finds Prove stores and the other
-four readers' files on its own, asks what it needs to know on a terminal, and with `--yes`
-takes the answers from its flags (`poisson-trace init --help` lists them).
+readers' files on its own, asks what it needs to know on a terminal, and with `--yes` takes
+the answers from its flags (`poisson-trace init --help` lists them). It imports DeepEval,
+Ragas, table and JUnit files itself; for promptfoo, Inspect and OpenAI Evals files it prints
+the `poisson-trace import` line for each.
 
 A JUnit report is read by class name and test name unless you give `--case name`. If your
 runner puts each repeat of a test in a class of its own, as the example reports do, give
@@ -236,17 +238,17 @@ runner puts each repeat of a test in a class of its own, as the example reports 
 
 ### What works today
 
-- Five readers: Prove's stored runs, and the result files of DeepEval, Ragas, any table of
-  results (CSV, JSON Lines, JSON or Parquet) and JUnit XML reports.
+- Eight readers: Prove's stored runs, and the result files of DeepEval, Ragas, any table of
+  results (CSV, JSON Lines, JSON or Parquet), JUnit XML reports, promptfoo, Inspect and OpenAI
+  Evals.
 - The commands: `init`, `doctor`, `runs`, `name`, `import`, `fix-check` and `changes` on any
-  of the five; `where` and `compare` on Prove's runs, which carry traces. An imported run
+  of the eight; `where` and `compare` on Prove's runs, which carry traces. An imported run
   carries none, so on one `where` says so and `compare` points to `fix-check`.
 - Checked on macOS with Python 3.11, 3.12 and 3.13, from the three files alone.
 
 ### What is coming
 
-- Readers for promptfoo, Inspect, OpenAI Evals, Braintrust, Weave, LangSmith, OpenTelemetry
-  and Lemma.
+- Readers for Braintrust, Weave, LangSmith, OpenTelemetry and Lemma.
 - A pull-request check that puts the fix check's verdict on the pull request.
 
 ### Problems
@@ -451,7 +453,7 @@ ok  this environment is ready
   prove     poisson-prove 0.1.3 (the version Trace reads)
   config    trace.toml: store proofload-runs (3 runs, 3 complete, 0 partial), failures unsolved
   names     proofload-runs: no names of yours yet
-  readers   deepeval, ragas, table, junit
+  readers   deepeval, ragas, table, junit, promptfoo, inspect, openai-evals
 next: poisson-trace runs
 ```
 

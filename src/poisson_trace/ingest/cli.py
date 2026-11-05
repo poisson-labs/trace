@@ -9,12 +9,13 @@ written; a wrong command line exits 2; Ctrl-C and an unexpected failure follow t
 (``poisson_trace.look``).
 
 The readers are found from ``READERS`` by presence: a module that is not in the install is
-not in ``--help`` and its name is refused. A reader module defines ``add_arguments(parser)``
-and ``read(ns) -> Run``, and may define ``DESCRIPTION`` (its help's paragraph), ``EXAMPLE``
-(a command its help and the import's show) and ``usage(ns) -> str | None`` (why a command line
-its parser takes is still wrong, exit 2). It may also define ``FURTHER``, a mapping from one
-further command name to ``(add_arguments, run)`` with ``run(ns) -> int``, for a command that
-writes no store and takes its own flags.
+not in ``--help`` and its name is refused. A tool's module is its name with ``-`` as ``_``
+(``openai-evals`` is ``openai_evals``), since a module's name cannot hold a hyphen. A reader
+module defines ``add_arguments(parser)`` and ``read(ns) -> Run``, and may define
+``DESCRIPTION`` (its help's paragraph), ``EXAMPLE`` (a command its help and the import's show)
+and ``usage(ns) -> str | None`` (why a command line its parser takes is still wrong, exit 2).
+It may also define ``FURTHER``, a mapping from one further command name to ``(add_arguments,
+run)`` with ``run(ns) -> int``, for a command that writes no store and takes its own flags.
 
 ``poisson_prove`` is imported by the writer (and by the Prove reader, which no tool here
 names), and the writer is imported after the check that ``poisson_prove`` is present at the
@@ -49,7 +50,18 @@ from poisson_trace.names import import_name_refusal
 if TYPE_CHECKING:
     from poisson_trace.ingest.writer import Written
 
-READERS: tuple[str, ...] = ("deepeval", "ragas", "table", "junit", "langsmith", "otel", "lemma")
+READERS: tuple[str, ...] = (
+    "deepeval",
+    "ragas",
+    "table",
+    "junit",
+    "promptfoo",
+    "inspect",
+    "openai-evals",
+    "langsmith",
+    "otel",
+    "lemma",
+)
 SCHEMA = "poisson-trace.import/1"
 # the command as every help, refusal and next line names it, under either spelling
 PROG = "poisson-trace import"
@@ -73,9 +85,19 @@ own detectors and read as one run, named after the folder unless --run names it.
 """
 
 
+def module_name(tool: str) -> str:
+    """The reader module of the tool ``tool``: its name with ``-`` as ``_``."""
+    return f"{__package__}.{tool.replace('-', '_')}"
+
+
+def reader(tool: str) -> Any:
+    """The reader module of the tool ``tool``."""
+    return import_module(module_name(tool))
+
+
 def present() -> tuple[str, ...]:
     """The readers whose modules are in the install, in the order ``READERS`` names them."""
-    return tuple(name for name in READERS if find_spec(f"{__package__}.{name}") is not None)
+    return tuple(name for name in READERS if find_spec(module_name(name)) is not None)
 
 
 def _examples(commands: Sequence[str]) -> str | None:
@@ -85,7 +107,7 @@ def _examples(commands: Sequence[str]) -> str | None:
 def _build_parser(
     present: Sequence[str],
 ) -> tuple[look.Parser, dict[str, look.Parser], dict[str, _Further]]:
-    modules = {name: import_module(f"{__package__}.{name}") for name in present}
+    modules = {name: reader(name) for name in present}
     shown = [module.EXAMPLE for module in modules.values() if hasattr(module, "EXAMPLE")]
     parser = look.Parser(prog=PROG, description=_ABOUT, epilog=_examples(shown))
     parser.add_argument(
@@ -261,20 +283,41 @@ def _failed_when(d: Mapping[str, Any]) -> str:
     declared, tool = d["declared"], d["tool"]
     if tool == "junit":
         return "its test failed or errored"
+    if tool == "openai-evals":
+        return "its match event was not correct"
+    side = "below" if declared.get("side") == "below" else "above"
+    if tool == "promptfoo":
+        if declared.get("outcome") == "score":
+            return f"its score is {side} {_value(declared['cut'])}"
+        return "promptfoo marked it as not passed"
+    if tool == "inspect":
+        scorer = declared["scorer"]
+        if declared.get("outcome") == "score":
+            return f"its {scorer} score is {side} {_value(declared['cut'])}"
+        if declared.get("outcome") == "value":
+            values = _or([json.dumps(v, ensure_ascii=False) for v in declared["failed"]])
+            return f"its {scorer} score reads {values}"
+        return f"its {scorer} score is not C (I, P and N count as failed)"
     if "outcome_column" in declared:
         values = _or([json.dumps(v, ensure_ascii=False) for v in declared["failed"]])
         return f"its {declared['outcome_column']} column reads {values}"
     if declared.get("cut") == "recorded":
         return f"DeepEval marked its {declared['metric']} metric as not passed"
     scored = declared.get("score_column", declared.get("metric"))
-    side = "below" if declared.get("side") == "below" else "above"
     return f"its {scored} score is {side} {_value(declared['cut'])}"
 
 
 def _import_flags(declared: Mapping[str, Any]) -> list[str]:
     """The flags that read another file as this one was read, from what was declared."""
     words: list[str] = []
+    if declared.get("outcome") in ("success", "correct"):
+        # a reader's default outcome, which the line need not spell
+        declared = {k: v for k, v in declared.items() if k != "outcome"}
     for key, flag in (
+        ("prompt", "--prompt"),
+        ("scorer", "--scorer"),
+        ("provider", "--provider"),
+        ("outcome", "--outcome"),
         ("metric", "--metric"),
         ("score_column", "--score-column"),
         ("cut", "--cut"),
@@ -297,7 +340,7 @@ def _import_flags(declared: Mapping[str, Any]) -> list[str]:
 def _extension(name: str) -> str:
     """The extensions that say a file's format: ``.csv``, ``.jsonl.gz``."""
     lowered = name.lower()
-    for ext in (".csv", ".jsonl", ".json", ".parquet", ".xml"):
+    for ext in (".csv", ".jsonl", ".json", ".parquet", ".xml", ".eval"):
         for whole in (ext + ".gz", ext):
             if lowered.endswith(whole):
                 return name[-len(whole) :]
@@ -314,17 +357,26 @@ def _summary_lines(d: Mapping[str, Any], reach: Sequence[str]) -> list[str]:
     counted = f"{count(failed)} failed and {count(passed)} passed"
     if none:
         counted += f"; {count(none)} had no outcome"
-    other = "OTHER" + _extension(files[0])
+    other = ["OTHER" + _extension(files[0])]
+    picked: list[str] = []
+    declared = d["declared"]
+    whose = "file" if len(files) == 1 else "files"
+    if d["tool"] == "promptfoo":
+        # one promptfoo file holds every prompt: the other version is usually another of them
+        other = [look.word(name) for name in files]
+        picked = ["--prompt PROMPT"]
+        whose = "prompt"
+        declared = {k: v for k, v in declared.items() if k != "prompt"}
     command = look.command(
         "poisson-trace",
         "import",
         d["tool"],
-        other,
+        *other,
         *reach,
         "--run OTHER",
-        *_import_flags(d["declared"]),
+        *picked,
+        *_import_flags(declared),
     )
-    whose = "file" if len(files) == 1 else "files"
     tail = ""
     if "outcome_column" in d["declared"]:
         tail = "; any other value counts as a pass"
@@ -369,7 +421,8 @@ def _caveats(d: Mapping[str, Any]) -> list[str]:
         note = f" ({started['note']})" if "note" in started else ""
         said.append(f"Its start time is the report's earliest suite timestamp{note}.")
     elif source == "file":
-        said.append("Its start time is a time the tool wrote in the file.")
+        note = f" ({started['note']})" if "note" in started else ""
+        said.append(f"Its start time is a time the tool wrote in the file{note}.")
     elif source in _STARTED_SAID:
         said.append(_STARTED_SAID[source])
     if "outcome_column" in d["declared"]:
@@ -506,7 +559,7 @@ def _main(session: look.Session) -> int:
             "a folder is given alone, in place of the files: give one folder, or files"
         )
     if ns.tool not in further:
-        wrong = getattr(import_module(f"{__package__}.{ns.tool}"), "usage", None)
+        wrong = getattr(reader(ns.tool), "usage", None)
         said = wrong(ns) if wrong is not None else None
         if said is not None:
             subs[ns.tool].error(said)
@@ -567,7 +620,7 @@ def _main(session: look.Session) -> int:
         held = True
     session.stopped = lambda: _stopped(store, ns.run, held)
     given = None if ns.started is None else _started(ns.started)
-    run: Run = import_module(f"{__package__}.{ns.tool}").read(ns)
+    run: Run = reader(ns.tool).read(ns)
     if given is not None:
         run = replace(run, started=given, started_from="given", started_note=None)
     if found is not None:
@@ -663,10 +716,10 @@ def one_run(
             "DeepEval saves is one run, and one import is one version, so import each on its own",
             *nexts(),
         )
-    reader = import_module(f"{__package__}.{tool}")
+    module = reader(tool)
     seen: dict[str, Path] = {}
     for f in files:
-        one = reader.read(argparse.Namespace(**{**vars(ns), "files": [str(f)]}))
+        one = module.read(argparse.Namespace(**{**vars(ns), "files": [str(f)]}))
         for case in dict.fromkeys(row.case for row in one.rows):
             if case in seen:
                 raise Refusal(

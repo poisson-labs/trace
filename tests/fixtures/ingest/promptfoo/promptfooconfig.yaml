@@ -1,0 +1,16 @@
+description: "Trace fixture: the echo provider, two prompts as two versions"
+providers:
+  - id: echo
+    label: echo
+prompts:
+  - "old: {{text}}"
+  - "new: {{text}} with the word banana"
+tests:
+  - vars: { case: "q1", text: "the quick brown fox" }
+    assert: [{ type: contains, value: "banana" }]
+  - vars: { case: "q2", text: "jumps over" }
+    assert: [{ type: contains, value: "banana" }]
+  - vars: { case: "q3", text: "the lazy dog" }
+    assert: [{ type: contains, value: "lazy" }]
+  - vars: { case: "q4", text: "a banana split" }
+    assert: [{ type: contains, value: "banana" }]

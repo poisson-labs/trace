@@ -5,7 +5,8 @@ resolve once names are built).
 Each example is read as a shell reads it, then run in a folder that holds what it names: the
 store an example names is a copy of the tau2 fixture (runs Prove stored, which carry the
 ``unsolved`` outcome the examples count), and each file an import example names is the reader's
-own fixture under that name, its case column named as the example names it. Each exits 0 and
+own fixture under that name, its case column named as the example names it (the promptfoo,
+Inspect and OpenAI Evals readers' fixtures as TF10 committed them). Each exits 0 and
 prints its verdict line first. ``runs`` and ``name`` have a description, help on every argument
 with its default, and an example, as every verb does."""
 
@@ -27,6 +28,15 @@ NEW_VERBS = ("runs", "name")
 # the table and JUnit readers' committed files, for examples that name those readers
 TABLE = Path(__file__).resolve().parent / "fixtures" / "ingest" / "table" / "humaneval-a.csv"
 JUNIT = Path(__file__).resolve().parent / "fixtures" / "ingest" / "junit" / "humaneval-a.xml"
+# the promptfoo, Inspect and OpenAI Evals readers' committed files (TF10, its RD3), each copied
+# under the name an example gives it, the form told by the name's extension
+_TF10 = Path(__file__).resolve().parent / "fixtures" / "ingest"
+TF10_FILES = {
+    "promptfoo": {".json": _TF10 / "promptfoo" / "results.json", ".jsonl": _TF10 / "promptfoo" / "results.jsonl"},
+    "inspect": {".eval": _TF10 / "inspect" / "2026-10-07T04-23-47-00-00_trace-fixture_CV3jq8f7FTjwkaYb3zj3m2.eval",
+                ".json": _TF10 / "inspect" / "2026-10-07T04-23-51-00-00_trace-fixture_2nSEDuHHzKiTUjJW3kXknY.json"},
+    "openai-evals": {".jsonl": _TF10 / "openai-evals" / "old.jsonl"},
+}
 TRACE_HELPS = [[], *[[v] for v in (*VERBS, *NEW_VERBS)]]
 IMPORT_HELPS = [[], *[[t] for t in TOOLS]]
 
@@ -96,6 +106,8 @@ def _set_up(folder: Path, command: str, words: list[str]) -> list[str]:
             shutil.copy(JUNIT, path)
         elif tool == "table":
             _write_table(path, _table_rows(words))
+        elif tool in TF10_FILES:
+            shutil.copy(TF10_FILES[tool][path.suffix], path)
         else:
             column = _option(words, "--case-column") or "case"
             rows = [json.loads(line) for line in (RAGAS / "rag-base.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]

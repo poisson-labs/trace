@@ -9,8 +9,9 @@ section 18.3.1, SG8 and SG17, as FI1 to FI7 rule it).
 3. a saved pull folder (``pull.json``, ``poisson.raw-pull/1``, section 18.3.2): its tool's
    reader on the files it lists, in its order, each there, inside the folder and of the digest
    listed; refused when any of that is not so or the tool is not in this install;
-4. an unpacked Inspect log (``header.json`` beside ``samples/``): refused, saying so, until the
-   Inspect reader reads it (FI3, TF10);
+4. an unpacked Inspect log (``header.json`` beside ``samples/``): one Inspect run, the folder
+   itself the one "file" the Inspect reader reads (FI3, TF10's RD7); refused, saying so, in an
+   install without that reader, and when another tool is named;
 5. otherwise one tool's result files: the regular files directly in it, in the order of their
    names, each claimed by the reader whose ``looks_like`` claims it (the readers' own detectors
    are the signature table, FI1). Hidden files, names starting with ``_`` or ``README``, files
@@ -28,7 +29,6 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from importlib import import_module
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -105,11 +105,25 @@ def resolve(path: Path | str, tool: str | None = None) -> Resolved:
     if _is_file(folder / PULL):
         return _pull(folder, name, tool)
     if _is_file(folder / "header.json") and _is_dir(folder / "samples"):
+        return _inspect(folder, name, tool)
+    return _files(folder, name, tool)
+
+
+def _inspect(folder: Path, name: str, tool: str | None) -> Resolved:
+    """An unpacked Inspect log: one run, read by the Inspect reader from the folder itself."""
+    from poisson_trace.ingest.cli import present
+
+    if "inspect" not in present():
         raise Refusal(
             f"{folder} is an unpacked Inspect log (header.json beside samples/), and this install "
-            "cannot read one yet; an Inspect reader that does comes with a later release"
+            "has no Inspect reader to read it"
         )
-    return _files(folder, name, tool)
+    if tool is not None and tool != "inspect":
+        raise Refusal(
+            f"{folder} is an unpacked Inspect log (header.json beside samples/), not the {tool} "
+            "reader's files"
+        )
+    return Resolved("files", folder, name, tool="inspect", files=(folder,))
 
 
 def _quoted(text: str) -> str:
@@ -190,11 +204,11 @@ def _listed(folder: Path, inside: Path, said: Path, entry: Any) -> Path:
 
 def _detectors() -> dict[str, Any]:
     """Each reader in the install that has a detector, in the order the import names them."""
-    from poisson_trace.ingest.cli import present
+    from poisson_trace.ingest.cli import present, reader
 
     out = {}
     for tool in present():
-        module = import_module(f"poisson_trace.ingest.{tool}")
+        module = reader(tool)
         if hasattr(module, "looks_like"):
             out[tool] = module.looks_like
     return out
