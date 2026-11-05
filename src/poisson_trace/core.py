@@ -215,7 +215,7 @@ def _validate(ns: argparse.Namespace) -> None:
             raise _Refusal("--alpha must be strictly between 0 and 1")
         if ns.top < 0:
             raise _Refusal("--top must be 0 or more")
-    if ns.verb == "changes" and ns.a == ns.b:
+    if ns.verb in ("compare", "changes") and ns.a == ns.b:
         raise _Refusal(f"A and B are both {ns.a}; the two runs compared must differ")
     if ns.verb == "fix-check":
         _validate_fix_check(ns)
@@ -1909,8 +1909,8 @@ def compare(ns: argparse.Namespace) -> Counted:
     )
 
     store, index = _named(ns)
-    # compare has never refused one run given twice; it reads the runs the words reach
-    run_a, run_b = index.resolve(ns.a), index.resolve(ns.b)
+    # two words that reach one run are refused as changes and fix-check refuse them (PA20)
+    run_a, run_b = _two(index, ns.a, ns.b, ("A", "B"))
     manifest_a, frame_a, tally_a = _load(store, run_a)
     manifest_b, frame_b, tally_b = _load(store, run_b)
     signals = None
