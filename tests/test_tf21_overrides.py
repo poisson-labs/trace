@@ -227,18 +227,22 @@ def test_tf21_60_an_import_without_a_config_records_the_built_in_digest(tmp_path
     assert m["taxonomy_sha256"] == taxonomy.taxonomy_sha256((), None)
 
 
-# ---------- TF21-61: the import's flags are not taken from [signals] in TF21 (SA8) ----------
+# ---------- TF21-61: [signals] case_field stands in for --case-column (SA8, built by TF17) ----------
 
 
-def test_tf21_61_case_field_does_not_stand_in_for_case_column(tmp_path: Path) -> None:
+def test_tf21_61_case_field_stands_in_for_case_column(tmp_path: Path) -> None:
+    """Changed in TF17 Session A's commit (the SA8 ruling sent the stand-in to TF17): the
+    import takes the case column from ``[signals]`` when the flag is not given."""
     _tau2_table(tmp_path / "tau2.csv")
     (tmp_path / "trace.toml").write_text('version = 1\n[signals]\ncase_field = "case"\n',
                                          encoding="utf-8")
     r = run_import(["table", tmp_path / "tau2.csv", "--store", tmp_path / "st", "--run", "t",
                     "--outcome-column", "outcome", "--failed", "unsolved", "--config",
                     tmp_path / "trace.toml"])
-    assert r.code != 0
-    assert not (tmp_path / "st" / "t").exists()
+    assert r.code == 0, r.out + r.err
+    assert (tmp_path / "st" / "t").exists()
+    m = Store(tmp_path / "st").manifest("t").environment["import"]
+    assert m["declared"]["case_column"] == "case"
 
 
 # ---------- TF21-62: a config fault stops the import before anything is written ----------
@@ -268,5 +272,6 @@ def test_tf21_63_an_unknown_table_lists_the_two_new_tables(tmp_path: Path) -> No
     with pytest.raises(config.ConfigError) as caught:
         parse('version = 1\n[colours]\nx = 1\n', tmp_path)
     assert str(caught.value) == (
-        "trace.toml line 2: [colours] is not a table; a config has version and the tables "
-        "[store], [events], [check], [names], [upload], [signals] and [taxonomy]")
+        "trace.toml line 2: [colours] is not a table; a config has version, the tables "
+        "[store], [events], [check], [names], [upload], [signals] and [taxonomy], and "
+        "[[import]] tables")

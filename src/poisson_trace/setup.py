@@ -7,6 +7,12 @@ there is no store, asks which outcomes count as a failure, shows the runs' names
 ``trace.toml`` once, after the last answer. It prints the same setup as one command that asks
 nothing, and the first command to run next.
 
+On a ``trace.toml`` with ``[[import]]`` entries not imported yet, as the person's coding agent
+writes one (``init --agent``), it shows the stores, the failures and the pending files, asks
+whether to import them, imports the pending ones into the imports' store (``trace-store``
+beside the config, or the store the config names for them) and writes the config once more,
+keeping every line and adding the store's table when the config does not name it.
+
 Every read of a store goes through Prove's ``Store``: listing a store reads its runs' records
 alone, and of the store chosen the rows of the newest 20 runs are read for their outcomes and
 nothing else. Nothing is written under any store but the runs of an import the user agreed to;
@@ -31,7 +37,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from poisson_trace import config, look, names
+from poisson_trace import config, imports, look, names
+from poisson_trace.imports import IMPORTED_STORE
 from poisson_trace.look import count
 
 # the outcomes whose names mean success, which the failure question's default leaves out
@@ -68,8 +75,9 @@ SKIPPED = frozenset(
     {".git", ".venv", "venv", "node_modules", "__pycache__", ".work", "site-packages", ".poisson"}
 )
 READERS_FOLDERS = frozenset({".deepeval"})
-# where an import from init writes its runs: beside the config
-IMPORTED_STORE = "trace-store"
+# the forms --case takes, by reader: DeepEval's three, JUnit's name, promptfoo's variable or
+# position
+_CASE_FORMS = ("name", "input", "position", "test")
 # the targets a store's line names, and the runs' names the summary shows, before "more"
 TARGETS_SHOWN = 4
 NAMES_SHOWN = 3
@@ -501,6 +509,15 @@ _ASKED: dict[str, tuple[tuple[str, str], ...]] = {
         ("failed", "Which of its values mean a failure? Separate them with commas:"),
     ),
     "junit": (),
+    "promptfoo": (
+        (
+            "case",
+            "What identifies a test across versions? var:NAME, the test variable NAME, or "
+            "test, the test's position in the file:",
+        ),
+    ),
+    "inspect": (),
+    "openai-evals": (),
 }
 _FLAG = {
     "metric": "--metric",
@@ -529,6 +546,8 @@ def _fits(reader: str, dest: str, answer: str) -> bool:
     if dest == "side":
         return answer in ("below", "above")
     if dest == "case":
+        if reader == "promptfoo":
+            return _promptfoo_case(answer)
         return answer in ("name", "input", "position")
     if dest == "failed":
         return bool(_values(answer))
@@ -538,6 +557,10 @@ def _fits(reader: str, dest: str, answer: str) -> bool:
 def _values(answer: str) -> tuple[str, ...]:
     """The failure values of an answer: the words between its commas, trimmed, each once."""
     return tuple(dict.fromkeys(v.strip() for v in answer.split(",") if v.strip()))
+
+
+def _promptfoo_case(answer: str) -> bool:
+    return answer == "test" or (answer.startswith("var:") and len(answer) > len("var:"))
 
 
 @dataclass
@@ -555,6 +578,13 @@ class Answers:
             value = getattr(ns, dest)
             if value is not None:
                 values[dest] = str(value)
+        case = values.get("case")
+        if case is not None and case not in _CASE_FORMS and not _promptfoo_case(case):
+            raise look.Usage(
+                f"--case takes name, input or position (DeepEval), name (JUnit), or var:NAME or "
+                f"test (promptfoo), not {case}",
+                _HELP,
+            )
         if ns.below and ns.above:
             raise look.Usage("--below and --above are two sides; give one", _HELP)
         if ns.below or ns.above:
@@ -618,13 +648,28 @@ def import_answers(readers: Sequence[str], answers: Answers, terminal: bool) -> 
 def answers_fit(readers: Sequence[str], answers: Answers) -> None:
     """Refused before anything is asked or written: an answer given that a reader of the files
     found cannot read them by. The JUnit reader reads a test case by its class name and its
-    name, or by its name alone (``--case name``); input and position are DeepEval's."""
+    name, or by its name alone (``--case name``); input and position are DeepEval's; promptfoo
+    reads a test by a variable (``var:NAME``) or its position (``test``)."""
     case = answers.values.get("case")
-    if "junit" in readers and case is not None and case not in _JUNIT_CASES:
+    if case is None:
+        return
+    if "junit" in readers and case not in _JUNIT_CASES:
         raise Refused(
             f"--case {case} cannot identify a test case of a JUnit report: give --case name to "
             "read the reports by the test's name alone, or leave --case out to read them by its "
             "class name and its name",
+            _HELP,
+        )
+    if "deepeval" in readers and case not in ("name", "input", "position"):
+        raise Refused(
+            f"--case {case} cannot identify a test case of a DeepEval test run: give name, input "
+            "or position",
+            _HELP,
+        )
+    if "promptfoo" in readers and not _promptfoo_case(case):
+        raise Refused(
+            f"--case {case} cannot identify a test of a promptfoo file: give var:NAME, the test "
+            "variable NAME, or test, the test's position in the file",
             _HELP,
         )
 
@@ -643,6 +688,21 @@ class Imported:
     path: str
     reader: str
     run: Any  # the reader's Run, written once every answer is in
+    # a promptfoo file's prompt, counting from 1: one file holds every prompt, and each is its
+    # own run
+    prompt: int | None = None
+
+
+def _prompts_in(path: str) -> int:
+    """How many prompts a promptfoo file holds; one when it cannot be read, so that the reader's
+    own refusal says why."""
+    from poisson_trace.ingest import promptfoo
+
+    try:
+        loaded = promptfoo._load(Path(path))
+        return len({int(r["promptIdx"]) for r in loaded.results}) or 1
+    except Exception:
+        return 1
 
 
 def read_imports(files: Sequence[FoundFile], answers: Answers) -> list[Imported]:
@@ -656,44 +716,57 @@ def read_imports(files: Sequence[FoundFile], answers: Answers) -> list[Imported]
     values = answers.values
     _, readers, _ = parsers()
     for f in files:
-        name = run_name(f.path)
-        hole = names.import_name_refusal(name)
-        if hole is not None:
-            raise Refused(f"{f.path} cannot be imported as a run named after it: {hole}", _HELP)
-        if name in seen:
-            raise Refused(
-                f"{seen[name]} and {f.path} would both be imported as the run {name}; import "
-                "them one at a time with poisson-trace import, each under a name of its own",
-                _HELP,
+        stem = run_name(f.path)
+        # one promptfoo file holds every prompt: each is its own run, named by the file and the
+        # prompt's number counting from 1
+        prompts = _prompts_in(f.path) if f.reader == "promptfoo" else 1
+        numbered = [None] if prompts == 1 else list(range(1, prompts + 1))
+        for prompt in numbered:
+            name = stem if prompt is None else f"{stem}-{prompt}"
+            hole = names.import_name_refusal(name)
+            if hole is not None:
+                raise Refused(f"{f.path} cannot be imported as a run named after it: {hole}", _HELP)
+            if name in seen:
+                raise Refused(
+                    f"{seen[name]} and {f.path} would both be imported as the run {name}; import "
+                    "them one at a time with poisson-trace import, each under a name of its own",
+                    _HELP,
+                )
+            seen[name] = f.path
+            # the reader's own defaults, where it has them (the JUnit reader's case, promptfoo's
+            # and Inspect's outcome), then the answers
+            given: dict[str, Any] = {
+                a.dest: a.default for a in readers[f.reader]._actions if a.dest != "help"
+            }
+            given.update(
+                files=[f.path],
+                run=name,
+                started=None,
+                verdicts=None,
+                metric=values.get("metric"),
+                cut=values.get("cut"),
+                below=values.get("side") == "below",
+                above=values.get("side") == "above",
+                case=values.get("case", given.get("case")),
+                case_column=values.get("case_column"),
+                outcome_column=values.get("outcome_column"),
+                failed=list(answers.failed),
+                score_column=None,
+                prompt=None if prompt is None else str(prompt),
             )
-        seen[name] = f.path
-        ns = argparse.Namespace(
-            files=[f.path],
-            run=name,
-            started=None,
-            metric=values.get("metric"),
-            cut=values.get("cut"),
-            below=values.get("side") == "below",
-            above=values.get("side") == "above",
-            # a reader's own default, where it has one (the JUnit reader's case)
-            case=values.get("case", readers[f.reader].get_default("case")),
-            case_column=values.get("case_column"),
-            outcome_column=values.get("outcome_column"),
-            failed=list(answers.failed),
-            score_column=None,
-        )
-        try:
-            run = reader(f.reader).read(ns)
-        except Refusal as e:
-            raise Refused(str(e), *e.nexts) from e
-        if not run.rows:
-            raise Refused(f"no row was read from {f.path}, so there is no run to write")
-        if all(row.outcome is None for row in run.rows):
-            raise Refused(
-                f"none of the rows read from {f.path} has an outcome, so there is nothing to "
-                "compare and no run was written"
-            )
-        made.append(Imported(f.path, f.reader, run))
+            ns = argparse.Namespace(**given)
+            try:
+                run = reader(f.reader).read(ns)
+            except Refusal as e:
+                raise Refused(str(e), *e.nexts) from e
+            if not run.rows:
+                raise Refused(f"no row was read from {f.path}, so there is no run to write")
+            if all(row.outcome is None for row in run.rows):
+                raise Refused(
+                    f"none of the rows read from {f.path} has an outcome, so there is nothing to "
+                    "compare and no run was written"
+                )
+            made.append(Imported(f.path, f.reader, run, prompt))
     _failed_carried(made, answers)
     return made
 
@@ -744,8 +817,21 @@ def import_line(item: Imported, store: str) -> str:
     declared = dict(item.run.declared)
     words = ["poisson-trace", "import", item.reader, item.path, *_pair("--store", store)]
     words += _pair("--run", item.run.name)
+    if item.prompt is not None:
+        words += _pair("--prompt", str(item.prompt))
+    if item.reader == "inspect" and declared.get("scorer") is not None:
+        words += _pair("--scorer", str(declared["scorer"]))
+    if item.reader == "promptfoo" and declared.get("provider") is not None:
+        words += _pair("--provider", str(declared["provider"]))
+    if item.reader in ("promptfoo", "inspect") and declared.get("outcome") not in (
+        None,
+        "success",
+        "correct",
+    ):
+        words += _pair("--outcome", str(declared["outcome"]))
     if "metric" in declared:
         words += _pair("--metric", str(declared["metric"]))
+    if "cut" in declared and ("metric" in declared or item.reader in ("promptfoo", "inspect")):
         words += _pair("--cut", str(declared["cut"]))
     if "side" in declared:
         words.append(f"--{declared['side']}")
@@ -755,7 +841,8 @@ def import_line(item: Imported, store: str) -> str:
         words += _pair("--case-column", str(declared["case_column"]))
     if "outcome_column" in declared:
         words += _pair("--outcome-column", str(declared["outcome_column"]))
-        for value in declared["failed"]:
+    if "outcome_column" in declared or item.reader == "inspect":
+        for value in declared.get("failed", ()):
             words += _pair("--failed", str(value))
     return " ".join(_shell_word(w) for w in words)
 
@@ -975,11 +1062,11 @@ def _not_empty(files: Sequence[FoundFile]) -> list[FoundFile]:
 _IMPORT_HELP = "poisson-trace import --help"
 
 
-def _imported_outcomes(imports: Sequence[Imported]) -> Outcomes:
+def _imported_outcomes(made: Sequence[Imported]) -> Outcomes:
     counts: Counter[str] = Counter()
-    for item in imports:
+    for item in made:
         counts.update(row.outcome for row in item.run.rows if row.outcome is not None)
-    one = len(imports) == 1
+    one = len(made) == 1
     return Outcomes(counts, "the run to import" if one else "the runs to import", one)
 
 
@@ -987,21 +1074,30 @@ def _imported_outcomes(imports: Sequence[Imported]) -> Outcomes:
 
 
 def _write(
-    imports: Sequence[Imported], store: Path, form: str, path: Path, shown: str, text: str
+    made: Sequence[Imported],
+    store: Path,
+    form: str,
+    path: Path,
+    shown: str,
+    text: str,
+    *,
+    rules: Sequence[Any] = (),
+    budgets: Any = None,
 ) -> None:
     """The runs to import, then the config. On a refusal, a failure or Ctrl-C, every run this
-    wrote is removed, and so is the store folder it made, so nothing is left behind."""
+    wrote is removed, and so is the store folder it made, so nothing is left behind. ``rules``
+    and ``budgets`` are a config's, when the runs join one that has them."""
     from poisson_trace.ingest.rows import Refusal
     from poisson_trace.ingest.writer import write
 
     made_store = not store.exists()
     written: list[Path] = []
     try:
-        for item in imports:
+        for item in made:
             target = store / item.run.name
             existed = target.exists()
             try:
-                write(item.run, store, form)
+                write(item.run, store, form, rules=rules, budgets=budgets)
             finally:
                 if not existed and target.exists():
                     written.append(target)
@@ -1113,12 +1209,14 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
         )
     held = _existing(ns, path, shown)
     if held is not None:
+        if held.imports and imports.pending(held, imports.imports_store(held).path):
+            return _hand_over(ns, held, terminal, written)
         return _complete(ns, held, terminal, written)
     _not_in_a_store(path, shown)
     form = ns.names or "target"
     stores: list[tuple[str | None, str]] = []
     found: Found | None = None
-    imports: list[Imported] = []
+    made: list[Imported] = []
     imported: bool | None = ns.import_
     if ns.store:
         stores = _stores_given(ns.store)
@@ -1154,8 +1252,6 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
             if len(readers) > 1 and imported is not False:
                 _several_tools(ns, found.files, config.beside(path, IMPORTED_STORE), shown)
             if imported is not False:
-                _not_imported_here(ns, found.files, config.beside(path, IMPORTED_STORE), shown)
-            if imported is not False:
                 answers_fit(readers, answers)
             if imported is None:
                 imported = not terminal or _yes_no(
@@ -1164,10 +1260,10 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
                 )
             if imported:
                 answers = import_answers(readers, answers, terminal)
-                imports = read_imports(found.files, answers)
+                made = read_imports(found.files, answers)
     imported_store = config.beside(path, IMPORTED_STORE)
-    if imports:
-        events = failures(_imported_outcomes(imports), ns.event or (), terminal)
+    if made:
+        events = failures(_imported_outcomes(made), ns.event or (), terminal)
     elif stores:
         store, first_index = _index(stores[0][1], form)
         events = failures(newest_outcomes(store, first_index), ns.event or (), terminal)
@@ -1176,7 +1272,7 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
     else:
         events = []
     # every answer is in: nothing was written before this line
-    setup = [(None, imported_store)] if imports else stores
+    setup = [(None, imported_store)] if made else stores
     text = config.text_of(
         [(name, config.written_path(path, p)) for name, p in setup],
         events,
@@ -1186,46 +1282,20 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
         names_from=form,
     )
     config.parse(text, path, shown, given=ns.config is not None)
-    _write(imports, Path(imported_store), form, path, shown, text)
-    if imports:
-        kept = f"{shown} and {_plural(len(imports), 'imported run', 'imported runs')} were"
+    _write(made, Path(imported_store), form, path, shown, text)
+    if made:
+        kept = f"{shown} and {_plural(len(made), 'imported run', 'imported runs')} were"
     else:
         kept = f"{shown} was"
     written(f"stopped  interrupted: {kept} written whole; poisson-trace doctor checks it")
-    command = _command(ns, [] if imports else stores, events, imported, answers)
+    command = _command(ns, [] if made else stores, events, imported, answers)
     others = []
-    if found is not None and stores and not imports:
+    if found is not None and stores and not made:
         others = [s for s in found.stores if s.path != stores[0][1]]
     left: list[FoundFile] = []
-    if found is not None and not imports:
+    if found is not None and not made:
         left = found.files if not found.stores else _not_empty(found.files)
-    return _summary(ns, shown, setup, form, events, command, others, imports, "wrote", left)
-
-
-def _not_imported_here(
-    ns: argparse.Namespace, files: Sequence[FoundFile], store: str, shown: str
-) -> None:
-    """Refused: result files of a reader init does not import itself yet (promptfoo, Inspect,
-    OpenAI Evals: one promptfoo file holds both versions, which init's one run per file does
-    not fit), before any question is asked. The refusal carries one import line for each file,
-    and the way to write the config with no store."""
-    tools = [t for t in tools_of(files) if t not in _ASKED]
-    if not tools:
-        return
-    finish = look.command(
-        "poisson-trace",
-        "init",
-        "--force",
-        *(_shell_word(w) for w in _pair("--store", store)),
-        *_reach(ns),
-    )
-    raise Refused(
-        f"init lists the {_and(tools)} files it finds but does not import them itself; import "
-        "the old version's and the new one's with their lines below (a word in capitals is "
-        f"yours to fill in), then run {finish}; or give --no-import to write {shown} with no "
-        "store first",
-        *shown_lines(files, store),
-    )
+    return _summary(ns, shown, setup, form, events, command, others, made, "wrote", left)
 
 
 def _several_tools(
@@ -1268,6 +1338,18 @@ def _existing(ns: argparse.Namespace, path: Path, shown: str) -> config.Config |
         held = config.load(ns.config)
     except config.ConfigError:
         held = None
+    if held is not None and held.imports:
+        pending = imports.pending(held, imports.imports_store(held).path)
+        if pending:
+            other = _sets(ns, [d for d in _SETTING if d != "import_"])
+            if other:
+                raise look.Usage(
+                    f"{shown} names {_plural(len(pending), 'file', 'files')} to import, and init "
+                    "takes no setup flag for that but --import, --no-import, --event and --yes; "
+                    "give --force to set up again",
+                    _HELP,
+                )
+            return held
     if (
         held is not None
         and held.store is not None
@@ -1280,6 +1362,162 @@ def _existing(ns: argparse.Namespace, path: Path, shown: str) -> config.Config |
         "edit it by hand",
         look.command("poisson-trace", "doctor", *_reach(ns)),
     )
+
+
+# ---------- the hand-over from the agent's file ----------
+
+IMPORT_QUESTION = "Import these {n} files as the runs named here? [y/N]"
+
+
+def _hand_over(
+    ns: argparse.Namespace, held: config.Config, terminal: bool, written: Callable[[str], None]
+) -> Done:
+    """A config with ``[[import]]`` entries not imported yet: the stores, the failures and the
+    pending files shown, the question (No by default; ``--yes`` and ``--import`` answer yes,
+    ``--no-import`` no), every pending file read before anything is written, the failures
+    asked when the config sets none, then the runs written into the imports' store and the
+    config written once, every line kept and the store's table added when it names none."""
+    store = imports.imports_store(held)
+    pending = imports.pending(held, store.path)
+    n = len(pending)
+    look.err(
+        f"Poisson Trace setup. {held.shown} names {_plural(n, 'file', 'files')} to import; this "
+        f"imports them into {store.path} and keeps every line of the file. Ctrl-C stops without "
+        "writing.\n\n"
+    )
+    for name, store_path in held.stores():
+        runs = _held(store_path)
+        if not runs:
+            if store.may_be_empty and imports.same_folder(store_path, store.path):
+                look.err(f"  {_store_words(name, store_path)}: no run yet\n")
+                continue
+            raise Refused(
+                f"{held.shown} names the {_store_words(name, store_path)}, and no folder under it "
+                "holds a run Prove stored; give --force to set up again",
+                _HELP,
+            )
+        look.err(f"  {_store_words(name, store_path)}: {_plural(len(runs), 'run', 'runs')}\n")
+    events: Sequence[str] | None = held.events
+    look.err(f"  failures: {', '.join(events) if events else 'none set yet'}\n")
+    look.err("  files to import:\n")
+    for entry in pending:
+        look.err(f"    {entry.file}  as the run {entry.name} ({entry.tool})\n")
+    look.err("\n")
+    if events is not None and ns.event:
+        raise look.Usage(
+            f"{held.shown} sets the failures already ({', '.join(events)}); edit [events] by "
+            "hand, or give --force to set up again",
+            _HELP,
+        )
+    decision: bool | None = ns.import_
+    if decision is None:
+        decision = True if not terminal else _yes_no_default_no(IMPORT_QUESTION.format(n=n))
+    reach = _reach(ns)
+    if not decision:
+        sentence = f"{held.shown}: {_plural(n, 'file', 'files')} pending import, left as they are"
+        following = look.command("poisson-trace", "init", "--import", *reach)
+        return _hand_over_summary(ns, held, store, [], events or [], sentence, following)
+    from poisson_trace.ingest.rows import Refusal
+
+    made: list[Imported] = []
+    for entry in pending:
+        try:
+            run = imports.read(held, entry)
+        except Refusal as e:
+            raise Refused(str(e), *e.nexts) from e
+        made.append(Imported(entry.file, entry.tool, run))
+    text = held.text
+    if events is None:
+        if held.store is not None and imports.prove_stored(held.store):
+            first, index = _index(held.store, held.names_from)
+            read = newest_outcomes(first, index)
+        else:
+            read = _imported_outcomes(made)
+        events = failures(read, ns.event or (), terminal)
+        if events:
+            text = _with_events(held, events)
+    assert events is not None
+    if store.table is not None:
+        where = names.toml_string(config.written_path(held.path, store.path))
+        text = config.appended(text, f"[{store.table}]\npath = {where}\n")
+    after = config.parse(text, held.path, held.shown, given=held.given)
+    _write(
+        made,
+        Path(store.path),
+        held.names_from,
+        held.path,
+        held.shown,
+        text,
+        rules=held.rules,
+        budgets=held.budgets,
+    )
+    written(
+        f"stopped  interrupted: {held.shown} and {_plural(n, 'imported run', 'imported runs')} "
+        "were written whole; poisson-trace doctor checks it"
+    )
+    sentence = f"imported {_plural(n, 'run', 'runs')} into {store.path}"
+    if events:
+        sentence += f", failures {', '.join(events)}"
+    if store.table is not None:
+        sentence += f"; [{store.table}] added to {held.shown}"
+    following = look.command("poisson-trace", "doctor", *reach)
+    return _hand_over_summary(ns, after, store, made, events, sentence, following)
+
+
+def _yes_no_default_no(question: str) -> bool:
+    while True:
+        answer = look.ask(question).lower()
+        if answer in ("", "n", "no"):
+            return False
+        if answer in ("y", "yes"):
+            return True
+        look.err("  answer y or n\n")
+
+
+def _hand_over_summary(
+    ns: argparse.Namespace,
+    held: config.Config,
+    store: imports.ImportsStore,
+    made: Sequence[Imported],
+    events: Sequence[str],
+    sentence: str,
+    following: str,
+) -> Done:
+    stores = [(n, p) for n, p in held.stores() if _held(p)]
+    indexes = [_index(p, held.names_from)[1] for _, p in stores]
+    runs = {p: len(i.runs) + len(i.unreadable) for (_, p), i in zip(stores, indexes, strict=True)}
+    lines = [f"ok  {sentence}"]
+    lines.append("  prove    poisson-prove is installed at the version Trace reads")
+    entries = {e.name: e for e in held.imports}
+    for item in made:
+        entry = entries[item.run.name]
+        lines.append(f"  import   {imports.shell_line(imports.command(held, entry, store.path))}")
+    command = ["poisson-trace", "init", "--yes"]
+    if ns.config is not None:
+        command += _pair("--config", ns.config)
+    command.append("--import" if made else "--no-import")
+    for event in events:
+        if ns.event and event in ns.event:
+            command += _pair("--event", event)
+    lines += ["  the same setup, without questions:", "    " + shell_line(command)]
+    lines.append(f"next: {following}")
+    data = {
+        "schema": "poisson-trace.init/1",
+        "verdict": "ok",
+        "sentence": sentence,
+        "config_path": held.shown,
+        "stores": [{"name": n, "path": p, "runs": runs[p]} for n, p in stores],
+        "events": list(events),
+        "named": sum(1 for index in indexes for r in index.runs if r.named_by == "you"),
+        "prove": {"installed": True, "version": look.prove_found()},
+        "equivalent_command": command,
+        "next": following,
+    }
+    return Done(data, "\n".join(lines) + "\n")
+
+
+def _store_words(name: str | None, path: str) -> str:
+    return f"store {path}" if name is None else f"store {name} at {path}"
 
 
 def _not_in_a_store(path: Path, shown: str) -> None:
@@ -1517,7 +1755,7 @@ def _summary(
     events: Sequence[str],
     command: list[str],
     others: Sequence[FoundStore],
-    imports: Sequence[Imported],
+    made: Sequence[Imported],
     verb: str,
     left: Sequence[FoundFile] = (),
 ) -> Done:
@@ -1525,15 +1763,14 @@ def _summary(
     opened = [_index(p, form) for _, p in stores]
     indexes = [index for _, index in opened]
     runs = {p: len(i.runs) + len(i.unreadable) for (_, p), i in zip(stores, indexes, strict=True)}
-    if imports:
+    if made:
         sentence = (
-            f"{verb} {shown} and imported {_plural(len(imports), 'run', 'runs')} into "
-            f"{stores[0][1]}"
+            f"{verb} {shown} and imported {_plural(len(made), 'run', 'runs')} into {stores[0][1]}"
         )
         if events:
             sentence += f", failures {', '.join(events)}"
         else:
-            sentence += f"; no failures, as {no_failures_why(_imported_outcomes(imports).counts)}"
+            sentence += f"; no failures, as {no_failures_why(_imported_outcomes(made).counts)}"
     elif stores:
         said = " and ".join(_store_said(n, p, runs[p]) for n, p in stores)
         if events:
@@ -1552,7 +1789,7 @@ def _summary(
     if indexes:
         lines.append(f"  names    {_names_line(indexes[0])}")
     lines.append("  prove    poisson-prove is installed at the version Trace reads")
-    for item in imports:
+    for item in made:
         lines.append(f"  import   {import_line(item, stores[0][1])}")
     if left:
         lines += _left_lines(ns, left, stores)

@@ -1,0 +1,10 @@
+[project]
+name = "support-agent"
+version = "0.3.0"
+description = "A customer-support agent and its evaluations"
+requires-python = ">=3.11"
+dependencies = ["poisson-prove", "ragas", "pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["agent_checks.py"]

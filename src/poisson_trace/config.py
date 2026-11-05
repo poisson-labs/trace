@@ -1,6 +1,7 @@
 """The config file, ``trace.toml``: where the results are, what counts as a failure, the
 check's ceilings, how runs are named when no name was given, where an upload goes, the signal
-field mappings and budgets, and the failure taxonomy's own rules.
+field mappings and budgets, the failure taxonomy's own rules, and the files another tool wrote
+that ``init`` imports after asking (``[[import]]``).
 
 Read from the current folder, or from the file ``--config PATH`` names, and never from a folder
 above. A store path in it is read from the folder that holds the file. A file that is not a
@@ -9,7 +10,9 @@ on, before anything else is read or written. ``poisson-trace init`` writes it; a
 by hand, and ``poisson-trace doctor`` checks it.
 
 Standard library and the taxonomy's own rules (``ingest/taxonomy.py``, itself standard library
-only): ``tomllib`` reads the file, and nothing here reads a store.
+only): ``tomllib`` reads the file, and nothing here reads a store. An ``[[import]]`` entry's
+options are checked against its reader's own flags (``ingest/cli.py`` says which keys, types
+and choices each reader takes); no file an entry names is opened here.
 """
 
 from __future__ import annotations
@@ -36,7 +39,7 @@ from poisson_trace.ingest.taxonomy import (
     Rule,
     taxonomy_sha256,
 )
-from poisson_trace.names import toml_string
+from poisson_trace.names import import_name_refusal, toml_string
 
 CONFIG = "trace.toml"
 VERSION = 1
@@ -61,7 +64,16 @@ _SETTINGS: dict[str, tuple[str, ...]] = {
     "signals": ("case_field", "outcome_field", "score_field", "cut", "cost_field", "budgets"),
     "taxonomy": ("rules",),
 }
-_TOP = ("version", *_SETTINGS)
+# the array of tables that lists the files to import, checked after the tables above
+_IMPORT = "import"
+_TOP = ("version", *_SETTINGS, _IMPORT)
+# the keys of an [[import]] entry that are the entry's own; the rest are its reader's options
+_ENTRY = ("file", "tool", "name")
+# the import's own flags, which are never a reader's option
+_IMPORTS_OWN = ("run", "store", "config", "started", "verdicts", "json", "debug", "plain", "files")
+# the pullers that fetch results from a service, by the prefix of an address (section 18.3.2 of
+# the spec); none is in this install yet, so an address is refused naming the puller
+PULLERS: tuple[str, ...] = ("langsmith", "braintrust", "weave", "lemma")
 # the [signals] settings that name a field or column of the source
 _FIELDS = ("case_field", "outcome_field", "score_field", "cost_field")
 # a word the spec once used for a budget, and the budget it means (SA9)
@@ -73,6 +85,19 @@ _VARIABLE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 class ConfigError(look.Refused):
     """The config file is not one: refused in one sentence, exit 1."""
+
+
+@dataclass(frozen=True)
+class ImportEntry:
+    """One ``[[import]]`` table: a file another tool wrote, for ``init`` to import after asking.
+    ``file`` is kept as written, relative to the config's folder; ``options`` are the reader's,
+    by the keys as written (a flag's name without ``--`` and with ``_`` for ``-``)."""
+
+    file: str
+    tool: str
+    name: str
+    options: Mapping[str, Any]
+    line: int  # the line its [[import]] header is written on
 
 
 @dataclass(frozen=True)
@@ -99,6 +124,8 @@ class Config:
     signals: Mapping[str, Any] = field(default_factory=dict)
     budgets: Budgets | None = None
     rules: tuple[Rule, ...] = ()
+    # [[import]]: the files to import, in the file's order
+    imports: tuple[ImportEntry, ...] = ()
 
     @property
     def folder(self) -> Path:
@@ -320,20 +347,32 @@ class _Checker:
         return ConfigError(f"{where}: {why}")
 
     def unknown(
-        self, key: Sequence[Any], known: Sequence[str], table: str | None, *, whole: bool = False
+        self,
+        key: Sequence[Any],
+        known: Sequence[str],
+        table: str | None,
+        *,
+        whole: bool = False,
+        array: bool = False,
     ) -> ConfigError:
         """A table or setting version 1 does not have, with the one nearest it, if any is."""
         word = str(key[-1])
         near = nearest(word, known)
         if table is None:
-            written = f"[{word}] is not a table" if whole else f'"{word}" is not a setting'
+            if array:
+                written = f"[[{word}]] is not a table"
+            else:
+                written = f"[{word}] is not a table" if whole else f'"{word}" is not a setting'
             if near is None:
                 return self.fault(
                     key,
-                    f"{written}; a config has version and the tables "
-                    f"{_and([f'[{k}]' for k in _SETTINGS])}",
+                    f"{written}; a config has version, the tables "
+                    f"{_and([f'[{k}]' for k in _SETTINGS])}, and [[{_IMPORT}]] tables",
                 )
-            meant = f"[{near}]" if near in _SETTINGS else f'"{near}"'
+            if near == _IMPORT:
+                meant = f"[[{_IMPORT}]]"
+            else:
+                meant = f"[{near}]" if near in _SETTINGS else f'"{near}"'
             return self.fault(key, f"{written}; did you mean {meant}?")
         written = f'[{table}] "{word}" is not a setting'
         if near is None:
@@ -345,13 +384,20 @@ class _Checker:
 
     def check(self, doc: Mapping[str, Any], path: Path, given: bool) -> Config:
         values: dict[str, Any] = {}
+        entries: Any = None
         for key, value in doc.items():
             if key not in _TOP:
+                tables = [*_SETTINGS, _IMPORT]
                 if isinstance(value, dict):
-                    raise self.unknown((key,), list(_SETTINGS), None, whole=True)
+                    raise self.unknown((key,), tables, None, whole=True)
+                if isinstance(value, list) and value and all(isinstance(v, dict) for v in value):
+                    raise self.unknown((key,), tables, None, array=True)
                 raise self.unknown((key,), list(_TOP), None)
             if key == "version":
                 self.version(value)
+                continue
+            if key == _IMPORT:
+                entries = self.import_tables(value)
                 continue
             if not isinstance(value, dict):
                 raise self.fault((key,), f"{key} is a table, written [{key}] on a line of its own")
@@ -360,6 +406,10 @@ class _Checker:
             raise ConfigError(
                 f"{self.shown} has no version line; a config opens with version = {VERSION}"
             )
+        imports: tuple[ImportEntry, ...] = ()
+        if entries is not None:
+            # after [signals], whose field mappings may stand in for a reader's required options
+            imports = self.table_import(entries, values.get("signals", {}))
         folder = path.parent
         store = values.get("store")
         return Config(
@@ -379,6 +429,7 @@ class _Checker:
             signals=values.get("signals", {}),
             budgets=values.get("budgets"),
             rules=values.get("rules", ()),
+            imports=imports,
         )
 
     def version(self, value: Any) -> None:
@@ -679,6 +730,186 @@ class _Checker:
                 if said.startswith(c):
                     key = c
             raise self.fault((*at, key), f"[[taxonomy.rules]] {said}") from None
+
+
+    # ---------- [[import]] ----------
+
+    def import_tables(self, value: Any) -> list[Mapping[str, Any]]:
+        """``[[import]]`` as an array of tables; one table, or anything else, is refused."""
+        at = (_IMPORT,)
+        if isinstance(value, dict):
+            raise self.fault(
+                at,
+                f"[{_IMPORT}] is one table; the files to import are written as [[{_IMPORT}]] "
+                "tables, one for each file",
+            )
+        if not isinstance(value, list) or not all(isinstance(v, dict) for v in value):
+            raise self.fault(
+                at,
+                f"{_IMPORT} is written as [[{_IMPORT}]] tables, one for each file to import, "
+                f"not {_value(value)}",
+            )
+        return list(value)
+
+    def table_import(
+        self, entries: Sequence[Mapping[str, Any]], signals: Mapping[str, Any]
+    ) -> tuple[ImportEntry, ...]:
+        """Every ``[[import]]`` entry: ``file``, ``tool`` and ``name`` each required; the tool
+        a reader in the install; the file a relative path inside the repository and not an
+        address; the name one the import accepts, used once; the reader's options checked as
+        its flags are, with what ``[signals]`` stands in for counted as given."""
+        from poisson_trace.ingest.cli import present, reader_options, stand_ins
+
+        here = present()
+        held: list[ImportEntry] = []
+        seen: dict[str, int] = {}
+        for i, table in enumerate(entries):
+            at = (_IMPORT, i)
+            line = self.lines.get(at) or self.lines.get((_IMPORT,)) or 0
+            for key in _ENTRY:
+                if key not in table:
+                    raise self.fault(
+                        at, f"[[{_IMPORT}]] has no {key}; each entry names its file, tool and name"
+                    )
+                if not isinstance(table[key], str) or not table[key]:
+                    raise self.fault(
+                        (*at, key),
+                        f"[[{_IMPORT}]] {key} is {_ENTRY_IS[key]}, in quotes, not "
+                        f"{_value(table[key])}",
+                    )
+            file, tool, name = (str(table[k]) for k in _ENTRY)
+            if tool not in here:
+                raise self.fault(
+                    (*at, "tool"),
+                    f'[[{_IMPORT}]] tool "{tool}" is not in this install; the readers here are '
+                    f"{_and(list(here))}",
+                )
+            self.import_file(at, file)
+            hole = import_name_refusal(name)
+            if hole is not None:
+                raise self.fault((*at, "name"), f"[[{_IMPORT}]] name: {hole}")
+            if name in seen:
+                raise self.fault(
+                    at,
+                    f'[[{_IMPORT}]] name "{name}" is used by the entry on line {seen[name]} '
+                    "too; each entry's run has a name of its own",
+                )
+            seen[name] = line
+            options = self.import_options(at, tool, table, reader_options(tool))
+            given = {*stand_ins(tool, signals), *options}
+            for dest, option in reader_options(tool).items():
+                if option.required and dest not in given:
+                    raise self.fault(
+                        at,
+                        f"[[{_IMPORT}]] a {tool} entry needs {dest} (the reader's "
+                        f"{option.flag}), and nothing in [signals] stands in for it",
+                    )
+            held.append(ImportEntry(file, tool, name, options, line))
+        return tuple(held)
+
+    def import_file(self, at: tuple[Any, ...], file: str) -> None:
+        key = (*at, "file")
+        puller = file.split(":", 1)[0] if ":" in file else None
+        if puller in PULLERS:
+            raise self.fault(
+                key,
+                f'[[{_IMPORT}]] file "{file}" is an address to pull from, and the {puller} '
+                "puller is not in this install; save the export as a file and name that file",
+            )
+        normal = os.path.normpath(file)
+        if os.path.isabs(file) or normal == ".." or normal.startswith(".." + os.sep):
+            raise self.fault(
+                key,
+                f'[[{_IMPORT}]] file "{file}" is not a relative path inside the repository; '
+                f"it is read from the folder that holds {self.shown}",
+            )
+
+    def import_options(
+        self, at: tuple[Any, ...], tool: str, table: Mapping[str, Any], spec: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        """The reader's options of one entry, each checked as its flag is."""
+        options: dict[str, Any] = {}
+        for key, value in table.items():
+            if key in _ENTRY:
+                continue
+            where = (*at, key)
+            if key in _IMPORTS_OWN:
+                raise self.fault(
+                    where,
+                    f'[[{_IMPORT}]] "{key}" is the import\'s own flag, not an option of the '
+                    f"{tool} reader; the entry's file, run name and store are its file, name, "
+                    "and the store init writes to",
+                )
+            if key not in spec:
+                near = nearest(key, list(spec))
+                if near is not None:
+                    raise self.fault(
+                        where,
+                        f'[[{_IMPORT}]] "{key}" is not an option of the {tool} reader; did you '
+                        f'mean "{near}"?',
+                    )
+                raise self.fault(
+                    where,
+                    f'[[{_IMPORT}]] "{key}" is not an option of the {tool} reader; a {tool} entry '
+                    f"has file, tool, name and the options {_and(list(spec))}",
+                )
+            option = spec[key]
+            if not option.takes_value:
+                if not isinstance(value, bool):
+                    raise self.fault(
+                        where, f"[[{_IMPORT}]] {key} is true or false, not {_value(value)}"
+                    )
+            elif option.many:
+                if not isinstance(value, list):
+                    raise self.fault(
+                        where,
+                        f'[[{_IMPORT}]] {key} is a list of values in quotes, such as ["x", "y"], '
+                        f"not {_value(value)}",
+                    )
+                for item in value:
+                    if not isinstance(item, str):
+                        raise self.fault(
+                            where,
+                            f"[[{_IMPORT}]] {key} is a list of values in quotes, and "
+                            f"{_value(item)} is not in quotes",
+                        )
+            elif key == "cut":
+                recorded = tool == "deepeval"
+                if not (_number(value) or (recorded and value == "recorded")):
+                    takes = 'a number or "recorded"' if recorded else "a number"
+                    raise self.fault(where, f"[[{_IMPORT}]] cut is {takes}, not {_value(value)}")
+            elif option.choices:
+                if not isinstance(value, str) or value not in option.choices:
+                    raise self.fault(
+                        where,
+                        f"[[{_IMPORT}]] {key} is one of {_and(list(option.choices))}, not "
+                        f"{_value(value)}",
+                    )
+            elif key == "prompt":
+                if not (isinstance(value, str) and value) and type(value) is not int:
+                    raise self.fault(
+                        where,
+                        f"[[{_IMPORT}]] prompt is the prompt's label in quotes, or its number "
+                        f"counting from 1, not {_value(value)}",
+                    )
+            elif not isinstance(value, str) or not value:
+                raise self.fault(
+                    where, f"[[{_IMPORT}]] {key} is {option.takes} in quotes, not {_value(value)}"
+                )
+            options[key] = value
+        if options.get("below") is True and options.get("above") is True:
+            raise self.fault(
+                (*at, "above"), f"[[{_IMPORT}]] below and above are two sides of a cut; give one"
+            )
+        return options
+
+
+# what each of an entry's own keys is, for a refusal
+_ENTRY_IS = {
+    "file": "the file's path, relative to the config's folder",
+    "tool": "the name of a reader in the install",
+    "name": "the run's name",
+}
 
 
 def _destination(url: str) -> bool:

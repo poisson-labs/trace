@@ -426,11 +426,25 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "checks: the Python running it, the Trace package and where it was imported from,\n"
             "Prove, the config file and the stores it names, the names of yours, and the\n"
             "readers of other tools' files in the install. A line that fails ends with the\n"
-            "command to run. It fixes nothing and asks nothing; it exits 4 when not ready."
+            "command to run. It fixes nothing and asks nothing; it exits 4 when not ready.\n"
+            "With --setup it is the check a coding agent runs on the trace.toml it wrote:\n"
+            "the same, read as a setup needs it, and each [[import]] file not imported yet\n"
+            "read with its reader; ready exits 0, not ready 1 with error: and next: lines on\n"
+            "stderr, a wrong setting 2."
         ),
-        epilog=_example("poisson-trace doctor", "poisson-trace doctor --config team.toml"),
+        epilog=_example(
+            "poisson-trace doctor",
+            "poisson-trace doctor --config team.toml",
+            "poisson-trace doctor --setup",
+        ),
     )
     doctor.add_argument("--config", metavar="PATH", help=_CONFIG_HELP)
+    doctor.add_argument(
+        "--setup",
+        action="store_true",
+        help="check a trace.toml written for review, its [[import]] files included, with the "
+        "setup check's exit codes (0 ready, 1 not ready, 2 a wrong setting)",
+    )
     tail(doctor)
     handover = verbs.add_parser(
         "handover",
@@ -512,13 +526,34 @@ def _init_parser(verbs: Any) -> look.Parser:
             "trace.toml once, after the last answer. Every verb then takes its store and its\n"
             "failures from it. It runs nothing, spends nothing and writes under no store but\n"
             "the runs an import you agree to writes. Every question has a flag: with --yes it\n"
-            "asks nothing. It never searches the home folder or a folder above it."
+            "asks nothing. It never searches the home folder or a folder above it.\n"
+            "On a trace.toml with [[import]] files not imported yet, as your coding agent\n"
+            "writes one, it shows them and asks whether to import them. With --agent, it\n"
+            "writes instead the setup your own coding agent follows (a skill and the prompt\n"
+            "to give it), in the two folders coding agents read skills from, and nothing else."
         ),
         epilog=_example(
             "poisson-trace init",
             "poisson-trace init --yes --store proofload-runs --event unsolved",
             "poisson-trace init --add-store imported",
+            "poisson-trace init --agent",
         ),
+    )
+    init.add_argument(
+        "--agent",
+        action="store_true",
+        help="write the setup your own coding agent follows, a skill and its prompt, instead of "
+        "setting up here; it makes no model call and reads no key",
+    )
+    init.add_argument(
+        "--repo",
+        metavar="DIR",
+        help="with --agent: the repository to write the setup into (default: this folder)",
+    )
+    init.add_argument(
+        "--print",
+        action="store_true",
+        help="with --agent: print the skill and write nothing (default: write the files)",
     )
     init.add_argument(
         "--store",
@@ -580,10 +615,11 @@ def _init_parser(verbs: Any) -> look.Parser:
     )
     init.add_argument(
         "--case",
-        choices=("name", "input", "position"),
-        metavar="name|input|position",
-        help="for a DeepEval import: what identifies a test case across versions; for JUnit "
-        "reports, name reads them by the test's name alone (no default)",
+        metavar="name|input|position|var:NAME|test",
+        help="for a DeepEval import: what identifies a test case across versions (name, input "
+        "or position); for JUnit reports, name reads them by the test's name alone; for a "
+        "promptfoo import, var:NAME, the test variable NAME, or test, the test's position (no "
+        "default)",
     )
     init.add_argument(
         "--case-column",
@@ -681,6 +717,8 @@ def _main(session: look.Session) -> int:
     # the options the command line gave, for the saved verdict's record of where each setting
     # came from (SV5)
     ns.typed_flags = {w.split("=", 1)[0] for w in args if w.startswith("--")}
+    if ns.verb == "init" and (ns.agent or ns.repo is not None or ns.print):
+        return _init_agent(ns)
     if ns.verb not in ("init", "handover"):
         _from_config(ns, folders=bool(words) and len(folders) == len(words))
     refusal = look.prove_refusal(_DOES if ns.verb != "init" else "poisson-trace init reads stores")
@@ -884,15 +922,86 @@ def _init(session: look.Session, ns: argparse.Namespace) -> int:
     return look.DONE
 
 
+# the flags init --agent takes beside --agent; every other flag of init is the guided setup's
+_AGENT_FLAGS = frozenset({"--agent", "--repo", "--print", "--force", "--json", "--debug"})
+
+
+def _init_agent(ns: argparse.Namespace) -> int:
+    """``init --agent``: the setup for the person's coding agent, written or printed."""
+    from poisson_trace import skills
+
+    if not ns.agent:
+        flag = "--repo" if ns.repo is not None else "--print"
+        raise look.Usage(f"{flag} goes with --agent", "poisson-trace init --agent --help")
+    other = sorted(ns.typed_flags - _AGENT_FLAGS)
+    if other:
+        raise look.Usage(
+            f"--agent writes the setup for your coding agent and takes no {', '.join(other)}",
+            "poisson-trace init --agent",
+            "poisson-trace init --help",
+        )
+    if ns.print and ns.json:
+        raise look.Usage(
+            "--print prints the skill as text and takes no --json",
+            "poisson-trace init --agent --print",
+        )
+    if ns.print:
+        look.out(skills.skill_text())
+        return look.DONE
+    typed = ["init", "--agent", *([] if ns.repo is None else [look.option("--repo", ns.repo)])]
+    written = skills.write_setup(ns.repo, force=ns.force, typed=typed)
+    if ns.json:
+        doc = {
+            "schema": "poisson-trace.init/1",
+            "verdict": "ok",
+            "sentence": written.sentence,
+            "wrote": list(written.wrote),
+            "prompt": skills.PROMPT,
+            "next": skills.NEXT,
+        }
+        look.out(json.dumps(doc, indent=2, allow_nan=False) + "\n")
+        return look.DONE
+    lines = [f"ok  {written.sentence}"]
+    lines += [f"  wrote  {path}" for path in written.wrote]
+    lines.append(f"  prompt  {skills.PROMPT}")
+    lines.append(f"  next: {skills.NEXT}")
+    look.out("\n".join(lines) + "\n")
+    return look.DONE
+
+
 def _doctor(ns: argparse.Namespace) -> int:
     from poisson_trace import doctor
 
+    if ns.setup:
+        return _doctor_setup(ns)
     report = doctor.check(ns.config)
     if ns.json:
         look.out(json.dumps(report, indent=2, allow_nan=False) + "\n")
     else:
         look.out(doctor.text(report))
     return look.DONE if report["verdict"] == "ok" else look.CHECK_FAILED
+
+
+def _doctor_setup(ns: argparse.Namespace) -> int:
+    """``doctor --setup``, with the shared setup check's exit codes: a config wrong under the
+    config's rules is a wrong setting (exit 2, the validation's line); not ready is a refusal
+    (exit 1, the first failing check's fact, a next: line for each failing check that has one);
+    ready prints doctor's lines and the pending files."""
+    from poisson_trace import config, doctor
+
+    try:
+        report = doctor.setup_check(ns.config)
+    except config.ConfigError as e:
+        raise look.Usage(str(e)) from None
+    ready = report["verdict"] == "ok"
+    if ns.json:
+        look.out(json.dumps(report, indent=2, allow_nan=False) + "\n")
+        return look.DONE if ready else look.REFUSED
+    if not ready:
+        nexts = [c["next"] for c in report["checks"] if not c["ok"] and c["next"] is not None]
+        raise _Refusal(report["sentence"], *nexts)
+    look.out(doctor.text(report))
+    return look.DONE
 
 
 def _stopped_json(schema: str, line: str) -> str:

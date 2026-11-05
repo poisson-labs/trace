@@ -355,6 +355,24 @@ It writes the file once, after the last answer; until then, Ctrl-C leaves nothin
 that names a store and no failures, which `init` completes, keeping every other line. Stdin
 that is not a terminal is refused unless you give `--yes`.
 
+### Let your coding agent set it up
+
+`poisson-trace init --agent` writes a skill and a prompt into the two folders coding agents
+read skills from (`.agents/skills/` and `.claude/skills/`), and nothing else; Trace makes no
+model call and reads no key. Give your agent the prompt:
+
+```
+Use the poisson-trace-setup skill in this repository: set Poisson Trace up for me to review, then stop.
+```
+
+It reads the repository, runs nothing, writes `trace.toml` with the stores, the failures and
+one `[[import]]` table per result file to import, runs `poisson-trace doctor --setup` until
+it passes, and stops for you to review. You then run `poisson-trace init` yourself: it shows
+the files and asks `Import these 4 files as the runs named here? [y/N]`, imports them on a
+yes, and `poisson-trace doctor` reads ready. The page
+[Set up Trace with your coding agent](docs/setup-with-your-agent.md) has the steps the agent
+follows, the check and the hand-over.
+
 ### `trace.toml`
 
 <!-- command -->

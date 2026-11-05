@@ -487,3 +487,22 @@ paths, the machine owner's name and email addresses: no hit.
 **What it cannot express.** No passing sample, no repeat of a sample, no `sampling` or `metrics`
 event, no empty answer. Those and every refusal are built in the tests from these files with one
 line added or changed (`tests/test_tf10_openai_evals.py`).
+
+## Added for the setup agent (2026-11-04)
+
+`setup-agent/setup-file-format-1.txt` is the shared text of the Poisson setup file, format 1
+(the rules, the check, the prompt and the hand-over opening), byte for byte as the shared page
+writes it on 2026-10-23, with the placeholders a tool fills; the same text Prove's copy of
+2026-10-24 carries. `tests/test_tf17_skill.py` checks the skill `poisson-trace init --agent`
+writes against it.
+
+`setup-agent/sample-repo/` is a small repository written by hand for the scripted run of
+`tests/test_tf17_scripted.py`: a stand-in support agent that calls no model (`agent/`, naming the
+failure outcomes), a scoring module naming the cut a Ragas row must reach (`evals/score_rag.py`),
+the agent's own tests (`tests/agent_checks.py`), a `pyproject.toml` naming the tools, and a
+README saying which results are old and which new. The store and the result files are not
+copied in: each test builds its copy of the repository by copying the `cs` store to `store/`,
+`ingest/ragas/rag-base.jsonl` and `rag-raft.jsonl` to `evals/results/`, and
+`ingest/junit/humaneval-a.xml` and `humaneval-b.xml` to `reports/junit-old.xml` and
+`reports/junit-new.xml`. `setup-agent/expected/trace.toml` is the config a correct agent writes
+for it. No key, no model and no network were used.

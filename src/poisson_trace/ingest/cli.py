@@ -22,9 +22,15 @@ names), and the writer is imported after the check that ``poisson_prove`` is pre
 version this package reads, which runs once the command line is read and before any file is
 opened.
 
-A config's ``[signals]`` field mappings reach a reader as ``ns.signals``; of them only
-``cost_field`` is read in TF21 (SA8). Its budgets and ``[[taxonomy.rules]]`` go to the writer,
-which classifies every row with them and records their digest.
+A config's ``[signals]`` field mappings reach a reader as ``ns.signals``, where
+``cost_field`` is read; ``case_field``, ``outcome_field``, ``score_field`` and ``cut`` stand in
+for the reader's own flags when the command line leaves them out (``stand_ins``): they are
+filled into the command line before it is parsed, so each reader's help and its refusal of a
+missing flag are as they were, and a flag given wins. Its budgets and ``[[taxonomy.rules]]``
+go to the writer, which classifies every row with them and records their digest.
+
+``reader_options`` says which keys, types and choices each reader's flags take, for the config
+to check an ``[[import]]`` entry's options without opening anything.
 """
 
 from __future__ import annotations
@@ -33,7 +39,7 @@ import argparse
 import json
 import sys
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from importlib import import_module
 from importlib.util import find_spec
@@ -189,6 +195,128 @@ def _build_parser(
 def parsers() -> tuple[look.Parser, dict[str, look.Parser], dict[str, _Further]]:
     """The import's parser, each reader's and each further command's, for this install."""
     return _build_parser(present())
+
+
+# the flags every tool's parser has, the import's own: never a reader's option
+_OWN = ("files", "store", "config", "run", "started", "verdicts", "json", "debug", "help")
+
+
+@dataclass(frozen=True)
+class Option:
+    """One flag of a reader, as an ``[[import]]`` entry writes it: ``dest`` is the key (the
+    flag's name without ``--`` and with ``_`` for ``-``)."""
+
+    dest: str
+    flag: str
+    required: bool
+    takes_value: bool
+    many: bool  # repeatable: a list in the config
+    choices: tuple[str, ...]
+    takes: str  # what the value is, for a refusal
+
+
+def reader_options(tool: str) -> dict[str, Option]:
+    """The options the reader of ``tool`` takes, by key, in the order its parser adds them."""
+    _, subs, _ = parsers()
+    out: dict[str, Option] = {}
+    for action in subs[tool]._actions:
+        if not action.option_strings or action.dest in _OWN or action.help is argparse.SUPPRESS:
+            continue
+        long = [o for o in action.option_strings if o.startswith("--")]
+        flag = long[0] if long else action.option_strings[0]
+        metavar = str(action.metavar or action.dest.upper())
+        out[action.dest] = Option(
+            dest=action.dest,
+            flag=flag,
+            required=bool(action.required),
+            takes_value=action.nargs != 0,
+            many=isinstance(action, argparse._AppendAction),
+            choices=tuple(str(c) for c in action.choices) if action.choices else (),
+            takes=_TAKES.get(metavar, "the " + metavar.lower().replace("|", " or ")),
+        )
+    return out
+
+
+def reader_defaults(tool: str) -> dict[str, Any]:
+    """Each flag's default, by dest, as the parser gives it when the flag is not given."""
+    _, subs, _ = parsers()
+    return {
+        action.dest: action.default
+        for action in subs[tool]._actions
+        if action.dest not in ("help",) and action.default is not argparse.SUPPRESS
+    }
+
+
+_TAKES = {
+    "NAME": "a name",
+    "COLUMN": "a column's name",
+    "ID": "an id",
+    "LABEL|N": "a label or a number",
+}
+
+# what [signals] stands in for, by reader: the field mapping, and the reader's flag it fills
+# (SA8): the case field for the case column, the outcome field for the outcome column, the
+# score field for the metric or the score column, and the cut for the cut
+_STAND_INS: dict[str, tuple[tuple[str, str], ...]] = {
+    "ragas": (("case_field", "case_column"), ("score_field", "metric"), ("cut", "cut")),
+    "deepeval": (("score_field", "metric"), ("cut", "cut")),
+    "table": (
+        ("case_field", "case_column"),
+        ("outcome_field", "outcome_column"),
+        ("score_field", "score_column"),
+        ("cut", "cut"),
+    ),
+}
+
+
+def stand_ins(tool: str, signals: Mapping[str, Any]) -> dict[str, Any]:
+    """The reader's options ``[signals]`` stands in for, by dest, with the values it gives."""
+    return {
+        dest: signals[field]
+        for field, dest in _STAND_INS.get(tool, ())
+        if field in signals and signals[field] is not None
+    }
+
+
+def _config_word(args: Sequence[str]) -> str | None:
+    """The value ``--config`` carries on the command line, the last when it is given twice."""
+    found = None
+    words = list(args)
+    for i, word in enumerate(words):
+        if word == "--config" and i + 1 < len(words):
+            found = words[i + 1]
+        elif word.startswith("--config="):
+            found = word[len("--config=") :]
+    return found
+
+
+def _with_stand_ins(args: Sequence[str], tool: str, signals: Mapping[str, Any]) -> list[str]:
+    """The command line with the flags ``[signals]`` stands in for filled in where the line
+    leaves them out. A cut from the config with no side on the line reads below. For a table,
+    the form the line reads (its outcome column, or its score column) is the one filled, and
+    the outcome form when the line says neither and the config gives both."""
+    given = {w.split("=", 1)[0] for w in args if w.startswith("--")}
+    filled = stand_ins(tool, signals)
+    if tool == "table":
+        by_outcome = bool({"--outcome-column", "--failed"} & given)
+        by_score = bool({"--score-column", "--cut", "--below", "--above"} & given)
+        if by_outcome or (not by_score and "outcome_column" in filled):
+            filled.pop("score_column", None)
+            filled.pop("cut", None)
+        if by_score:
+            filled.pop("outcome_column", None)
+    out = list(args)
+    for dest, value in filled.items():
+        flag = "--" + dest.replace("_", "-")
+        if flag in given:
+            continue
+        if dest == "cut":
+            out += ["--cut", repr(float(value))]
+            if not {"--below", "--above"} & given:
+                out.append("--below")
+        else:
+            out += [flag, str(value)]
+    return out
 
 
 def _started(text: str) -> str:
@@ -543,6 +671,15 @@ def _main(session: look.Session) -> int:
             f"{', '.join(subs) or 'nothing'}",
             f"{PROG} --help",
         )
+    settings = None
+    if at is not None and args[at] not in further:
+        # the config is read before the command line is parsed, so that what [signals] stands
+        # in for is on the line when the reader's required flags are checked
+        from poisson_trace import config
+
+        settings = config.load(_config_word(args))
+        if settings is not None and settings.signals:
+            args = _with_stand_ins(args, args[at], settings.signals)
     ns, extra = parser.parse_known_args(args)
     if ns.tool is None:
         raise look.Usage(
@@ -570,9 +707,6 @@ def _main(session: look.Session) -> int:
     rules: Sequence[Any] = ()
     budgets = None
     if ns.tool not in further:
-        from poisson_trace import config
-
-        settings = config.load(ns.config)
         form = settings.names_from if settings is not None else "target"
         ns.signals = dict(settings.signals) if settings is not None else {}
         if settings is not None:

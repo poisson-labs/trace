@@ -1,0 +1,40 @@
+version = 1
+
+[store]
+path = "store"
+
+[events]
+failed = ["forbidden_action", "unresolved", "max_turns", "app_error"]
+
+[[import]]
+file = "evals/results/rag-base.jsonl"
+tool = "ragas"
+name = "rag-base"
+metric = "faithfulness"
+cut = 0.5
+below = true
+case_column = "case"
+
+[[import]]
+file = "evals/results/rag-raft.jsonl"
+tool = "ragas"
+name = "rag-raft"
+metric = "faithfulness"
+cut = 0.5
+below = true
+case_column = "case"
+
+[[import]]
+file = "reports/junit-old.xml"
+tool = "junit"
+name = "tests-old"
+case = "name"
+
+[[import]]
+file = "reports/junit-new.xml"
+tool = "junit"
+name = "tests-new"
+case = "name"
+
+[names]
+from = "target"

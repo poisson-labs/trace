@@ -787,3 +787,10 @@ b6ac598c8cbe7c1f29d5950a5a15f396e5f770a136953d9979cd395c544fa6a3  ./ingest/promp
 f2df35db42157c75254f464a4401695574d3c4a4721ac0e311402d65afff0959  ./ingest/inspect/2026-10-07T04-23-51-00-00_trace-fixture_2nSEDuHHzKiTUjJW3kXknY.json
 8c25e2fa6ab2e9e988b488b1992664408d51895dfa118495fe26c048867b0794  ./ingest/openai-evals/old.jsonl
 51558948238e77eb51c4821ea66c8ae9e4d3870df3b9a76257af12a94d785f45  ./ingest/openai-evals/new.jsonl
+b698626def97dea1ab998232da7627c84f544f3e4f84265df412d3535a535710  ./setup-agent/expected/trace.toml
+c4f3bbbdbb4a5a6dd9c5fddd66712dca39c63fae68280eb55268197ddb6651e4  ./setup-agent/sample-repo/agent/__init__.py
+7ed1205e7d553d94b9e95e6fdb556e98382bd43a49047bc05fc7d824f009dd4e  ./setup-agent/sample-repo/evals/score_rag.py
+c6385e6e6ade8886e2a0a3a5544acf60eb633964382ca0e3c463a6eadaba3fe7  ./setup-agent/sample-repo/pyproject.toml
+9d8c5d8adf69490b77839d19b49c5cf42378baf75baec686c5bb2b2d09b2cfd0  ./setup-agent/sample-repo/README.md
+9f0a4c81153ed71c8d1803a05fcee66a59f73a47f2a2af8dcbe949af0306aaa2  ./setup-agent/sample-repo/tests/agent_checks.py
+19ebfd4e5974de468e666eb821fd04cab9624105dddf4611ca38a6caf72956e8  ./setup-agent/setup-file-format-1.txt

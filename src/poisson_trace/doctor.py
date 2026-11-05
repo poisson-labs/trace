@@ -9,18 +9,27 @@ asks nothing, writes nothing and contacts no host. Ready needs a config: every v
 store and its failures from one.
 
 The report is returned as data; the command line prints it.
+
+``doctor --setup`` (``setup_check``) is the check the setup file a coding agent follows names:
+it reads what ``doctor`` reads, as a setup needs it, and each pending ``[[import]]`` file with
+its reader, writing nothing; its exit codes are the shared check's (0 ready, 1 not ready, 2 a
+config wrong under the config's rules), not ``doctor``'s 4. Plain ``doctor`` is as it was, but
+for its next command once every ``[[import]]`` file is imported: the first fix-check on the
+first pair of one tool's runs.
 """
 
 from __future__ import annotations
 
 import sys
 import sysconfig
+from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 import poisson_trace
 from poisson_trace import config, look, names
+from poisson_trace.ingest.rows import Refusal
 
 SCHEMA = "poisson-trace.doctor/1"
 CHECKS = ("python", "package", "prove", "config", "names", "readers")
@@ -250,7 +259,7 @@ def _store_beside(path: Path, form: str) -> tuple[str, str] | None:
     what wrote them and the runs' names, and the store as the current folder reads it."""
     from poisson_prove.store import Store
 
-    from poisson_trace.setup import IMPORTED_STORE
+    from poisson_trace.imports import IMPORTED_STORE
 
     store = config.beside(path, IMPORTED_STORE)
     runs = _held(store)
@@ -326,7 +335,7 @@ def check(given: str | None) -> dict[str, Any]:
     if not failing:
         reach = [look.option("--config", given)] if given is not None else []
         verdict, sentence = "ok", "this environment is ready"
-        following = look.command("poisson-trace", "runs", *reach)
+        following = _after(_loaded(given), reach)
     else:
         verdict = "not ready"
         which = " and ".join(c["name"] for c in failing)
@@ -341,6 +350,194 @@ def check(given: str | None) -> dict[str, Any]:
         "checks": checks,
         "next": following,
     }
+
+
+def _loaded(given: str | None) -> config.Config | None:
+    try:
+        return config.load(given)
+    except config.ConfigError:
+        return None
+
+
+def _after(held: config.Config | None, reach: Sequence[str]) -> str:
+    """The command to run next when ready: ``runs``, or, once every ``[[import]]`` file is
+    imported and a tool has two or more, the first fix-check on its first two runs."""
+    from poisson_trace import imports
+
+    if held is not None:
+        pair = imports.first_pair(held)
+        if pair is not None:
+            store = imports.imports_store(held)
+            flags = [look.option("--store", store.name)] if store.name is not None else []
+            return look.command(
+                "poisson-trace",
+                "fix-check",
+                look.word(pair[0].name),
+                look.word(pair[1].name),
+                *flags,
+                *reach,
+            )
+    return look.command("poisson-trace", "runs", *reach)
+
+
+# ---------- doctor --setup ----------
+
+READY = "is ready for the person to review"
+SETUP = "poisson-trace doctor --setup"
+
+
+def setup_check(given: str | None) -> dict[str, Any]:
+    """The report of ``doctor --setup``: ``doctor``'s six checks read as a setup needs them,
+    then one ``import`` check for each pending ``[[import]]`` entry, read with its reader. A
+    config wrong under the config's rules raises ``ConfigError``. Nothing is written and no
+    host is contacted."""
+    prove = _prove()
+    reach = [look.option("--config", given)] if given is not None else []
+    init = look.command("poisson-trace", "init", *reach)
+    path = config.path_of(given)
+    shown = look.shown(given) if given is not None else config.CONFIG
+    checks = [_python(), _package(), prove]
+    import_checks: list[dict[str, Any]] = []
+    held: config.Config | None = None
+    pending = False
+    if not path.exists() and not path.is_symlink():
+        said = f"no config file at {shown}" if given is not None else f"no {shown} here"
+        checks += [_check("config", False, said, init), _check("names", True, _NO_STORE)]
+    else:
+        held = config.load(given)
+        assert held is not None
+        if not prove["ok"]:
+            checks += _config_and_names(given, False)
+            import_checks = [
+                _check(
+                    "import",
+                    False,
+                    f"{e.file}: not read, since poisson-prove is not at the version Trace reads",
+                    look.INSTALL_PROVE,
+                )
+                for e in held.imports
+            ]
+        else:
+            config_checks, import_checks, pending = _setup_config(held, shown, reach)
+            checks += config_checks
+    checks.append(_readers())
+    checks += import_checks
+    failing = [c for c in checks if not c["ok"]]
+    if failing:
+        verdict = "not ready"
+        sentence = str(failing[0]["line"])
+        following = next((c["next"] for c in failing if c["next"] is not None), SETUP)
+    else:
+        verdict, sentence = "ok", f"{shown} {READY}"
+        following = init if pending else look.command("poisson-trace", "runs", *reach)
+    return {
+        "schema": SCHEMA,
+        "verdict": verdict,
+        "sentence": sentence,
+        "checks": checks,
+        "next": following,
+    }
+
+
+_NO_STORE = "no store to read names of yours from"
+
+
+def _setup_config(
+    held: config.Config, shown: str, reach: Sequence[str]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], bool]:
+    """The config and names checks as a setup needs them, the import checks, and whether an
+    entry is pending. A config with no store is ready when it has pending entries that read;
+    the imports' store may hold no run yet; the failures are checked against the stores' runs
+    and the pending files' rows together."""
+    from poisson_prove.store import Store
+
+    from poisson_trace import imports
+    from poisson_trace.setup import newest_outcomes
+
+    init = look.command("poisson-trace", "init", *reach)
+    again = look.command("poisson-trace", "init", "--force", *reach)
+    nothing = _check("names", True, _NO_STORE)
+    store = imports.imports_store(held)
+    pending = imports.pending(held, store.path)
+    import_checks: list[dict[str, Any]] = []
+    carried: Counter[str] = Counter()
+    every_read = True
+    for entry in pending:
+        try:
+            run = imports.read(held, entry)
+        except Refusal as e:
+            every_read = False
+            help_ = look.command("poisson-trace", "import", entry.tool, "--help")
+            import_checks.append(_check("import", False, str(e), e.nexts[0] if e.nexts else help_))
+            continue
+        carried.update(row.outcome for row in run.rows if row.outcome is not None)
+        import_checks.append(_check("import", True, imports.said(entry, run)))
+    described: list[str] = []
+    indexes: list[tuple[str | None, str, Any]] = []
+    for name, store_path in held.stores():
+        runs = _held(store_path)
+        if not runs:
+            if store.may_be_empty and imports.same_folder(store_path, store.path):
+                described.append(f"{_store_words(name, store_path)} (no run yet)")
+                continue
+            line = (
+                f"{shown}: the {_store_words(name, store_path)} is not there (no folder under it "
+                "holds a run Prove stored)"
+            )
+            return [_check("config", False, line, again), nothing], import_checks, bool(pending)
+        try:
+            index = names.index(
+                Store(store_path), runs, store_path, lenient=True, form=held.names_from
+            )
+        except names.Damaged as e:
+            indexes.append((name, store_path, e))
+            described.append(_store_words(name, store_path))
+            continue
+        indexes.append((name, store_path, index))
+        described.append(f"{_store_words(name, store_path)} ({_counted(index)})")
+    events = held.events
+    failures = f"failures {', '.join(events)}" if events else "no failures set"
+    if held.store is None and not held.named:
+        if not held.imports:
+            line = (
+                f"{shown} names no store and no file to import: name the store Prove wrote under "
+                "[store], or the files another tool wrote under [[import]]"
+            )
+            return [_check("config", False, line, init), nothing], import_checks, False
+        if not pending:
+            line = (
+                f"{shown} names no store every verb reads, and its [[import]] files are imported "
+                f"already into {store.path}: set up with that store"
+            )
+            following = look.command(
+                "poisson-trace", "init", "--force", look.option("--store", store.path), *reach
+            )
+            return [_check("config", False, line, following), nothing], import_checks, False
+    said = f"{shown}: {'; '.join(described) or 'no store yet'}, {failures}"
+    if events is None:
+        line = (
+            f"{said}; [events] failed names the outcomes that count as a failure, and none is set"
+        )
+        return [_check("config", False, line, init), _names(indexes)], import_checks, bool(pending)
+    for _, store_path, index in indexes:
+        if isinstance(index, names.Index):
+            carried.update(newest_outcomes(Store(store_path), index, quiet=True).counts)
+    if every_read:
+        missing = [e for e in events if e not in carried]
+        if missing:
+            whose = _whose(bool(indexes), bool(pending))
+            outcomes = ", ".join(sorted(carried)) or "none"
+            line = f"{said}; {', '.join(missing)} is carried by {whose}, which carry {outcomes}"
+            return [_check("config", False, line, again), _names(indexes)], import_checks, True
+    return [_check("config", True, said), _names(indexes)], import_checks, bool(pending)
+
+
+def _whose(stores: bool, pending: bool) -> str:
+    if stores and pending:
+        return "no run of the stores and no row of the files to import"
+    if stores:
+        return "no run of the stores"
+    return "no row of the files to import"
 
 
 def text(report: dict[str, Any]) -> str:
