@@ -794,3 +794,15 @@ c6385e6e6ade8886e2a0a3a5544acf60eb633964382ca0e3c463a6eadaba3fe7  ./setup-agent/
 9d8c5d8adf69490b77839d19b49c5cf42378baf75baec686c5bb2b2d09b2cfd0  ./setup-agent/sample-repo/README.md
 9f0a4c81153ed71c8d1803a05fcee66a59f73a47f2a2af8dcbe949af0306aaa2  ./setup-agent/sample-repo/tests/agent_checks.py
 19ebfd4e5974de468e666eb821fd04cab9624105dddf4611ca38a6caf72956e8  ./setup-agent/setup-file-format-1.txt
+09677790dff4d2a2eca9d2a3e275fad21b06df9022a9e4ce3b6e4386e2f678a7  ./breakdown/main-pins.json
+3cea70c32b1db0814651fa33b01970668358e04cc3dd2b20650cd188c8bb6314  ./breakdown/make_main_pins.py
+a1c31c7b7739d38ce1a196875d9adbf94d269bf96608eb4bfd20cf9684d998c6  ./breakdown/mockups/breakdown-prove-140-plain.txt
+53527a3a055d58bf7f8947e6e914173c0c1702767bda2a19048ac3e1a7e822af  ./breakdown/mockups/breakdown-prove-140-pretty.txt
+a753b5f8f30df562a2536d994a02cbbb24364c16c3112c1deb4cc35719aac1de  ./breakdown/mockups/breakdown-prove-80-plain.txt
+f8216da7b14f213d2bd0553661b635d3fb67fe8f54fa63ff85aa2eee90ebb0b3  ./breakdown/mockups/breakdown-prove-80-pretty.txt
+437de26cc99f556fc46105f79646f328ba0f478083a368455168c75530862a72  ./breakdown/mockups/continuous-deepeval-80-pretty.txt
+55f626ace33699971da4fe29668e3cb9c52105ba08a169db39d0a2c966fc276f  ./breakdown/mockups/continuous-inspect-80-pretty.txt
+0ade559bb1b290f819a81ddc2755163067764a354fb4284639b7005242d0e7c4  ./breakdown/mockups/continuous-proposed-deepeval-140-pretty.txt
+a42618b71a4f9b32b7207942804bf29f0083b5a96a7193bdbdc9492fefe5c3ea  ./breakdown/mockups/continuous-proposed-deepeval-80-pretty.txt
+442144b28260558d17fcfe91070f42d776ee41ec4dbc34d16f5618bc7fbf5579  ./breakdown/mockups/continuous-proposed-inspect-140-pretty.txt
+85d1502c21994c4961877626202671857e16ecf9429ef5982b83197316c14b73  ./breakdown/mockups/continuous-proposed-inspect-80-pretty.txt

@@ -365,6 +365,7 @@ YELLOW_WORDS = (
     "too small to tell",
     "no significant difference",
     "no control",
+    "unconfirmed",  # a measure's call the timeouts leave unconfirmed: it cannot say (DM15)
 )
 RED_WORDS = ("not ready", "not whole", "not valid")
 

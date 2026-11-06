@@ -15,7 +15,7 @@ FROZEN = {
     "test_tf23_verdicts.py": "4785c8bce2957105c9f421952c36f5ea8dc7a5e661a2dff4e5a61347386ea5a3",
     "test_tf23_endings.py": "bd06da29ced4bc6c4885f3b16e9ebade922b8589e6a99686af500033c7a8b204",
     "test_tf23_scenarios.py": "ebdceca366b6d16d69e2bf255161d74bc46b9d0d63b6b64c83276746282d6b85",
-    "test_tf23_table.py": "e8003e1d30ad2ca6fd5a30c8aafbae60d2f97bd116f8d4974184d5d7e04d30f5",
+    "test_tf23_table.py": "15e01c4e1b9de235c5a0b0a142458af599edc58e11c578d0597f638da4176cfc",
 }
 
 

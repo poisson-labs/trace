@@ -1,0 +1,27 @@
+different  the new version failed less often
+  saved  fix-check 2ef6dc12196c
+
+Poisson Trace · fix check · agent before (old) and agent after (new)
+
+Failures by kind
+
+Each failed try's kind of failure, by the built-in rules; the same rules classified both runs. Counts, not a test: the verdict above is
+  about all failures together.
+
+kind           old  old share  new  new share        change
+───────────────────────────────────────────────────────────
+tool_error      66      41.2%   21      13.1%  -28.1 points
+loop_detected    6       3.8%   15       9.4%   +5.6 points
+step_limit       0       0.0%    5       3.1%   +3.1 points
+all failures    72      45.0%   41      25.6%  -19.4 points
+
+of 160 tries of the old version and 160 of the new; a try has one kind
+
+Signals seen on tries, failed or not:
+
+signal       old  old share  new  new share
+───────────────────────────────────────────
+retry_storm   78      48.8%   50      31.2%
+over_budget    6       3.8%   23      14.4%
+
+next: poisson-trace changes "agent before" "agent after" --inputs all

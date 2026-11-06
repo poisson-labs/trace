@@ -506,3 +506,20 @@ copied in: each test builds its copy of the repository by copying the `cs` store
 `ingest/junit/humaneval-a.xml` and `humaneval-b.xml` to `reports/junit-old.xml` and
 `reports/junit-new.xml`. `setup-agent/expected/trace.toml` is the config a correct agent writes
 for it. No key, no model and no network were used.
+
+## Added for the failure breakdown and the table fixes (2026-11-05)
+
+`breakdown/mockups/` holds ten captures the design session made on 2026-11-05 (vault
+`log/trace-design/terminal/`, on vault main at `6f2f2ef`), copied byte for byte: every character a
+real pseudo-terminal received from Trace, the escape sequences removed. The failure breakdown on
+the committed Prove 0.1.3 store at 80 and 140 columns, pretty and `--plain`
+(`breakdown-prove-*`); the continuous-measures table as proposed for the DeepEval and Inspect
+imports of the committed `ingest/deepeval/humaneval-{a,b}.json.gz` and `ingest/inspect/` logs at
+80 and 140 columns (`continuous-proposed-*`); and the table as main printed it at 80 columns
+(`continuous-deepeval-80-pretty`, `continuous-inspect-80-pretty`). The tests of
+`tests/test_bd_*.py` hold the build to them (one cell corrected, FD10 of the pair's rulings).
+
+`breakdown/main-pins.json` holds the digests of what main `7e6fef6` printed for rule 5 of the pair
+(`tests/test_bd_unchanged.py`), taken by `breakdown/make_main_pins.py` on that commit before any
+source changed, twice, with the same result. Paths are written `<ROOT>`. No key, no model and no
+network were used.

@@ -63,14 +63,14 @@ SPEC_CANNOT_SAY = (
 FIX_KEYS = (
     "schema", "verdict", "sentence", "prove", "runs", "gap_seconds", "events", "inputs", "rows",
     "control", "test", "difference", "by_input", "consistency", "limits", "direction", "guidance",
-    "changes", "cannot_say", "next",
+    "changes", "cannot_say", "failure_taxonomy_diff", "next",
 )
 CHANGES_KEYS = (
     "schema", "verdict", "sentence", "prove", "runs", "events", "tested", "flagged", "alpha",
     "lone_threshold", "smallest_attainable_p", "together", "lone_flip_repeats", "rows",
-    "cannot_say", "next",
+    "cannot_say", "failure_taxonomy_diff", "next",
 )
-CHANGES_BLOCK_KEYS = CHANGES_KEYS[6:-1]
+CHANGES_BLOCK_KEYS = CHANGES_KEYS[6:-2]
 HEADER_KEYS = {"run_id", "run_name", "target_id", "status", "created_at", "declared_repeats", "tally"}
 INPUTS_KEYS = {"rule", "failing_from", "min_failures", "selected", "compared", "informative", "left_out"}
 ROWS_KEYS = {"runs", "failed", "timed_out", "no_outcome", "short", "mixed"}

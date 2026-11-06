@@ -213,6 +213,17 @@ The old version and the new on the same inputs.
 
 The old version did not fail on 87.3% of its episodes on these inputs.
 
+## Failures by kind
+
+Each failed try's kind of failure, by the built-in rules; the same rules classified both runs. Counts, not a test: the verdict above is about all failures together.
+
+| kind | old | old share | new | new share | change |
+|---|---|---|---|---|---|
+| wrong_answer | 1,338 | 12.7% | 1,387 | 13.2% | +0.5 points |
+| all failures | 1,338 | 12.7% | 1,387 | 13.2% | +0.5 points |
+
+of 10,496 tries of the old version and 10,496 of the new; a try has one kind
+
 ## The comparison
 
 exact conditional Cochran-Mantel-Haenszel test, stratified by input over 328 inputs (58 informative), two-sided; α = 0.05.

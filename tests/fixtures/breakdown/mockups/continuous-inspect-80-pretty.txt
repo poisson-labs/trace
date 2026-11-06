@@ -1,0 +1,211 @@
+too small to tell  too few tries to see a drop of any size
+
+Poisson Trace · fix check · trace-fixture eval (old) and trace-fixture json
+  (new)
+
+Summary
+
+- Compared: old trace-fixture eval against new trace-fixture json, on the same 3
+  inputs: 6 tries of each. A try counts as failed when its includes score is not
+  C (I, P and N count as failed).
+- Question: Did the new version fail more or less often than the old? You asked
+  that the run be able to catch a 10-point drop in how often it fails.
+- Answer: Can't tell. The new version failed 1 of 6 tries and the old 3 of 6,
+  and with these tries Trace can't reliably catch a drop of any size.
+- Next: Run each version 92 times on each of these 3 inputs with your own
+  harness, then run `poisson-trace fix-check` on the two new runs.
+
+Before you act on this
+
+- They started 4 s apart. Trace can't tell whether they were run side by side,
+  so anything else that changed between them (the provider, the model behind the
+  API, the day) may be part of the difference, in either direction.
+- Both runs name the same target (import/inspect); Trace can't tell what differs
+  between them, only what you tell it.
+- These results fit anything from 74 fewer failures per 100 tries to 19 more,
+  but that range is only a rough guide here and may be off either way (fewer
+  than 10 inputs vary): don't use it to rule sizes in or out.
+- This design is weak at spotting the new version failing more: even if it
+  failed every try, Trace would catch that less than 4 times in 5. So this is no
+  evidence that the new version does not fail more often.
+- Tries of the same input are counted as separate chances, and if they are near
+  copies the answer is more confident than it should be.
+- The 92 times per input is an estimate from these runs' failure rates. 138
+  inputs like these at the present tries would do the same, more than the 3
+  here. Even with good estimates, about half of runs built to it end up a little
+  too small. Make it a fresh run, judged on its own: don't add tries to these
+  and test again.
+
+Runs
+
+- old: trace-fixture eval · target: import/inspect · status: complete · started:
+  2026-10-07T04:23:47Z (a time the tool wrote in the file) · declared repeats:
+  not recorded
+- the run's tally (old): rows 6 · with outcome 6 · no outcome 0 · timed out 0 ·
+  infra 0 · other 0
+- new: trace-fixture json · target: import/inspect · status: complete · started:
+  2026-10-07T04:23:51Z (a time the tool wrote in the file) · declared repeats:
+  not recorded
+- the run's tally (new): rows 6 · with outcome 6 · no outcome 0 · timed out 0 ·
+  infra 0 · other 0
+- the two runs started 4 s apart
+- events: missed
+- inputs: every input either run carries · selected 3 · compared 3 · left out 0
+- rows used: old 6 (timed out 0, no outcome 0) · new 6 (timed out 0, no outcome
+  0)
+- inputs short of the declared repeats: old no repeats declared · new no repeats
+  declared
+- inputs with mixed outcomes across their repeats: old 1 · new 1
+
+The two versions
+
+The old version and the new on the same inputs.
+
+version  runs  failed  failure share  did not fail
+──────────────────────────────────────────────────
+old         6       3          50.0%         50.0%
+new         6       1          16.7%         83.3%
+
+The old version did not fail on 50.0% of its episodes on these inputs.
+
+The comparison
+
+exact conditional Cochran-Mantel-Haenszel test, stratified by input over 3
+  inputs (2 informative), two-sided; α = 0.05.
+
+new failures: observed 1, expected 2.000, variance 0.500; p = 0.500
+difference: -33.3 points, new minus old (-73.9 to +19.4; Mantel-Haenszel
+  weights; range: stratified Miettinen-Nurminen score interval, 95%, for these
+  inputs as run; rough here: fewer than 10 inputs vary)
+by input: p = 0.500 (sign-flip over the 2 inputs that moved, exact); not part of
+  the line below
+
+Consistency
+
+failure share 0.333 · fails again 0.500 · κ 0.250 · within-input variance 0.167
+  against pooled 0.222
+a comparison that ignored the inputs would need 1/(1 − κ) = 1.33 times the runs
+
+What it could not have detected
+
+proportional change on every input, 80% power, α = 0.05, continuity-corrected
+  normal approximation to the stratified statistic.
+
+- a drop in failure share: no limit; even every failure gone, a drop of 33.3
+  points, would have been detected less than four times in five
+- a rise in failure share: no limit; even every run failing, a rise of 66.7
+  points, would have been detected less than four times in five
+
+too small to tell: could not have detected a drop in failure share below or at
+  33.3 points, which is every failure gone, and 10 was asked for
+
+Guidance
+
+- repeats: 92 per arm on these 3 inputs would bring the limit to 10 points
+- inputs: 138 inputs like these, at the present repeats, would do the same
+- ceiling: no value of --max-mde accepts this design as it stands
+
+These numbers assume the next runs fail at the rates these did, input by input,
+  and that new inputs resemble the present ones: for failing inputs chosen by a
+  rule, chosen by the same rule. It is a guide to the next design and not a
+  promise about it: a design built to the number has an expected limit at the
+  ceiling asked for, so about half the time its own limit will land a little
+  above.
+
+Inputs that changed
+
+Fisher's exact test per input, Benjamini-Hochberg at q = 0.05 over 3 inputs; 0
+  flagged.
+
+input    old failed/runs  new failed/runs        change      p      q  flag
+───────────────────────────────────────────────────────────────────────────
+case q3              2/2              1/2  -50.0 points  1.000  1.000     –
+case q1              0/2              0/2    0.0 points  1.000  1.000     –
+case q2              1/2              0/2  -50.0 points  1.000  1.000     –
+
+A lone changed input is flagged only if its p is below α / M = 0.0167, and the
+  smallest p an input of this design can give is 0.333: no input can be flagged
+  whatever happens; a lone complete flip needs 5 repeats per arm. An input with
+  no flag is not an input that did not change.
+
+Time, length, tokens and cost
+
+measure                 old       new  change          direction  verdict
+────────────────────────────────────────────────────────────────────────────────
+wall_time_s          2.05 s  0.0105 s  -2.04 s (-99%)          -  too small to
+                                                                  tell
+working_time_s      0.331 s   0.007 s  -0.324 s                -  too small to
+                                       (-98%)                     tell
+input_chars        10 chars  10 chars  0 chars (0%)            -  too small to
+                                                                  tell
+output_chars     4.83 chars   5 chars  +0.167 chars            -  too small to
+                                       (+3.4%)                    tell
+input_tokens       3 tokens  3 tokens  0 tokens (0%)           -  too small to
+                                                                  tell
+output_tokens   4.83 tokens  5 tokens  +0.167 tokens           -  too small to
+                                       (+3.4%)                    tell
+total_tokens    7.83 tokens  8 tokens  +0.167 tokens           -  not tested
+                                       (+2.1%)
+
+- wall_time_s: too small to tell (K_paired = 3, K_nonzero = 3; exact sign-flip
+  floor is p = 0.25, so a two-sided test cannot call a change below 9 changed
+  cases and 10 paired cases; at 9 every changed case must move the same way, at
+  10 at most one may go the other way). Over 3 paired cases: old mean 2.05 s,
+  new mean 0.0105 s (change -2.04 s, -99%); middle case (P50) 2.05 s old, 0.0105
+  s new.
+- working_time_s: too small to tell (K_paired = 3, K_nonzero = 3; exact
+  sign-flip floor is p = 0.25, so a two-sided test cannot call a change below 9
+  changed cases and 10 paired cases; at 9 every changed case must move the same
+  way, at 10 at most one may go the other way). Over 3 paired cases: old mean
+  0.331 s, new mean 0.007 s (change -0.324 s, -98%); middle case (P50) 0.008 s
+  old, 0.007 s new.
+- input_chars: too small to tell (K_paired = 3, K_nonzero = 0; exact sign-flip
+  floor is p = 1, so a two-sided test cannot call a change below 9 changed cases
+  and 10 paired cases; at 9 every changed case must move the same way, at 10 at
+  most one may go the other way). Over 3 paired cases: old mean 10 chars, new
+  mean 10 chars (change 0 chars, 0%); middle case (P50) 10 chars old, 10 chars
+  new.
+- output_chars: too small to tell (K_paired = 3, K_nonzero = 1; exact sign-flip
+  floor is p = 1, so a two-sided test cannot call a change below 9 changed cases
+  and 10 paired cases; at 9 every changed case must move the same way, at 10 at
+  most one may go the other way). Over 3 paired cases: old mean 4.83 chars, new
+  mean 5 chars (change +0.167 chars, +3.4%); middle case (P50) 4.5 chars old, 5
+  chars new.
+- input_tokens: too small to tell (K_paired = 3, K_nonzero = 0; exact sign-flip
+  floor is p = 1, so a two-sided test cannot call a change below 9 changed cases
+  and 10 paired cases; at 9 every changed case must move the same way, at 10 at
+  most one may go the other way). Over 3 paired cases: old mean 3 tokens, new
+  mean 3 tokens (change 0 tokens, 0%); middle case (P50) 3 tokens old, 3 tokens
+  new.
+- output_tokens: too small to tell (K_paired = 3, K_nonzero = 1; exact sign-flip
+  floor is p = 1, so a two-sided test cannot call a change below 9 changed cases
+  and 10 paired cases; at 9 every changed case must move the same way, at 10 at
+  most one may go the other way). Over 3 paired cases: old mean 4.83 tokens, new
+  mean 5 tokens (change +0.167 tokens, +3.4%); middle case (P50) 4.5 tokens old,
+  5 tokens new.
+- total_tokens: shown, not tested: total tokens is the sum of input tokens and
+  output tokens, which are tested. Over 3 paired cases: old mean 7.83 tokens,
+  new mean 8 tokens (change +0.167 tokens, +2.1%); middle case (P50) 7.5 tokens
+  old, 8 tokens new.
+
+What this cannot say
+
+- A difference between two stored runs is a difference between the runs. The
+  version, the provider and the hour changed together unless the two were run
+  side by side, and this test cannot separate them.
+- Repeat runs of one input are read as separate draws and never as replays: a
+  served model is not bit-identical on repeat, so nothing here matches a run of
+  the old version to a run of the new by seed.
+- If repeat runs of one input are near copies of one another, the run-level test
+  overstates its confidence. The by-input line does not depend on that.
+- Rows with no outcome are left out of both arms and counted in the header. A
+  new version that times out where the old one failed does not show as a failure
+  here.
+- Trace reads the runs it is given. If the inputs were chosen by the old arm's
+  own outcomes, or the more favourable of several runs was handed over, the
+  confidence printed does not hold.
+- The detection limit and the run counts are computed from these runs' own
+  failure rates, which are estimates. They are a guide to the next design, not a
+  promise about it.
+
+next: run 92 repeats per arm on these 3 inputs, then poisson-trace fix-check on the two new runs

@@ -456,8 +456,8 @@ def test_ic14_changes_reads_the_counts_the_rows_hold(tmp_path: Path) -> None:
 
 
 FROZEN = {
-    "conftest.py": "1bd912be79bf064512efb1bfaf742713902c2bad8200feb80586d731d0e1e091",
-    "fixcheck_support.py": "54fe40ac7a20f0f3cb08a790a02bfac2b04e91955d6e0a999896415500fac1ac",
+    "conftest.py": "a4ec16ad291f02ca9a162cd3bc2e805d5187f44918783992b13a093483a2dcaa",
+    "fixcheck_support.py": "3781fa2e753462c5d168b747f815ec7bdad6797914041bcdbfa76829568114ad",
     "test_changes.py": "b60b8f37a4d67753e9d26b0bea5d70c2950c808cc365372f7bcaadf3350ec99a",
     "test_cli.py": "3a9344f53565d9fdacc42a8e973e501ac5a587f3b046f09dd4c85235d2b5c29f",
     "test_clock.py": "4c63abd620252f7dd4033f81403a3311af85e9161ad16e05ba372f36f798b8f2",

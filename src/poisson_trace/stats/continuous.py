@@ -1019,10 +1019,12 @@ def _speak_tested(
 
 def table(comparison: Comparison, technical: bool = False) -> tuple[list[str], list[list[str]]]:
     """The comparison as a header and rows for ``look.table``: one row a measure shown, in the
-    order of :data:`MEASURES`, its first cell the measure and its last the verdict word. A
-    measure no case recorded is left out, and shown as ``not recorded`` with ``technical``,
-    which also adds the range and the p."""
-    header = ["measure", "old", "new", "change", "direction"]
+    order of :data:`MEASURES`, its first cell the measure, its ``change`` the relative change
+    alone (``none`` for no change, ``-`` for none to give), and its last the verdict word with
+    its direction after a comma when there is one (``different, slower``; DM3). The absolute
+    change stays in the measure's lines. A measure no case recorded is left out, and shown as
+    ``not recorded`` with ``technical``, which also adds the range and the p."""
+    header = ["measure", "old", "new", "change"]
     if technical:
         header += ["95% range", "p"]
     header.append("verdict")
@@ -1052,13 +1054,13 @@ def _row(m: Measure, technical: bool) -> list[str]:
         new = _amount(name, m.mean_b) if m.mean_b is not None else dash
         if m.change is None:
             change = dash
-        elif m.status == "identical":
+        elif m.status == "identical" or m.change == 0.0:
             change = "none"
+        elif m.relative is not None:
+            change = _pct(m.relative)
         else:
-            change = _amount(name, m.change, signed=True)
-            if m.relative is not None:
-                change += f" ({_pct(m.relative)})"
-    cells = [name, old, new, change, m.direction or dash]
+            change = dash  # the old mean too near zero for a share of it (HY1)
+    cells = [name, old, new, change]
     if technical:
         cells.append(
             f"{_amount(name, m.lo, signed=True)} to {_amount(name, m.hi, signed=True)}"
@@ -1066,5 +1068,6 @@ def _row(m: Measure, technical: bool) -> list[str]:
             else dash
         )
         cells.append(_p(m.p_value) if m.p_value is not None else dash)
-    cells.append(_WORD.get(m.status) or m.verdict or dash)
+    word = _WORD.get(m.status) or m.verdict or dash
+    cells.append(f"{word}, {m.direction}" if m.direction else word)
     return cells

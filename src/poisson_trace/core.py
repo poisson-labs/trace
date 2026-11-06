@@ -756,7 +756,8 @@ def _signals(
 ) -> tuple[dict[str, tuple[Any, ...]], dict[str, tuple[Any, ...]]]:
     """Each arm's rows as TF21's reader classifies them, before and after the ``--verdicts``
     join (the same rows when there is no file). On stored runs the join is made here, over both
-    runs' rows at once, by case (SV10); on tool folders it was made as they were read."""
+    runs' rows at once, by case (SV10), and a failure the file filled in is given its kind after
+    it (FD8); on tool folders it was made as they were read."""
     from poisson_trace.ingest.prove import read_rows
 
     root = Path(ns.store_root)
@@ -775,9 +776,21 @@ def _signals(
         at = 0
         for arm, _ in arms:
             n = len(before[arm])
-            after[arm] = tuple(joined.rows[at : at + n])
+            after[arm] = tuple(_kinds_filled(joined.rows[at : at + n]))
             at += n
     return before, after
+
+
+def _kinds_filled(rows: Sequence[Any]) -> list[Any]:
+    """The rows after a ``--verdicts`` join, a failure the file filled in given its kind by the
+    built-in rules (FD8), so that the failure-type diff counts it under a kind; a kind the file
+    gave stays, and a try the source graded was classified as it was read."""
+    from poisson_trace.ingest.taxonomy import classify
+
+    return [
+        classify(r) if r.result in ("fail", "censored") and r.failure_kind is None else r
+        for r in rows
+    ]
 
 
 _MISALIGNED = "the run's rows and its signals do not line up; the report was not printed"
@@ -989,6 +1002,105 @@ def _measures_section(comparison: Any) -> list[str]:
     return [MEASURES_HEADING, "", *body, "", *bullets]
 
 
+FAILURES_HEADING = "## Failures by kind"
+SIGNALS_LINE = "Signals seen on tries, failed or not:"
+BUILT_IN_RULES = "by the built-in rules"
+OWN_RULES = "by your own rules and the built-in ones"
+
+
+def _share(n: int, tries: int) -> str:
+    """A count over a run's tries, as the report prints a failure share: one decimal."""
+    from poisson_trace.report import _percent
+
+    return _percent(n / tries) if tries else "-"
+
+
+def _points_between(n_a: int, tries_a: int, n_b: int, tries_b: int) -> str:
+    """The second run's share less the first's, in points as the per-input table prints a
+    change: one decimal, signed, no sign on no change (FD6)."""
+    from poisson_trace.report import _points
+
+    if not tries_a or not tries_b:
+        return "-"
+    return _points(n_b / tries_b - n_a / tries_a, signed=True, places=1) + " points"
+
+
+def _breakdown_section(c: Counted) -> list[str]:
+    """The report's ``Failures by kind`` section (DM1, DM2), the counts of the failure-type diff
+    the saved verdict holds: one sentence on what is counted; a table of each kind either run
+    has, by its count over both runs (a tie in the diff's order, section 18.5.1's precedence),
+    ``all failures`` last; the tries; and, when either run has a signal, the signals' table.
+    Runs classified by different rules get the note and each run's digest, no counts (FD4).
+    ``compare`` and ``changes`` name their runs as their reports do, A and B (FD3)."""
+    from poisson_trace.ingest.taxonomy import taxonomy_sha256
+
+    assert c.arms is not None and c.diff is not None
+    diff = c.diff[0]
+    a, b = c.arms
+    label_a, label_b = c.labels
+    digests = diff["taxonomy_sha256"]
+    if not diff["same_rules"]:
+        return [
+            FAILURES_HEADING,
+            "",
+            DIFFERENT_RULES,
+            "",
+            f"- {label_a}: {digests[a]}",
+            f"- {label_b}: {digests[b]}",
+        ]
+    built_in = taxonomy_sha256((), None)
+    whose = BUILT_IN_RULES if all(d == built_in for d in digests.values()) else OWN_RULES
+    about = "inputs one by one" if c.kind == "changes" else "all failures together"
+    tries_a, tries_b = diff["tries"][a], diff["tries"][b]
+
+    def row(name: str, n_a: int, n_b: int) -> list[str]:
+        return [
+            name,
+            count(n_a),
+            _share(n_a, tries_a),
+            count(n_b),
+            _share(n_b, tries_b),
+            _points_between(n_a, tries_a, n_b, tries_b),
+        ]
+
+    # by the count over both runs, the sort stable so a tie keeps the diff's precedence order
+    kinds = sorted(diff["kinds"], key=lambda k: -(k[a] + k[b]))
+    rows = [row(k["failure_kind"], k[a], k[b]) for k in kinds]
+    rows.append(row("all failures", sum(k[a] for k in kinds), sum(k[b] for k in kinds)))
+    header = ["kind", label_a, f"{label_a} share", label_b, f"{label_b} share", "change"]
+    if c.kind == "fix-check":
+        of = f"of {count(tries_a)} tries of the old version and {count(tries_b)} of the new"
+    else:
+        of = f"of {count(tries_a)} tries of {label_a} and {count(tries_b)} of {label_b}"
+    lines = [
+        FAILURES_HEADING,
+        "",
+        f"Each failed try's kind of failure, {whose}; the same rules classified both runs. "
+        f"Counts, not a test: the verdict above is about {about}.",
+        "",
+        *look.table(header, rows).rstrip("\n").split("\n"),
+        "",
+        f"{of}; a try has one kind",
+    ]
+    if diff["signals"]:
+        signal_rows = [
+            [s["signal"], count(s[a]), _share(s[a], tries_a), count(s[b]), _share(s[b], tries_b)]
+            for s in diff["signals"]
+        ]
+        lines += ["", SIGNALS_LINE, ""]
+        lines += look.table(["signal", *header[1:5]], signal_rows).rstrip("\n").split("\n")
+    return lines
+
+
+def _with_breakdown(c: Counted) -> Counted:
+    """A verb of two runs with its failure-type diff read and its section's lines made for the
+    report (FD1: the section prints on every run). The lines are made here, so that the report
+    reads no count it did not get from the verb."""
+    c.diff_part()
+    c.data["_breakdown_section"] = _breakdown_section(c)
+    return c
+
+
 def _none(x: Any) -> float | None:
     return None if x is None else float(x)
 
@@ -1172,9 +1284,10 @@ def _result_document(
 class Counted:
     """What a counting verb worked out: the verdict line, the data its JSON and report are
     built from, the report, the runs read, the artifact's settings, and the call's own
-    settings (``ns``). The failure-type diff and the continuous measures (TF6, TF21, TF23) are
-    worked out when the call read the signals; otherwise when first asked for, from the store
-    the call read (``ns.store_root``)."""
+    settings (``ns``). The failure-type diff (TF6, TF21) is worked out by every verb of two
+    runs, since its section prints on every run (FD1); the continuous measures (TF23) when asked
+    for (``--measures``) or first read (a save, the API), from the store the call read
+    (``ns.store_root``)."""
 
     kind: str
     verdict: str
@@ -1192,21 +1305,34 @@ class Counted:
     diff: tuple[dict[str, Any], str | None] | None = None
     measures: Any = None
 
-    def two_run_parts(self) -> None:
-        """The diff and the measures of a verb of two runs, read now if not yet."""
+    def diff_part(self) -> None:
+        """The failure-type diff of a verb of two runs, read now if not yet: each run's rows as
+        TF21's reader classifies them, after the ``--verdicts`` join."""
         if self.arms is None or self.diff is not None:
             return
         if self.signals is None:
             self.signals = _signals(self.ns, _arm_runs(self), frozenset(self.ns.event))
         manifests = {arm: manifest for arm, _run, manifest in self.runs}
         self.diff = _taxonomy_diff(self.arms, self.signals[1], manifests)
-        self.measures = _measures(self.ns, self.signals[1], _arm_runs(self), self.labels)
+
+    def two_run_parts(self) -> None:
+        """The diff and the measures of a verb of two runs, read now if not yet."""
+        if self.arms is None:
+            return
+        self.diff_part()
+        if self.measures is None and self.signals is not None:
+            self.measures = _measures(self.ns, self.signals[1], _arm_runs(self), self.labels)
 
     def printed(self) -> dict[str, Any]:
-        """The verb's JSON as the command prints it without a delivery: the measures when
-        asked for, the join block, ``next`` last."""
+        """The verb's JSON as the command prints it without a delivery: the failure-type diff
+        of a verb of two runs (FD2), the measures when asked for, the join block, ``next``
+        last."""
         ns = self.ns
         tail: dict[str, Any] = {}
+        if self.arms is not None:
+            self.diff_part()
+            assert self.diff is not None
+            tail["failure_taxonomy_diff"] = self.diff[0]
         if self.measures is not None and ns.measures:
             tail["continuous_measures"] = self.measures.to_dict()
         if ns.joined is not None:
@@ -2122,9 +2248,7 @@ def compare(ns: argparse.Namespace) -> Counted:
         labels=("A", "B"),
         signals=signals,
     )
-    if signals is not None:
-        counted.two_run_parts()
-    return counted
+    return _with_breakdown(counted)
 
 
 # compare's --at band: resamples of the inputs, and their seed
@@ -2615,10 +2739,10 @@ def fix_check(ns: argparse.Namespace) -> Counted:
         labels=("old", "new"),
         signals=signals,
     )
-    if signals is not None:
+    _with_breakdown(counted)
+    if ns.measures:
         counted.two_run_parts()
-        if ns.measures:
-            data["_measures_section"] = _measures_section(counted.measures)
+        data["_measures_section"] = _measures_section(counted.measures)
     return counted
 
 
@@ -2795,9 +2919,7 @@ def changes(ns: argparse.Namespace) -> Counted:
         labels=("A", "B"),
         signals=signals,
     )
-    if signals is not None:
-        counted.two_run_parts()
-    return counted
+    return _with_breakdown(counted)
 
 
 VERBS: dict[str, Callable[[argparse.Namespace], Counted]] = {

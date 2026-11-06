@@ -631,6 +631,10 @@ class CompareReport:
             f"**{d['_verdict_line']}**",
             "",
         ]
+        if d.get("_breakdown_section"):
+            # the failure breakdown (DM1, FD7): its lines are made by the verb, as the
+            # measures' are, so that this module reads no count it did not get from it
+            lines += [*d["_breakdown_section"], ""]
         guidance = c.get("guidance")
         if guidance is not None:
             lines += self._guidance_lines(guidance) + [""]
@@ -701,6 +705,9 @@ class FixCheckReport:
         lines += self._header_lines()
         lines += ["", self._control_heading(), ""]
         lines += self._control_lines()
+        if d.get("_breakdown_section"):
+            # the failure breakdown (DM1): its lines are made by the verb
+            lines += ["", *d["_breakdown_section"]]
         lines += ["", "## The comparison", ""]
         lines += self._comparison_lines()
         lines += ["", "## Consistency", ""]
@@ -969,6 +976,9 @@ class ChangesReport:
                 f"{count(d['tested'])}, each with an outcome in both runs · in A only "
                 f"{count(held['a_only'])} · in B only {count(held['b_only'])}"
             )
+        if d.get("_breakdown_section"):
+            # the failure breakdown (DM1): its lines are made by the verb
+            lines += ["", *d["_breakdown_section"]]
         lines += ["", "## Inputs that changed", ""]
         lines += _flag_lines(d, d.get("_top", 10), "A", "B")
         lines += [""] + _cannot_say_lines(d["cannot_say"]) + [""]

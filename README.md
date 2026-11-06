@@ -858,6 +858,17 @@ could not have detected a hazard ratio below 1.603 (from the log-rank's own info
 
 **too small to tell: could not have detected a hazard ratio below 1.603, and 1.3 was asked for**
 
+## Failures by kind
+
+Each failed try's kind of failure, by the built-in rules; the same rules classified both runs. Counts, not a test: the verdict above is about all failures together.
+
+| kind | A | A share | B | B share | change |
+|---|---|---|---|---|---|
+| unclassified_error | 110 | 55.0% | 112 | 56.0% | +1.0 points |
+| all failures | 110 | 55.0% | 112 | 56.0% | +1.0 points |
+
+of 200 tries of A and 200 of B; a try has one kind
+
 ## Guidance
 
 - tries: 11 per input per version on these 50 inputs would bring the detectable hazard ratio to 1.3: the log-rank's expected information there, 114.5, reaches the 114.0 that 1.3 needs; this design has 4
@@ -961,6 +972,17 @@ The old version's run on the inputs that failed in tau2-airline 2026-09-15 a, be
 | new | 6 | 3 | 50.0% | 50.0% |
 
 Re-running these inputs and counting the runs that did not fail would have read 25.0% on the old version, where nothing changed.
+
+## Failures by kind
+
+Each failed try's kind of failure, by the built-in rules; the same rules classified both runs. Counts, not a test: the verdict above is about all failures together.
+
+| kind | old | old share | new | new share | change |
+|---|---|---|---|---|---|
+| unclassified_error | 112 | 56.0% | 3 | 30.0% | -26.0 points |
+| all failures | 112 | 56.0% | 3 | 30.0% | -26.0 points |
+
+of 200 tries of the old version and 10 of the new; a try has one kind
 
 ## The comparison
 
@@ -1079,6 +1101,24 @@ ok  2 of 328 inputs stand out: task_id HumanEval/129 at temperature 0.7 failed m
 - the two runs started 56 min apart
 - events: crashed, failed_assertion
 - inputs: A carries 328, B carries 328 · compared 328, each with an outcome in both runs · in A only 0 · in B only 0
+
+## Failures by kind
+
+Each failed try's kind of failure, by the built-in rules; the same rules classified both runs. Counts, not a test: the verdict above is about inputs one by one.
+
+| kind | A | A share | B | B share | change |
+|---|---|---|---|---|---|
+| unclassified_error | 1,337 | 12.7% | 1,387 | 13.2% | +0.5 points |
+| step_limit | 1 | 0.0% | 0 | 0.0% | -0.0 points |
+| all failures | 1,338 | 12.7% | 1,387 | 13.2% | +0.5 points |
+
+of 10,496 tries of A and 10,496 of B; a try has one kind
+
+Signals seen on tries, failed or not:
+
+| signal | A | A share | B | B share |
+|---|---|---|---|---|
+| over_budget | 1 | 0.0% | 0 | 0.0% |
 
 ## Inputs that changed
 

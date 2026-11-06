@@ -1,0 +1,59 @@
+too small to tell  too few tries to see a drop of any size
+
+Poisson Trace · fix check · trace-fixture eval (old) and trace-fixture json
+  (new)
+
+Time, length, tokens and cost
+
+measure                 old       new  change  verdict
+────────────────────────────────────────────────────────────────
+wall_time_s          2.05 s  0.0105 s  -99%    too small to tell
+working_time_s      0.331 s   0.007 s  -98%    too small to tell
+input_chars        10 chars  10 chars  none    too small to tell
+output_chars     4.83 chars   5 chars  +3.4%   too small to tell
+input_tokens       3 tokens  3 tokens  none    too small to tell
+output_tokens   4.83 tokens  5 tokens  +3.4%   too small to tell
+total_tokens    7.83 tokens  8 tokens  +2.1%   –
+
+- wall_time_s: too small to tell (K_paired = 3, K_nonzero = 3; exact sign-flip
+  floor is p = 0.25, so a two-sided test cannot call a change below 9 changed
+  cases and 10 paired cases; at 9 every changed case must move the same way, at
+  10 at most one may go the other way). Over 3 paired cases: old mean 2.05 s,
+  new mean 0.0105 s (change -2.04 s, -99%); middle case (P50) 2.05 s old, 0.0105
+  s new.
+- working_time_s: too small to tell (K_paired = 3, K_nonzero = 3; exact
+  sign-flip floor is p = 0.25, so a two-sided test cannot call a change below 9
+  changed cases and 10 paired cases; at 9 every changed case must move the same
+  way, at 10 at most one may go the other way). Over 3 paired cases: old mean
+  0.331 s, new mean 0.007 s (change -0.324 s, -98%); middle case (P50) 0.008 s
+  old, 0.007 s new.
+- input_chars: too small to tell (K_paired = 3, K_nonzero = 0; exact sign-flip
+  floor is p = 1, so a two-sided test cannot call a change below 9 changed cases
+  and 10 paired cases; at 9 every changed case must move the same way, at 10 at
+  most one may go the other way). Over 3 paired cases: old mean 10 chars, new
+  mean 10 chars (change 0 chars, 0%); middle case (P50) 10 chars old, 10 chars
+  new.
+- output_chars: too small to tell (K_paired = 3, K_nonzero = 1; exact sign-flip
+  floor is p = 1, so a two-sided test cannot call a change below 9 changed cases
+  and 10 paired cases; at 9 every changed case must move the same way, at 10 at
+  most one may go the other way). Over 3 paired cases: old mean 4.83 chars, new
+  mean 5 chars (change +0.167 chars, +3.4%); middle case (P50) 4.5 chars old, 5
+  chars new.
+- input_tokens: too small to tell (K_paired = 3, K_nonzero = 0; exact sign-flip
+  floor is p = 1, so a two-sided test cannot call a change below 9 changed cases
+  and 10 paired cases; at 9 every changed case must move the same way, at 10 at
+  most one may go the other way). Over 3 paired cases: old mean 3 tokens, new
+  mean 3 tokens (change 0 tokens, 0%); middle case (P50) 3 tokens old, 3 tokens
+  new.
+- output_tokens: too small to tell (K_paired = 3, K_nonzero = 1; exact sign-flip
+  floor is p = 1, so a two-sided test cannot call a change below 9 changed cases
+  and 10 paired cases; at 9 every changed case must move the same way, at 10 at
+  most one may go the other way). Over 3 paired cases: old mean 4.83 tokens, new
+  mean 5 tokens (change +0.167 tokens, +3.4%); middle case (P50) 4.5 tokens old,
+  5 tokens new.
+- total_tokens: shown, not tested: total tokens is the sum of input tokens and
+  output tokens, which are tested. Over 3 paired cases: old mean 7.83 tokens,
+  new mean 8 tokens (change +0.167 tokens, +2.1%); middle case (P50) 7.5 tokens
+  old, 8 tokens new.
+
+What this cannot say

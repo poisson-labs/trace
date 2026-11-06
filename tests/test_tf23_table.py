@@ -4,8 +4,9 @@ any new table to the clean look, and this is that table).
 **TF23-33** ``continuous.table(comparison)`` gives a header and rows: the header opens with
 ``measure`` and ends with ``verdict``; one row a measure shown, in the order of ``MEASURES``, its
 first cell the measure and its last the verdict word (``identical`` for a measure that did not
-change on any case); a measure no case recorded is left out, and shown as ``not recorded`` with
-``technical=True``.
+change on any case), followed by the direction after a comma when there is one (``different,
+slower``: Taylor's DM3, 2026-11-05); a measure no case recorded is left out, and shown as
+``not recorded`` with ``technical=True``.
 
 **TF23-34** The table renders through ``look.table`` (plain: the markdown table, no escape) and
 ``_pretty.table`` under the clean look's rules: at every width from 60 to 160 no line is wider
@@ -54,7 +55,7 @@ def test_tf23_33_the_rows() -> None:
     assert shown == recorded
     assert "working_time_s" not in shown and "input_tokens" not in shown
     by = {r[0]: r[-1] for r in rows}
-    assert by["wall_time_s"] == "different"
+    assert by["wall_time_s"] == "different, slower"
     assert by["input_chars"] == "identical"
     assert by["cost_usd"] == "too small to tell"
     assert by["output_tokens"] in ("no significant difference", "too small to tell")

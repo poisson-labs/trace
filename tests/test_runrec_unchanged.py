@@ -124,45 +124,45 @@ MAIN_FAST: dict[str, str] = {
     "where junit-a --event missed --json":
         "6ae6f825cec6175c330b725646b3679828fa52f4f2d1a79f403889002a6bcf5d",
     "fix-check junit-a junit-b --event missed --inputs all --max-mde 0.5":
-        "be66a1f2b563bb044e5a902eda6fe750fee614d66d293de6bf0597da9a17a426",
+        "94a44a83f89185b38aaa8abbd06ed9e2cecbb00abafcb96066571f0162932c70",
     "fix-check junit-a junit-b --event missed --inputs all --max-mde 0.5 --json":
-        "6b9a056cae524c9e5a3fad9ad69abac8310092da9d5bc351d374c0102a1826f4",
+        "2bd9c27e89cf14a2882001760217d156a7ad2ad0119b7e0a19f9850729e8dafc",
     "changes junit-a junit-b --event missed":
-        "248c402e4bbbab41003049789e188f009aa6b9f17c0ae6ad2d8fd352b6e03ed6",
+        "7c068abd33af08d24eb8172a8d19401750a41fe3abece507f6c87f6b48f6343f",
     "changes junit-a junit-b --event missed --json":
-        "2f9b93c143b9d49ce19b290c8fd30cad47ff56dd0944835554ace45930134c59",
+        "aa1d3d19d222fe2f37ef0222dc2db2e706482fb30a1c572ed4f98e6fa7127f73",
     "fix-check ragas-base ragas-raft --event missed --inputs all --max-mde 0.5":
-        "804fb14edc22308e6789d81a7f9080f1c58590cfd3fc366ba97a3ad2834a22f3",
+        "90e7c6273f399e5ca5e6e3141352f3a83be960ba62fd60c562ca495f4fb7188c",
     "fix-check ragas-base ragas-raft --event missed --inputs all --max-mde 0.5 --json":
-        "ef94cf0fdd1fef1b76f78400418b190356672d09239af289494b8440997bdf22",
+        "336854945f098c3b76e3d8d652ddb68c8b2692524b633b9bceb7a98caac3c709",
     "changes ragas-base ragas-raft --event missed":
-        "3370b68c165a244c4191b549d0df04bf48b378b7c9b6d4a0a9b2cea0324e88e0",
+        "c5217b9ea3eb216ad274525b3f6a47774a83c9a04194bc6fa1ede202952db3ad",
     "changes ragas-base ragas-raft --event missed --json":
-        "502bae20008e18cf54bdc9ff06903cc20f1f90474b467e04ad34939854af8a82",
+        "92b6d543a998226d2e8a25b072a8cab608751a4dde391b243ac5e22019eef0e0",
     "fix-check promptfoo-old promptfoo-new --event missed --inputs all --max-mde 0.5":
-        "16cd8089cf0fc68aa132c9f7d7de765e25a3ca5a2d8d05de3bf3f8581802b17b",
+        "948a5c702342e07a5ac24a0a4a17606b94ee27901a21591c1a6993bfc6bd8baa",
     "fix-check promptfoo-old promptfoo-new --event missed --inputs all --max-mde 0.5 --json":
-        "ce5974c0144ecca3264028ff5410805e53e115ed8541d19485c77f9895b57b06",
+        "a78fa64340a7273c8aa1bbd84e99d2ca3afe674b18c4e72058f780f372bb95ee",
     "changes promptfoo-old promptfoo-new --event missed":
-        "c098b1397af9c96b1deb8b886bc444eef3793e0b422f68463b353273f8915f8b",
+        "ba89d2cb1a1a9998a4f498f41490c9e3eb427650957c9718fe0fdfe670c7a852",
     "changes promptfoo-old promptfoo-new --event missed --json":
-        "c7db04091b699e89bbeebcac41b34769eb85fbc36d007fa153de92c40a11f4c3",
+        "5c79f2f9972df2fc48b8d68668c3d2b1a91ff74cdc09f5fe6227b0d96e07c547",
     "fix-check openai-evals-old openai-evals-new --event missed --inputs all --max-mde 0.5":
-        "e7f0637da0db441b6dc61ca2db471e95b53c56b780c8f27b40188eeaf15224da",
+        "2a2919ad1a730eb78dabd3570b10ed0f0084abfdd50c5aca2ad1aff957d43216",
     "fix-check openai-evals-old openai-evals-new --event missed --inputs all --max-mde 0.5 --json":
-        "10a006488baf15fd7283b100608bed39579284201538fbf01e8f583aa48ff776",
+        "0634e28ddb2b7707a88ec855101e2bd085279631b3b40c0e837dfbc76f3c8afc",
     "changes openai-evals-old openai-evals-new --event missed":
-        "10e3f808a898255355d5b4f242005cdfc7000bb75ab1bcacae44f6d5c6771a1d",
+        "7639f7af6303284f13564833ac52bc3b5508fe91c012207a00784eb481f025b3",
     "changes openai-evals-old openai-evals-new --event missed --json":
-        "c42a5f76a3cba0c539e7ceff920427ebaa4d931f388500f0975e9e3ad385b5c9",
+        "e42baef8ca0d59f634954a7f1e89e6e4bd6ab7eda6cdd4c1a52da453b58639b6",
     "fix-check inspect-eval inspect-json --event missed --inputs all --max-mde 0.5":
-        "a02a41fea7fa413652494dd44b4f7cc341e5e6f090a4bd8662de75384af3e013",
+        "99e89214b3f63ce286395b4d458260050a4b7cdd3321c28e0a844cafd1310441",
     "fix-check inspect-eval inspect-json --event missed --inputs all --max-mde 0.5 --json":
-        "4fd84adb12139a32f58c9f09a6b65f75fdb6ff4bc3ef250cd0789465becc5d2c",
+        "22403b58d761a51041227bbcfb3aab27cf647b0f81931a993a3915debc824137",
     "changes inspect-eval inspect-json --event missed":
-        "83375c095154c1eaca07e8ebcb3282ff73d37bba873e315a86cbc6f36c8c3164",
+        "23f69f7ea8df989f6e0b188a753b6da40e714153942588ed37f7e8ba7210445f",
     "changes inspect-eval inspect-json --event missed --json":
-        "8ff7a12a6a810352b43de3ea3c9245766aee84eafa225e4aed3f992a9fab4b26",
+        "2e8fd15f2c7ad42cbf037e084453ed99539d2dd6ca54efe5ff3c73ea877d801c",
     "compare junit-a junit-b --event missed --max-mde-hr 1.5":
         "4dc033049cbcbca467979cd788935ef6aad3f2a2dbd5e662dd959821a15549e2",
     "compare junit-a junit-b --event missed --max-mde-hr 1.5 --json":
@@ -198,21 +198,21 @@ MAIN_SLOW: dict[str, str] = {
     "where deepeval-a --event missed --json":
         "9c645b738c04866d650a15b03c0e4c6d98ab168dcd5a36779d1109f83756dc2b",
     "fix-check deepeval-a deepeval-b --event missed --inputs all --max-mde 0.5":
-        "dca511b27229c61984e77de9d2bb806c3dcf946362455f686ffb159b5c6600f9",
+        "42bcda89bfa4ade5845fa83354160b79b258a862945ee40063d344f19acbc13c",
     "fix-check deepeval-a deepeval-b --event missed --inputs all --max-mde 0.5 --json":
-        "38ddfaec2b2d5cc1e3d46cb26caf3451be807b634d946652d582e09aec5aed7a",
+        "72c2bff908fa7edc140cf89782e3ad2f9f13084bb7c94de9b608e9a6c2a641f0",
     "changes deepeval-a deepeval-b --event missed":
-        "6565b21b20660e9c311abd335dc3b64e643e61a152409ead5b4dfd95b41cbe2e",
+        "7d3d12a3defb039babf0549f4509b2fd38e9597fed80b5e8ccc20966734b8daa",
     "changes deepeval-a deepeval-b --event missed --json":
-        "60e5da08e322ee1c55552055fc6fa99f0a565ad5a08512487b45b3dd9bff12c8",
+        "42c8d8bc62126db7f26072472373f0673718d47a1191ec180622e5bb22325788",
     "fix-check table-a table-b --event missed --inputs all --max-mde 0.5":
-        "e4402e3fa23c8565039028ad63579a19bece6e6e2c814d1fd38f4020c88e30e3",
+        "12662229211201b02f4a0fcb9c0d770c80d6602e3061958fd1e208ed6565910e",
     "fix-check table-a table-b --event missed --inputs all --max-mde 0.5 --json":
-        "aa65ec23e6ced8719020b44b85908baabb150643aff402a2c8098a204305e374",
+        "b9c133a8fcfae2f5a539fcee45df982ac88ebfca8e82a2ec7f45a5cc71b27d1d",
     "changes table-a table-b --event missed":
-        "604d7eb308cf3c31c3f0bff356407c3d34b50341351fd15234a4cf2d08a17245",
+        "d8c7d915b7f6535fc1f351658b4d3b436623cddab1d2bad699d86b115942af7b",
     "changes table-a table-b --event missed --json":
-        "5028278257d28ffca3a249394f483c987572ded5151dc2fbd8307353f2ac8298",
+        "cf1f97d8d847b48d3b75423d67a040f3fe11ede4de423112b205d540f81d082f",
     "compare deepeval-a deepeval-b --event missed --max-mde-hr 1.5":
         "d4d24a3ef836fa4a2764f4eabcfd78ea2a28535470739a4fed26d9e56046099d",
     "compare deepeval-a deepeval-b --event missed --max-mde-hr 1.5 --json":

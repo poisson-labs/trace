@@ -1,0 +1,26 @@
+different  the new version failed slightly more often
+
+Poisson Trace · fix check · humaneval-a (old) and humaneval-b (new)
+
+Time, length, tokens and cost
+
+measure              old         new  change  verdict
+───────────────────────────────────────────────────────────────
+wall_time_s   0.000354 s  0.000357 s  +0.88%  too small to tell
+input_chars   31.3 chars  31.3 chars  none    identical
+output_chars  7.27 chars  7.31 chars  +0.61%  too small to tell
+
+- wall_time_s: too small to tell: the test is quiet (p = 0.239; a call needs p below 0.05), and changes smaller than about ±0.00000786 s
+  (2.2%) could easily go unseen in a run like this. In words, these results fit anything from 0.00000188 s faster to 0.00000811 s slower. To
+  decide, choose how much change would not matter before you look, as a share of the old mean: --max-change wall_time_s=X%. For the typical
+  case (Hodges-Lehmann estimate) the change is -0.000000282 s (95% range -0.00000203 s to +0.00000163 s). Over 328 paired cases: old mean
+  0.000354 s, new mean 0.000357 s (change +0.00000312 s, +0.88%); middle case (P50) 0.000351 s old, 0.00035 s new; P90 0.00037 s old,
+  0.000372 s new.
+- input_chars: identical on all 328 cases; a change touching more than about 3 in 328 cases like these would usually have shown up.
+- output_chars: too small to tell: the test is quiet (p = 0.145; a call needs p below 0.025), and changes smaller than about ±0.0923 chars
+  (1.3%) could easily go unseen in a run like this. In words, these results fit anything from 0.0146 chars shorter to 0.103 chars longer. To
+  decide, choose how much change would not matter before you look, as a share of the old mean: --max-change output_chars=X%. For the typical
+  case (Hodges-Lehmann estimate) the change is 0 chars (95% range 0 chars to 0 chars). Over 328 paired cases: old mean 7.27 chars, new mean
+  7.31 chars (change +0.0441 chars, +0.61%); middle case (P50) 6 chars old, 6 chars new; P90 12.4 chars old, 13.8 chars new.
+
+What this cannot say

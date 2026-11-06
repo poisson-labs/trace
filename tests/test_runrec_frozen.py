@@ -15,7 +15,7 @@ FROZEN = {
     "test_runrec_events.py": "24c985de9935630787e2f4780c6a8840740609c9ea68b9014a02c816cb405298",
     "test_runrec_produced_by.py": "b6a0357b4a1b93b17b46702855ff6e190d71ef2623020bdb571357d8909e86ff",
     "test_runrec_paths.py": "baf1276c99c986cf53dcd05a46dcb98ac12a678c73ec6b5307efe0fb8f16eb09",
-    "test_runrec_unchanged.py": "777d8f203d1d8df41e84f6d7796e66041f86aaafe8a366f572c952b83a42a78f",
+    "test_runrec_unchanged.py": "ac9d32c74b27306abe16ac443a866a5db863bc46fd667cf0182fb1e945f67c61",
 }
 
 

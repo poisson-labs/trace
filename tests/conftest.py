@@ -49,7 +49,7 @@ WHERE_KEYS = (
 )
 COMPARE_KEYS = (
     "schema", "verdict", "sentence", "prove", "runs", "events", "clock", "at", "comparison",
-    "per_cause", "cannot_say", "next",
+    "per_cause", "cannot_say", "failure_taxonomy_diff", "next",
 )
 
 

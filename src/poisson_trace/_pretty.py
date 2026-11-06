@@ -15,8 +15,9 @@ Three faces, and nothing else draws an escape sequence:
 - :func:`table` draws a table for a terminal of a given width: aligned when it fits; when it is
   too wide, a unit every cell of a column repeats moves into the header and a cell that is a JSON
   object (an input's key) is printed one field per line; when even that is too wide, one record
-  per row. No cell is cut and no word is broken, so the table holds every word and number plain's
-  table holds, in the same row order, and a number is never coloured.
+  per row. No cell is broken across lines and no word is cut, so the table holds every word and
+  number plain's table holds, in the same row order; a number is never coloured, and in the
+  column headed ``verdict`` each cell's verdict word is drawn in its meaning (DM15).
 
 Every table a later verb adds goes through :func:`table` and ``look.table`` (its plain face), and
 so gets the same rules.
@@ -180,13 +181,14 @@ def _aligned(
     rows: Sequence[Sequence[str]],
     width: int,
     *,
-    whole: Sequence[int] = (),
     stacked: dict[int, list[list[tuple[str, str]]]] | None = None,
+    styled: int | None = None,
 ) -> str | None:
     """The table aligned in columns two spaces apart, the header dim over a dim rule, numbers to
-    the right; None when its columns cannot fit ``width`` without breaking a word. A column in
-    ``whole`` is never wrapped. ``stacked`` gives, for a column, each row's cell as fields printed
-    one ``name  value`` a line, the name dim."""
+    the right; None when its columns cannot fit ``width`` with every body cell whole on one line
+    (DM4) and every header on two at most. ``stacked`` gives, for a column, each row's cell as
+    fields printed one ``name  value`` a line, the name dim. ``styled`` is the column headed
+    ``verdict``, each cell's verdict word drawn in its meaning (DM15)."""
     n = len(header)
     stacked = stacked or {}
     cells: list[list[list[str]]] = []  # [row][column] -> lines
@@ -198,21 +200,19 @@ def _aligned(
 
     for r, row in enumerate(rows):
         cells.append([lines_of(i, row[i] if i < len(row) else "", r) for i in range(n)])
-    # the least each column can take: its longest word (a column kept whole, its longest line)
+    # the least each column can take: its widest body line, since a cell is never broken, and
+    # the header's longest word; the most, its widest line, the header included
     least = []
     most = []
     for i in range(n):
-        texts = [header[i], *(line for row in cells for line in row[i])]
-        if i in whole or i in stacked:
-            least.append(max((cell_len(t) for t in texts), default=0))
-        else:
-            least.append(max((cell_len(w) for t in texts for w in _words(t)), default=0))
-        most.append(max((cell_len(t) for t in texts), default=0))
+        body = [line for row in cells for line in row[i]]
+        least.append(max((cell_len(t) for t in [*body, *_words(header[i])]), default=0))
+        most.append(max((cell_len(t) for t in [header[i], *body]), default=0))
     room = width - _GAP * (n - 1)
     if sum(least) > room:
         return None
-    # what is left is shared evenly among the columns that would otherwise wrap, none past
-    # the widest line it holds
+    # what is left is shared evenly among the columns whose header would otherwise wrap, none
+    # past the widest line it holds
     widths = list(least)
     while sum(widths) < room and any(widths[i] < most[i] for i in range(n)):
         for i in range(n):
@@ -243,24 +243,19 @@ def _aligned(
                 if i in stacked and text:
                     name, _, value = text.partition("  ")
                     padded = style(name, "dim") + padded[len(name) :]
-                elif styles[i] is not None and text:
+                elif text and (styles[i] is not None or i == styled):
                     lead = len(padded) - len(padded.lstrip(" "))
                     trail = len(padded) - len(padded.rstrip(" "))
-                    styled = style(text, styles[i] or "")
-                    padded = padded[:lead] + styled + padded[len(padded) - trail :]
+                    meaning = styles[i]
+                    drawn = _verdict_cell(text) if meaning is None else style(text, meaning)
+                    padded = padded[:lead] + drawn + padded[len(padded) - trail :]
                 pieces.append(padded)
             out.append(("  ".join(pieces)).rstrip() + "\n")
 
     emit(heads, ["dim"] * n)
     out.append(style(_RULE * min(width, sum(widths) + _GAP * (n - 1)), "dim") + "\n")
     for drawn_row in cells:
-        parts: list[list[str]] = []
-        for i, lines in enumerate(drawn_row):
-            if i in whole or i in stacked:
-                parts.append(list(lines))
-            else:
-                parts.append([w for line in lines for w in _wrap(line, widths[i])])
-        emit(parts, [None] * n)
+        emit([list(lines) for lines in drawn_row], [None] * n)
     return "".join(out)
 
 
@@ -270,10 +265,11 @@ def _records(
     width: int,
     key: int,
     keys: Sequence[Sequence[tuple[str, str]] | None],
+    styled: int | None = None,
 ) -> str:
     """One record per row, a blank line between records: the key's fields one ``name  value`` a
     line (or the key cell), then every other cell as ``column value``, the column dim, as many
-    whole pieces to a line as fit."""
+    whole pieces to a line as fit; the ``styled`` column's verdict word in its meaning."""
     out: list[str] = []
     lead = "  "
     for r, row in enumerate(rows):
@@ -295,22 +291,40 @@ def _records(
                 line, drawn = "", ""
             sep = "  " if line else lead
             line += sep + piece
-            drawn += sep + style(column, "dim") + " " + cell
+            shown = _verdict_cell(cell) if i == styled else cell
+            drawn += sep + style(column, "dim") + " " + shown
         if line:
             out.append(drawn + "\n")
     return "".join(out)
+
+
+#: The verdict words a table cell may hold that are drawn in their meaning (DM15): the
+#: continuous measures' calls. A cell holding any other word (``identical``, ``not tested``,
+#: ``not recorded``, a dash) stays plain, and a direction after the word (``, slower``) is plain.
+_VERDICT_WORDS = ("different", "unconfirmed", "too small to tell", "no significant difference")
+
+
+def _verdict_cell(text: str) -> str:
+    """A cell of the column headed ``verdict``: its verdict word in its meaning's style
+    (``look.meaning``), the comma and the direction after it as they are."""
+    word, comma, direction = text.partition(", ")
+    if word not in _VERDICT_WORDS:
+        return text
+    return style(word, look.meaning(word)) + comma + direction
 
 
 def table(header: Sequence[str], rows: Sequence[Sequence[str]], *, width: int) -> str:
     """The pretty face of ``look.table(header, rows)`` for a terminal ``width`` wide, drawn with
     escapes, each line ended. Aligned when it fits; folded when it is too wide: a unit every cell
     of a column repeats moves into the header, and a key (a JSON object) is printed one field per
-    line; one record per row when even the fold is too wide. No cell is cut, no word broken and
-    no digit coloured."""
+    line; one record per row when even the fold is too wide. No cell is broken across lines (a
+    header may take two), no word cut and no digit coloured; in the column headed ``verdict`` a
+    verdict word is drawn in its meaning."""
     width = max(20, width)
     header = [str(h) for h in header]
     rows = [[str(c) for c in row] for row in rows]
     n = len(header)
+    styled = header.index("verdict") if "verdict" in header else None
     key_columns: list[int]
     keys = [[_key(row[i]) if i < len(row) else None for i in range(n)] for row in rows]
     key_columns = [i for i in range(n) if rows and all(k[i] is not None for k in keys)]
@@ -319,14 +333,14 @@ def table(header: Sequence[str], rows: Sequence[Sequence[str]], *, width: int) -
         [_axes(keys[r][i] or []) if i in key_columns else row[i] for i in range(n)]
         for r, row in enumerate(rows)
     ]
-    drawn = _aligned(header, flat, width, whole=key_columns)
+    drawn = _aligned(header, flat, width, styled=styled)
     if drawn is not None:
         return drawn
     # folded: the units into the header, each key one field per line
     head, body = _units(header, rows)
     stacked = {i: [keys[r][i] or [] for r in range(len(rows))] for i in key_columns}
-    drawn = _aligned(head, body, width, stacked=stacked)
+    drawn = _aligned(head, body, width, stacked=stacked, styled=styled)
     if drawn is not None:
         return drawn
     key = key_columns[0] if key_columns else 0
-    return _records(head, body, width, key, [k[key] for k in keys])
+    return _records(head, body, width, key, [k[key] for k in keys], styled)
