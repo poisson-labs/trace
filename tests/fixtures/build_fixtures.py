@@ -15,7 +15,8 @@ This is the one place pyarrow is used; Trace itself reads a store only through P
 of a rewritten part depend on the pyarrow that writes it: the committed fixtures were written
 by pyarrow 25.0.1, and another version may give other bytes for the same rows.
 
-Usage, from the repository root, with Prove and pyarrow installed:
+Usage, from the repository root, with Prove and pyarrow 25.0.1 installed (a fresh install of
+Prove brings a newer pyarrow; ``pip install pyarrow==25.0.1`` sets this one):
 
   python tests/fixtures/build_fixtures.py DEST --runs RUNS_ROOT --cs CS_ROOT
 
@@ -156,7 +157,11 @@ def main() -> int:
         print(f"differs: {name}{why}", file=sys.stderr)
     for name in missing:
         print(f"missing: {name} (listed in SHA256SUMS, not written)", file=sys.stderr)
-    print(f"FAIL: {len(differ)} file(s) differ, {len(missing)} missing", file=sys.stderr)
+    version = ""
+    if pa.__version__ != WRITTEN_BY:
+        version = (f"; pyarrow {pa.__version__} here, the committed fixtures were written by "
+                   f"{WRITTEN_BY} (pip install pyarrow=={WRITTEN_BY})")
+    print(f"FAIL: {len(differ)} file(s) differ, {len(missing)} missing{version}", file=sys.stderr)
     return 1
 
 

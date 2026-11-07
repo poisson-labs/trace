@@ -21,10 +21,12 @@ The manifest of every fixture is byte-identical to its source (same sha256):
 - `cs/20260925T234602Z-3ea0/manifest.json`: `f1bc2e6c15525850af28c64d7e7e950e58cc41911cf6df13b03572bfd8437851`
 - `cs/20260925T235434Z-af48/manifest.json`: `89640893c800d81203a41bcbd54f8f5de804ef9849345a3ad5700619c5a65c50`
 
-`SHA256SUMS` beside this file lists the sha256 of every fixture file (782 files: the 429 of
+`SHA256SUMS` beside this file lists the sha256 of every fixture file (808 files: the 429 of
 the first four runs, their lines unchanged, 341 for the three added on 2026-09-29, two for the
-DeepEval import, four for the Ragas import, two for the table import and four for the JUnit
-import), in the format `shasum -a 256` prints. Verify with `cd tests/fixtures && shasum -a 256 -c SHA256SUMS`.
+DeepEval import, four for the Ragas import, two for the table import, four for the JUnit
+import, then twelve under `breakdown/`, seven under `setup-agent/`, three for the promptfoo
+import, two for the Inspect import and two for the OpenAI Evals import), in the format
+`shasum -a 256` prints. Verify with `cd tests/fixtures && shasum -a 256 -c SHA256SUMS`.
 
 ## The runs
 
@@ -50,12 +52,16 @@ rebuilds all seven fixtures into an empty directory, checks each copy through Pr
 reader, and compares every file it wrote with `SHA256SUMS`:
 
 ```
+pip install pyarrow==25.0.1    # after Prove: pyarrow 25.0.1 exactly, as below
 python tests/fixtures/build_fixtures.py DEST --runs RUNS_ROOT --cs CS_ROOT
 ```
 
 The source stores are not public, so the script is the record of how the fixtures were made;
-with the sources and pyarrow 25.0.1 it reproduces the 770 committed files byte for byte. It is
-not listed in `SHA256SUMS`, which covers the fixture stores only.
+with the sources and pyarrow 25.0.1 it reproduces the 770 committed files byte for byte. On
+another pyarrow the rewritten parts can differ in bytes (pyarrow 26.0.1, which a fresh install
+of Prove brings, rewrites 753 of the 770 files differently), and the script's `FAIL` line then
+names the pyarrow it found beside the 25.0.1 that wrote the fixtures. It is not listed in
+`SHA256SUMS`, which covers the fixture stores only.
 
 ## The nulling recipe
 
@@ -217,7 +223,8 @@ Four score tables in the shape Ragas's `EvaluationResult.to_pandas()` gives, for
 generated customer histories, the same 1,800 lookups on a memory with causal reads and on one
 with strong reads. Each stored row holds the fact ids the memory returned and the fact ids that
 answer the question; no model is involved. The two source runs are Prove stores that are not
-public; their manifests' sha256 are
+public: run `20260928T193736Z-d407` (causal) and run `20260929T082616Z-6883` (strong). Their
+manifests' sha256 are
 `fc979bc6e7e925fe4866899a18e2e40e5af0290accde68c0aedde60c006ba601` (causal) and
 `613fe6fd1eef4e19e3bfb1e99070a84f017ee80641468041c158990a812a4548` (strong).
 
@@ -274,6 +281,25 @@ scores are on every row.
 **What a rebuild gives.** Given the source stores and the two URLs, `make.py` reproduces all four
 files byte for byte (pandas 3.0.6, pyarrow 25.0.1). The digests in `SHA256SUMS` are of the files
 as committed.
+
+**Rebuilt end to end (2026-11-06).** All four recipe steps were run, from the two source stores
+and from huggingface.co, with `make.py` as committed, in three clean environments on Python
+3.11.7. No model was called, no key was set (each step ran with only `HOME` and `PATH` in its
+environment), nothing was paid.
+
+| Step | Environment | Result |
+|---|---|---|
+| `memory-rows` | poisson-prove 0.1.2 (pandas 3.1.1, pyarrow 26.0.1) | 1,800 rows from each run; the manifest sha256 it printed for each run is the one recorded above |
+| `memory-score` | ragas 0.4.3, langchain-community 0.3.31, pandas 3.0.6, pyarrow 25.0.1 | 1,800 samples scored per run; Ragas printed its no-retrieved-ids notice 1,130 times, all on the causal run |
+| `memory-gzip` | the same | `memory-causal.jsonl` and `memory-strong.jsonl` have the sha256 and byte counts in the table above; the two `.jsonl.gz` files are `cmp`-equal to the committed ones and to their `SHA256SUMS` lines |
+| `pair` | pandas 3.0.6, pyarrow 25.0.1 | both Parquet files had the pinned sha256 (`make.py` refuses them otherwise); `rag-base.jsonl` and `rag-raft.jsonl` are `cmp`-equal to the committed files and to their `SHA256SUMS` lines |
+
+All four outputs equal the committed files byte for byte, so no fixture changed. The sources
+were copied to a scratch folder first, and the copies' manifests have the two sha256 above
+(the copies were byte for byte the originals); the stores themselves were not written to.
+The first run, on 2026-11-04, could not read the stores or reach huggingface.co; it ran
+`memory-score` and `memory-gzip` alone, on rows written from the committed tables' own
+columns, and also found them equal.
 
 **Checks made.** Every string in the four files is one of three generated shapes: a row id (16 hex
 characters, a colon and digits), a fact id (`F-` and 12 hex characters) or a question hash (`q-`
