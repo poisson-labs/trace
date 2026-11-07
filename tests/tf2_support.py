@@ -132,6 +132,14 @@ def _waiting(proc: subprocess.Popen[bytes], slave: int, err: bytearray, quiet: f
     return False
 
 
+def _default_sigint() -> None:
+    """In the child, before it starts: SIGINT at its default. A command a non-interactive shell
+    starts in the background has SIGINT ignored, the child inherits that, and Python leaves an
+    ignored SIGINT ignored, so the Ctrl-C a test sends would change nothing and the test would
+    wait out its timeout."""
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+
 def tty(
     argv: Sequence[Any],
     answers: Sequence[str],
@@ -152,6 +160,7 @@ def tty(
     proc = subprocess.Popen(
         [sys.executable, "-c", script("trace", prove=prove), *[str(a) for a in argv]],
         stdin=slave, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, env=dict(os.environ),
+        preexec_fn=_default_sigint,
     )
     out, err = bytearray(), bytearray()
     assert proc.stdout is not None and proc.stderr is not None
