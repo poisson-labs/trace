@@ -932,11 +932,16 @@ DIFFERENT_RULES = (
 
 
 def _taxonomy_diff(
-    arms: Sequence[str], rows: Mapping[str, Sequence[Any]], manifests: Mapping[str, Any]
+    arms: Sequence[str],
+    rows: Mapping[str, Sequence[Any]],
+    manifests: Mapping[str, Any],
+    verdict_tries: Mapping[str, int] | None = None,
 ) -> tuple[dict[str, Any], str | None]:
     """The saved verdict's failure-type diff (SV4 item 4, SV9): each run's taxonomy digest,
     whether the rules are the same, the tries, and each kind's and signal's count in each run
-    in section 18.5.1's order; no counts, and a note, when the rules differ."""
+    in section 18.5.1's order; no counts, and a note, when the rules differ. Where a run has
+    tries with no outcome, each run's number of them and the tries the verdict counts follow
+    the tries (FD15); where none has, the diff is as it was."""
     from poisson_trace.ingest.rows import FAILURE_KINDS, SIGNALS
 
     digests = {arm: _digest_of(manifests[arm]) for arm in arms}
@@ -956,13 +961,14 @@ def _taxonomy_diff(
             for s in SIGNALS
             if any(s in r.signals for arm in arms for r in rows[arm])
         ]
-    diff = {
-        "taxonomy_sha256": digests,
-        "same_rules": same,
-        "tries": {arm: len(rows[arm]) for arm in arms},
-        "kinds": kinds,
-        "signals": signals,
-    }
+    tries = {arm: len(rows[arm]) for arm in arms}
+    diff: dict[str, Any] = {"taxonomy_sha256": digests, "same_rules": same, "tries": tries}
+    none = {arm: sum(1 for r in rows[arm] if r.outcome is None) for arm in arms}
+    if verdict_tries is not None and any(none.values()):
+        diff["no_outcome"] = none
+        diff["verdict_tries"] = {arm: verdict_tries[arm] for arm in arms}
+    diff["kinds"] = kinds
+    diff["signals"] = signals
     return diff, None if same else DIFFERENT_RULES
 
 
@@ -1025,6 +1031,31 @@ def _points_between(n_a: int, tries_a: int, n_b: int, tries_b: int) -> str:
     return _points(n_b / tries_b - n_a / tries_a, signed=True, places=1) + " points"
 
 
+def _no_outcome_line(c: Counted, diff: Mapping[str, Any]) -> str:
+    """The sentence under the tries line where a run has tries with no outcome (FD15): how many
+    each run has, that the counts above include them, and how many tries the verdict counts,
+    which only the inputs both runs carry with an outcome give it."""
+    assert c.arms is not None
+    a, b = c.arms
+    if c.kind == "fix-check":
+        name_a, name_b = "the old version", "the new version"
+    else:
+        name_a, name_b = c.labels
+    none, tries, used = diff["no_outcome"], diff["tries"], diff["verdict_tries"]
+    picked = " and --failing-from picked" if c.data.get("_failing_from") else ""
+    counted = (
+        f"{count(used[a])} tries of each"
+        if used[a] == used[b]
+        else f"{count(used[a])} tries of {name_a} and {count(used[b])} of {name_b}"
+    )
+    return (
+        f"Tries with no outcome: {count(none[a])} of {name_a}'s {count(tries[a])} and "
+        f"{count(none[b])} of {name_b}'s {count(tries[b])}; the counts above include them. "
+        f"The verdict counts only inputs both runs carry with an outcome{picked}, "
+        f"so it counts {counted}."
+    )
+
+
 def _breakdown_section(c: Counted) -> list[str]:
     """The report's ``Failures by kind`` section (DM1, DM2), the counts of the failure-type diff
     the saved verdict holds: one sentence on what is counted; a table of each kind either run
@@ -1082,6 +1113,8 @@ def _breakdown_section(c: Counted) -> list[str]:
         "",
         f"{of}; a try has one kind",
     ]
+    if "no_outcome" in diff:
+        lines += ["", _no_outcome_line(c, diff)]
     if diff["signals"]:
         signal_rows = [
             [s["signal"], count(s[a]), _share(s[a], tries_a), count(s[b]), _share(s[b], tries_b)]
@@ -1313,7 +1346,7 @@ class Counted:
         if self.signals is None:
             self.signals = _signals(self.ns, _arm_runs(self), frozenset(self.ns.event))
         manifests = {arm: manifest for arm, _run, manifest in self.runs}
-        self.diff = _taxonomy_diff(self.arms, self.signals[1], manifests)
+        self.diff = _taxonomy_diff(self.arms, self.signals[1], manifests, _verdict_tries(self))
 
     def two_run_parts(self) -> None:
         """The diff and the measures of a verb of two runs, read now if not yet."""
@@ -1360,6 +1393,19 @@ class Counted:
         if self.svg_refusal is not None:
             raise _Refusal(self.svg_refusal)
         return str(self.report.to_svg())
+
+
+def _verdict_tries(c: Counted) -> dict[str, int]:
+    """The tries each run gave the verdict: those with an outcome on the inputs both runs carry
+    with one (and, on ``fix-check``, that the inputs asked for picked), as the verb counted them."""
+    assert c.arms is not None
+    a, b = c.arms
+    if c.kind == "compare":
+        return {arm: int(c.data["_common"][arm]["tries"]) for arm in c.arms}
+    if c.kind == "fix-check":
+        rows = c.data["rows"]
+        return {a: int(rows["old"]["runs"]), b: int(rows["new"]["runs"])}
+    return {arm: int(c.data["_verdict_tries"][arm]) for arm in (a, b)}
 
 
 def _arm_runs(c: Counted) -> list[tuple[str, Any]]:
@@ -2885,6 +2931,10 @@ def changes(ns: argparse.Namespace) -> Counted:
         "_event_notes": notes,
         "_top": ns.top,
         "_gap_seconds": gap,
+        "_verdict_tries": {
+            "a": sum(arm_a[h].runs for h in compared),
+            "b": sum(arm_b[h].runs for h in compared),
+        },
         "_inputs": {
             "a": len(arm_a),
             "b": len(arm_b),

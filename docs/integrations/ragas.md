@@ -227,6 +227,8 @@ Each failed try's kind of failure, by the built-in rules; the same rules classif
 
 of 150 tries of the old version and 150 of the new; a try has one kind
 
+Tries with no outcome: 3 of the old version's 150 and 8 of the new version's 150; the counts above include them. The verdict counts only inputs both runs carry with an outcome, so it counts 141 tries of each.
+
 ## The comparison
 
 exact conditional Cochran-Mantel-Haenszel test, stratified by input over 137 inputs (68 informative), two-sided; α = 0.05.

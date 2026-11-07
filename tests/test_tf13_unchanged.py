@@ -59,6 +59,8 @@ def _cases() -> dict[str, tuple[str, list[list[str]]]]:
 CASES = _cases()
 SLOW = {f"import: {k}" for k in SLOW_IMPORTS} | {f"import json: {k}" for k in SLOW_IMPORTS}
 
+# FD15 (Taylor, 2026-11-06) moved two cases, 'verb: fix-check tables' and 'verb: changes config
+# name': they print the Ragas pair, whose section now says how many tries had no outcome.
 # Each case's steps on main 667e42c: (exit code, stdout's digest, stderr's digest), the
 # workspace's path as <WORK>.
 PINNED: dict[str, list[tuple[int, str, str]]] = {
@@ -135,9 +137,9 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'verb: fix-check tables': [
-        (0, 'a7849d7918b9cd8dc22621dab5e717b4e10db6c9646f3a50b9230a1fb63d3e2d',
+        (0, '81f22b27b7c3c11458849d8c6e7ca08097c43d8702a0e994c824570ab44ead00',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, 'e48608a9b5ef2f196475c771d92cf278b69b94c096c04a2220af39d51ae9fc64',
+        (0, 'c1ac108601dd48f25f06c99c8036d670defaccf8377ad2d49f6cb40cdcb6602c',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'verb: fix-check verdicts': [
@@ -225,9 +227,9 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'verb: changes config name': [
-        (0, '6f5d8c9163adc882fd72fbade0ae19eda41f47bb1b74a24a785b0bcb78e7859b',
+        (0, 'c324080800515decb2a2fd7a5560dfd0cd53104391df2ee8ba7662230f3827b3',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, '2415f6f78a03bae4ebc0f99d50440e3b7c30aaad1a84bbff3efe7ee03b81afe4',
+        (0, '1e908b50d91521e103c70c02e4a68303f913b256cf26b64403980fd77b9ecfc4',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'import: junit': [

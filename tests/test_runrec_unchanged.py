@@ -69,7 +69,8 @@ def outputs(tmp: Path, pairs: list[tuple[str, str]]) -> dict[str, str]:
     return got
 
 
-# as Trace main 667e42c printed them
+# as Trace main 667e42c printed them; FD15 (Taylor, 2026-11-06) moved the four fix-check and
+# changes readings of the Ragas pair, whose section now says how many tries had no outcome
 MAIN_FAST: dict[str, str] = {
     "import junit-a":
         "991d33a73c8bebd27ad0b9698d321b5318cb65f17362ef0385f6a3fcd438697e",
@@ -132,13 +133,13 @@ MAIN_FAST: dict[str, str] = {
     "changes junit-a junit-b --event missed --json":
         "aa1d3d19d222fe2f37ef0222dc2db2e706482fb30a1c572ed4f98e6fa7127f73",
     "fix-check ragas-base ragas-raft --event missed --inputs all --max-mde 0.5":
-        "90e7c6273f399e5ca5e6e3141352f3a83be960ba62fd60c562ca495f4fb7188c",
+        "b144013bf9f5dcb5abed72b5a986a23e0d1ce119324a7d32f1713190eb4a0aaf",
     "fix-check ragas-base ragas-raft --event missed --inputs all --max-mde 0.5 --json":
-        "336854945f098c3b76e3d8d652ddb68c8b2692524b633b9bceb7a98caac3c709",
+        "f5c2e1c8c210676fcc54b4d6606089682db736583b37fb832fb520873437cc56",
     "changes ragas-base ragas-raft --event missed":
-        "c5217b9ea3eb216ad274525b3f6a47774a83c9a04194bc6fa1ede202952db3ad",
+        "5b3486b74e33334687a60b14b3e45496c215fa0b59ee124dc9f6ca599ad2b55d",
     "changes ragas-base ragas-raft --event missed --json":
-        "92b6d543a998226d2e8a25b072a8cab608751a4dde391b243ac5e22019eef0e0",
+        "a3ccd76406e75bef811955f2f4274768e7df65ec2341a74168df34d8896bf06d",
     "fix-check promptfoo-old promptfoo-new --event missed --inputs all --max-mde 0.5":
         "948a5c702342e07a5ac24a0a4a17606b94ee27901a21591c1a6993bfc6bd8baa",
     "fix-check promptfoo-old promptfoo-new --event missed --inputs all --max-mde 0.5 --json":
