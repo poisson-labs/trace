@@ -2615,10 +2615,12 @@ def fix_check(ns: argparse.Namespace) -> Counted:
         direction, word = "no direction", ""
     p_is = _p_is(test.p)
     # every failure gone, and every run failing, as shifts in failure share: the largest a
-    # proportional change can be on these inputs
+    # proportional change can be on these inputs; math.fsum so that every Python adds the same bytes
     weights = [c.runs_old * c.runs_new / (c.runs_old + c.runs_new) for c in counts]
     rates = [(c.failed_old + c.failed_new) / (c.runs_old + c.runs_new) for c in counts]
-    largest_drop = sum(w * r for w, r in zip(weights, rates, strict=True)) / sum(weights)
+    largest_drop = math.fsum(w * r for w, r in zip(weights, rates, strict=True)) / math.fsum(
+        weights
+    )
     asked = f"{100.0 * ns.max_mde:g}"
     limit_text = None if drop is None else _points(drop)
     excludes_zero = lo is not None and hi is not None and (lo > 0.0 or hi < 0.0)

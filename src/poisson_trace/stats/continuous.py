@@ -849,7 +849,8 @@ def _speak(
         m.verdict = "too small to tell"
         m.changes = [(c, x) for c, x in zip(m.cases, m.d, strict=True) if x != 0.0]
         shown = ", ".join(f"{c} {_amount(measure, x, signed=True)}" for c, x in m.changes)
-        total = _amount(measure, sum(x for _, x in m.changes), signed=True)
+        # math.fsum, not sum(): the same bytes on every Python (3.12's sum() differs from 3.11's)
+        total = _amount(measure, math.fsum(x for _, x in m.changes), signed=True)
         lines.append(
             f"changed on {m.k_nonzero} of {m.k_paired} cases ({shown}; together {total}); "
             f"too small to tell."

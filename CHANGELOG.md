@@ -5,6 +5,12 @@
 A second private pre-release for design partners, rebuilt from the first partner's hands-on
 test. Not on PyPI and not yet released. Everything under 0.1.0rc1 is in it too.
 
+### The same digits on every Python
+
+- On Python 3.11, `fix-check --json` and the continuous verdict now add floats the way 3.12 does,
+  so their last digit can differ from earlier releases on 3.11; `poisson-trace import --help` is
+  laid out the same on every Python.
+
 ### Prove
 
 - Trace reads `poisson-prove` 0.1.3, in place of 0.1.2. A clean install brings it, and any other

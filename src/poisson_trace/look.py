@@ -889,6 +889,20 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
         kwargs.setdefault("width", _help_width())
         super().__init__(prog, **kwargs)
 
+    if sys.version_info < (3, 12, 7):
+
+        def add_argument(self, action: argparse.Action) -> None:
+            # Python 3.12.7 and later count a sub-command's own indent when they size the help
+            # column (cpython GH-87041); 3.11 and 3.12.0 to 3.12.6 do not, which lays
+            # `import --help` out differently. This is the newer rule.
+            if action.help is not argparse.SUPPRESS:
+                get_invocation = self._format_action_invocation
+                lengths = [len(get_invocation(action)) + self._current_indent]
+                for subaction in self._iter_indented_subactions(action):
+                    lengths.append(len(get_invocation(subaction)) + self._current_indent)
+                self._action_max_length = max(self._action_max_length, max(lengths))
+                self._add_item(self._format_action, [action])
+
     def _fill_text(self, text: str, width: int, indent: str) -> str:
         if _rendering is None:
             return str(super()._fill_text(text, width, indent))

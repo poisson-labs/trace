@@ -82,6 +82,10 @@ ignore_missing_imports = true
 # Lane J holds every test that reads PyPI: DeepEval and Ragas run themselves, and the Trace wheel
 # installed into a clean environment, which must bring the one Prove it declares. On every pull
 # request the code lane checks that declaration instead, against the Prove installed.
+# Each lane, `ruff check src tests` and `mypy --strict` run on two Pythons: 3.11, the oldest this
+# declares, and a current one (3.12.13 or later). Python 3.12 changed how builtin sum() adds
+# floats and 3.12.7 how argparse lays out a help page, so an output pinned on one is checked on
+# the other before a release and on a pull request that changes how a number or a help is made.
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-m", "not lane_j"]

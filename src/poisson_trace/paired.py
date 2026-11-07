@@ -161,13 +161,17 @@ def difference(
     fraction, with Sato's variance, and the stratified Miettinen-Nurminen score interval at
     level ``1 - alpha``. The last three are ``None`` where Sato's variance is not positive."""
     rows = [(c.failed_old, c.runs_old, c.failed_new, c.runs_new) for c in _checked(counts)]
-    w = sum(na * nb / (na + nb) for _, na, _, nb in rows)
-    d = sum((xb * na - xa * nb) / (na + nb) for xa, na, xb, nb in rows) / w
-    p_sum = sum(
+    # math.fsum, not sum(): Python 3.12 added floats with compensated summation and 3.11 does not,
+    # which moved the last digit of the result; fsum gives the same bytes on every Python
+    w = math.fsum(na * nb / (na + nb) for _, na, _, nb in rows)
+    d = math.fsum((xb * na - xa * nb) / (na + nb) for xa, na, xb, nb in rows) / w
+    p_sum = math.fsum(
         (nb * nb * xa - na * na * xb + na * nb * (na - nb) / 2) / (na + nb) ** 2
         for xa, na, xb, nb in rows
     )
-    q_sum = sum((xb * (na - xa) + xa * (nb - xb)) / (2 * (na + nb)) for xa, na, xb, nb in rows)
+    q_sum = math.fsum(
+        (xb * (na - xa) + xa * (nb - xb)) / (2 * (na + nb)) for xa, na, xb, nb in rows
+    )
     variance = (d * p_sum + q_sum) / w**2
     if not variance > 0.0:
         return d, None, None, None
