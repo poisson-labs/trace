@@ -1,6 +1,7 @@
-"""The two verbs that touch the environment rather than a store: ``init`` and ``doctor``
-(spec section 11.8). Not public: ``poisson_trace.api`` is the surface; these are what the
-command line calls for the two verbs, each taking every option of its parser as a keyword.
+"""The verbs that touch the environment rather than a store: ``init``, ``doctor`` and
+``report`` (spec section 11.8), and the browser the command line opens a page in. Not public:
+``poisson_trace.api`` is the surface; these are what the command line calls for the three
+verbs, each taking every option of its parser as a keyword.
 
 ``init`` asks its questions on the terminal (stderr) when ``yes`` is False, as the command
 does, and ``doctor`` reads the current folder's ``trace.toml`` when no config is named: the
@@ -14,6 +15,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from poisson_trace import api, look
@@ -219,3 +221,83 @@ def doctor(*, config: str | None = None, setup: bool = False) -> DoctorResult:
         refusal=refusal,
         _text=checks.text(report),
     )
+
+
+# ---------- report DIR: the HTML report (section 17.3 item 8; section 11.7) ----------
+
+
+@dataclass(frozen=True)
+class ReportResult:
+    """What ``report`` wrote: the bundle's verb, the folder as it was given, and the page."""
+
+    verb: str
+    folder: str
+    wrote: str
+    next: str
+    exit_code: int
+
+    @property
+    def sentence(self) -> str:
+        return (
+            f"the {self.verb} verdict in {self.folder} as one page that opens from disk with "
+            "nothing else present"
+        )
+
+    def to_markdown(self) -> str:
+        return f"ok  {self.sentence}\n  wrote  {self.wrote}\nnext: {self.next}\n"
+
+
+def report(folder: str, *, open: bool = False, force: bool = False) -> ReportResult:  # noqa: A002
+    """``poisson-trace report DIR``: the bundle's verdict rendered as the static UI shows it,
+    self-contained, written into the bundle as ``report.html`` and listed in ``handover.json``;
+    a page that is there is refused without ``force``; a bundle that fails the validator is
+    refused before anything is written, with the validator's words; ``open`` opens the page in
+    the default browser."""
+    from poisson_trace import core
+
+    checked = api.validate_bundle(folder)
+    if checked.exit_code != look.DONE:
+        raise api.Refusal(checked.sentence)
+    target = Path(folder)
+    page = target / core.REPORT_PAGE
+    if page.exists() and not force:
+        raise api.Refusal(f"{folder}/{core.REPORT_PAGE} exists; add --force to replace it")
+    try:
+        bundle = api.load_bundle(folder)
+        store = next(
+            (r.get("store") for r in bundle.handover.get("runs", ()) if r.get("store")), None
+        )
+        text = core.report_page(target, Path(str(store)).name if store else "")
+        _write_report_page(target, bundle.handover, text)
+    except OSError as e:
+        raise api.Refusal(f"cannot write {folder}/{core.REPORT_PAGE}: {look.why(e)}") from None
+    if open:
+        show_page(page.resolve().as_uri())
+    return ReportResult(
+        verb=bundle.verb,
+        folder=folder,
+        wrote=f"{folder}/{core.REPORT_PAGE}",
+        next=look.command("poisson-trace", "handover", "--check", folder),
+        exit_code=look.DONE,
+    )
+
+
+def _write_report_page(target: Path, handover: dict[str, Any], text: str) -> None:
+    """``report.html`` written into the bundle, then ``handover.json`` rewritten with the page's
+    name, digest and size added to ``files`` and every other entry as it was (section 11.7)."""
+    from poisson_trace import saved
+
+    page = target / "report.html"
+    page.write_text(text, encoding="utf-8")
+    entry = {"name": page.name, "sha256": saved.sha256_of(page), "bytes": page.stat().st_size}
+    files = [e for e in handover["files"] if e.get("name") != page.name] + [entry]
+    handover["files"] = sorted(files, key=lambda e: str(e["name"]))
+    (target / "handover.json").write_text(saved.document(handover), encoding="utf-8")
+
+
+def show_page(address: str) -> None:
+    """A page opened in the default browser (``webbrowser``, the standard library), for
+    ``ui --open`` and ``report --open``."""
+    import webbrowser
+
+    webbrowser.open(address)

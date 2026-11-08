@@ -54,7 +54,9 @@ def _example(name: str) -> tuple[str, str]:
 
 def test_tf13_34_a_section_for_every_function_and_nothing_else() -> None:
     sections = doc_sections(_text())
-    assert set(sections) == {f"api.{name}" for name in FUNCTIONS}, sorted(set(sections) ^ {f"api.{n}" for n in FUNCTIONS})
+    # PA5: build_pages came with the pages (TF18), whose own tests hold its section (TF18-22)
+    names = {f"api.{name}" for name in (*FUNCTIONS, "build_pages")}
+    assert set(sections) == names, sorted(set(sections) ^ names)
 
 
 @pytest.mark.parametrize("name", FUNCTIONS)

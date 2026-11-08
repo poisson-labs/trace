@@ -103,6 +103,9 @@ def test_tr9_src_writes_nothing_but_the_svg_and_the_json(synth) -> None:  # type
             # TF6 (P-3, R18, AD8, AD11): --save and --out write the saved verdict, in functions
             # named for the artifact, the bundle or the store descriptor they write
             in_saved = any(w in f for f in fns for w in ("artifact", "bundle", "descriptor"))
+            # TF18 (section 17.3 items 7 and 8): the static pages and the HTML report, written in
+            # functions named for the page or pages they write
+            in_saved = in_saved or any("page" in f for f in fns)
             if name.endswith("to_parquet"):
                 raise AssertionError(f"{path.name}:{call.lineno}: to_parquet")
             if name == "open" or name.endswith(".open"):

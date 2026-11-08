@@ -63,6 +63,8 @@ SLOW = {f"import: {k}" for k in SLOW_IMPORTS} | {f"import json: {k}" for k in SL
 # name': they print the Ragas pair, whose section now says how many tries had no outcome.
 # Each case's steps on main 667e42c: (exit code, stdout's digest, stderr's digest), the
 # workspace's path as <WORK>.
+# TF18 (SB5, SV15): the four out cases' handover --check step prints main's line, a blank line
+# and next: poisson-trace report bundle; compare's bundle lists its four chart files besides
 PINNED: dict[str, list[tuple[int, str, str]]] = {
     'verb: where': [
         (0, 'cd551e7b7f74494e77961c3fb675f69137821724139ac98058c159397fc47c9f',
@@ -549,7 +551,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
     'out: where': [
         (0, '471de063e86507b69d589ed54f039e084cbc45403cb5f6dd3bdff94e8a6d498a',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, '581a94ae11c70fa6fe8fc12b8c4529ee97b142aa1b3d027762bbc5af5a5fc3c8',
+        (0, 'fdbb2935b0e68759220830a00f06379151991d471ebe2195c8955abdf926459e',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),
@@ -565,7 +567,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
     'out: compare': [
         (0, '17268fbd6488935f0a407bff51e95f9b55877925d0a2cc8f1149e5295afc5729',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, 'bc5307878e7a0246b9ae68cd3e728041e7343869c325573efbecf83db1b8bb95',
+        (0, 'b3042f352b42d4c4635a8fccb3d8c78d4217df20740c4b8c436ca3ebd9fb6265',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),
@@ -581,7 +583,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
     'out: fix-check': [
         (0, '0c43a31b4a028f46c9627ccc59d3137f06c46dd1e6f5c1b21263d139ba9fee73',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, '302172031abae4cf4c5d2ade9e8711c9867f6b1ea4843b854298dd6aa740c92b',
+        (0, '87336e7c6f350893ac6c50cfce2965122e61e2136328566ceeeedbbb587cb2e6',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),
@@ -597,7 +599,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
     'out: changes': [
         (0, 'c4760614752471bb4f208f7b540b59545aa47f3a7e1d3bf9ee9e27e5e2b4a395',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, 'e5e425507cdf9059d47c3f96845a74d2b5b9dd261e99cac15957f0a37933ca4d',
+        (0, 'a96548afc02b0ad8fc654666f05613057265933a5b4a335d0d472f26a7ad6efd',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),

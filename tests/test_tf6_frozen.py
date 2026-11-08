@@ -14,7 +14,7 @@ TESTS = Path(__file__).resolve().parent
 FROZEN = {
     "tf6_support.py": "10f511456dfdea1d9484ce9a9a6a32027141356af1c886997acec2be3bffa28d",
     "test_tf6_unchanged.py": "07b23fdacc78766dd3cd5187e693e9ef03ca8db22e93b025be5ef93bc280006e",
-    "test_tf6_save.py": "b16e99b4f3858d6a477252626310ec256b6cba73fcbffb57505cc0b458d19977",
+    "test_tf6_save.py": "428dde054240f3f6b89fc9c8a6a66800fb88a279af1c2b8936de80e258221edf",
     "test_tf6_out.py": "cb14cc69b2ca8b65341429908bd856e682bcf2d8dd54f4c69aa5f27c7b6353a8",
     "test_tf6_handover_check.py": "858a5a26cd11a92bcadea5f9a35abbfcb603db17995e8e15c33b35a2c637b99a",
     "test_tf6_measures.py": "94668809c591570c80a4d88fb65875c95eb32bda71b823fed357ea16b3b7b841",

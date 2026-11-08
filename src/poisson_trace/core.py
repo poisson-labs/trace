@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import math
 import os
+import re
 from collections import Counter
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -1383,6 +1384,11 @@ class Counted:
         return str(self.report.to_markdown())
 
     def charts(self) -> list[tuple[str, str, dict[str, Any]]]:
+        """The charts a saved verdict carries beside its table, each ``(name, svg, data)``:
+        ``where``'s curve as ``--svg`` writes it (TF6); ``compare``'s two charts (SV15, A9), the
+        two runs' where curves under compare's failures and the hazard ratio with its range."""
+        if self.kind == "compare":
+            return _compare_charts(self)
         if self.kind != "where" or self.svg_refusal is not None:
             return []
         chart = {"curve": self.data["curve"], "at": self.data["at"], "causes": self.data["causes"]}
@@ -1495,28 +1501,8 @@ def save(c: Counted, d: Delivered, out: str | None, force: bool) -> Delivered:
         if out == "":
             raise _Refusal("--out takes the name of the folder to write")
         _check_out(out, force)
-    c.two_run_parts()
-    absolute = _absolute(ns)
-    added, notes = _added(c)
-    ids = [run.run_id for _, run, _ in c.runs]
-    identity = saved.artifact_id(c.kind, {"runs": ids}, c.settings)
-    place = None if ns.temp_store else saved.saved_path(c.kind, identity)
-    result = saved.shortened(_result_document(c.printed(), c.data, added, notes, place), absolute)
-    joined_line = details(c, Delivered())[:1] if ns.joined is not None else []
-    report = saved.short(
-        _said(c.verdict, c.sentence, c.markdown(), c.following, *joined_line), absolute
-    )
-    artifact = saved.Artifact(
-        kind=c.kind,
-        runs=ids,
-        settings=c.settings,
-        result=result,
-        report=report,
-        events=sorted(ns.event),
-        rows=_TABLE_ROWS[c.kind](result),
-        detail=[(label, line) for label, line in result["summary"]],
-        charts=c.charts(),
-    )
+    artifact, absolute = _artifact_of(c)
+    identity = artifact.id
     saved_at, held_notes = d.saved_at, list(d.notes)
     staging = Path(tempfile.mkdtemp(prefix="poisson-trace-"))
     try:
@@ -1533,6 +1519,14 @@ def save(c: Counted, d: Delivered, out: str | None, force: bool) -> Delivered:
                     held_notes.append(f"the verdict was not saved: {look.why(e)}")
                 else:
                     saved_at = saved.saved_path(c.kind, identity)
+                    # every command that saves rebuilds the store's pages (section 17.3 item
+                    # 7, A7); pages that cannot be written are one note, and the save stands
+                    try:
+                        rebuild_pages(ns)
+                    except OSError as e:
+                        held_notes.append(f"the pages were not rebuilt: {look.why(e)}")
+                    except _Refusal as e:
+                        held_notes.append(f"the pages were not rebuilt: {e}")
         if out is not None:
             held = None if ns.from_folders else saved.short(ns.store, absolute)
             refs = [saved.RunRef(run.run_id, run.name, held) for _, run, _ in c.runs]
@@ -1561,12 +1555,14 @@ class BundleChecked:
     verdict: str
     sentence: str
     exit_code: int
+    following: str | None = None
 
 
 def validate_bundle(folder: str) -> BundleChecked:
     """``poisson-trace handover --check DIR``: ok and exit 0 on a bundle that holds what it
     promises, ``not valid`` with the first failing line and exit 4 otherwise, a refusal when
-    DIR is not a bundle (section 11.2's validator, SV8)."""
+    DIR is not a bundle (section 11.2's validator, SV8). A bundle that holds what it promises
+    gets its next command: the HTML report, written, or opened once it is there (SB5, A12)."""
     from poisson_trace import saved
 
     prove_present()
@@ -1576,7 +1572,9 @@ def validate_bundle(folder: str) -> BundleChecked:
         raise _Refusal(str(e)) from None
     except saved.Invalid as e:
         return BundleChecked("not valid", str(e), look.CHECK_FAILED)
-    return BundleChecked("ok", checked.sentence, look.DONE)
+    opened = ["--open"] if (Path(folder) / REPORT_PAGE).is_file() else []
+    following = look.command("poisson-trace", "report", folder, *opened)
+    return BundleChecked("ok", checked.sentence, look.DONE, following)
 
 
 @dataclass(frozen=True)
@@ -2980,3 +2978,518 @@ VERBS: dict[str, Callable[[argparse.Namespace], Counted]] = {
     "fix-check": fix_check,
     "changes": changes,
 }
+
+
+# ---------- the static pages and the HTML report (TF18) ----------
+
+#: Where a store's pages are, under its ``.poisson/ui/`` (section 17.3 item 7): Trace's own
+#: folder beside Prove's dashboard, which Trace never writes, rebuilds or deletes.
+PAGES = "trace"
+REPORT_PAGE = "report.html"
+#: The kinds Trace saves, each with a page; Prove's own saved comparisons get none.
+_KINDS = ("where", "compare", "fix-check", "changes")
+
+
+@dataclass(frozen=True)
+class View:
+    """The object behind one page: its kind (``runs``, a verdict's kind, or ``could not
+    say``), its address inside the UI (``trace/fix-check/<id>.html``) and every fact the page
+    shows, as data. ``pages.render`` formats a view and computes nothing in it."""
+
+    kind: str
+    address: str
+    document: dict[str, Any]
+
+
+def _artifact_of(c: Counted) -> tuple[Any, dict[str, str]]:
+    """The artifact a verdict saves (section 17.3 items 1 and 2), as ``--save`` builds it and
+    ``to_html`` renders it: every path the call carried written short, the charts drawn."""
+    from poisson_trace import saved
+
+    ns = c.ns
+    c.two_run_parts()
+    absolute = _absolute(ns)
+    added, notes = _added(c)
+    ids = [run.run_id for _, run, _ in c.runs]
+    identity = saved.artifact_id(c.kind, {"runs": ids}, c.settings)
+    place = None if ns.temp_store else saved.saved_path(c.kind, identity)
+    result = saved.shortened(_result_document(c.printed(), c.data, added, notes, place), absolute)
+    joined_line = details(c, Delivered())[:1] if ns.joined is not None else []
+    report = saved.short(
+        _said(c.verdict, c.sentence, c.markdown(), c.following, *joined_line), absolute
+    )
+    artifact = saved.Artifact(
+        kind=c.kind,
+        runs=ids,
+        settings=c.settings,
+        result=result,
+        report=report,
+        events=sorted(ns.event),
+        rows=_TABLE_ROWS[c.kind](result),
+        detail=[(label, line) for label, line in result["summary"]],
+        charts=c.charts(),
+    )
+    return artifact, absolute
+
+
+def _compare_charts(c: Counted) -> list[tuple[str, str, dict[str, Any]]]:
+    """``compare``'s two charts (SV15, A9): ``curves``, each run's ``where`` curve under
+    compare's failures with where's own defaults, in compare's order; ``hazard-ratio``, the
+    verdict's hazard ratio with its range, the limit and the ratio asked for. Each is saved as
+    a file of its own, with its data beside it."""
+    from poisson_trace import api, pages
+
+    runs = []
+    bootstrap: dict[str, Any] = {}
+    units: set[str] = set()
+    for arm, run, _manifest in c.runs:
+        found = api.where(c.ns.store_root, run.run_id, event=sorted(c.ns.event))
+        bootstrap = dict(found.bootstrap)
+        units.add(_unit_of(found.run))
+        runs.append(
+            {"arm": arm, "run_id": run.run_id, "name": found.run["run_name"], "curve": found.curve}
+        )
+    unit = units.pop() if len(units) == 1 else "step"
+    events = sorted(c.ns.event)
+    curves = {"runs": runs, "events": events, "bootstrap": bootstrap, "unit": unit}
+    series = [
+        {"cls": "before" if r["arm"] == "a" else "after", "name": r["name"], "curve": r["curve"]}
+        for r in runs
+    ]
+    title = pages.curve_words(events, bootstrap, unit)
+    curves_svg = pages.curves_svg("curves", series, unit=unit, title=title, standalone=True)
+    comparison = c.data["comparison"]
+    hazard = {
+        key: comparison.get(key)
+        for key in (
+            "hazard_ratio",
+            "hazard_ratio_lo",
+            "hazard_ratio_hi",
+            "mde_hazard_ratio",
+            "max_mde_hr",
+        )
+    }
+    hazard["alpha"] = comparison.get("alpha")
+    hazard["cells"] = comparison.get("cells")
+    words = pages.hazard_words(hazard)
+    hazard_svg = pages.hazard_svg("hazard-ratio", hazard, title=words, standalone=True)
+    return [("curves", curves_svg, curves), ("hazard-ratio", hazard_svg, hazard)]
+
+
+def _read_json(path: Path) -> Any:
+    import json
+
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def artifact_folders(root: Path) -> list[Path]:
+    """Every saved verdict of Trace's in a store, by kind then id."""
+    base = root / ".poisson" / "artifacts"
+    out: list[Path] = []
+    for kind in _KINDS:
+        if (base / kind).is_dir():
+            out += sorted(d for d in (base / kind).iterdir() if (d / "artifact.json").is_file())
+    return out
+
+
+def _saved_verdict(folder: Path) -> tuple[dict[str, Any], dict[str, Any], str]:
+    """A saved verdict's descriptor, result and report, read; one that cannot be read is
+    refused with its place and the system's words, never its content."""
+    try:
+        art = _read_json(folder / "artifact.json")
+        result = _read_json(folder / "result.json")
+        report = (folder / "report.md").read_text(encoding="utf-8")
+    except (OSError, ValueError) as e:
+        place = f".poisson/artifacts/{folder.parent.name}/{folder.name}"
+        raise _Refusal(f"the saved verdict at {place} cannot be read ({look.why(e)})") from e
+    if not isinstance(art, Mapping) or not isinstance(result, Mapping):
+        place = f".poisson/artifacts/{folder.parent.name}/{folder.name}"
+        raise _Refusal(f"the saved verdict at {place} cannot be read (not a saved verdict)")
+    return dict(art), dict(result), report
+
+
+def _report_sections(report: str) -> tuple[str, list[dict[str, Any]]]:
+    """The report's title line and its body split at its ``##`` headings: the lines before the
+    first heading under None, the ``next:`` line left out."""
+    lines = report.split("\n")
+    start = next(i for i, line in enumerate(lines) if line.startswith("# "))
+    sections: list[dict[str, Any]] = [{"heading": None, "lines": []}]
+    for line in lines[start + 1 :]:
+        if line.startswith("next: "):
+            continue
+        if line.startswith("## "):
+            sections.append({"heading": line[3:].strip(), "lines": []})
+        else:
+            sections[-1]["lines"].append(line)
+    return lines[start][2:], [
+        s for s in sections if s["heading"] is not None or any(x.strip() for x in s["lines"])
+    ]
+
+
+def _measures_from(doc: Mapping[str, Any]) -> list[str]:
+    """The continuous-measures section as ``fix-check --measures`` prints it, rebuilt from the
+    measures ``result.json`` saved (A4): the saved ``report.md`` has the section only when the
+    verdict was saved with ``--measures``."""
+    from poisson_trace.stats.continuous import Measure
+
+    fields = set(Measure.__dataclass_fields__)
+    measures: dict[str, Measure] = {}
+    for m in doc.get("measures", ()):
+        kw: dict[str, Any] = {}
+        for key, value in m.items():
+            if key not in fields:
+                continue
+            if key == "unfinished":
+                kw[key] = {
+                    label: tuple((kind, int(n)) for kind, n in kinds.items())
+                    for label, kinds in value.items()
+                }
+            elif key == "changes":
+                kw[key] = [(case, v) for case, v in value]
+            else:
+                kw[key] = value
+        measures[str(m["measure"])] = Measure(**kw)
+    held = argparse.Namespace(measures=measures)
+    return _measures_section(held)
+
+
+def _run_names(kind: str, result: Mapping[str, Any]) -> list[str]:
+    if kind == "where":
+        return [str(result["run"]["run_name"])]
+    return [str(r["run_name"]) for r in result["runs"].values()]
+
+
+def _unit_of(run: Mapping[str, Any]) -> str:
+    return "turn" if run.get("t_unit") == "turns" else "step"
+
+
+def verdict_view(folder: Path, store: str) -> View:
+    """The view behind a saved verdict's page (and the HTML report of its bundle): the verdict
+    line, the report's title, every section of the report as the plain command prints it, the
+    continuous measures where ``fix-check --measures`` prints them, what was saved, and the
+    charts' data. Nothing a save alone decides is in it (A15)."""
+    art, result, report = _saved_verdict(folder)
+    kind, ident = str(art["kind"]), str(art["id"])
+    title, sections = _report_sections(report)
+    if (
+        kind == "fix-check"
+        and result.get("continuous_measures")
+        and not any(s["heading"] == MEASURES_HEADING[3:] for s in sections)
+    ):
+        extra = _measures_from(result["continuous_measures"])
+        at = next(
+            (i for i, s in enumerate(sections) if s["heading"] == "What this cannot say"),
+            len(sections),
+        )
+        sections.insert(at, {"heading": extra[0][3:], "lines": extra[1:]})
+    names = _run_names(kind, result)
+    doc: dict[str, Any] = {
+        "view": kind,
+        "address": f"{PAGES}/{kind}/{ident}.html",
+        "kind": kind,
+        "id": ident,
+        "verdict": result["verdict"],
+        "sentence": result["sentence"],
+        "title": title,
+        "name": " → ".join(names),
+        "saved": f".poisson/artifacts/{kind}/{ident}",
+        "files": [str(f["path"]) for f in art.get("files", ())],
+        "versions": dict(result.get("versions") or {}),
+        "sections": sections,
+        "cannot_say": list(result.get("cannot_say") or ()),
+        "store": store,
+    }
+    detected = next(
+        (s["lines"] for s in sections if s["heading"] == "What it could not have detected"), None
+    )
+    if detected is not None:
+        doc["detected"] = [line for line in detected if line.strip()]
+    if kind == "where" and result.get("curve"):
+        doc["curve"] = {
+            "name": names[0],
+            "curve": result["curve"],
+            "events": list(result.get("events") or ()),
+            "bootstrap": dict(result.get("bootstrap") or {}),
+            "unit": _unit_of(result["run"]),
+        }
+    if kind == "compare":
+        charts = folder / "charts"
+        if (charts / "curves.json").is_file():
+            curves = _read_json(charts / "curves.json")
+            doc["curves"] = {
+                "runs": curves["runs"],
+                "events": list(curves.get("events") or result.get("events") or ()),
+                "bootstrap": dict(curves.get("bootstrap") or {}),
+                "unit": curves.get("unit") or "step",
+            }
+        if (charts / "hazard-ratio.json").is_file():
+            hazard = _read_json(charts / "hazard-ratio.json")
+            doc["hazard"] = {k: v for k, v in hazard.items() if k != "schema"}
+    return View(kind, doc["address"], doc)
+
+
+def could_not_say_view(folder: Path, store: str) -> View:
+    """The view behind a verdict's could-not-say page: the verdict line, everything the verdict
+    cannot say, what it could not have detected, and the way back."""
+    full = verdict_view(folder, store)
+    doc = {
+        **{
+            k: full.document[k]
+            for k in ("kind", "id", "verdict", "sentence", "title", "name", "cannot_say", "store")
+        },
+        "view": "could not say",
+        "address": f"{PAGES}/{full.kind}/{full.document['id']}/could-not-say.html",
+    }
+    if "detected" in full.document:
+        doc["detected"] = full.document["detected"]
+    return View("could not say", doc["address"], doc)
+
+
+def _tool_of(run: Mapping[str, Any]) -> str:
+    """The target of a Prove run, or the tool an import came from (section 5.3)."""
+    backend = str(run.get("backend") or "")
+    if backend.startswith("import:"):
+        return backend[len("import:") :]
+    return str(run.get("target_id"))
+
+
+def runs_view(
+    root: Path,
+    listing: Mapping[str, Any],
+    events: Sequence[str] | None,
+    others: Sequence[tuple[str, str]],
+) -> View:
+    """The view behind a store's runs page (A8, DM10, DM11): the line ``runs`` prints, the
+    store written as its folder's name (A17); a row a run; a row a saved verdict, newest
+    first, linking its page; a run's name linking its newest saved where page; the config's
+    other stores' pages; Prove's dashboard when it is beside these pages."""
+    name = root.name or Path(os.path.abspath(root)).name
+    saved: list[dict[str, Any]] = []
+    newest_where: dict[str, tuple[str, str]] = {}
+    for folder in artifact_folders(root):
+        art, result, _report = _saved_verdict(folder)
+        kind, ident, at = str(art["kind"]), str(art["id"]), str(art.get("created_at", ""))
+        saved.append(
+            {
+                "kind": kind,
+                "runs": " → ".join(_run_names(kind, result)),
+                "verdict": result["verdict"],
+                "sentence": result["sentence"],
+                "id": ident,
+                "saved_at": at,
+                "address": f"{kind}/{ident}.html",
+            }
+        )
+        if kind == "where":
+            run_id = str(result["run"]["run_id"])
+            if run_id not in newest_where or newest_where[run_id][0] < at:
+                newest_where[run_id] = (at, ident)
+    saved.sort(key=lambda s: (s["saved_at"], s["kind"], s["id"]), reverse=True)
+    rows = []
+    for run in listing["runs"]:
+        where = newest_where.get(str(run["run_id"]))
+        rows.append(
+            {
+                "number": run["number"],
+                "name": run["name"],
+                "run_id": run["run_id"],
+                "tool": _tool_of(run),
+                "rows": run["rows"],
+                "failed": run["failed"],
+                "traced": run["traced"],
+                "created_at": run["created_at"],
+                "status": run["status"],
+                "where": None if where is None else f"where/{where[1]}.html",
+            }
+        )
+    sentence = str(listing["sentence"]).replace(f" in {listing['store']} ", f" in {name} ", 1)
+    prove = root / ".poisson" / "ui" / "index.html"
+    doc: dict[str, Any] = {
+        "view": "runs",
+        "address": f"{PAGES}/index.html",
+        "verdict": listing["verdict"],
+        "sentence": sentence,
+        "store": name,
+        "events": list(events) if events else None,
+        "runs": rows,
+        "saved": saved,
+        "others": [{"name": n, "href": h} for n, h in others],
+        "prove": "../index.html" if prove.is_file() else None,
+    }
+    return View("runs", doc["address"], doc)
+
+
+def store_views(
+    root: Path,
+    listing: Mapping[str, Any],
+    events: Sequence[str] | None,
+    others: Sequence[tuple[str, str]],
+) -> dict[str, View]:
+    """Every view of a store's pages, by address under ``ui/``: the runs page, a page and a
+    could-not-say page per saved verdict of Trace's (A1)."""
+    name = root.name or Path(os.path.abspath(root)).name
+    views = {f"{PAGES}/index.html": runs_view(root, listing, events, others)}
+    for folder in artifact_folders(root):
+        v = verdict_view(folder, name)
+        views[v.address] = v
+        w = could_not_say_view(folder, name)
+        views[w.address] = w
+    return views
+
+
+def _dead(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return True
+    except PermissionError:
+        return False
+    return False
+
+
+_STAGING_PAGES = re.compile(r"^\.trace-(?:new|old)-(\d+)")
+
+
+def _clean_dead_page_builds(ui: Path) -> None:
+    """Staging and set-aside trees a build that died left behind under ``ui/``; a live build's
+    are its own (Prove sweeps its own, ``.ui-*``, the same way)."""
+    for stale in ui.glob(".trace-*"):
+        found = _STAGING_PAGES.match(stale.name)
+        if stale.is_dir() and found and _dead(int(found.group(1))):
+            import shutil
+
+            shutil.rmtree(stale, ignore_errors=True)
+
+
+def build_store_pages(
+    root: Path,
+    listing: Mapping[str, Any],
+    events: Sequence[str] | None,
+    others: Sequence[tuple[str, str]] = (),
+) -> Path:
+    """Write a store's pages: every view rendered into a staging folder under the store's
+    ``ui/`` with Prove's bundle beside them, then renamed into ``ui/trace/`` last, so an
+    interrupted build leaves the previous pages and nothing of Prove's is touched (section 17.3
+    item 7, A18). Raises ``OSError`` where the pages cannot be written. Returns the index."""
+    import shutil
+    import tempfile
+
+    from poisson_trace import pages
+
+    views = store_views(root, listing, events, others)
+    name = root.name or Path(os.path.abspath(root)).name
+    ui = root / ".poisson" / "ui"
+    ui.mkdir(parents=True, exist_ok=True)
+    _clean_dead_page_builds(ui)
+    target = ui / PAGES
+    staging = Path(tempfile.mkdtemp(prefix=f".trace-new-{os.getpid()}-", dir=ui))
+    aside: Path | None = None
+    try:
+        mask = os.umask(0)
+        os.umask(mask)
+        os.chmod(staging, 0o777 & ~mask)
+        for address, view in views.items():
+            page = staging / address.removeprefix(f"{PAGES}/")
+            page.parent.mkdir(parents=True, exist_ok=True)
+            page.write_text(pages.render(view.document, name), encoding="utf-8")
+        for file_name, data in pages.bundle_files().items():
+            (staging / file_name).write_bytes(data)
+        if target.exists():
+            aside = ui / f".trace-old-{os.getpid()}"
+            os.replace(target, aside)
+        try:
+            os.replace(staging, target)
+        except BaseException:
+            if aside is not None and not target.exists():
+                os.replace(aside, target)
+                aside = None
+            raise
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+        if aside is not None and aside.exists() and target.exists():
+            shutil.rmtree(aside, ignore_errors=True)
+    return target / "index.html"
+
+
+def rebuild_pages(ns: argparse.Namespace) -> None:
+    """The pages of the store a verdict was just saved into, rebuilt (A7): its runs listed
+    under the call's own failures, or uncounted where the store does not carry them (DM9); a
+    link to each other store the call's config names whose pages are there (DM10). Raises
+    ``OSError`` where the pages cannot be written, a refusal where a saved verdict cannot be
+    read."""
+    root = Path(ns.store_root)
+    events = sorted(ns.event)
+    try:
+        listed = store_listing(ns.store, events)
+    except _Refusal:
+        listed, events = store_listing(ns.store, None), []
+    build_store_pages(root, listed, events, other_pages(root, ns.settings))
+
+
+def other_pages(root: Path, held: Any) -> list[tuple[str, str]]:
+    """The config's other stores whose pages are there, each as its folder's name and the
+    relative address of its index from this store's (section 17.3 item 9: never absolute)."""
+    if held is None:
+        return []
+    index = root / ".poisson" / "ui" / PAGES / "index.html"
+    out: list[tuple[str, str]] = []
+    paths = [str(held.store)] if held.store is not None else []
+    paths += [str(p) for p in held.named.values()]
+    for path in paths:
+        other = Path(path)
+        there = other / ".poisson" / "ui" / PAGES / "index.html"
+        if os.path.realpath(other) == os.path.realpath(root) or not there.is_file():
+            continue
+        start = os.path.dirname(os.path.abspath(index))
+        href = os.path.relpath(os.path.abspath(there), start=start).replace(os.sep, "/")
+        out.append((other.name or Path(os.path.abspath(other)).name, href))
+    return out
+
+
+def store_listing(store: str, events: Sequence[str] | None) -> dict[str, Any]:
+    """``runs`` on a store, as its JSON gives it, with the failures given counted, for a page
+    built from inside the core."""
+    ns = argparse.Namespace(
+        verb="runs",
+        store=store,
+        config=None,
+        event=list(events) if events else None,
+        all=False,
+        json=False,
+        debug=False,
+    )
+    ns.typed_flags = set()
+    ns.notes = []
+    prepare(ns)
+    listed = runs(ns)
+    assert listed.data is not None
+    return listed.data
+
+
+def report_page(bundle: Path, store: str) -> str:
+    """The HTML report of a bundle (section 17.3 item 8; 11.7): the static UI's page for its
+    artifact, rendered self-contained."""
+    from poisson_trace import pages
+
+    return pages.render(verdict_view(bundle, store).document, store, standalone=True)
+
+
+def to_html(c: Counted) -> str:
+    """``to_html()``: the HTML report of a verdict, saved or not, the text ``report DIR`` writes
+    for the bundle its ``to_bundle`` wrote (section 11.7, A15): the artifact built in a folder
+    of its own and rendered as the bundle is."""
+    import shutil
+    import tempfile
+
+    from poisson_trace import saved
+
+    ns = c.ns
+    artifact, absolute = _artifact_of(c)
+    store = "" if ns.from_folders else Path(saved.short(str(ns.store), absolute)).name
+    staging = Path(tempfile.mkdtemp(prefix="poisson-trace-"))
+    try:
+        saved.build_artifact(staging, artifact)
+        return report_page(staging, store)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)

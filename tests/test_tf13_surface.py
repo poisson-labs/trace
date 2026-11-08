@@ -58,12 +58,13 @@ def test_tf13_1_the_public_surface_is_all() -> None:
         assert hasattr(a, name), name
     functions = {n for n in names if inspect.isfunction(getattr(a, n))}
     classes = {n for n in names if inspect.isclass(getattr(a, n))}
-    assert functions == set(FUNCTIONS), sorted(functions ^ set(FUNCTIONS))
+    # PA5: build_pages came with the pages (TF18), beside the functions TF13 froze
+    assert functions == set(FUNCTIONS) | {"build_pages"}, sorted(functions ^ (set(FUNCTIONS) | {"build_pages"}))
     assert set(names) == functions | classes, sorted(set(names) - functions - classes)
     assert set(TYPES) <= classes
     assert set(RESULT_TYPES.values()) <= classes, sorted(set(RESULT_TYPES.values()) - classes)
-    # RF2: the check's function comes with the check (TF7); the pages' with the pages (TF18)
-    assert "check" not in names and "build_pages" not in names
+    # RF2: the check's function comes with the check (TF7)
+    assert "check" not in names
 
 
 def test_tf13_1_a_commands_holds_init_and_doctor_and_is_not_public() -> None:

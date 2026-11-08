@@ -18,7 +18,9 @@ runs `failure_taxonomy_diff` and `continuous_measures`. On every result:
 - on `where`, `compare`, `fix_check` and `changes`: `to_bundle(folder, force=False)` is
   `--out DIR`, `api.save(result)` is `--save`, and on `where` `to_svg()` is the curve as SVG
   text and `write_svg(path, force=False)` is `--svg FILE`; each delivery returns the result as
-  the command prints it with that option, so they chain.
+  the command prints it with that option, so they chain;
+- on the same four: `to_html()` is the HTML report, the text `poisson-trace report DIR` writes
+  for the bundle `to_bundle` writes, whether or not the result was saved; nothing is written.
 
 Every refusal is `api.Refusal`, carrying `message` (the sentence the command prints after
 `error:`), `next` (the commands under it), `exit_code` (1; 2 for a setting the verb needs that
@@ -28,7 +30,7 @@ refuse (a wrong type, a choice it lacks, a flag the verb or the reader does not 
 
 The API prints nothing, reads no environment variable, reads no file and lists no folder it was
 not given a path to, and writes only in `import_run`, `name`, `forget_name`, `save`,
-`to_bundle` and `write_svg`, each only where it is pointed. It does not look for a `trace.toml`:
+`to_bundle`, `write_svg` and `build_pages`, each only where it is pointed. It does not look for a `trace.toml`:
 load one with `load_config` and pass it as `config`.
 
 Poisson's products reach Trace through its command line, not through this API. The API is for
@@ -374,4 +376,32 @@ print(check.verdict, check.exit_code)
 
 ```text
 ok 0
+```
+
+## api.build_pages
+
+```python
+api.build_pages(store, *, config=None)
+```
+
+`poisson-trace ui`: Trace's pages over the store's runs and saved verdicts, built into its
+`.poisson/ui/trace/` and opened from disk: the runs and the saved verdicts (`index.html`), one
+page per saved verdict with every line of its report, and one page per verdict for what it
+cannot say. With `config`, every other store the config names gets its pages too, and they
+link one another. Prove's own dashboard beside them is never touched; every command that saves
+a verdict rebuilds the pages as well. `PagesResult.location` is the index's `file:` address,
+and `to_markdown()` is the one line `ui` prints.
+
+**Refusals.** `api.Refusal` for a store that cannot be read, as `api.runs` refuses it (with
+exit code 2 when nothing gives a store), and for pages that cannot be written.
+
+```python
+from poisson_trace import api
+
+r = api.build_pages("store")
+print(r.verdict, r.location.endswith("/store/.poisson/ui/trace/index.html"))
+```
+
+```text
+ok True
 ```

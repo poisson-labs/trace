@@ -27,11 +27,13 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import tempfile
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from html.parser import HTMLParser
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any
@@ -79,6 +81,12 @@ TABLE_COLUMNS: tuple[str, ...] = (
     "cause",
 )
 _STAGING = "artifact.json"
+
+
+REPORT_PAGE = "report.html"
+#: The elements the HTML report never holds (section 11.7).
+_FORBIDDEN = frozenset({"script", "link", "iframe", "object", "embed"})
+_SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:")
 
 
 class Invalid(Exception):
@@ -648,6 +656,8 @@ def check_bundle(target: Path) -> Checked:
     result = _check_result(target, verb)
     _check_report(target, result)
     _check_content(result)
+    if (target / REPORT_PAGE).is_file():
+        _check_report_page(target / REPORT_PAGE, result)
     runs = 1 if verb == "where" else len(result["runs"])
     sentence = (
         f"{target} holds what it promises: a {verb} verdict over "
@@ -655,3 +665,61 @@ def check_bundle(target: Path) -> Checked:
         "listed, result.json with every promised key, and nothing Trace does not hand over"
     )
     return Checked(verb=verb, files=files, runs=runs, sentence=sentence)
+
+
+# ---------- the HTML report's checks (section 11.7) ----------
+
+
+class _PageReader(HTMLParser):
+    """What section 11.7 asks of ``report.html``: the first failing line, and the text of the
+    first ``<h1>``."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.failing: str | None = None
+        self.h1: str | None = None
+        self._in_h1 = False
+        self._text: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if self.failing is None and tag in _FORBIDDEN:
+            self.failing = f"{REPORT_PAGE} holds a <{tag}> element"
+        for name, value in attrs:
+            if self.failing is None and value is not None and _SCHEME.match(value):
+                self.failing = (
+                    f"{REPORT_PAGE}'s <{tag}> has an attribute {name} that names a scheme"
+                )
+        if tag == "h1" and self.h1 is None and not self._in_h1:
+            self._in_h1 = True
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "h1" and self._in_h1:
+            self._in_h1 = False
+            self.h1 = "".join(self._text)
+
+    def handle_data(self, data: str) -> None:
+        if self._in_h1:
+            self._text.append(data)
+
+
+def _check_report_page(path: Path, result: Mapping[str, Any]) -> None:
+    """``report.html``, when the bundle holds one: it parses; it holds no script, link, frame,
+    object or embed; no attribute names a scheme; its first heading is the verdict line
+    ``result.json`` promises."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, ValueError):
+        raise Invalid(f"{REPORT_PAGE} is not UTF-8 text") from None
+    reader = _PageReader()
+    try:
+        reader.feed(text)
+        reader.close()
+    except Exception:  # noqa: BLE001 - whatever the parser raises, the page is not HTML
+        raise Invalid(f"{REPORT_PAGE} cannot be read as HTML") from None
+    if reader.failing is not None:
+        raise Invalid(reader.failing)
+    if reader.h1 != f"{result['verdict']}  {result['sentence']}":
+        raise Invalid(f"{REPORT_PAGE}'s first heading is not the verdict line result.json promises")

@@ -19,10 +19,10 @@ wrong type, a choice it lacks, a flag the verb or the reader does not take) is a
 
 The API prints nothing, reads no environment variable, reads no file and lists no folder it
 was not given a path to, and writes only in ``import_run``, ``name``, ``forget_name``,
-``save``, ``to_bundle`` and ``write_svg``, each only where it is pointed. ``__all__`` is the
-public surface; ``init`` and ``doctor``, which touch the environment rather than a store,
-are ``poisson_trace.commands``, not public. The names here that open with an underscore are
-the command lines' own helpers and promise nothing.
+``save``, ``to_bundle``, ``write_svg`` and ``build_pages``, each only where it is pointed.
+``__all__`` is the public surface; ``init``, ``doctor`` and ``report``, which touch the
+environment rather than a store, are ``poisson_trace.commands``, not public. The names here
+that open with an underscore are the command lines' own helpers and promise nothing.
 """
 
 from __future__ import annotations
@@ -32,8 +32,10 @@ import contextlib
 import contextvars
 import dataclasses
 import functools
+import os
 from collections.abc import Callable, Collection, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, ParamSpec, TypeVar
 
 from poisson_trace import core, look
@@ -47,10 +49,12 @@ __all__ = [
     "FixCheckResult",
     "ImportResult",
     "NameResult",
+    "PagesResult",
     "Refusal",
     "RunsResult",
     "Store",
     "WhereResult",
+    "build_pages",
     "changes",
     "compare",
     "fix_check",
@@ -469,6 +473,12 @@ class _Counting:
         the ``next:`` line."""
         return core.text(self._counted, self._delivered)
 
+    def to_html(self) -> str:
+        """The HTML report of this verdict (spec section 11.7): the text ``poisson-trace report
+        DIR`` writes for the bundle ``to_bundle`` writes, saved or not. Nothing is written."""
+        with _calling(self._counted.ns):
+            return str(core.to_html(self._counted))
+
     def to_bundle(self, folder: str, *, force: bool = False) -> Any:
         """``--out DIR``: the verdict saved into the runs' store and handed over as a bundle
         into ``folder``, which is made; one that is there is refused without ``force``. The
@@ -696,12 +706,46 @@ class ImportResult:
 @dataclass(frozen=True)
 class BundleCheck:
     """``poisson-trace handover --check DIR``: ``ok`` and exit 0, or ``not valid`` with the
-    first failing line and exit 4. The command prints no JSON (PB1)."""
+    first failing line and exit 4. The command prints no JSON (PB1). ``next`` is the command
+    a bundle that holds what it promises gets: its HTML report (SB5)."""
 
     verdict: str
     sentence: str
     exit_code: int
     notes: tuple[str, ...] = ()
+    next: str | None = None
+
+    def to_markdown(self) -> str:
+        tail = f"\nnext: {self.next}\n" if self.next else ""
+        return f"{self.verdict}  {self.sentence}\n{tail}"
+
+
+@dataclass(frozen=True)
+class PagesResult:
+    """``poisson-trace ui``: the pages built over a store's runs and saved verdicts, and where
+    their index is (``location``, a ``file:`` address). ``next`` is None: the address is the
+    next thing."""
+
+    schema: str
+    verdict: str
+    sentence: str
+    location: str
+    next: None
+    notes: tuple[str, ...]
+    exit_code: int
+
+    def to_json(self) -> str:
+        from poisson_trace import report
+
+        return report.json_text(
+            {
+                "schema": self.schema,
+                "verdict": self.verdict,
+                "sentence": self.sentence,
+                "location": self.location,
+                "next": self.next,
+            }
+        )
 
     def to_markdown(self) -> str:
         return f"{self.verdict}  {self.sentence}\n"
@@ -1083,7 +1127,125 @@ def validate_bundle(folder: str) -> BundleCheck:
     _text("folder", folder)
     with _calling():
         checked = core.validate_bundle(folder)
-    return BundleCheck(checked.verdict, checked.sentence, checked.exit_code)
+    return BundleCheck(checked.verdict, checked.sentence, checked.exit_code, (), checked.following)
+
+
+# ---------- the static pages (section 17.3 item 7) ----------
+
+
+def _as_ui(e: Refusal) -> Refusal:
+    """A refusal ``runs`` gives, as ``ui`` gives it: the commands under it name ``ui``."""
+    swap = ("poisson-trace runs", "poisson-trace ui")
+    return Refusal(
+        e.message.replace(*swap),
+        next=tuple(n.replace(*swap) for n in e.next),
+        exit_code=e.exit_code,
+        notes=e.notes,
+    )
+
+
+def _ui_listing(store: Any, config: Any) -> RunsResult:
+    """The runs of a store for its pages, as ``runs`` lists them under the config's failures;
+    a store that does not carry them (the config's other store, DM9) is listed with the failed
+    column uncounted; a store ``runs`` cannot read is the refusal ``runs`` gives (A5)."""
+    try:
+        return runs(store, config=config)
+    except Refusal as e:
+        first = e
+    if config is None:
+        raise _as_ui(first)
+    try:
+        cfg = config if isinstance(config, Config) else load_config(config)
+        named = store is None or (isinstance(store, str) and store in cfg._held.named)
+        path = cfg.store(store) if named else _store_word(store)
+        assert path is not None
+        return runs(path)
+    except Refusal:
+        raise _as_ui(first) from None
+
+
+def _stores_of(store: Any, config: Any) -> list[tuple[str | None, str]]:
+    """The stores ``ui`` builds, each as its config name (None for the unnamed store, or a
+    store given by its path) and its path: the store read first, then every other store the
+    config names (DM10)."""
+    word = _store_word(store)
+    if config is None:
+        assert word is not None
+        return [(None, word)]
+    cfg = config if isinstance(config, Config) else load_config(config)
+    held = cfg._held
+    if word is None:
+        root, name = cfg.store(None), None
+    elif word in held.named:
+        root, name = cfg.store(word), word
+    else:
+        root, name = word, None
+    out: list[tuple[str | None, str]] = [(name, root)]
+    everyone: list[tuple[str | None, str]] = []
+    if held.store is not None:
+        everyone.append((None, str(held.store)))
+    everyone += [(n, str(p)) for n, p in held.named.items()]
+    for other_name, path in everyone:
+        if os.path.realpath(path) != os.path.realpath(root):
+            out.append((other_name, path))
+    return out
+
+
+def build_pages(store: Any, *, config: Any = None) -> PagesResult:
+    """``poisson-trace ui``: Trace's pages over a store's runs and saved verdicts, built into
+    its ``.poisson/ui/trace/``, and, when a config is read, over every other store it names,
+    so that the pages link one another (DM10). Prove's own pages beside them are never
+    touched. Refused as ``runs`` refuses a store it cannot read, and where the pages cannot be
+    written."""
+    if config is not None and not isinstance(config, Config):
+        _text("config", config)
+    listing = _ui_listing(store, config)
+    stores = _stores_of(store, config)
+    cfg = None if config is None else config if isinstance(config, Config) else load_config(config)
+    events = list(cfg._held.events) if cfg is not None and cfg._held.events else None
+    index_of = {
+        path: Path(path) / ".poisson" / "ui" / core.PAGES / "index.html" for _, path in stores
+    }
+    try:
+        for i, (name, path) in enumerate(stores):
+            listed = listing if i == 0 else _ui_listing(name, cfg)
+            counted = (
+                events if events and all(r["failed"] is not None for r in listed.runs) else None
+            )
+            links = [
+                (Path(other).name, _relative(index_of[path], index_of[other]))
+                for _other_name, other in stores
+                if other != path
+            ]
+            doc = {
+                "verdict": listed.verdict,
+                "sentence": listed.sentence,
+                "store": listed.store,
+                "runs": listed.runs,
+            }
+            core.build_store_pages(Path(path), doc, counted, links)
+    except look.Refused as e:
+        raise Refusal(str(e), next=e.nexts) from None
+    except OSError as e:
+        raise Refusal(f"cannot write the pages into {listing.store}: {look.why(e)}") from None
+    location = index_of[stores[0][1]].resolve().as_uri()
+    return PagesResult(
+        schema="poisson-trace.ui/1",
+        verdict="ok",
+        sentence=f"pages at {location}",
+        location=location,
+        next=None,
+        notes=(),
+        exit_code=look.DONE,
+    )
+
+
+def _relative(here: Path, there: Path) -> str:
+    """``there`` as a link on the page at ``here``: a relative path, never an absolute one
+    (section 17.3 item 9)."""
+    return os.path.relpath(
+        os.path.abspath(there), start=os.path.dirname(os.path.abspath(here))
+    ).replace(os.sep, "/")
 
 
 # ---------- for the command lines: not public, and promising nothing ----------

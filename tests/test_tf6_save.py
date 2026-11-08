@@ -56,6 +56,15 @@ FILES = {
     "table.parquet": {"role": "table", "media_type": "application/vnd.apache.parquet", "schema": "poisson.table/1"},
     "charts/curve.svg": {"role": "chart", "media_type": "image/svg+xml", "data": "charts/curve.json"},
     "charts/curve.json": {"role": "table", "media_type": "application/json", "schema": "poisson-trace.chart/1"},
+    # SV15: compare's two curves and its hazard ratio, charted with the pages (TF18)
+    "charts/curves.svg": {"role": "chart", "media_type": "image/svg+xml", "data": "charts/curves.json"},
+    "charts/curves.json": {"role": "table", "media_type": "application/json", "schema": "poisson-trace.chart/1"},
+    "charts/hazard-ratio.svg": {"role": "chart", "media_type": "image/svg+xml", "data": "charts/hazard-ratio.json"},
+    "charts/hazard-ratio.json": {"role": "table", "media_type": "application/json", "schema": "poisson-trace.chart/1"},
+}
+CHARTS = {
+    "where": ["charts/curve.svg", "charts/curve.json"],
+    "compare": ["charts/curves.svg", "charts/curves.json", "charts/hazard-ratio.svg", "charts/hazard-ratio.json"],
 }
 ADDED = ["summary", "before_you_act", "note", "versions"]
 ADDED_TWO = ["failure_taxonomy_diff", "continuous_measures"]
@@ -124,7 +133,7 @@ def test_tf6_6_the_descriptor_is_the_formats(tmp_path: Path, verb: str) -> None:
     assert all(isinstance(d, list) and len(d) == 2 and all(isinstance(x, str) for x in d)
                for d in desc["summary"]["detail"]), desc["summary"]
     listed = [f["path"] for f in desc["files"]]
-    want = ["result.json", "report.md", "table.parquet"] + (["charts/curve.svg", "charts/curve.json"] if verb == "where" else [])
+    want = ["result.json", "report.md", "table.parquet"] + CHARTS.get(verb, [])
     assert listed == want
     # nothing in the folder is unlisted, and the descriptor does not list itself
     assert files_in(folder) == sorted(["artifact.json", *want])
@@ -293,7 +302,8 @@ def test_tf6_9_nothing_else_in_the_store_changes(tmp_path: Path, verb: str) -> N
     prove_own = {k: v for k, v in before.items() if k.startswith(".poisson/artifacts/comparison/")}
     assert prove_own and all(after[k] == v for k, v in prove_own.items())
     new = sorted(set(after) - set(before))
-    assert all(k.startswith(f".poisson/artifacts/{verb}/") for k in new), new
+    # A7: a save also builds Trace's pages, under .poisson/ui/trace/ (TF18)
+    assert all(k.startswith((f".poisson/artifacts/{verb}/", ".poisson/ui/trace/")) for k in new), new
     assert all(k in new or after[k] == before[k] for k in after if k != ".poisson/store.json")
 
 

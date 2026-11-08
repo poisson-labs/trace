@@ -110,6 +110,11 @@ def json_text(data: Mapping[str, Any]) -> str:
     return json.dumps(data, indent=2, allow_nan=False) + "\n"
 
 
+def json_value(value: Any) -> str:
+    """One value as JSON on one line, UTF-8 as it is: what a page's ``data-value`` holds."""
+    return json.dumps(value, ensure_ascii=False, allow_nan=False)
+
+
 def _dumps(data: Mapping[str, Any]) -> str:
     return json.dumps(data, indent=2, allow_nan=False) + "\n"
 

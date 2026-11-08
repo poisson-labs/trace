@@ -1,8 +1,8 @@
 """The console script: ``poisson-trace init``, ``runs``, ``name``, ``where``, ``compare``,
-``fix-check``, ``changes``, ``handover``, ``import`` and ``doctor``.
+``fix-check``, ``changes``, ``handover``, ``import``, ``doctor``, ``ui`` and ``report``.
 
 A thin caller of the Python API (spec section 11.8): it reads the command line, calls the
-verb's one function in ``poisson_trace.api`` (``init`` and ``doctor`` in
+verb's one function in ``poisson_trace.api`` (``init``, ``doctor`` and ``report`` in
 ``poisson_trace.commands``) once with what was typed, and prints what the result gives. Of the
 package it imports ``api``, ``commands`` and the shared look alone; it computes nothing, and
 reads, writes and lists no file itself.
@@ -27,7 +27,9 @@ from typing import Any
 
 from poisson_trace import api, commands, look
 
-_NAMED = "init, runs, name, where, compare, fix-check, changes, handover, import and doctor"
+_NAMED = (
+    "init, runs, name, where, compare, fix-check, changes, handover, import, doctor, ui and report"
+)
 # the verbs that count failures, and whose results are delivered with --save, --out and --svg
 _COUNTING = ("where", "compare", "fix-check", "changes")
 # the command's own option, which stays where it is written; --help before a verb is that
@@ -468,6 +470,53 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         action="store_true",
         help="on an unexpected failure, print its details on stderr as well as in the log",
     )
+    ui = verbs.add_parser(
+        "ui",
+        help="build the pages over a store's runs and saved verdicts, opened from disk",
+        description=(
+            "Builds Trace's pages in the store's .poisson/ui/trace/: the runs and the saved\n"
+            "verdicts, each verdict's page and what it cannot say, opened from disk with\n"
+            "nothing loaded from the network. With a config, every store it names gets its\n"
+            "pages, and they link one another. Prove's own dashboard beside them is never\n"
+            "touched. Every command that saves a verdict rebuilds the pages too."
+        ),
+        epilog=_example("poisson-trace ui", "poisson-trace ui --open"),
+    )
+    ui.add_argument(
+        "--open", action="store_true", help="open the pages in the browser (default: not opened)"
+    )
+    ui.add_argument("--store", metavar="ROOT", help=_STORE_HELP)
+    ui.add_argument("--config", metavar="PATH", help=_CONFIG_HELP)
+    tail(ui)
+    rep = verbs.add_parser(
+        "report",
+        help="write a handover bundle's verdict as one HTML page into it",
+        description=(
+            "Writes report.html into a bundle that where, compare, fix-check or changes wrote\n"
+            "with --out DIR: the verdict's page as the static UI shows it, self-contained, with\n"
+            "no script and nothing loaded from the network, and lists it in handover.json. A\n"
+            "bundle that does not hold what it promises is refused first, as handover --check\n"
+            "refuses it."
+        ),
+        epilog=_example(
+            "poisson-trace report verdicts/fix-check-2026-11-04",
+            "poisson-trace report verdicts/fix-check-2026-11-04 --open",
+        ),
+    )
+    rep.add_argument("dir", metavar="DIR", help="the bundle --out wrote (no default)")
+    rep.add_argument(
+        "--open", action="store_true", help="open the page in the browser (default: not opened)"
+    )
+    rep.add_argument(
+        "--force",
+        action="store_true",
+        help="replace a report.html that is there (default: refused)",
+    )
+    rep.add_argument(
+        "--debug",
+        action="store_true",
+        help="on an unexpected failure, print its details on stderr as well as in the log",
+    )
     return parser, {
         "init": init,
         "runs": runs,
@@ -478,6 +527,8 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         "changes": changes,
         "handover": handover,
         "doctor": doctor,
+        "ui": ui,
+        "report": rep,
     }
 
 
@@ -802,6 +853,10 @@ def _main(session: look.Session) -> int:
             return _init(ns, verbs["init"], typed)
         if ns.verb == "handover":
             return _handover(ns)
+        if ns.verb == "ui":
+            return _ui(ns, verbs["ui"], typed)
+        if ns.verb == "report":
+            return _report(ns)
         if ns.verb == "name":
             return _name(ns, verbs["name"], typed)
         if ns.verb == "runs":
@@ -943,6 +998,24 @@ def _reader_flags(verb: str, tool: str, extra: Sequence[str]) -> dict[str, Any]:
             if action is not None:
                 out[_keyword(action)] = getattr(flags, action.dest)
     return out
+
+
+# ---------- the pages and the report ----------
+
+
+def _ui(ns: argparse.Namespace, parser: look.Parser, typed: Collection[str]) -> int:
+    kwargs = _with_config(_given(ns, parser, typed, "--store", "--open"))
+    result = api.build_pages(ns.store, **kwargs)
+    code = _printed(result, ns.json)
+    if ns.open:
+        commands.show_page(result.location)
+    return code
+
+
+def _report(ns: argparse.Namespace) -> int:
+    result = commands.report(ns.dir, open=ns.open, force=ns.force)
+    look.out(result.to_markdown())
+    return int(result.exit_code)
 
 
 # ---------- handover, doctor and init ----------
