@@ -228,13 +228,16 @@ def doctor(*, config: str | None = None, setup: bool = False) -> DoctorResult:
 
 @dataclass(frozen=True)
 class ReportResult:
-    """What ``report`` wrote: the bundle's verb, the folder as it was given, and the page."""
+    """What ``report`` did: the bundle's verb, the folder as it was given, and the page, written
+    (``wrote``) or, under ``open`` on a page that was there, opened as it was (``opened``)."""
 
     verb: str
     folder: str
     wrote: str
     next: str
     exit_code: int
+    opened: bool = False
+    notes: tuple[str, ...] = ()
 
     @property
     def sentence(self) -> str:
@@ -244,7 +247,8 @@ class ReportResult:
         )
 
     def to_markdown(self) -> str:
-        return f"ok  {self.sentence}\n  wrote  {self.wrote}\nnext: {self.next}\n"
+        done = "opened" if self.opened else "wrote"
+        return f"ok  {self.sentence}\n  {done}  {self.wrote}\nnext: {self.next}\n"
 
 
 def report(folder: str, *, open: bool = False, force: bool = False) -> ReportResult:  # noqa: A002
@@ -252,7 +256,12 @@ def report(folder: str, *, open: bool = False, force: bool = False) -> ReportRes
     self-contained, written into the bundle as ``report.html`` and listed in ``handover.json``;
     a page that is there is refused without ``force``; a bundle that fails the validator is
     refused before anything is written, with the validator's words; ``open`` opens the page in
-    the default browser."""
+    the default browser.
+
+    ``open`` on a page that is there opens that page as it is and writes nothing, so
+    the ``report DIR --open`` that ``handover --check`` prints runs; when the page is not the
+    one ``report`` would write now (another version of Trace's, or one edited and re-listed),
+    a note says so and names the command that writes it again."""
     from poisson_trace import core
 
     checked = api.validate_bundle(folder)
@@ -260,25 +269,39 @@ def report(folder: str, *, open: bool = False, force: bool = False) -> ReportRes
         raise api.Refusal(checked.sentence)
     target = Path(folder)
     page = target / core.REPORT_PAGE
-    if page.exists() and not force:
-        raise api.Refusal(f"{folder}/{core.REPORT_PAGE} exists; add --force to replace it")
+    name = f"{folder}/{core.REPORT_PAGE}"
+    there = page.exists() and not force
+    if there and not open:
+        raise api.Refusal(f"{name} exists; add --force to replace it")
+    notes: tuple[str, ...] = ()
     try:
         bundle = api.load_bundle(folder)
         store = next(
             (r.get("store") for r in bundle.handover.get("runs", ()) if r.get("store")), None
         )
         text = core.report_page(target, Path(str(store)).name if store else "")
-        _write_report_page(target, bundle.handover, text)
+        if there:
+            if page.read_bytes() != text.encode("utf-8"):
+                again = look.command("poisson-trace", "report", folder, "--force")
+                notes = (
+                    f"{name} is not the page this version of Trace writes for the bundle; "
+                    f"{again} writes it again",
+                )
+        else:
+            _write_report_page(target, bundle.handover, text)
     except OSError as e:
-        raise api.Refusal(f"cannot write {folder}/{core.REPORT_PAGE}: {look.why(e)}") from None
+        verb = "read" if there else "write"
+        raise api.Refusal(f"cannot {verb} {name}: {look.why(e)}") from None
     if open:
         show_page(page.resolve().as_uri())
     return ReportResult(
         verb=bundle.verb,
         folder=folder,
-        wrote=f"{folder}/{core.REPORT_PAGE}",
+        wrote=name,
         next=look.command("poisson-trace", "handover", "--check", folder),
         exit_code=look.DONE,
+        opened=there,
+        notes=notes,
     )
 
 

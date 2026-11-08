@@ -363,6 +363,13 @@ api.validate_bundle(folder)
 
 `poisson-trace handover --check DIR`: whether a bundle holds what it promises. `BundleCheck.verdict` is `ok` (exit code 0) or `not valid` with the first failing line as its sentence (exit code 4).
 
+On `ok`, `BundleCheck.next` is the HTML report's command: `poisson-trace report DIR`, which
+writes `report.html` into the bundle, or, once the bundle holds it, `poisson-trace report DIR
+--open`, which opens that page as it is and writes nothing. Without `--open` a `report.html`
+that is there is refused unless `--force` replaces it; when the page is not the one `report`
+would write now (from another version of Trace, or edited and re-listed), `--open` still opens
+it and a `note:` names the command that writes it again.
+
 **Refusals.** `api.Refusal` when the folder is not there, is not a folder, or holds no `handover.json`.
 
 ```python

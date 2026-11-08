@@ -505,12 +505,17 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
     )
     rep.add_argument("dir", metavar="DIR", help="the bundle --out wrote (no default)")
     rep.add_argument(
-        "--open", action="store_true", help="open the page in the browser (default: not opened)"
+        "--open",
+        action="store_true",
+        help=(
+            "open the page in the browser; a report.html that is there is opened as it is, "
+            "not written again (default: not opened)"
+        ),
     )
     rep.add_argument(
         "--force",
         action="store_true",
-        help="replace a report.html that is there (default: refused)",
+        help="replace a report.html that is there (default: refused, or opened with --open)",
     )
     rep.add_argument(
         "--debug",
@@ -1013,9 +1018,7 @@ def _ui(ns: argparse.Namespace, parser: look.Parser, typed: Collection[str]) -> 
 
 
 def _report(ns: argparse.Namespace) -> int:
-    result = commands.report(ns.dir, open=ns.open, force=ns.force)
-    look.out(result.to_markdown())
-    return int(result.exit_code)
+    return _printed(commands.report(ns.dir, open=ns.open, force=ns.force), False)
 
 
 # ---------- handover, doctor and init ----------
