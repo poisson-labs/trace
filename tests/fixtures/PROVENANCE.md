@@ -549,3 +549,338 @@ imports of the committed `ingest/deepeval/humaneval-{a,b}.json.gz` and `ingest/i
 (`tests/test_bd_unchanged.py`), taken by `breakdown/make_main_pins.py` on that commit before any
 source changed, twice, with the same result. Paths are written `<ROOT>`. No key, no model and no
 network were used.
+
+## Added for the Braintrust captures (2026-11-09)
+
+Real captures from Braintrust's service, made on 2026-11-09 against a free account, for the
+Braintrust reader's tests (TF25; spec section 18.3.4). They are not Prove stores, and no reader or
+reader test came with them. Tools: braintrust 0.49.3 (Python SDK and its `braintrust eval`
+command), openai 3.48.0, Python 3.12.13, macOS. The UI's own JSON and CSV downloads are in
+`ingest/braintrust/ui/`.
+
+**The runs.** Project `trace-fixture` (id `5fc53fc7-f099-43a1-b281-9e45c708bf38`), four experiments:
+
+| Experiment | Id | Created (UTC) | Script | Cases | Model |
+|---|---|---|---|---|---|
+| `old` | `c12245bf-c48d-4128-b0c0-b30183901c26` | 20:24:00 | `fixture.eval.py` | 6 (3 × 2) | none (a lookup) |
+| `new` | `6fda40a5-37d0-4586-b75f-ba552174780a` | 20:24:02 | `fixture.eval.py` | 6 (3 × 2) | none (a lookup) |
+| `slice-baseline` | `5eddbe35-a975-4a3c-a34c-c59ad5ab4896` | 20:24:14 | `slice.eval.py` | 10 | gpt-4.1-mini |
+| `slice-candidate` | `def2b2e5-9c1a-4e05-8861-3e9f3c14d332` | 20:24:15 | `slice.eval.py` | 10 | gpt-4.1-mini |
+
+```
+braintrust eval fixture.eval.py
+CAPTURE_LEDGER=<a file> CAPTURE_CAP_USD=0.25 braintrust eval slice.eval.py
+python pull.py api
+```
+
+`fixture.eval.py` is the front-door spec's script (vault
+`log/trace-front-door-spec/tool-exports/braintrust/`), byte for byte: `old` is the baseline and
+`new` the candidate, inline data, one `exact` score. `old` fails q2 and q3 (four of six rows);
+**`new` has no failing row.** `slice.eval.py` is the paid slice: a stock-desk agent in two versions
+over a Braintrust dataset (`stock-10`, id `754aa7c9-75b6-40ef-b927-13037f5fee97`, record ids `c01`
+to `c10`), four steps a case (`find_policy`, a function span; `check_stock`, a tool span; the model
+call, an llm span through `wrap_openai`; `parse_answer`, a function span), two scores (`exact`,
+`gave_answer`), one classifier (`failure_kind`) and a tag naming the version. Its failures are
+planted and listed at the top of the script: baseline c03 and c06 wrong, c08 an error
+(`TimeoutError` in the tool), c10 wrong by answering `unknown`; candidate c04 a tool refusal
+retried into a pass, c06 wrong, c09 an error (`ValueError` in `parse_answer`, the reply cut at
+three tokens). `braintrust eval slice.eval.py` exits 1 because of the two planted errors.
+
+**The files** (`ingest/braintrust/api/`, each a response body as the service sent it, but for the
+replacements below; `pull.py`'s docstring gives each request, and `requests.json` lists the 28
+requests made with their statuses):
+
+| Files | Request | What they hold |
+|---|---|---|
+| `experiments.json` | `GET /v1/experiment?project_name=trace-fixture` | the four experiments, with `repo_info`, `dataset_id`, `metadata` |
+| `<name>.fetch.json` × 4 | `GET /v1/experiment/{id}/fetch?limit=1000` | `events`, `cursor`: 18, 18, 85 and 88 span events |
+| `<name>.btql-spans.json` × 4 | `POST /btql`, `from: experiment('{id}') spans` | `data`, `schema`, `cursor`: the same events |
+| `<name>.btql-traces.json` × 4 | `POST /btql`, `… traces` | the same events grouped by trace |
+| `<name>.btql-summary.json` × 4 | `POST /btql`, `… summary` | one row a case (6, 6, 10, 10), with scores, metrics and error counts rolled up, `comparison_key`, `span_type_info` |
+| `slice-candidate.fetch.page-1…5.json` | the fetch in pages of 25, by `cursor` | 25, 25, 25, 13 and 0 events |
+| `slice-candidate.btql-spans.page-1…5.json` | the spans query in pages of 25, by `cursor` | the same paging |
+
+**The UI downloads** (`ingest/braintrust/ui/`, eight files): `old`, `new`, `slice-baseline` and
+`slice-candidate`, each as `.json` and `.csv`, downloaded by hand at 21:04 to 21:05 UTC from each
+experiment's own table (the experiment opened from the project's Experiments list, then the
+table's download control, once a format) and named by hand after the experiment. The JSON is a
+list with one object a case (6, 6, 10, 10); the CSV has the same rows, with `input`, `tags`,
+`classifications`, `scores`, `metrics` and `metadata` each a cell of JSON text. Columns: `name`
+(`eval`), `input`, `output`, `expected`, `tags`, `scores`, `metrics`, `metadata`, `comments`,
+`created` (milliseconds), `__bt_assignments`, and in the slice `classifications` and `error`.
+It is the `summary` shape with the ids taken out: scores and the rolled-up `metrics`
+(`estimated_cost`, token counts, `errors`, `tool_errors`, `llm_calls`, `duration`) are on the
+row, but **there is no row id, no span id, no experiment id and no `origin`**, so the case is
+known only from `input` (or from what the script put in `metadata`), and the experiment only
+from the file. An errored row has `output` null, every score null (`{"exact":null,…}`),
+`metadata` null and the traceback in `error`; in the JSON the `error` key is present on that row
+alone, in the CSV the column is there for every row. A classification's value is a string of
+JSON (`"[{\"id\":\"wrong_answer\"}]"`). The only replacements made in these files are the two
+paths in the tracebacks.
+
+**What a reader finds.** In `fetch` and in the `spans` and `traces` shapes the root (`eval`) span
+carries `input`, `output`, `expected`, `error`, `tags`, `classifications`, `origin` (the dataset
+record's `id`, in the slice only: the lookup fixture's inline data has `origin` null) and
+`metrics` with `start`, `end` and `duration` alone; **its `scores` is null: each score is on a
+child span of type `score`**. Only the `summary` shape gives a root row its scores, and its
+`metrics` there add `prompt_tokens`, `completion_tokens`, `total_tokens`, `estimated_cost`,
+`llm_calls`, `tool_calls`, `errors`, `llm_errors`, `tool_errors`, `time_to_first_token`. Token
+counts, `time_to_first_token` and `estimated_cost` are on each llm span in every shape (71 prompt
+and 1 completion token give `3.0000000000000004e-05`); the lookup experiments have
+`estimated_cost` null. An errored case has a traceback in `error` on the failing step, on the
+`task` span and on the root, `output` null, and no score span. Span types present: `eval`,
+`task`, `function`, `tool`, `llm`, `score`, `classifier`. `comments` is null everywhere: nothing
+was commented in the UI.
+
+**Spend.** 19 calls to gpt-4.1-mini (`gpt-4.1-mini-2025-04-14`), 1,493 prompt and 75 completion
+tokens, **$0.000717** at list price ($0.40 and $1.60 a million tokens), counted call by call by the
+script; the cap was $0.25. The lookup experiments called no model.
+
+**Replacements (the one edit).** The repository is public, so account identifiers were replaced
+as plain strings wherever they occur, by `ingest/scrub_identifiers.py` with a list of pairs that
+is not committed; nothing else was changed, and every file still parses. The digests of the files
+as received are in the vault log (`projects/trace/log/trace-captures/`), not here.
+
+| Where | Replaced by |
+|---|---|
+| the home folder in `context.caller_filename` and in tracebacks (`error`) | `/Users/user` |
+| the scratch virtualenv's path in tracebacks | `/venv` (a copy the service had cut short: `/tmp/capture`) |
+| `user_id`, `span_attributes.created_by_user_id`, `audit_data[].metadata.user_id` | `00000000-0000-4000-8000-000000000001` |
+| `span_attributes.created_by_api_key_id` | `00000000-0000-4000-8000-000000000002` |
+| `repo_info.author_email`, `repo_info.author_name` | `dev@example.com`, `Example Author` |
+
+Kept: experiment, project, dataset, span and event ids, and `repo_info`'s branch, commit and
+commit message (this public repository's). **Checks made:** every file was scanned afterwards for
+the originals, for email addresses, for the organisation's name and for any ten-character piece
+of the four keys used: no hit.
+
+**What a rebuild gives.** New ids, times, durations and cursors; the model's replies are
+single words at temperature 0 and came out the same on each of the three platforms.
+
+## Added for the Weave captures (2026-11-09)
+
+Real captures from W&B Weave's service, made on 2026-11-09 against a free account, for the Weave
+reader's tests (TF26; spec section 18.3.4). Tools: weave 0.54.1, openai 3.48.0, Python 3.12.13,
+macOS. The UI's downloads are in `ingest/weave/ui/`: CSV, TSV, JSON
+and JSONL, the four formats the Traces page offers. **It offers no Parquet**, which the spec
+expected.
+
+**The runs.** Project `trace-fixture`, four evaluations, one trace each:
+
+| Evaluation | `Evaluation.evaluate` call id | Trace id | Started (UTC) | Script | Examples |
+|---|---|---|---|---|---|
+| `trace-fixture-old` | `01a1c1fe-e770-71bc-b51a-26161d46a267` | `01a1c1fe-e76e-7817-a336-454239eba743` | 20:27:50 | `fixture_weave.py` | 6 |
+| `trace-fixture-new` | `01a1c1fe-e79c-7aa4-b7d8-221692d3ee20` | `01a1c1fe-e79c-74f0-94e4-85d34ca3a60b` | 20:27:50 | `fixture_weave.py` | 6 |
+| `trace-fixture-slice-baseline` | `01a1c1ff-2284-7c7c-bb3a-8952efef33a7` | `01a1c1ff-2284-72e4-a62f-c0878cf8186f` | 20:28:05 | `slice_weave.py` | 10 |
+| `trace-fixture-slice-candidate` | `01a1c1ff-2bbb-7221-a0b3-98fe793f6940` | `01a1c1ff-2bba-7cc7-a8b2-b104a623be0c` | 20:28:07 | `slice_weave.py` | 10 |
+
+```
+python fixture_weave.py
+CAPTURE_LEDGER=<a file> CAPTURE_CAP_USD=0.25 python slice_weave.py
+python slice_weave.py feedback 01a1c1ff-2284-7c7c-bb3a-8952efef33a7 01a1c1ff-2bbb-7221-a0b3-98fe793f6940
+python pull.py <entity>/trace-fixture api
+```
+
+`fixture_weave.py` is the front-door spec's script (vault
+`log/trace-front-door-spec/tool-exports/weave/`) as it was run; afterwards its one line
+`import asyncio, weave` was split in two so that `ruff check tests` passes, and nothing else
+differs. `trace-fixture-old` fails q2 and q3; **`trace-fixture-new` has no failing row.**
+`slice_weave.py` is the same stock-desk agent as Braintrust's slice (the Braintrust section
+describes it and its planted failures), as a `weave.Model` whose `predict` calls three ops and the
+OpenAI client Weave patches, with two scorers (`exact`, `gave_answer`). The feedback (a thumbs-up
+or thumbs-down reaction on each `predict_and_score` call of the slice, and a note on each case
+that did not pass) was added by the script's `feedback` form in a second run: on the first run
+the step listed the calls before they had reached the server and added none; the script now
+flushes first.
+
+**The files** (`ingest/weave/api/`; every one is the body of a
+`POST https://trace.wandb.ai/calls/stream_query`, JSON Lines, sorted by `started_at`, with
+`include_costs` and `include_feedback` true unless said; `requests.json` lists the 14 requests):
+
+| Files | Request | Calls |
+|---|---|---|
+| `roots.jsonl` | `filter.trace_roots_only` | 4, one `Evaluation.evaluate` call an evaluation |
+| `<evaluation>.jsonl` × 4 | `filter.trace_ids` | 20, 20, 78, 81 |
+| `<evaluation>.expanded.jsonl` × 4 | the same with `expand_columns: ["inputs.example"]` | the same |
+| `trace-fixture-slice-candidate.plain.jsonl` | the same with neither include flag | 81 |
+| `trace-fixture-slice-candidate.page-1…4.jsonl` | the same with `limit` 40 and `offset` | 40, 40, 1, 0 (an empty body) |
+
+**The UI downloads** (`ingest/weave/ui/`, eight files), downloaded by hand at 21:12 to 21:21 UTC
+from the project's Traces page with its download control, and renamed by hand (every download
+is named `weave_export_trace-fixture_2026-11-09.<format>`):
+
+| Files | The page's view | Rows |
+|---|---|---|
+| `traces-roots.csv`, `.tsv`, `.json`, `.jsonl` | no filter: the root call of each trace | 4, the four `Evaluation.evaluate` calls |
+| `predict-and-score.csv`, `.tsv`, `.json`, `.jsonl` | filtered to the op `Evaluation.predict_and_score` | 32: 6, 6, 10 and 10 |
+
+The JSON is a list and the JSONL the same objects one a line; each object is a call as the API
+gives it (`id`, `trace_id`, `parent_id`, `op_name`, `inputs`, `output`, `summary`, `attributes`,
+…). The CSV and the TSV hold the same cells, one column a leaf, named by its dotted path
+(`inputs.example.case`, `output.scores.exact.exact`, `summary.weave.status`), 47 columns in the
+roots view and 65 in the other. **No format carries a cost or any feedback:** in the JSON
+`summary.weave` has `status`, `latency_ms` and a name, and no `costs` or `feedback` key; the CSV
+has `summary.weave.costs.*` and `summary.weave.feedback.*` columns, and every one of their cells
+is empty. Token counts are there (`summary.usage.<model>`). **`inputs.example` is the row itself**
+(with `_ref`), not a reference, so the case is in the file. `exception` is null on all 32 rows:
+the three cases with a failure under them (baseline c08, candidate c04 and c09) show as
+`summary.weave.status` `descendant_error`, the two errored ones with `output.output` null and
+`output.scores` `{}`; the child calls that raised are not in this view. The replacements made
+in these files are the entity and `wb_user_id`.
+
+**What a reader finds.** Each call has `id`, `trace_id`, `parent_id`, `op_name` (a `weave:///`
+reference), `display_name`, `started_at`, `ended_at`, `inputs`, `output`, `exception`,
+`attributes`, `summary`. Status is `summary.weave.status`: `success`, `error` (the op raised;
+`exception` then holds a JSON string with `type`, `message` and `traceback`) or
+`descendant_error` (something under it raised). **Costs are at `summary.weave.costs.<model>`**
+(not `summary.costs`), present only with `include_costs`, on the model call and summed on each
+call above it, with `prompt_tokens_total_cost` and `completion_tokens_total_cost`;
+`summary.usage.<model>` holds the token counts with or without the flag. The model's name is the
+dated one, `gpt-4.1-mini-2025-04-14`. **Feedback is at `summary.weave.feedback`**, present only
+with `include_feedback`: `wandb.runnable.<scorer>` entries on each `predict` call (the scorer's
+output), and `wandb.reaction.1` and `wandb.note.1` on the slice's `predict_and_score` calls. The
+verdict a reader needs is in `Evaluation.predict_and_score`'s `output` (`output`, `scores`,
+`model_latency`); on an errored case `output.output` is null and `scores` is `{}`. **A
+`predict_and_score` call's `inputs.example` is a reference to the dataset row, not the row**; the
+`expanded` files carry the row inline (with `_ref`), and the case is also in the child
+`predict` call's own inputs. The `attributes.weave.kind` of the model call is `llm`; the other
+ops have no kind. There is no time-to-first-token field.
+
+**Spend.** 19 calls to gpt-4.1-mini, 1,493 prompt and 75 completion tokens, **$0.000717**; the cap
+was $0.25. The lookup evaluations and the feedback run called no model.
+
+**Replacements (the one edit).** As for Braintrust, by `ingest/scrub_identifiers.py`:
+
+| Where | Replaced by |
+|---|---|
+| the W&B entity in `project_id`, in every `weave:///` reference, and in `requests.json` | `example-entity` |
+| `wb_user_id` (on calls and on feedback entries) | `VXNlcjow` |
+| the home folder and the scratch virtualenv's path in `exception` tracebacks | `/Users/user`, `/venv` |
+
+Kept: call and trace ids, object digests, and `attributes.weave`'s `os_version`, `sys_version`
+and `client_version` (a machine's build strings, no account). The same scan found no hit.
+
+## Added for the LangSmith captures (2026-11-09)
+
+Real captures from LangSmith's service, made on 2026-11-09 against a free Developer account, for
+the LangSmith reader's tests (TF24; spec section 18.3.4). Tools: langsmith 0.14.17 (Python SDK),
+openai 3.48.0, Python 3.12.13, macOS, and the `langsmith` command built from the source of
+langchain-ai/langsmith-cli at tag v0.3.13 (`go install …/cmd/langsmith@v0.3.13`; built this way it
+reports its version as `dev`). The UI's CSV downloads are in
+`ingest/langsmith/ui/`; **there is no JSON download from the UI: the experiment page offers CSV
+only**, where the spec expected CSV and JSON.
+
+**The runs.** Dataset `trace-fixture-stock-10` (id `d3ab7a03-3d76-4b85-9e30-cdb126f88222`, ten
+examples, `metadata.case` c01 to c10) and two experiments on it:
+
+| Experiment | Session id | Started (UTC) | Runs | Traces |
+|---|---|---|---|---|
+| `trace-fixture-baseline-bbb64b8e` | `7f82d36e-3c38-43c8-832b-f04be0072bfc` | 20:38:00 | 48 | 10 |
+| `trace-fixture-candidate-7e3f7200` | `3886d3da-3e3b-4277-a0b2-d913d9109da4` | 20:38:19 | 51 | 10 |
+
+```
+CAPTURE_LEDGER=<a file> CAPTURE_CAP_USD=0.50 python fixture_langsmith.py
+python pull.py api trace-fixture-baseline-bbb64b8e trace-fixture-candidate-7e3f7200
+langsmith traces export cli/baseline-traces --project trace-fixture-baseline-bbb64b8e --full --limit 100
+langsmith runs export cli/baseline-runs.jsonl --project trace-fixture-baseline-bbb64b8e --full --limit 1000
+(the same two for candidate)
+```
+
+`fixture_langsmith.py` is the same stock-desk agent (the Braintrust section describes it and its
+planted failures) run by `Client.evaluate`: each example is one trace, a `chain` root (`Target`)
+over a `retriever` run, one or two `tool` runs, an `llm` run (`ChatOpenAI`, streamed, through
+`wrap_openai`) and a `parser` run. Feedback on each root: `exact` (the evaluator, source `model`),
+`judge_correct` (`create_feedback` with source `model`, a 0 or 1 from a second gpt-4.1-mini call;
+not given to the errored root), `thumbs` (`create_feedback` with the default source `api`, 1 or 0,
+a comment on a 0) and `review` (a categorical value, no score). The `thumbs` were made through the
+API, so their source is `api`. **Two roots of the candidate also carry `human_thumbs`, feedback
+made by hand in the UI, whose source is `app`:** 1 on c01 and 0 on c06, added at 22:07 UTC from
+each run's own page with "Add feedback" (the UI would not offer the script-made `thumbs` key and
+would not let a second key take its name, so the key is a new one). The baseline has none.
+An earlier pair of experiments (`trace-fixture-baseline-52aca45a`, `trace-fixture-candidate-6b4f7f81`)
+was run first without streaming, which left `first_token_time` null; it was run again streamed
+and nothing here comes from the first pair. The pull and the exports were made at 20:45 UTC,
+seven minutes after the runs. **After the two `human_thumbs` were added, the pull and the exports
+were made again at 22:08 UTC and the thirteen candidate files they changed were replaced:** the
+candidate's feedback list and its pages, its v2, v2 `subtree` and v1 run queries and their first
+two pages, `cli/candidate-runs.jsonl`, and the two trace files of c01 and c06. In the run files
+the only difference from the first pull is `feedback_stats` on those two roots. The baseline's
+files, the third page of each paged pull and `requests.json` are the 20:45 pull's.
+
+**The files.** `ingest/langsmith/api/` (response bodies; `requests.json` lists the 21 requests):
+
+| Files | Request | What they hold |
+|---|---|---|
+| `dataset.json`, `examples.json` | `GET /api/v1/datasets?name=…`, `GET /api/v1/examples?dataset={id}` | the dataset and its ten examples: what `reference_example_id` points at |
+| `<name>.session.json` × 2 | `GET /api/v1/sessions?name={experiment}` | the experiment: `reference_dataset_id`, `extra.metadata` |
+| `<name>.runs-v2.json` × 2 | `POST /api/v2/runs/query`, `project_ids`, all 46 select fields, `page_size` 100 | `items` (48, 51), `next_cursor` |
+| `<name>.runs-v2.subtree.json` × 2 | the same with `include_subtree_usage: true` | the same runs, tokens and cost summed onto each parent |
+| `<name>.runs-v1.json` × 2 | `POST /api/v1/runs/query`, `session`, `limit` 100 | `runs` (48, 51), `cursors` |
+| `<name>.feedback.json` × 2 | `GET /api/v1/feedback?session={id}&limit=100` | 39 feedback objects for the baseline, 41 for the candidate |
+| `candidate.runs-v2.page-1…3.json`, `candidate.runs-v1.page-1…3.json`, `candidate.feedback.page-1…3.json` | the same three in pages of 25 | 25, 25, 1 runs twice; 25, 16, 0 feedback objects |
+
+`ingest/langsmith/cli/`: `<name>-runs.jsonl` (one run a line: 48, 51) and `<name>-traces/` (one
+`{trace_id}.jsonl` a trace, ten each, one run a line; **the command writes `.jsonl`, where the
+spec expected `.json`**).
+
+`ingest/langsmith/ui/`: `trace-fixture-baseline-bbb64b8e.csv` and
+`trace-fixture-candidate-7e3f7200.csv`, downloaded by hand at 21:07 and 21:09 UTC from each
+experiment's page under the dataset, under the names the site gave them. Ten rows each, one an
+example, with columns `id` (the example's id, which is the runs' `reference_example_id`),
+`inputs`, `reference_outputs`, `session_name`, `repetition`, `outputs`, `run`, `status`, `error`,
+`latency`, `tokens`, `total_cost`, and one column a feedback key (`exact`, `judge_correct`,
+`review`, `thumbs`). `inputs`, `reference_outputs`, `outputs` and `run` are cells of JSON text;
+`run` is the root run alone (`id`, `inputs`, `outputs`, `session_id`, `extra`, `run_type`,
+`status`). **There are no child runs in this file**, so no step, no tool error and no span can
+be read from it. A score column holds the average (`1.0`, `0.0`), `review` holds its value
+(`ok`, `wrong_answer`, `abstained`, `errored`), and a root with no judge score has an empty
+`judge_correct` cell; the source of a score is not in the file. The errored row has `status`
+`error`, the exception's text in `error` and `{"output":null}` in `outputs`. The only
+replacement made is the home folder in the candidate's traceback.
+
+**What a reader finds.**
+- *v2* (`items`): `status` is lower-case (`success`, `error`); there is `parent_run_ids` (empty on
+  a root) and `is_root`, and no `parent_run_id`; a field with no value is left out of the row, so
+  `error`, the token and cost fields and `feedback_stats` are present only on the runs that have
+  them. Tokens and cost are on the `llm` run alone (`prompt_tokens`, `completion_tokens`,
+  `total_tokens`, `prompt_cost`, `completion_cost`, `total_cost`, numbers); **a root carries them
+  only in the `subtree` files**. `reference_example_id` and `feedback_stats` are on the roots.
+  `first_token_time` is on each `llm` run.
+- *v1* (`runs`): `parent_run_id` and `parent_run_ids` both; tokens, cost and `first_token_time` are already summed onto the root; `events` holds one
+  `new_token` event on each `llm` run and nothing else (**no retry event exists**: the retried
+  tool call is two sibling `tool` runs, the first in error).
+- *the command's export*: `run_id` (not `id`), `parent_run_id` (null on a root), `duration_ms`,
+  `token_usage`, `costs`, `custom_metadata`, `feedback_stats`; **no `reference_example_id` and no
+  `dotted_order`**, as the spec says; the example's own metadata arrives as
+  `custom_metadata.ls_example_case`, which is the only case identity in this shape.
+- *feedback*: `feedback_stats` gives `n` and `avg` a key, and `values` for the categorical
+  `review`; the feedback objects give `key`, `score`, `value`, `comment`, `run_id`, and
+  `feedback_source.type` (`model` for `exact` and `judge_correct`, `api` for `thumbs` and
+  `review`, `app` for the two `human_thumbs`; an `app` object has the same fields as the others,
+  with `feedback_source.metadata` null). In `feedback_stats` the source is inside each key's
+  `sources`, a list of JSON strings. **In the baseline, v2 and the command's export show `exact` in `feedback_stats` on 8
+  of the 10 roots (not on c08 and c10), while v1 shows it on all 10 and `baseline.feedback.json`
+  holds all 10 `exact` objects.** Three pulls over seven minutes gave the same; the candidate
+  agrees everywhere. The feedback objects are the complete record. **The two arrived later:** a
+  pull at 21:56 UTC, 78 minutes after the runs, showed `exact` on all 10 baseline roots in v2 and
+  in the command's export. The baseline files were kept as first pulled, on purpose, so that a
+  reader meets statistics that had not yet caught up with the feedback objects.
+- An errored run has `error` (the exception's repr, then a traceback) on the failing step and on
+  the root, and the root's `outputs` is `{"output": null}`.
+
+**Spend.** 74 calls to gpt-4.1-mini, 4,318 prompt and 186 completion tokens, **$0.002025**; the
+cap was $0.50. Of these, 37 calls ($0.001012) were the first, unstreamed pair and its judge, and
+37 ($0.001013) the pair captured here: 19 agent calls and 18 judge calls.
+
+**Replacements (the one edit).** As for Braintrust, by `ingest/scrub_identifiers.py`:
+
+| Where | Replaced by |
+|---|---|
+| `tenant_id`, and the same id inside `app_path` and share URLs | `00000000-0000-4000-8000-000000000003` |
+| `feedback_source.user_id`, and the same id inside `feedback_stats.*.sources` | `00000000-0000-4000-8000-000000000004` |
+| `ls_user_id`, and the same id inside `feedback_stats.*.sources` | `00000000-0000-4000-8000-000000000005` |
+| `extra.metadata.git.author_email`, `…author_name` in the session files | `dev@example.com`, `Example Author` |
+| the home folder in tracebacks (`error`, `error_preview`) | `/Users/user` |
+
+Kept: run, trace, session, dataset and example ids, and the session's git `remote_url`, branch
+and commit (this public repository's). The same scan found no hit.

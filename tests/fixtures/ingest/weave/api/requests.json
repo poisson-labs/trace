@@ -1,0 +1,342 @@
+[
+ {
+  "at": "2026-11-09T20:29:59Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_roots_only": true
+   }
+  },
+  "status": 200,
+  "file": "roots.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:00Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1fe-e76e-7817-a336-454239eba743"
+    ]
+   }
+  },
+  "status": 200,
+  "file": "trace-fixture-old.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:01Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1fe-e76e-7817-a336-454239eba743"
+    ]
+   },
+   "expand_columns": [
+    "inputs.example"
+   ]
+  },
+  "status": 200,
+  "file": "trace-fixture-old.expanded.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:01Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1fe-e79c-74f0-94e4-85d34ca3a60b"
+    ]
+   }
+  },
+  "status": 200,
+  "file": "trace-fixture-new.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:01Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1fe-e79c-74f0-94e4-85d34ca3a60b"
+    ]
+   },
+   "expand_columns": [
+    "inputs.example"
+   ]
+  },
+  "status": 200,
+  "file": "trace-fixture-new.expanded.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:02Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1ff-2284-72e4-a62f-c0878cf8186f"
+    ]
+   }
+  },
+  "status": 200,
+  "file": "trace-fixture-slice-baseline.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:03Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1ff-2284-72e4-a62f-c0878cf8186f"
+    ]
+   },
+   "expand_columns": [
+    "inputs.example"
+   ]
+  },
+  "status": 200,
+  "file": "trace-fixture-slice-baseline.expanded.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:03Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1ff-2bba-7cc7-a8b2-b104a623be0c"
+    ]
+   }
+  },
+  "status": 200,
+  "file": "trace-fixture-slice-candidate.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:04Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1ff-2bba-7cc7-a8b2-b104a623be0c"
+    ]
+   },
+   "expand_columns": [
+    "inputs.example"
+   ]
+  },
+  "status": 200,
+  "file": "trace-fixture-slice-candidate.expanded.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:04Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": false,
+   "include_feedback": false,
+   "filter": {
+    "trace_ids": [
+     "01a1c1ff-2bba-7cc7-a8b2-b104a623be0c"
+    ]
+   }
+  },
+  "status": 200,
+  "file": "trace-fixture-slice-candidate.plain.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:04Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1ff-2bba-7cc7-a8b2-b104a623be0c"
+    ]
+   },
+   "limit": 40,
+   "offset": 0
+  },
+  "status": 200,
+  "file": "trace-fixture-slice-candidate.page-1.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:05Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1ff-2bba-7cc7-a8b2-b104a623be0c"
+    ]
+   },
+   "limit": 40,
+   "offset": 40
+  },
+  "status": 200,
+  "file": "trace-fixture-slice-candidate.page-2.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:05Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1ff-2bba-7cc7-a8b2-b104a623be0c"
+    ]
+   },
+   "limit": 40,
+   "offset": 80
+  },
+  "status": 200,
+  "file": "trace-fixture-slice-candidate.page-3.jsonl"
+ },
+ {
+  "at": "2026-11-09T20:30:06Z",
+  "method": "POST",
+  "url": "https://trace.wandb.ai/calls/stream_query",
+  "body": {
+   "project_id": "example-entity/trace-fixture",
+   "sort_by": [
+    {
+     "field": "started_at",
+     "direction": "asc"
+    }
+   ],
+   "include_costs": true,
+   "include_feedback": true,
+   "filter": {
+    "trace_ids": [
+     "01a1c1ff-2bba-7cc7-a8b2-b104a623be0c"
+    ]
+   },
+   "limit": 40,
+   "offset": 120
+  },
+  "status": 200,
+  "file": "trace-fixture-slice-candidate.page-4.jsonl"
+ }
+]

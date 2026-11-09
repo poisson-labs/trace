@@ -1,0 +1,520 @@
+[
+  {
+    "name": "eval",
+    "input": {
+      "case": "c10",
+      "item": "seal"
+    },
+    "output": "unknown",
+    "expected": "reorder",
+    "tags": [
+      "baseline"
+    ],
+    "classifications": {
+      "failure_kind": "[{\"id\":\"abstained\"}]"
+    },
+    "scores": {
+      "exact": 0,
+      "gave_answer": 0
+    },
+    "metrics": {
+      "cached": null,
+      "completion_accepted_prediction_tokens": 0,
+      "completion_audio_tokens": 0,
+      "completion_reasoning_tokens": 0,
+      "completion_rejected_prediction_tokens": 0,
+      "completion_tokens": 1,
+      "duration": 1.9523577690124512,
+      "end": 1794255857.113773,
+      "errors": 0,
+      "estimated_cost": 0.0000276,
+      "llm_calls": 1,
+      "llm_duration": 1.9489939212799072,
+      "llm_errors": 0,
+      "prompt_audio_tokens": 0,
+      "prompt_cache_creation_1h_tokens": 0,
+      "prompt_cache_creation_5m_tokens": 0,
+      "prompt_cache_creation_tokens": 0,
+      "prompt_cached_tokens": 0,
+      "prompt_tokens": 65,
+      "start": 1794255855.158221,
+      "time_to_first_token": 1.9484939575195312,
+      "tool_calls": 1,
+      "tool_errors": 0,
+      "total_tokens": 66
+    },
+    "metadata": {
+      "case": "c10",
+      "version": "baseline"
+    },
+    "comments": null,
+    "created": 1794255855158,
+    "__bt_assignments": null
+  },
+  {
+    "name": "eval",
+    "input": {
+      "case": "c03",
+      "item": "valve"
+    },
+    "output": "hold",
+    "expected": "reorder",
+    "tags": [
+      "baseline"
+    ],
+    "classifications": {
+      "failure_kind": "[{\"id\":\"wrong_answer\"}]"
+    },
+    "scores": {
+      "exact": 0,
+      "gave_answer": 1
+    },
+    "metrics": {
+      "cached": null,
+      "completion_accepted_prediction_tokens": 0,
+      "completion_audio_tokens": 0,
+      "completion_reasoning_tokens": 0,
+      "completion_rejected_prediction_tokens": 0,
+      "completion_tokens": 1,
+      "duration": 0.48662781715393066,
+      "end": 1794255858.849171,
+      "errors": 0,
+      "estimated_cost": 0.000030000000000000004,
+      "llm_calls": 1,
+      "llm_duration": 0.48348212242126465,
+      "llm_errors": 0,
+      "prompt_audio_tokens": 0,
+      "prompt_cache_creation_1h_tokens": 0,
+      "prompt_cache_creation_5m_tokens": 0,
+      "prompt_cache_creation_tokens": 0,
+      "prompt_cached_tokens": 0,
+      "prompt_tokens": 71,
+      "start": 1794255858.3565838,
+      "time_to_first_token": 0.48278093338012695,
+      "tool_calls": 1,
+      "tool_errors": 0,
+      "total_tokens": 72
+    },
+    "metadata": {
+      "case": "c03",
+      "version": "baseline"
+    },
+    "comments": null,
+    "created": 1794255858356,
+    "__bt_assignments": null
+  },
+  {
+    "name": "eval",
+    "input": {
+      "case": "c06",
+      "item": "coupling"
+    },
+    "output": "reorder",
+    "expected": "hold",
+    "tags": [
+      "baseline"
+    ],
+    "classifications": {
+      "failure_kind": "[{\"id\":\"wrong_answer\"}]"
+    },
+    "scores": {
+      "exact": 0,
+      "gave_answer": 1
+    },
+    "metrics": {
+      "cached": null,
+      "completion_accepted_prediction_tokens": 0,
+      "completion_audio_tokens": 0,
+      "completion_reasoning_tokens": 0,
+      "completion_rejected_prediction_tokens": 0,
+      "completion_tokens": 2,
+      "duration": 1.0033018589019775,
+      "end": 1794255858.12257,
+      "errors": 0,
+      "estimated_cost": 0.0000316,
+      "llm_calls": 1,
+      "llm_duration": 0.9995701313018799,
+      "llm_errors": 0,
+      "prompt_audio_tokens": 0,
+      "prompt_cache_creation_1h_tokens": 0,
+      "prompt_cache_creation_5m_tokens": 0,
+      "prompt_cache_creation_tokens": 0,
+      "prompt_cached_tokens": 0,
+      "prompt_tokens": 71,
+      "start": 1794255857.113875,
+      "time_to_first_token": 0.9988019466400146,
+      "tool_calls": 1,
+      "tool_errors": 0,
+      "total_tokens": 73
+    },
+    "metadata": {
+      "case": "c06",
+      "version": "baseline"
+    },
+    "comments": null,
+    "created": 1794255857113,
+    "__bt_assignments": null
+  },
+  {
+    "name": "eval",
+    "input": {
+      "case": "c01",
+      "item": "widget"
+    },
+    "output": "hold",
+    "expected": "hold",
+    "tags": [
+      "baseline"
+    ],
+    "classifications": {
+      "failure_kind": null
+    },
+    "scores": {
+      "exact": 1,
+      "gave_answer": 1
+    },
+    "metrics": {
+      "cached": null,
+      "completion_accepted_prediction_tokens": 0,
+      "completion_audio_tokens": 0,
+      "completion_reasoning_tokens": 0,
+      "completion_rejected_prediction_tokens": 0,
+      "completion_tokens": 1,
+      "duration": 0.5145719051361084,
+      "end": 1794255859.36589,
+      "errors": 0,
+      "estimated_cost": 0.000030000000000000004,
+      "llm_calls": 1,
+      "llm_duration": 0.5130233764648438,
+      "llm_errors": 0,
+      "prompt_audio_tokens": 0,
+      "prompt_cache_creation_1h_tokens": 0,
+      "prompt_cache_creation_5m_tokens": 0,
+      "prompt_cache_creation_tokens": 0,
+      "prompt_cached_tokens": 0,
+      "prompt_tokens": 71,
+      "start": 1794255858.849314,
+      "time_to_first_token": 0.5126278400421143,
+      "tool_calls": 1,
+      "tool_errors": 0,
+      "total_tokens": 72
+    },
+    "metadata": {
+      "case": "c01",
+      "version": "baseline"
+    },
+    "comments": null,
+    "created": 1794255858849,
+    "__bt_assignments": null
+  },
+  {
+    "name": "eval",
+    "input": {
+      "case": "c02",
+      "item": "gasket"
+    },
+    "output": "reorder",
+    "expected": "reorder",
+    "tags": [
+      "baseline"
+    ],
+    "classifications": {
+      "failure_kind": null
+    },
+    "scores": {
+      "exact": 1,
+      "gave_answer": 1
+    },
+    "metrics": {
+      "cached": null,
+      "completion_accepted_prediction_tokens": 0,
+      "completion_audio_tokens": 0,
+      "completion_reasoning_tokens": 0,
+      "completion_rejected_prediction_tokens": 0,
+      "completion_tokens": 2,
+      "duration": 0.42250990867614746,
+      "end": 1794255858.9556348,
+      "errors": 0,
+      "estimated_cost": 0.0000316,
+      "llm_calls": 1,
+      "llm_duration": 0.41861486434936523,
+      "llm_errors": 0,
+      "prompt_audio_tokens": 0,
+      "prompt_cache_creation_1h_tokens": 0,
+      "prompt_cache_creation_5m_tokens": 0,
+      "prompt_cache_creation_tokens": 0,
+      "prompt_cached_tokens": 0,
+      "prompt_tokens": 71,
+      "start": 1794255858.5301938,
+      "time_to_first_token": 0.41802215576171875,
+      "tool_calls": 1,
+      "tool_errors": 0,
+      "total_tokens": 73
+    },
+    "metadata": {
+      "case": "c02",
+      "version": "baseline"
+    },
+    "comments": null,
+    "created": 1794255858530,
+    "__bt_assignments": null
+  },
+  {
+    "name": "eval",
+    "input": {
+      "case": "c04",
+      "item": "flange"
+    },
+    "output": "hold",
+    "expected": "hold",
+    "tags": [
+      "baseline"
+    ],
+    "classifications": {
+      "failure_kind": null
+    },
+    "scores": {
+      "exact": 1,
+      "gave_answer": 1
+    },
+    "metrics": {
+      "cached": null,
+      "completion_accepted_prediction_tokens": 0,
+      "completion_audio_tokens": 0,
+      "completion_reasoning_tokens": 0,
+      "completion_rejected_prediction_tokens": 0,
+      "completion_tokens": 1,
+      "duration": 0.4037177562713623,
+      "end": 1794255858.5299242,
+      "errors": 0,
+      "estimated_cost": 0.000030000000000000004,
+      "llm_calls": 1,
+      "llm_duration": 0.4002559185028076,
+      "llm_errors": 0,
+      "prompt_audio_tokens": 0,
+      "prompt_cache_creation_1h_tokens": 0,
+      "prompt_cache_creation_5m_tokens": 0,
+      "prompt_cache_creation_tokens": 0,
+      "prompt_cached_tokens": 0,
+      "prompt_tokens": 71,
+      "start": 1794255858.122856,
+      "time_to_first_token": 0.39922213554382324,
+      "tool_calls": 1,
+      "tool_errors": 0,
+      "total_tokens": 72
+    },
+    "metadata": {
+      "case": "c04",
+      "version": "baseline"
+    },
+    "comments": null,
+    "created": 1794255858122,
+    "__bt_assignments": null
+  },
+  {
+    "name": "eval",
+    "input": {
+      "case": "c05",
+      "item": "bearing"
+    },
+    "output": "reorder",
+    "expected": "reorder",
+    "tags": [
+      "baseline"
+    ],
+    "classifications": {
+      "failure_kind": null
+    },
+    "scores": {
+      "exact": 1,
+      "gave_answer": 1
+    },
+    "metrics": {
+      "cached": null,
+      "completion_accepted_prediction_tokens": 0,
+      "completion_audio_tokens": 0,
+      "completion_reasoning_tokens": 0,
+      "completion_rejected_prediction_tokens": 0,
+      "completion_tokens": 2,
+      "duration": 0.8571560382843018,
+      "end": 1794255858.3562508,
+      "errors": 0,
+      "estimated_cost": 0.0000316,
+      "llm_calls": 1,
+      "llm_duration": 0.8539140224456787,
+      "llm_errors": 0,
+      "prompt_audio_tokens": 0,
+      "prompt_cache_creation_1h_tokens": 0,
+      "prompt_cache_creation_5m_tokens": 0,
+      "prompt_cache_creation_tokens": 0,
+      "prompt_cached_tokens": 0,
+      "prompt_tokens": 71,
+      "start": 1794255857.496104,
+      "time_to_first_token": 0.8533802032470703,
+      "tool_calls": 1,
+      "tool_errors": 0,
+      "total_tokens": 73
+    },
+    "metadata": {
+      "case": "c05",
+      "version": "baseline"
+    },
+    "comments": null,
+    "created": 1794255857496,
+    "__bt_assignments": null
+  },
+  {
+    "name": "eval",
+    "input": {
+      "case": "c07",
+      "item": "washer"
+    },
+    "output": "hold",
+    "expected": "hold",
+    "tags": [
+      "baseline"
+    ],
+    "classifications": {
+      "failure_kind": null
+    },
+    "scores": {
+      "exact": 1,
+      "gave_answer": 1
+    },
+    "metrics": {
+      "cached": null,
+      "completion_accepted_prediction_tokens": 0,
+      "completion_audio_tokens": 0,
+      "completion_reasoning_tokens": 0,
+      "completion_rejected_prediction_tokens": 0,
+      "completion_tokens": 1,
+      "duration": 0.4479689598083496,
+      "end": 1794255857.495894,
+      "errors": 0,
+      "estimated_cost": 0.000030000000000000004,
+      "llm_calls": 1,
+      "llm_duration": 0.444688081741333,
+      "llm_errors": 0,
+      "prompt_audio_tokens": 0,
+      "prompt_cache_creation_1h_tokens": 0,
+      "prompt_cache_creation_5m_tokens": 0,
+      "prompt_cache_creation_tokens": 0,
+      "prompt_cached_tokens": 0,
+      "prompt_tokens": 71,
+      "start": 1794255857.045274,
+      "time_to_first_token": 0.4438810348510742,
+      "tool_calls": 1,
+      "tool_errors": 0,
+      "total_tokens": 72
+    },
+    "metadata": {
+      "case": "c07",
+      "version": "baseline"
+    },
+    "comments": null,
+    "created": 1794255857045,
+    "__bt_assignments": null
+  },
+  {
+    "name": "eval",
+    "input": {
+      "case": "c09",
+      "item": "bracket"
+    },
+    "output": "hold",
+    "expected": "hold",
+    "tags": [
+      "baseline"
+    ],
+    "classifications": {
+      "failure_kind": null
+    },
+    "scores": {
+      "exact": 1,
+      "gave_answer": 1
+    },
+    "metrics": {
+      "cached": null,
+      "completion_accepted_prediction_tokens": 0,
+      "completion_audio_tokens": 0,
+      "completion_reasoning_tokens": 0,
+      "completion_rejected_prediction_tokens": 0,
+      "completion_tokens": 1,
+      "duration": 1.8806369304656982,
+      "end": 1794255857.042728,
+      "errors": 0,
+      "estimated_cost": 0.000030000000000000004,
+      "llm_calls": 1,
+      "llm_duration": 1.8726909160614014,
+      "llm_errors": 0,
+      "prompt_audio_tokens": 0,
+      "prompt_cache_creation_1h_tokens": 0,
+      "prompt_cache_creation_5m_tokens": 0,
+      "prompt_cache_creation_tokens": 0,
+      "prompt_cached_tokens": 0,
+      "prompt_tokens": 71,
+      "start": 1794255855.160515,
+      "time_to_first_token": 1.871093988418579,
+      "tool_calls": 1,
+      "tool_errors": 0,
+      "total_tokens": 72
+    },
+    "metadata": {
+      "case": "c09",
+      "version": "baseline"
+    },
+    "comments": null,
+    "created": 1794255855160,
+    "__bt_assignments": null
+  },
+  {
+    "name": "eval",
+    "input": {
+      "case": "c08",
+      "item": "spindle"
+    },
+    "output": null,
+    "error": "Traceback (most recent call last):\n  File \"/venv/lib/python3.12/site-packages/braintrust/framework.py\", line 1803, in run_evaluator_task\n    output = await await_or_run(event_loop, evaluator.task, *task_args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/venv/lib/python3.12/site-packages/braintrust/framework.py\", line 509, in await_or_run\n    return await asyncio.shield(future)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTimeoutError: check_stock timed out after 2.0s\n",
+    "expected": "reorder",
+    "tags": [
+      "baseline"
+    ],
+    "classifications": {
+      "failure_kind": null
+    },
+    "scores": {
+      "exact": null,
+      "gave_answer": null
+    },
+    "metrics": {
+      "cached": null,
+      "completion_accepted_prediction_tokens": null,
+      "completion_audio_tokens": null,
+      "completion_reasoning_tokens": 0,
+      "completion_rejected_prediction_tokens": null,
+      "completion_tokens": 0,
+      "duration": 0.001962900161743164,
+      "end": 1794255857.045176,
+      "errors": 3,
+      "estimated_cost": null,
+      "llm_calls": 0,
+      "llm_duration": null,
+      "llm_errors": 0,
+      "prompt_audio_tokens": null,
+      "prompt_cache_creation_1h_tokens": 0,
+      "prompt_cache_creation_5m_tokens": 0,
+      "prompt_cache_creation_tokens": 0,
+      "prompt_cached_tokens": 0,
+      "prompt_tokens": 0,
+      "start": 1794255857.0428338,
+      "time_to_first_token": null,
+      "tool_calls": 1,
+      "tool_errors": 1,
+      "total_tokens": 0
+    },
+    "metadata": null,
+    "comments": null,
+    "created": 1794255857042,
+    "__bt_assignments": null
+  }
+]

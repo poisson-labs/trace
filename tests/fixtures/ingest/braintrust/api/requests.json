@@ -1,0 +1,277 @@
+[
+ {
+  "at": "2026-11-09T20:25:39Z",
+  "method": "GET",
+  "url": "https://api.braintrust.dev/v1/experiment?project_name=trace-fixture",
+  "body": null,
+  "status": 200,
+  "file": "experiments.json"
+ },
+ {
+  "at": "2026-11-09T20:25:41Z",
+  "method": "GET",
+  "url": "https://api.braintrust.dev/v1/experiment/c12245bf-c48d-4128-b0c0-b30183901c26/fetch?limit=1000",
+  "body": null,
+  "status": 200,
+  "file": "old.fetch.json"
+ },
+ {
+  "at": "2026-11-09T20:25:43Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('c12245bf-c48d-4128-b0c0-b30183901c26') spans | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "old.btql-spans.json"
+ },
+ {
+  "at": "2026-11-09T20:25:45Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('c12245bf-c48d-4128-b0c0-b30183901c26') traces | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "old.btql-traces.json"
+ },
+ {
+  "at": "2026-11-09T20:25:48Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('c12245bf-c48d-4128-b0c0-b30183901c26') summary | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "old.btql-summary.json"
+ },
+ {
+  "at": "2026-11-09T20:25:50Z",
+  "method": "GET",
+  "url": "https://api.braintrust.dev/v1/experiment/6fda40a5-37d0-4586-b75f-ba552174780a/fetch?limit=1000",
+  "body": null,
+  "status": 200,
+  "file": "new.fetch.json"
+ },
+ {
+  "at": "2026-11-09T20:25:52Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('6fda40a5-37d0-4586-b75f-ba552174780a') spans | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "new.btql-spans.json"
+ },
+ {
+  "at": "2026-11-09T20:25:54Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('6fda40a5-37d0-4586-b75f-ba552174780a') traces | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "new.btql-traces.json"
+ },
+ {
+  "at": "2026-11-09T20:25:56Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('6fda40a5-37d0-4586-b75f-ba552174780a') summary | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "new.btql-summary.json"
+ },
+ {
+  "at": "2026-11-09T20:25:59Z",
+  "method": "GET",
+  "url": "https://api.braintrust.dev/v1/experiment/5eddbe35-a975-4a3c-a34c-c59ad5ab4896/fetch?limit=1000",
+  "body": null,
+  "status": 200,
+  "file": "slice-baseline.fetch.json"
+ },
+ {
+  "at": "2026-11-09T20:26:01Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('5eddbe35-a975-4a3c-a34c-c59ad5ab4896') spans | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "slice-baseline.btql-spans.json"
+ },
+ {
+  "at": "2026-11-09T20:26:04Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('5eddbe35-a975-4a3c-a34c-c59ad5ab4896') traces | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "slice-baseline.btql-traces.json"
+ },
+ {
+  "at": "2026-11-09T20:26:06Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('5eddbe35-a975-4a3c-a34c-c59ad5ab4896') summary | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "slice-baseline.btql-summary.json"
+ },
+ {
+  "at": "2026-11-09T20:26:09Z",
+  "method": "GET",
+  "url": "https://api.braintrust.dev/v1/experiment/def2b2e5-9c1a-4e05-8861-3e9f3c14d332/fetch?limit=1000",
+  "body": null,
+  "status": 200,
+  "file": "slice-candidate.fetch.json"
+ },
+ {
+  "at": "2026-11-09T20:26:11Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('def2b2e5-9c1a-4e05-8861-3e9f3c14d332') spans | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "slice-candidate.btql-spans.json"
+ },
+ {
+  "at": "2026-11-09T20:26:14Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('def2b2e5-9c1a-4e05-8861-3e9f3c14d332') traces | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "slice-candidate.btql-traces.json"
+ },
+ {
+  "at": "2026-11-09T20:26:16Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('def2b2e5-9c1a-4e05-8861-3e9f3c14d332') summary | limit: 1000",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "slice-candidate.btql-summary.json"
+ },
+ {
+  "at": "2026-11-09T20:26:19Z",
+  "method": "GET",
+  "url": "https://api.braintrust.dev/v1/experiment/def2b2e5-9c1a-4e05-8861-3e9f3c14d332/fetch?limit=25",
+  "body": null,
+  "status": 200,
+  "file": "slice-candidate.fetch.page-1.json"
+ },
+ {
+  "at": "2026-11-09T20:26:21Z",
+  "method": "GET",
+  "url": "https://api.braintrust.dev/v1/experiment/def2b2e5-9c1a-4e05-8861-3e9f3c14d332/fetch?limit=25&cursor=avIr8wA6ABw",
+  "body": null,
+  "status": 200,
+  "file": "slice-candidate.fetch.page-2.json"
+ },
+ {
+  "at": "2026-11-09T20:26:23Z",
+  "method": "GET",
+  "url": "https://api.braintrust.dev/v1/experiment/def2b2e5-9c1a-4e05-8861-3e9f3c14d332/fetch?limit=25&cursor=avIr8g5oAA0",
+  "body": null,
+  "status": 200,
+  "file": "slice-candidate.fetch.page-3.json"
+ },
+ {
+  "at": "2026-11-09T20:26:26Z",
+  "method": "GET",
+  "url": "https://api.braintrust.dev/v1/experiment/def2b2e5-9c1a-4e05-8861-3e9f3c14d332/fetch?limit=25&cursor=avIr8Q4VABY",
+  "body": null,
+  "status": 200,
+  "file": "slice-candidate.fetch.page-4.json"
+ },
+ {
+  "at": "2026-11-09T20:26:28Z",
+  "method": "GET",
+  "url": "https://api.braintrust.dev/v1/experiment/def2b2e5-9c1a-4e05-8861-3e9f3c14d332/fetch?limit=25&cursor=avIr8AriAAY",
+  "body": null,
+  "status": 429,
+  "file": null
+ },
+ {
+  "at": "2026-11-09T20:26:43Z",
+  "method": "GET",
+  "url": "https://api.braintrust.dev/v1/experiment/def2b2e5-9c1a-4e05-8861-3e9f3c14d332/fetch?limit=25&cursor=avIr8AriAAY",
+  "body": null,
+  "status": 200,
+  "file": "slice-candidate.fetch.page-5.json"
+ },
+ {
+  "at": "2026-11-09T20:26:45Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('def2b2e5-9c1a-4e05-8861-3e9f3c14d332') spans | limit: 25",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "slice-candidate.btql-spans.page-1.json"
+ },
+ {
+  "at": "2026-11-09T20:26:47Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('def2b2e5-9c1a-4e05-8861-3e9f3c14d332') spans | limit: 25 | cursor: 'avIr8wA6ABw'",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "slice-candidate.btql-spans.page-2.json"
+ },
+ {
+  "at": "2026-11-09T20:26:49Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('def2b2e5-9c1a-4e05-8861-3e9f3c14d332') spans | limit: 25 | cursor: 'avIr8g5oAA0'",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "slice-candidate.btql-spans.page-3.json"
+ },
+ {
+  "at": "2026-11-09T20:26:52Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('def2b2e5-9c1a-4e05-8861-3e9f3c14d332') spans | limit: 25 | cursor: 'avIr8Q4VABY'",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "slice-candidate.btql-spans.page-4.json"
+ },
+ {
+  "at": "2026-11-09T20:26:54Z",
+  "method": "POST",
+  "url": "https://api.braintrust.dev/btql",
+  "body": {
+   "query": "select: * | from: experiment('def2b2e5-9c1a-4e05-8861-3e9f3c14d332') spans | limit: 25 | cursor: 'avIr8AriAAY'",
+   "fmt": "json"
+  },
+  "status": 200,
+  "file": "slice-candidate.btql-spans.page-5.json"
+ }
+]
