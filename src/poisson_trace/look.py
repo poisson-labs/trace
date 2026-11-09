@@ -500,6 +500,18 @@ def _is_terminal(stream: Any) -> bool:
         return False
 
 
+def opens_app() -> bool:
+    """Whether the bare command opens the terminal app (section 17.2, AD4): stdin and stdout
+    are terminals (stderr may be a pipe), ``CI`` is unset (any value, the empty one included,
+    counts as set) and ``TERM`` is not ``dumb``. ``--plain`` is the caller's to check."""
+    return (
+        _is_terminal(sys.stdin)
+        and _is_terminal(sys.stdout)
+        and "CI" not in os.environ
+        and os.environ.get("TERM") != "dumb"
+    )
+
+
 def _utf8(stream: Any) -> bool:
     import codecs
 
@@ -752,6 +764,9 @@ class Session:
     stopped: Callable[[], str] = field(default=lambda: NOTHING_WRITTEN)
     # under --json, the stopped line as the verb's JSON document, so that stdout stays one
     render: Callable[[str], str] | None = None
+    # whether ``--plain`` was given: ``run`` takes it off the command line before the body
+    # sees it, and the bare command never opens the terminal app under it (section 17.2, AD4)
+    plain: bool = False
 
 
 def run(
@@ -770,10 +785,11 @@ def run(
     to the import's own ``run`` keeps the rendering already chosen."""
     global _depth, _rendering
     outer = _depth == 0
+    plain = False
     if outer:
         argv, plain = _take_plain(argv)
         _rendering = _choose(plain, _asked_json(argv))
-    session = Session(tool, list(argv))
+    session = Session(tool, list(argv), plain=plain)
     _depth += 1
     try:
         try:

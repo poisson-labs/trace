@@ -324,3 +324,40 @@ def show_page(address: str) -> None:
     import webbrowser
 
     webbrowser.open(address)
+
+
+# ---------- the terminal app (section 17.2) ----------
+
+
+def app(*, config: str | None = None, store: str | None = None) -> Any:
+    """The terminal app, built and not yet run: ``poisson-trace`` with no verb on a terminal.
+    ``config`` and ``store`` are the bare command's ``--config`` and ``--store`` values as typed.
+    Textual, the app's framework, is imported here and nowhere a verb reaches; a Textual that
+    cannot be imported is one refusal (A16)."""
+    try:
+        from poisson_trace._app import TraceApp
+    except ImportError:
+        raise look.Refused(
+            "the terminal app cannot start: Textual cannot be imported", "poisson-trace --help"
+        ) from None
+    return TraceApp(config=config, store=store)
+
+
+def run_app(built: Any) -> int:
+    """The app run until it is left, and its exit code (0 for ``q``, 130 for Ctrl-C). Textual
+    draws on stderr; the app belongs on the terminal stdout is (A2), so a piped stderr takes
+    stdout's terminal for as long as the app runs."""
+    import os
+    import sys
+
+    saved = None
+    if not look._is_terminal(sys.__stderr__):
+        saved = os.dup(2)
+        os.dup2(1, 2)
+    try:
+        built.run()
+    finally:
+        if saved is not None:
+            os.dup2(saved, 2)
+            os.close(saved)
+    return int(built.return_code or 0)

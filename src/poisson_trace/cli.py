@@ -30,6 +30,11 @@ from poisson_trace import api, commands, look
 _NAMED = (
     "init, runs, name, where, compare, fix-check, changes, handover, import, doctor, ui and report"
 )
+# the column the top help's words start at, as main laid it out before the bare command's two
+# options joined (TF19-A3)
+_HELP_COLUMN = 15
+# the bare command's options: with no verb, on a terminal, they open the app (section 17.2)
+_BARE = ("--store", "--config")
 # the verbs that count failures, and whose results are delivered with --save, --out and --svg
 _COUNTING = ("where", "compare", "fix-check", "changes")
 # the command's own option, which stays where it is written; --help before a verb is that
@@ -106,6 +111,9 @@ _VERDICTS_HELP = (
 def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
     parser = look.Parser(
         prog="poisson-trace",
+        # the two options of the bare command hold the help's column where main had it, so
+        # their helps start on the line under them and nothing else on the page moves (TF19-A3)
+        formatter_class=lambda prog: look._HelpFormatter(prog, max_help_position=_HELP_COLUMN),
         description=_ABOUT,
         epilog=_example(
             "poisson-trace runs --store proofload-runs --event unsolved",
@@ -121,6 +129,18 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         "--plain",
         action="store_true",
         help="print plain text with no colour, as on a pipe; may come before or after the verb",
+    )
+    parser.add_argument(
+        "--store",
+        metavar="PATH",
+        help="with no verb, open the terminal app on this store, a folder or a name trace.toml "
+        "gives (default: the store trace.toml names)",
+    )
+    parser.add_argument(
+        "--config",
+        metavar="PATH",
+        help="with no verb, open the terminal app on this config file (default: trace.toml in "
+        "the current folder, if any)",
     )
     parser.add_argument("--debug", action="store_true", help=argparse.SUPPRESS)
     verbs = parser.add_subparsers(dest="verb", metavar="VERB", title="verbs")
@@ -816,7 +836,41 @@ def main(argv: Sequence[str] | None = None) -> int:
     return look.run("poisson-trace", args, _main, (_Refusal,))
 
 
+def _bare_options(argv: Sequence[str]) -> tuple[str | None, str | None] | None:
+    """``(config, store)`` when the command line is the bare command's alone: nothing, or
+    ``--config PATH`` and ``--store PATH`` in either form; None for any other command line."""
+    held: dict[str, str | None] = {"--config": None, "--store": None}
+    i = 0
+    while i < len(argv):
+        word = argv[i]
+        name, joined, value = word.partition("=")
+        if name not in _BARE:
+            return None
+        if joined:
+            held[name] = value
+        elif i + 1 < len(argv):
+            held[name] = argv[i + 1]
+            i += 1
+        else:
+            return None
+        i += 1
+    return held["--config"], held["--store"]
+
+
+def _open_app(config: str | None, store: str | None) -> int:
+    """The terminal app, until it is left (section 17.2, AD4): what it leaves to say once it
+    has left the terminal (Ctrl-C's ``stopped`` line) is printed as a verb prints it."""
+    built = commands.app(config=config, store=store)
+    code = commands.run_app(built)
+    if built.after:
+        look.out(f"{built.after}\n")
+    return code
+
+
 def _main(session: look.Session) -> int:
+    bare = _bare_options(session.argv)
+    if bare is not None and not session.plain and look.opens_app():
+        return _open_app(*bare)
     parser, verbs = _build_parser()
     parsers_ = [parser, *verbs.values()]
     at = _import_at(session.argv, parsers_, verbs)

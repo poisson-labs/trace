@@ -3493,3 +3493,152 @@ def to_html(c: Counted) -> str:
         return report_page(staging, store)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
+
+
+# ---------- the objects only the terminal app needs (section 17.2; TF13's PA11; TF19-A8) ----------
+# Three core functions, not part of the public API: what the app's screens show that no verb
+# prints (the saved verdicts as a list, a run's target or the tool it was imported from, and
+# the result files init finds with their import lines). Each reads the paths it is given and
+# nothing else, prints nothing and writes nothing.
+
+
+@dataclass(frozen=True)
+class SavedVerdict:
+    """One of Trace's saved verdicts in a store: its kind, its id, the runs it is about by name
+    and by id, its verdict line, when it was saved (as its descriptor records it), its folder
+    under the store and its page under the store's pages."""
+
+    kind: str
+    id: str
+    runs: tuple[str, ...]
+    run_ids: tuple[str, ...]
+    verdict: str
+    sentence: str
+    saved_at: str
+    folder: str
+    page: str
+
+
+@dataclass(frozen=True)
+class RunSource:
+    """Where a run came from: a Prove run's target, or the reader an import came from and the
+    files it was read from (their names, no folder); ``target_or_tool`` is the one the listing
+    shows (section 5.3)."""
+
+    run_id: str
+    target: str | None
+    tool: str | None
+    files: tuple[str, ...]
+    target_or_tool: str
+
+
+@dataclass(frozen=True)
+class FoundResult:
+    """A result file ``init`` finds under a folder and would offer to import: its path as init
+    prints it, the reader that reads it, init's words for it, the import line init prints for
+    it, the words in capitals the user must fill in before that line can run, and whether a run
+    of a store under the folder was imported from a file with these bytes."""
+
+    path: str
+    tool: str
+    said: str
+    command: str
+    fill: tuple[str, ...]
+    imported: bool
+
+
+def _store_runs(store: Any) -> list[dict[str, Any]]:
+    """The runs of a store as ``runs`` lists them, in its order; a store that is not one is
+    ``runs``'s refusal."""
+    from poisson_trace import api
+
+    return list(api.runs(str(store)).runs)
+
+
+def saved_verdicts(store: Any) -> list[SavedVerdict]:
+    """Trace's saved verdicts in a store, newest first (by save time, then kind, then id, as the
+    runs page orders them); a store that is not one is ``runs``'s refusal."""
+    root = Path(store)
+    if not artifact_folders(root):
+        _store_runs(store)
+        return []
+    out = []
+    for folder in artifact_folders(root):
+        art, result, _report = _saved_verdict(folder)
+        kind, ident = str(art.get("kind", folder.parent.name)), str(art.get("id", folder.name))
+        if kind == "where":
+            held = [result.get("run") or {}]
+        else:
+            runs = result.get("runs")
+            held = list(runs.values()) if isinstance(runs, Mapping) else []
+        out.append(
+            SavedVerdict(
+                kind=kind,
+                id=ident,
+                runs=tuple(str(r.get("run_name", "")) for r in held),
+                run_ids=tuple(str(r.get("run_id", "")) for r in held),
+                verdict=str(result.get("verdict", "")),
+                sentence=str(result.get("sentence", "")),
+                saved_at=str(art.get("created_at", "")),
+                folder=f".poisson/artifacts/{kind}/{ident}",
+                page=f"{PAGES}/{kind}/{ident}.html",
+            )
+        )
+    out.sort(key=lambda v: (v.saved_at, v.kind, v.id), reverse=True)
+    return out
+
+
+def run_sources(store: Any) -> list[RunSource]:
+    """Each run ``runs`` lists, in its order, with where it came from: a Prove run's target, or
+    an import's reader and files (from the record the import wrote beside Prove's)."""
+    from poisson_trace import names
+    from poisson_trace.ingest.writer import read_produced_by
+
+    out = []
+    for run in _store_runs(store):
+        run_id, backend = str(run["run_id"]), str(run.get("backend") or "")
+        if backend.startswith(names.IMPORTED):
+            tool = backend[len(names.IMPORTED) :]
+            made = read_produced_by(Path(store), run_id)
+            files = tuple(str(f.get("name", "")) for f in made.get("from") or ())
+            out.append(RunSource(run_id, None, tool, files, tool))
+        else:
+            target = str(run.get("target_id") or "")
+            out.append(RunSource(run_id, target, None, (), target))
+    return out
+
+
+def found_results(folder: Any, *, store: str = "trace-store") -> list[FoundResult]:
+    """The result files ``init`` finds under ``folder`` and would offer to import (a JUnit
+    report with no test case is left out, as init leaves it out), in the order its search finds
+    them, each with the import line init prints for it (``--store STORE``), every file its own
+    line past the twelve init shows (TF19-A9), and whether a run of a store under the folder
+    was imported from a file with these bytes (by the digest the run's record keeps, TF19-A7).
+    init's search reads paths relative to the current folder, so the folder is the current one
+    while it runs."""
+    import contextlib
+    import hashlib
+
+    from poisson_trace import setup
+    from poisson_trace.ingest.writer import read_produced_by
+
+    root = Path(folder)
+    with contextlib.chdir(root):
+        found = setup.search(Path("."))
+        files = setup._not_empty(found.files)
+        lines = setup.file_lines(files, store, limit=None)
+        command_of = {f.path: line for f, line in zip(setup.by_tool(files), lines, strict=True)}
+        digests: set[str] = set()
+        for held in found.stores:
+            for run in held.runs:
+                made = read_produced_by(Path(held.path), run.run_id)
+                digests.update(
+                    str(f["sha256"]) for f in made.get("from") or () if f.get("sha256")
+                )
+        out = []
+        for f in files:
+            command = command_of[f.path]
+            fill = tuple(w for w in command.split() if w.isupper() and w.isalpha())
+            digest = hashlib.sha256(Path(f.path).read_bytes()).hexdigest()
+            out.append(FoundResult(f.path, f.reader, f.said, command, fill, digest in digests))
+    return out

@@ -26,8 +26,10 @@ classifiers = [
 # `poisson_trace.look` reads it back from the installed package's metadata, so the version Trace
 # checks for, the refusal's install command and this line cannot drift apart.
 # Rich draws the pretty rendering on a terminal (docs/cli-look.md, rule 16) and is imported by
-# poisson_trace/_pretty.py alone; the floor is the one Prove declares
-dependencies = ["numpy", "scipy", "pandas>=2", "poisson-prove==0.1.3", "rich>=14.2.0"]
+# poisson_trace/_pretty.py and the terminal app's modules alone; the floor is the one Prove
+# declares. Textual is the terminal app's framework (spec section 17.2, AD5), imported by
+# poisson_trace/_app*.py alone, at the floor Prove declares.
+dependencies = ["numpy", "scipy", "pandas>=2", "poisson-prove==0.1.3", "rich>=14.2.0", "textual>=6.4.0"]
 
 [project.optional-dependencies]
 # pyte reads a pseudo-terminal's screen back for the clean-look tests

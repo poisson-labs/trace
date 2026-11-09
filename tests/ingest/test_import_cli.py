@@ -50,9 +50,12 @@ def small_doc() -> dict[str, Any]:
 def test_s22_the_script_entry_is_declared_and_no_dependency_is_added() -> None:
     project = tomllib.loads((REPO / "pyproject.toml").read_text())["project"]
     assert project["scripts"]["poisson-trace-import"] == "poisson_trace.ingest.cli:main"
-    # the import adds none; the others are the Prove Trace pins (PIN-1, ruled 2026-11-03) and
-    # Rich, which the clean look renders through (TF9-5a; LB2, ruled 2026-11-03)
-    assert sorted(project["dependencies"]) == sorted(["numpy", "scipy", "pandas>=2", REQUIREMENT, "rich>=14.2.0"])
+    # the import adds none; the others are the Prove Trace pins (PIN-1, ruled 2026-11-03),
+    # Rich, which the clean look renders through (TF9-5a; LB2, ruled 2026-11-03), and Textual,
+    # which the terminal app is built with at the floor Prove declares (section 17.2, AD5; TF19's
+    # FT1)
+    assert sorted(project["dependencies"]) == sorted(["numpy", "scipy", "pandas>=2", REQUIREMENT, "rich>=14.2.0",
+                                                      "textual>=6.4.0"])
 
 
 # ---------- IC6, the second half ----------

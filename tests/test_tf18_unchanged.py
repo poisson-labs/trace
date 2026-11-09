@@ -59,7 +59,7 @@ def test_tf18_21_the_top_help_gains_the_two_verbs_and_nothing_else(tmp_path: Pat
     (code, out, err), = _ran(tmp_path, *CHANGED["help: top"])
     (main_code, main_out, main_err), = PINNED["changed"]["help: top"]
     assert (code, err) == (main_code, main_err)
-    old, new = main_out.splitlines(), out.splitlines()
+    old, new = main_out.splitlines(), _without_the_app_s_options(out).splitlines()
     # main's lines all there, in order
     it = iter(new)
     assert all(any(line == n for n in it) for line in old), out
@@ -73,6 +73,32 @@ def test_tf18_21_the_top_help_gains_the_two_verbs_and_nothing_else(tmp_path: Pat
     assert sorted(r.split()[0] for r in rows) == sorted(NEW_VERBS), added
     assert all(start < new.index(line) < end for line in added), added
     assert all(line.startswith("    ") for line in added), added
+
+
+def _without_the_app_s_options(text: str) -> str:
+    """The top help with what TF19 adds taken out (TF19's FT2: section 17.2 makes ``--store PATH``
+    and ``--config PATH`` options of the bare command, which opens the terminal app; TF19-11
+    holds how they are added): their two tokens in the usage, the usage then laid out again as
+    argparse lays it, and their rows (each with any continuation) among the options."""
+    import re
+
+    lines = text.splitlines()
+    blank = lines.index("")
+    usage = " ".join(" ".join(lines[:blank]).replace("[--store PATH]", "").replace("[--config PATH]", "").split())
+    words = usage.split(" ")
+    # argparse's usage: "usage: poisson-trace " then the options, wrapped under the first at the
+    # help's width, the positionals on the line after when they do not fit; main's fits on one
+    head = ["usage: poisson-trace " + " ".join(words[2:])]
+    rest, skipping = [], False
+    for line in lines[blank:]:
+        if re.match(r"^  --(store|config) PATH", line):
+            skipping = True
+            continue
+        if skipping and line.startswith(" " * 15) and not line.lstrip().startswith("-"):
+            continue
+        skipping = False
+        rest.append(line)
+    return "\n".join(head + rest) + "\n"
 
 
 @pytest.mark.parametrize("label", ["verb: unknown", "verb: none"])

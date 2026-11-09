@@ -16,7 +16,7 @@ FROZEN = {
     "test_tf18_privacy.py": "a7cc628e2a2fb2defea9a55ad42433f820dad72d04c4e819f483043163e9986e",
     "test_tf18_report.py": "64a4cd222d742ae0ce4091ec5f98b39f603526b2d3d5938bb30859e536e0f1f1",
     "test_tf18_ui.py": "dbecb0e82c9522f4d6cb1a5cc8a07fa986f1c02e5cac4dc953073ac9e4273176",
-    "test_tf18_unchanged.py": "c3e8f1838dc624d26f0a0455e14ac01080d727b0ab9aca86351b04235c4a6589",
+    "test_tf18_unchanged.py": "66b046e2052b7e1757a28e4d6c1271a52b6e312cf77eba9a50152ec4fc13de72",
     "tf18_support.py": "d5045895be180792023f8c3131895d4666454f67a4d368c73e36499ce11243db",
     "fixtures/tf18/main-pins.json": "a5632b501ef1d6641d2bf339431c1b931aeb18f4bc6614a881653b06b810ec59",
     "fixtures/tf18/make_main_pins.py": "12ad479fb934e6e551a38d07505e9730ff26b9dac5abdbbcf3db9d1e4bb945a6",

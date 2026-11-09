@@ -1,0 +1,45 @@
+{
+ "repository": "https://github.com/poisson-labs/prove",
+ "commit": "d04e3788f3f6cb9b61e46c9494e9dba396b448ef",
+ "release": "0.1.3",
+ "release_commit": "52f78f8d326e96c2b3ed7f08487803d765b46c8b",
+ "files": {
+  "_cli_app.py": "2ff691dbfaf2778326fb2afb89b90524309650373d64bb50c720c488ecbb8eb0",
+  "_cli_app_pages.py": "cd8ed9308f9a84c6cfbe9520cb6b6fe014caff945d70f69597e95398b65d98a5"
+ },
+ "copied": {
+  "_cli_app_pages.py": [
+   "WIDE",
+   "Line",
+   "Page",
+   "verdict_line",
+   "Detail",
+   "block",
+   "wrap_line",
+   "code_line",
+   "text_line",
+   "BLANK",
+   "Column",
+   "lay_table",
+   "verdict_style",
+   "MOVE",
+   "OPEN",
+   "BACK"
+  ],
+  "_cli_app.py": [
+   "MIN_WIDTH",
+   "MIN_HEIGHT",
+   "_COLOURS",
+   "_key_bar",
+   "ProveApp._draw",
+   "ProveApp._style",
+   "ProveApp._move",
+   "ProveApp._filter_key",
+   "ProveApp._focused_link"
+  ]
+ },
+ "renamed": {
+  "poisson-prove": "poisson-trace",
+  "ProveApp": "TraceApp"
+ }
+}

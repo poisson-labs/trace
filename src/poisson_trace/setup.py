@@ -1000,14 +1000,18 @@ def _run_names(files: Sequence[FoundFile]) -> dict[str, str]:
     return named
 
 
-def file_lines(files: Sequence[FoundFile], store: str) -> list[str]:
+def file_lines(
+    files: Sequence[FoundFile], store: str, *, limit: int | None = LINES_SHOWN
+) -> list[str]:
     """One import line for each file, grouped by tool, at most 12 of them (each file shown is
     opened for its answers): every answer init can read from the file filled in, and a word in
-    capitals for each it cannot (METRIC, CUT, CASE)."""
+    capitals for each it cannot (METRIC, CUT, CASE). ``limit`` None gives every file its line
+    (the terminal app's imports screen, TF19-A9); the run names are read over every file
+    either way, so a line is the same whether or not the ones before it are shown."""
     ordered = by_tool(files)
     run_names = _run_names(ordered)
     lines = []
-    for f in ordered[:LINES_SHOWN]:
+    for f in ordered[:limit]:
         guess = _guessed(f)
         words = ["poisson-trace", "import", f.reader, f.path, *_pair("--store", store)]
         words += _pair("--run", run_names[f.path])

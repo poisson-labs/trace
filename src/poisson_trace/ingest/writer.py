@@ -491,3 +491,16 @@ def write(
         outcomes={word: outcomes[word] for word in words},
         no_outcome={reason: no_outcome[reason] for reason in sorted(no_outcome)},
     )
+
+
+def read_produced_by(root: Path | str, run: str) -> dict[str, Any]:
+    """An imported run's ``produced_by``, as its record keeps it (the files it was read from,
+    each with its digest, and the reader): empty for a run Prove stored, and for a record that
+    cannot be read. Read here, beside the writer, since Prove's own reading of a record leaves
+    the key out."""
+    try:
+        doc = json.loads((Path(root) / run / MANIFEST).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    held = doc.get("produced_by") if isinstance(doc, Mapping) else None
+    return dict(held) if isinstance(held, Mapping) else {}
