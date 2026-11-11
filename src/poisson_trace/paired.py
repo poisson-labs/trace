@@ -159,7 +159,11 @@ def difference(
 ) -> tuple[float, float | None, float | None, float | None]:
     """``(points, variance, lo, hi)``: the Mantel-Haenszel risk difference, new minus old, as a
     fraction, with Sato's variance, and the stratified Miettinen-Nurminen score interval at
-    level ``1 - alpha``. The last three are ``None`` where Sato's variance is not positive."""
+    level ``1 - alpha``. The last three are ``None`` where Sato's variance is not positive and
+    a run failed. Where no run failed in either version the variance is 0 and the interval is
+    given all the same: the score is defined there, its interval has a closed form
+    (``_clean_ends``, which is what is returned), and its two ends are how large a drop and a
+    rise the tries leave room for."""
     rows = [(c.failed_old, c.runs_old, c.failed_new, c.runs_new) for c in _checked(counts)]
     # math.fsum, not sum(): Python 3.12 added floats with compensated summation and 3.11 does not,
     # which moved the last digit of the result; fsum gives the same bytes on every Python
@@ -173,6 +177,13 @@ def difference(
         (xb * (na - xa) + xa * (nb - xb)) / (2 * (na + nb)) for xa, na, xb, nb in rows
     )
     variance = (d * p_sum + q_sum) / w**2
+    if none_failed(counts):
+        lo, hi = _clean_ends(
+            np.array([na for _, na, _, _ in rows], dtype=np.float64),
+            np.array([nb for _, _, _, nb in rows], dtype=np.float64),
+            alpha,
+        )
+        return 0.0, 0.0, lo, hi
     if not variance > 0.0:
         return d, None, None, None
     lo, hi = _miettinen_nurminen(counts, d, alpha)
@@ -184,11 +195,38 @@ INTERVAL = "stratified Miettinen-Nurminen score interval, Mantel-Haenszel weight
 FEW_VARY = 10
 
 
-def rough(counts: Sequence[Counts], *, informative: int, disagree: bool) -> tuple[str, ...]:
+def none_failed(counts: Sequence[Counts]) -> bool:
+    """No run failed in either version on any of these inputs."""
+    return all(c.failed_old == 0 and c.failed_new == 0 for c in counts)
+
+
+# Where no run failed in either version, the range is rough on fewer inputs than this, and
+# where its least favourable one-sided miss is more than this many times the half of alpha it
+# claims: above 5% at a 95% range (rulings F31-3 and F31-4, 2026-11-10).
+CLEAN_FEW_INPUTS = 3
+CLEAN_MISS_TIMES = 2.0
+
+
+def rough(
+    counts: Sequence[Counts], *, informative: int, disagree: bool, alpha: float = 0.05
+) -> tuple[str, ...]:
     """Why the range is rough on these counts, in words; empty where it is reliable. An input
     varies when its tries, both versions together, neither all failed nor all did not. A
     version ran once per input when fewer than half the inputs ran on it two or more times, as
-    consistency counts repeats; the words say how many inputs had one try where not all did."""
+    consistency counts repeats; the words say how many inputs had one try where not all did.
+    Where no run failed in either version the range rests on no input's variation, only on
+    how many tries each version had, and the reasons are its own: fewer than three inputs,
+    where the score interval misses more than it claims; and tries so unequal across the inputs
+    that a failure rate sitting on one input could lie beyond the range's end while a clean
+    run stayed likely (``clean_miss`` above twice the half of ``alpha`` the range claims)."""
+    if none_failed(counts):
+        clean = []
+        if len(counts) < CLEAN_FEW_INPUTS:
+            # the miss is large there whatever the tries, and that is the reason given
+            clean.append(f"fewer than {CLEAN_FEW_INPUTS} inputs")
+        elif clean_miss(counts, alpha=alpha) > CLEAN_MISS_TIMES * alpha / 2.0:
+            clean.append("unequal tries")
+        return tuple(clean)
     why = []
     if informative < FEW_VARY:
         why.append(f"fewer than {FEW_VARY} inputs vary")
@@ -511,6 +549,100 @@ def inputs_needed(
             counts, direction="drop", alpha=alpha, power=power, scale=k / present
         )
         return limit is not None and limit <= max_mde
+
+    return _smallest_reaching(reaches)
+
+
+def _clean_ends(
+    runs_old: np.ndarray, runs_new: np.ndarray, alpha: float, scale: float = 1.0
+) -> tuple[float, float]:
+    """The stratified Miettinen-Nurminen interval where no run failed in either version, in
+    closed form. With no failure the rates constrained to a rise ``delta`` are ``delta`` for
+    the new version and 0 for the old, so the score is ``-W delta`` over the square root of
+    ``delta (1 - delta) S``, with ``S`` the sum of ``w^2 N / (n_new (N - 1))``, and the high
+    end solves ``delta / (1 - delta) = z^2 S / W^2``; the low end is its mirror with the old
+    version's tries. ``scale`` multiplies the number of inputs like these."""
+    total = runs_old + runs_new
+    w = runs_old * runs_new / total
+    weight = float(w.sum()) * scale
+    z = float(stats.norm.isf(alpha / 2.0))
+
+    def end(tries: np.ndarray) -> float:
+        spread = float(np.sum(w * w * total / (tries * (total - 1.0)))) * scale
+        c = z * z * spread / weight**2
+        return c / (1.0 + c)
+
+    return -end(runs_old), end(runs_new)
+
+
+def _least_favourable(weights: np.ndarray, tries: np.ndarray, share: float) -> float:
+    """The largest chance that ``tries`` tries hold no failure, over every way a version's
+    failure rates could be spread across the inputs with their weighted share at ``share``:
+    maximise ``prod (1 - p_i)^n_i`` subject to ``sum w_i p_i / W = share``. At the maximum
+    ``p_i = max(0, 1 - t n_i / w_i)`` for one ``t``, found by bisection; where the share drives
+    an input's rate to 1 a clean run is impossible."""
+    total = float(weights.sum())
+
+    def rates(t: float) -> np.ndarray:
+        clipped: np.ndarray = np.clip(1.0 - t * tries / weights, 0.0, 1.0)
+        return clipped
+
+    low, high = 0.0, float((weights / tries).max())
+    for _ in range(200):
+        mid = (low + high) / 2.0
+        if float((weights * rates(mid)).sum()) / total >= share:
+            low = mid
+        else:
+            high = mid
+    held = rates(low)
+    if bool((held >= 1.0).any()):
+        return 0.0
+    return float(np.exp(float((tries * np.log1p(-held)).sum())))
+
+
+def clean_miss(counts: Sequence[Counts], *, alpha: float = 0.05) -> float:
+    """For inputs on which no run failed in either version: the range's one-sided miss at its
+    least favourable. For the high end, the largest chance of the new version's clean run over
+    every spread of its failures across the inputs that puts the weighted difference at that
+    end, the old version never failing; for the low end the same with the versions turned
+    round; the larger of the two. With equal tries of both versions on every input it is the
+    even spread's, about half of ``alpha`` from three inputs up."""
+    runs_old = np.array([c.runs_old for c in _checked(counts)], dtype=np.float64)
+    runs_new = np.array([c.runs_new for c in counts], dtype=np.float64)
+    weights = runs_old * runs_new / (runs_old + runs_new)
+    lo, hi = _clean_ends(runs_old, runs_new, alpha)
+    return max(_least_favourable(weights, runs_new, hi), _least_favourable(weights, runs_old, -lo))
+
+
+def clean_repeats_needed(
+    counts: Sequence[Counts], max_mde: float, *, alpha: float = 0.05
+) -> int | None:
+    """For inputs on which no run failed in either version: the smallest number of runs per
+    arm on these inputs at which, with still no failure, the range lies inside plus or minus
+    ``max_mde``."""
+    inputs = len(_checked(counts))
+
+    def reaches(n: int) -> bool:
+        runs = np.full(inputs, float(n))
+        lo, hi = _clean_ends(runs, runs, alpha)
+        return -max_mde <= lo and hi <= max_mde
+
+    return _smallest_reaching(reaches)
+
+
+def clean_inputs_needed(
+    counts: Sequence[Counts], max_mde: float, *, alpha: float = 0.05
+) -> int | None:
+    """For inputs on which no run failed in either version: the smallest number of inputs like
+    these, at the present repeats, at which the range with still no failure lies inside plus
+    or minus ``max_mde``."""
+    runs_old = np.array([c.runs_old for c in _checked(counts)], dtype=np.float64)
+    runs_new = np.array([c.runs_new for c in counts], dtype=np.float64)
+    present = len(counts)
+
+    def reaches(k: int) -> bool:
+        lo, hi = _clean_ends(runs_old, runs_new, alpha, scale=k / present)
+        return -max_mde <= lo and hi <= max_mde
 
     return _smallest_reaching(reaches)
 

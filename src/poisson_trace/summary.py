@@ -31,6 +31,8 @@ FRESH = (
     "a fresh run, judged on its own"
 )
 LABEL_ONLY = "That changes the label only, not the evidence."
+# the top line where no run failed in either version on the inputs compared (trace#31)
+NEITHER_FAILED = "neither version failed"
 
 # the kinds of step Prove records, as a sentence names the place a try stopped
 KIND_WORDS = {
@@ -470,7 +472,7 @@ def _shared_caveats(p: _Pair) -> list[str]:
         f"Tries of the same input are counted as separate chances{here}, and if they are near "
         "copies the answer is more confident than it should be."
     )
-    if p.ceiling >= 0.8 * p.old_share:
+    if p.ceiling >= 0.8 * p.old_share and not d.get("_none_failed"):
         said.append(
             f"The {p.asked} points you asked about is close to the most these inputs could drop "
             f"(the old version failed {percent(p.old_share)} of tries)."
@@ -591,6 +593,18 @@ def _no_difference(p: _Pair, changes: str) -> tuple[str, str, str, str | None, l
             f"always failing would need {tries(block['lone_flip_repeats'])} per input on each side."
         )
     bigger = "plan a bigger run with your own harness"
+    if d.get("_none_failed") and d["_decided_by"] == "range":
+        # no run failed in either version: there is no gap, and no input that moved to list
+        answer = (
+            f"Neither version failed. {p.counts}; the results fit "
+            f"{range_words(diff['lo'], diff['hi'])}, so a change of {p.asked} points or more "
+            "either way does not fit them (if tries of an input are independent)."
+        )
+        nxt = (
+            f"If a change inside that range matters to you, {bigger}, then run "
+            "`poisson-trace fix-check` on it."
+        )
+        return NEITHER_FAILED, answer, nxt, "poisson-trace fix-check --help", caveats
     if d["_decided_by"] == "range":
         sentence = "the gap could be chance"
         answer = (
@@ -650,7 +664,22 @@ def _too_small(p: _Pair) -> tuple[str, str, str, str | None, list[str]]:
     asked, article = p.asked, a_or_an(p.asked)
     lo, hi = diff["lo"], diff["hi"]
     ruled_out = d.get("_drop_ruled_out") is not None and lo is not None and hi is not None
-    if limits["drop"] is None:
+    clean = bool(d.get("_none_failed") and d["_reliable"]) and lo is not None and hi is not None
+    if clean:
+        # no run failed in either version: the range is what is too wide, not a drop too small
+        sentence = f"{NEITHER_FAILED}, on too few tries to rule out {article} {asked}-point change"
+        fit = f"they fit {range_words(lo, hi)} (if tries of an input are independent)"
+        if ruled_out:
+            answer = (
+                f"Can't tell yet. {p.counts}; {fit}: a drop of {asked} points or more does not "
+                f"fit them, but a rise of {asked} or more still does"
+            )
+        else:
+            answer = (
+                f"Can't tell yet. {p.counts}; {fit}, so a change of {asked} points or more still "
+                "fits them"
+            )
+    elif limits["drop"] is None:
         sentence = "too few tries to see a drop of any size"
         answer = (
             f"Can't tell. {p.counts}, and with these tries Trace can't reliably catch a drop of "
@@ -726,7 +755,21 @@ def _too_small(p: _Pair) -> tuple[str, str, str, str | None, list[str]]:
         else:
             nxt = plan[:1].upper() + plan[1:]
     caveats = []
-    if g is not None and (g["repeats"] is not None or g["inputs"] is not None):
+    if clean and g is not None and g["repeats"] is not None:
+        others = ""
+        if g["inputs"] is not None:
+            others = f" {inputs(g['inputs'])} like these at the present tries would do the same"
+            if selecting is not None and g["inputs"] > held["selected"]:
+                others += f", but only {count(held['selected'])} such inputs exist"
+            elif selecting is None and g["inputs"] > n:
+                others += f", more than the {count(n)} here"
+            others += "."
+        caveats.append(
+            f"The {count(g['repeats'])} times per input is what brings the range inside "
+            f"±{asked} points if neither version fails then either.{others} Make it a fresh run, "
+            "judged on its own: don't add tries to these and test again."
+        )
+    elif g is not None and (g["repeats"] is not None or g["inputs"] is not None):
         rough = (
             " (one try per input on one version, so rough)"
             if any(w.startswith("one try per input") for w in d["_rough"])
@@ -749,7 +792,14 @@ def _too_small(p: _Pair) -> tuple[str, str, str, str | None, list[str]]:
             f"{what} an estimate from these runs' failure rates{rough}.{others} {FRESH}: don't add "
             "tries to these and test again."
         )
-    if g is not None and g["accepts_at"] is not None:
+    if clean and g is not None and g["accepts_at"] is not None:
+        limit = points(g["accepts_at"], p.ceiling)
+        caveats.append(
+            f"If {a_or_an(limit)} {limit}-point change is the smallest that matters to you, and "
+            f"you would have said so before seeing this, `--max-mde {g['accepts_at']:.4f}` "
+            "accepts this design as it stands. " + LABEL_ONLY
+        )
+    elif g is not None and g["accepts_at"] is not None:
         limit = points(g["accepts_at"], p.ceiling)
         caveats.append(
             f"If {a_or_an(limit)} {limit}-point drop is the smallest that matters to you (the old "

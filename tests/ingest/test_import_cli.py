@@ -467,7 +467,7 @@ FROZEN = {
     "test_fix_check_cli.py": "30ee68972b123e64777e18cbeadaded1ce3a9d055bb110d3afc730306242b6fb",
     "test_fix_check_golden.py": "9b851201ed0b74bf04b2a28a5f3b83fdc85175bd929c6e7db72a8a21889262a3",
     "test_golden.py": "96336168933b628ccd373b58882dfa84d641872556a71567863fb2f90bc5fdcd",
-    "test_paired.py": "c21a6ea5e438be44f3d6b7332eefa7bc5dc5b209396084f7345e5f0c523ecbc5",
+    "test_paired.py": "3905e6d4a27c6a4201ca56a064cb6b209da118a4c1c5fe77a5da24c4fef640bb",
     "test_report.py": "38c7be36113f2721de26773f5d4cdb42a7617b41f13aca9a9b7e87e0c1d3ca7f",
     "test_survival.py": "975c37e9344c4d62595e8cc37c0d4c2921ecd131d5985408520692a87ca5a51b",
 }
@@ -476,7 +476,8 @@ FROZEN = {
 def test_ic14_no_frozen_trace_test_is_edited() -> None:
     """Green by construction: the digests of Trace's test files as they stood at main 42456f7, and
     as TF15 Session A moved them under Taylor's rulings of 2026-10-20 (each move commit names its
-    ruling and updates the digest of the file it moves)."""
+    ruling and updates the digest of the file it moves). ``test_paired.py`` moved again for
+    trace#31 (2026-11-10): TR49's interval where no run failed."""
     got = {name: hashlib.sha256((TESTS / name).read_bytes()).hexdigest() for name in FROZEN}
     assert got == FROZEN
 

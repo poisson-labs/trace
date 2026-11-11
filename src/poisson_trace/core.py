@@ -2455,6 +2455,23 @@ def _check_events(
     ]
 
 
+def _check_fix_events(events: frozenset[str], frame_old: Any, frame_new: Any) -> list[str]:
+    """The fix check's rule for a name neither run carries (trace#31). Where every outcome
+    the two runs carry is a word for success, no run failed under any name, and the fix check
+    answers that: the name counts no failure and is noted. Where a run carries an outcome that
+    is no word for success, a name neither carries may be that outcome misspelt, and it is
+    refused as every verb refuses it."""
+    from poisson_trace.setup import SUCCESS_WORDS
+
+    out_old, out_new = _outcomes(frame_old), _outcomes(frame_new)
+    present = {o for o in out_old | out_new if not _no_value(o)}
+    missing = sorted(events - present)
+    if not missing or not all(o in SUCCESS_WORDS for o in present):
+        return _check_events(events, frame_old, frame_new, "old", "new")
+    carried = _check_events(events - set(missing), frame_old, frame_new, "old", "new")
+    return sorted([*carried, *(f"event {e}: carried by neither run" for e in missing)])
+
+
 def _arm_rows(arm: Mapping[str, _Input], compared: Sequence[str], declared: int | None) -> Any:
     rows = [arm[h] for h in compared]
     return {
@@ -2544,7 +2561,7 @@ def fix_check(ns: argparse.Namespace) -> Counted:
         signals = _signals(ns, [("old", run_old), ("new", run_new)], events)
         frame_old = _filled(frame_old, signals[0]["old"], signals[1]["old"], events)
         frame_new = _filled(frame_new, signals[0]["new"], signals[1]["new"], events)
-    notes = _check_events(events, frame_old, frame_new, "old", "new")
+    notes = _check_fix_events(events, frame_old, frame_new)
     arm_old, arm_new = _by_input(frame_old, events), _by_input(frame_new, events)
     if selecting is not None:
         min_failures = 1 if ns.min_failures is None else ns.min_failures
@@ -2625,7 +2642,9 @@ def fix_check(ns: argparse.Namespace) -> Counted:
     disagree = variance is not None and ((test.p < ns.alpha) != excludes_zero)
     # the range reads the verdict only where it is reliable (section 9.5's gate); where it is
     # not, the drop limit against the size asked reads it, as before
-    rough = paired.rough(counts, informative=test.informative, disagree=disagree)
+    rough = paired.rough(
+        counts, informative=test.informative, disagree=disagree, alpha=ns.alpha
+    )
     reliable = lo is not None and hi is not None and not rough
     inside = (
         reliable and lo is not None and hi is not None and -ns.max_mde <= lo and hi <= ns.max_mde
@@ -2669,8 +2688,16 @@ def fix_check(ns: argparse.Namespace) -> Counted:
                 f"{limit_text} points, and {asked} was asked for"
             )
         verdict_line = f"too small to tell: {sentence}"
+    # no run failed in either version on the inputs compared (trace#31). Where the range is
+    # reliable there it has read the verdict above, and the guidance is the range's own; where
+    # it is rough (fewer than three inputs, or very unequal tries: F31-3, F31-4) the drop limit
+    # has, as on any rough range, and the guidance is the drop limit's
+    none_failed = paired.none_failed(counts)
+    clean = none_failed and reliable
     if verdict == "too small to tell":
-        guidance = _fix_check_guidance(ns, counts, drop, lo, hi, reliable=reliable, enough=enough)
+        guidance = _fix_check_guidance(
+            ns, counts, drop, lo, hi, reliable=reliable, enough=enough, clean=clean
+        )
     configs = {h: arm_old[h].config for h in compared}
     block = _changes_block(counts, configs, ns.alpha)
     data: dict[str, Any] = {
@@ -2742,6 +2769,8 @@ def fix_check(ns: argparse.Namespace) -> Counted:
         "_reliable": reliable,
         # the drop limit is at or under the size asked
         "_tries_enough": enough,
+        # no run failed in either version on the inputs compared
+        "_none_failed": none_failed,
         # the size asked, where a reliable range leaves out a drop (or a rise) of that size or more
         "_drop_ruled_out": ns.max_mde if reliable and lo is not None and lo > -ns.max_mde else None,
         "_rise_ruled_out": ns.max_mde if reliable and hi is not None and hi < ns.max_mde else None,
@@ -2811,12 +2840,16 @@ def _fix_check_guidance(
     *,
     reliable: bool,
     enough: bool,
+    clean: bool = False,
 ) -> dict[str, Any]:
     """What too small to tell offers: the repeats and the inputs that bring the drop limit to
     the size asked, and the ceiling that accepts the design as it stands. Where a reliable range
     decided and the drop limit is already under the size asked, more tries of the same design
     are not what is short, and nothing is offered. Where a reliable range decides, the ceiling
-    offered is the smallest the range lies inside, so that given, it reads otherwise."""
+    offered is the smallest the range lies inside, so that given, it reads otherwise. Where no
+    run failed in either version (``clean``) there is no drop limit to bring anywhere, and the
+    repeats and the inputs are those that bring the range inside the size asked, with still no
+    failure."""
     from poisson_trace import paired
 
     if reliable and enough:
@@ -2826,6 +2859,12 @@ def _fix_check_guidance(
         # the range alone decides: the smallest size asked that it lies inside, whatever the
         # drop limit says
         ceiling = max(-lo, hi)
+    if clean:
+        return {
+            "repeats": paired.clean_repeats_needed(counts, ns.max_mde, alpha=ns.alpha),
+            "inputs": paired.clean_inputs_needed(counts, ns.max_mde, alpha=ns.alpha),
+            "accepts_at": None if ceiling is None else paired.accepts_at(ceiling, decimals=4),
+        }
     return {
         "repeats": paired.repeats_needed(counts, ns.max_mde, alpha=ns.alpha),
         "inputs": paired.inputs_needed(counts, ns.max_mde, alpha=ns.alpha),

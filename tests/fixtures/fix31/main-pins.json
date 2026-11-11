@@ -1,0 +1,585 @@
+{
+ "main": "a4bc065",
+ "pins": {
+  "worked: --max-mde 0.2": [
+   0,
+   "7a37175b7c3d5496c56d6a045f296ffb3963bc82d64fa0391a60a8c6f35ca950",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "worked: --max-mde 0.2 --json": [
+   0,
+   "d92a94010e9e20fd69951f7f30ad92beddd9ec2eeee55be071a9044ad3ef5c1f",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "worked: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "b813bc5348716354f87622bf994759a25aa96b7bc265b79d657b6cbaafa7acf2",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "worked: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "76350ec57c4365ab4b521ccdcf3c4d7bf1faa045adc984299da7a58c6baeb494",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new some: --max-mde 0.2": [
+   0,
+   "971ed26407f58753aeddf74ebf22d85046db3b5ce648dcc8647a2c5144cd712e",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new some: --max-mde 0.2 --json": [
+   0,
+   "cacd6e8c020912bb27e1380f934da8c7d72fd47e00aa96d2b73991e308989ff2",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new some: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "6790e0a4c7a5bd978679681b87884a72c68fc6341a8e7ff15a283c483229ee7a",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new some: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "0b6c7c4a284f2b0356e93535d5b8a113ed89c9cdbb4f1326006e223e73cfb346",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old some: --max-mde 0.2": [
+   0,
+   "70f7f5d544cf143c46ae54145255d8503218247809d290c331590c1db906ebaf",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old some: --max-mde 0.2 --json": [
+   0,
+   "4e5ae199e8252c81ec81baeae348ea078bc81e6e3569b0b37da7653c426d1621",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old some: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "478162c9b1d98d9848ecc62dd51e920fc7ab3a4435d7efd4e4bea1f81fc135d1",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old some: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "1476efc53ae4d298e64879136ea4f5004d3700832ef79335eb40018a4ede86ae",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new every try: --max-mde 0.2": [
+   0,
+   "b2d1a1d2ce85f87208d7b2d5b4a16b1141a3553e0e4ff9b71c4f40d5377795fd",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new every try: --max-mde 0.2 --json": [
+   0,
+   "9406cbfc8990ac7a4f7a9f4cfb2f32e561015143ada86dac3ee45f2478fab0eb",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new every try: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "3e309f28594aaa918233122ceeb948d7d06161113b9a579eb7467427647cbd47",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new every try: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "e1db50bc062ee0aa3f72e36e80cf76295230d74335b33df5d60c7d3452fec23d",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old every try: --max-mde 0.2": [
+   0,
+   "9ea01960fad340bfbbbea80199684ad5f58e60fdc393b423f798761470b865f6",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old every try: --max-mde 0.2 --json": [
+   0,
+   "9d801ea76acb64cc87c9ac7b5b5e51d2a2b61f80bb396d0fc86a033bc37cccc8",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old every try: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "90a6dfe1781141c8de9b104a22c826911fc00e8794abe3cd05004c2df3b83816",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old every try: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "9bc3f396a4a21fd97c9a581afb99708259473f2154c5bb829ee6b6b61d640310",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new on several inputs: --max-mde 0.2": [
+   0,
+   "4cc9b1b21da04c181a895aa63cad0508c7c0603cc324e1c4eb7fee712bdc8a49",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new on several inputs: --max-mde 0.2 --json": [
+   0,
+   "0f0abd67c96bdfe475b4c54393fb840787501594a7bea616fc5876bf81304bdb",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new on several inputs: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "7e50e951f58d8a87e5cf100373f8d03033309db6cd282b1e669c98231de67cb7",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none, new on several inputs: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "da7b2ecb0bd8de3241dab21de104bfe824b9459983bca34c9afb745302c97222",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old on several inputs: --max-mde 0.2": [
+   0,
+   "f1fab2f4c089ebe95fc890e8a6f33163f0c513757a1544db95daa952c9517a26",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old on several inputs: --max-mde 0.2 --json": [
+   0,
+   "598c73088b0d71b71a4c8f7837c4aa511631a2aa64b227097fae0e1bbea13490",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old on several inputs: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "a7296490c14e3b029fb1bf89860135967922e7be7fa5b3fad62da7aa24ed3200",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "new none, old on several inputs: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "d56cb513487042e3a77ea78d7919650ed5b250486828c3b93038ee0c98c09a54",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one input, one try, old failed: --max-mde 0.2": [
+   0,
+   "df7a40381c74ca1b94b05fdb9f2830e78b35d9b3500de3ed4793de085336e1b6",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one input, one try, old failed: --max-mde 0.2 --json": [
+   0,
+   "db576e9dba479d46c2a5931e510edafa78ae480c079a5dea7c81cd55aa2d4107",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one input, one try, old failed: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "c8e1f5ed1fc204a1b670c976ad98263952b2adafdb9458dad406563b0fe11425",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one input, one try, old failed: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "5ada8ae472d22a3e74a79d0781bc85db42fc0953741f073f3a4ce126289503d6",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one input, one try, new failed: --max-mde 0.2": [
+   0,
+   "115440dde9efd7ec796221ba2abe0d6fffb0bc580149eae05ba2e8ee2a28a969",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one input, one try, new failed: --max-mde 0.2 --json": [
+   0,
+   "f7d9f57af70cee438ebefbdb506ce9bf7d1790db2e080bc23f2eba02db6e755b",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one input, one try, new failed: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "23b14894e56300e4ab08217b22261182a77571806eab6fe81768e7c9979caa05",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one input, one try, new failed: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "ecb26950ec0d5098f34c7813ed8955caa38c7e93a5428f5aaebb7eec171dd798",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "every try failed in both: --max-mde 0.2": [
+   0,
+   "4585974fdd26133e7e5b922b0eaba3429c35d556645619d73f48e9017e6496bb",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "every try failed in both: --max-mde 0.2 --json": [
+   0,
+   "308b606ad08a9d6e93e102a3698226805bf8dbb0ab7d82dd327dbb0fc0d620b9",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "every try failed in both: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "ee51443814c3821689691bbc7a87bbba4e34c35fa43f8b114b881ea90ce48042",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "every try failed in both: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "7cb7461a029c897f82d4620808308672bb2dc95167b2f3765f15230c9129476b",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "twelve inputs that vary: --max-mde 0.2": [
+   0,
+   "448487cde7846d8e060afae3dea2d33319f6c58c8e581aff09d62daa85c9a9bd",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "twelve inputs that vary: --max-mde 0.2 --json": [
+   0,
+   "41fec90840fefcdd737439b19d262c6f960d2b676544e638dd5237d0c3b36e76",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "twelve inputs that vary: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "f1ee1f1d45b8621f5723fef9b0c92a053e713c4884af46b1611e5f15d7680bc7",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "twelve inputs that vary: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "8e7cab7e5ced8e0e0175bbf125c3b943ce6e7297ee33cfebc0f1c2b53a0409e5",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "twelve inputs, twice the tries: --max-mde 0.2": [
+   0,
+   "1e96fe92fcab46b639618c7c21fd8d4642708f044671be1152b73c144a15bc88",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "twelve inputs, twice the tries: --max-mde 0.2 --json": [
+   0,
+   "8098f7d332b33fb2458ef654cb81c01ca3b06c37123f0a899364eef9c9d19a5b",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "twelve inputs, twice the tries: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "ddc709733c397a9d99a14e32812a1bdf69283f5b98bbbfbdf693f64fef1482c7",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "twelve inputs, twice the tries: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "52d30f44435541308fe73dd4adfb3ff8b2fcccab3def979e255eea0f561d4418",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "a clear drop: --max-mde 0.2": [
+   0,
+   "b035b9245a188bddf265bcbf96587e8fdf0a173757a5b9387bece091400f3ea8",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "a clear drop: --max-mde 0.2 --json": [
+   0,
+   "fed67098c944cdf4cd96cf08b0142eee0541c14dc5df30ccb7d147c00f5f9b64",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "a clear drop: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "ffe0a9781e2b431b2cba5492a64d6e7badee728e1c498264c1c1b7a87fb28e5f",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "a clear drop: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "e2a70782eaa671ee9b9f0b26656537365a2fb83234333c9867c69c6935f631c3",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "a clear rise: --max-mde 0.2": [
+   0,
+   "07be891624523bfdde77f5a51ad85028db6aae9c417d0ab6f62813ac337c0b03",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "a clear rise: --max-mde 0.2 --json": [
+   0,
+   "6f624b9aa041681aafe29eb3976678ac3f422b294d70c580073022e3d7bac216",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "a clear rise: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "22e9a33d8e09ff7e87721e5056ac2dd87e63bc5457025491d21e589764205839",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "a clear rise: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "a3c109d1b1250d786cca7098d71d33c6cdb21b6382b30f7c68b884519442f1e2",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one try per input: --max-mde 0.2": [
+   0,
+   "7cc601cc990d31441448d00e3864ad1ba23fbee69783229146ba278ec1e82782",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one try per input: --max-mde 0.2 --json": [
+   0,
+   "982b165157e86f2c8b7df1d0eed558434e46f854818d7f599b0466708139c119",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one try per input: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "efdce236353de142a2f705ec05231977027ba8eab68209ebbdb0a5390c9ebdcb",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "one try per input: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "06763486e165f6e34c504f4c9ae440c11911e300124a6b5f93f8e36ccec16090",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "unequal tries: --max-mde 0.2": [
+   0,
+   "2b4e183af0ecd8bed76d9296f59a0cb384771f9dd08782895eb2670993ee77f8",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "unequal tries: --max-mde 0.2 --json": [
+   0,
+   "905265b34bb1c48a96c8324c377c608e25c115f0b961777d7f585eff5c9a58f3",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "unequal tries: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "9dc830d794b626efd0fbb537c9638fb08ef24af65688cea470999648181969f5",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "unequal tries: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "d30df627aa1325366f4848fa75060a6744ed4256ac704b3b101c912a80564357",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none on unequal tries: --max-mde 0.2": [
+   0,
+   "450fcb7774d5d141c31e9af46bc552a730e0ef3eb02f3c1a498b23c0fe69c346",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none on unequal tries: --max-mde 0.2 --json": [
+   0,
+   "db3abc2081451b3a53245ccce04b3cd30bf9ce47cbd14aa5611b3452ac49f620",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none on unequal tries: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
+   0,
+   "140486b01e9c33041077dd84f292193d237545d48d6bc23f6a7897bb4a54f150",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "old none on unequal tries: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
+   0,
+   "8e3b365b5c8ca7c6ecfb264bace4ad35c69390ad83b1281c227d85db3d7c96c3",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "two events, one carried by neither run": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "0142962e9942a2186cadb01891519005021387da54d4ea87502fdf0aaf6816c9"
+  ],
+  "an event neither run carries, the runs holding failures": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "224ba2f46de499de4d7840ee4f5c65b372d30b28a87477e4868e64da9aa083b0"
+  ],
+  "failing-from": [
+   0,
+   "792d39e843f90850fc07b09daba0d1aad41343ece893c5ce1d702cf3e0280410",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "failing-from, at least twice": [
+   0,
+   "05e465440f84e4e6975c615c85abc5783e76d55b733d2f8e3f8a8186b7369334",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "every input of the tr70 store": [
+   0,
+   "6a7f32daba696ccecf9b2c846c4ffdaeaec9fabc107b4f10ce477250586bc6ef",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "failing-from --json": [
+   0,
+   "25b1d22b838deef2fc4ccc2d969e965668741e67e34b70869f98b2c4cc8a7602",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "failing-from, at least twice --json": [
+   0,
+   "3a554c000cf21a72e2e02b619657a1bcb30f365f9aac03fd3cf4d534c7b4f305",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "every input of the tr70 store --json": [
+   0,
+   "ab8ad72ff6fc48aa6a88759c17b4de24ed1434ea5feacb514de2106d4b5c215d",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "changes on a pair that never failed": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "fb65ff2229dce37f34d6357215bd12be00a261c68a9be1fd619f35eacf4fbfe3"
+  ],
+  "where on a run that never failed": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "16078faa204cd39ca3894a6fc48eec9f22ad889a511eabde878be712e463d703"
+  ],
+  "runs on a store that never failed": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "f7b7a58d5fa043e36372de10a5e2554baca4e6af0e1803b956448019145f31e1"
+  ],
+  "an event neither run carries, the runs holding another failure": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "12a4ff5af87e52b82dd166e8674a2c612c6e6547e765213365a9a86df50989ac"
+  ],
+  "workspace fix-check": [
+   0,
+   "4fd09f6a5e169752c4b4bfb4db5fefb6302fd3ed1d219893752dcb5f4d7e6516",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check --json": [
+   0,
+   "499fd8b69c695e43e1e822395fc17b229b1d221b6da5820f50fc0caca4f05e1a",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check measures": [
+   0,
+   "b6ebd294c4489a52e73edf247e4d0bb276e2fb98af7e2dcf66b46e56fc6a5c8f",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check measures --json": [
+   0,
+   "02d32af522bc8a9dc22a4e7b2cde75b4eb1b658208ddefb26e80f012749990e4",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check max-change": [
+   0,
+   "b6ebd294c4489a52e73edf247e4d0bb276e2fb98af7e2dcf66b46e56fc6a5c8f",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check max-change --json": [
+   0,
+   "d9659c434a958434edf45b51af001a7e21f20e003b394dc55929eddcbcb6e809",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check top": [
+   0,
+   "46b64b49dc3e8808c7b9cc6535bbc450a315c222e4a5eaad49c465dce94b8d20",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check top --json": [
+   0,
+   "6ef2654fae2d42ebcabf8bb083f7ea6334892818115a4c8aef5d35b590b18557",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check tables": [
+   0,
+   "81f22b27b7c3c11458849d8c6e7ca08097c43d8702a0e994c824570ab44ead00",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check tables --json": [
+   0,
+   "c1ac108601dd48f25f06c99c8036d670defaccf8377ad2d49f6cb40cdcb6602c",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check verdicts": [
+   0,
+   "e5b285e9048e1517582ff1e2e07eb45e09c014e95dd0c72ea0d6464e42e99afe",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check verdicts --json": [
+   0,
+   "e56a8ad301e54dedebe8c5cc291319c378c917175925dafa80af68ffe6518636",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check junit": [
+   0,
+   "77f238a470ed9923bb2afe2b29f1720ecc5b1f0d1c121f3464d470a20e845c53",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check junit --json": [
+   0,
+   "b6ea484a73cdce56cbcdcf9d58c81131148249df9734e5d56707a4fd9b00ccf9",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check with a run Prove cannot read": [
+   0,
+   "4fd09f6a5e169752c4b4bfb4db5fefb6302fd3ed1d219893752dcb5f4d7e6516",
+   "4eaa49e01280b090f1931f43344bc9604eb8ee2bbca8dfb99f70d15c753fadd6"
+  ],
+  "workspace fix-check with a run Prove cannot read --json": [
+   0,
+   "acc19a6eb962fdac75ab03a974332a73ab356fa0d9515c7929f0061de5745935",
+   "4eaa49e01280b090f1931f43344bc9604eb8ee2bbca8dfb99f70d15c753fadd6"
+  ],
+  "workspace fix-check config": [
+   0,
+   "4fd09f6a5e169752c4b4bfb4db5fefb6302fd3ed1d219893752dcb5f4d7e6516",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace fix-check config --json": [
+   0,
+   "499fd8b69c695e43e1e822395fc17b229b1d221b6da5820f50fc0caca4f05e1a",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "workspace refusal: a ceiling out of range": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "82ca4bf3158c4b8b37a59261d02d96320251bf066be39b57f0a3f7904382c1ec"
+  ],
+  "workspace refusal: no ceiling": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "6380d629b7c0f3a9228c692c3dc7f2f4c9751d84542ad97e3026cddd4754b391"
+  ],
+  "workspace refusal: inputs other than all": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bf3351262d73850ba91272e61e73e926d26c462834dbd0623965cee067df18a7"
+  ],
+  "workspace refusal: neither inputs nor failing-from": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "dd3e2cfcc69306cbd1b9b5088c895f05da81b6a7ab69d53e439f9c99c3a1df85"
+  ],
+  "workspace refusal: min-failures without failing-from": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "37c18a074723a06a45fef84515df7236ba6d0499f059042bfeade41bb18f644c"
+  ],
+  "workspace refusal: the selecting run as an arm": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "ae59f3f409221167c481f0600787600487c2f6013ce9861449ef4553b55c51be"
+  ],
+  "workspace refusal: a verdicts file that is not there": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "fd641c9d44ea84a093672b76170738012149f55585148ad2ba82112234ea64f7"
+  ],
+  "workspace refusal: previous and latest that cannot be ordered": [
+   1,
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "9eb2ce32171fea0e0b583325612df55bb3ef73376a92cc35220f328feea3db40"
+  ],
+  "fixture tau2 failing-from": [
+   0,
+   "241d89d793d5b237686a6fcb48b7e1c35ca6981238b696c697b1916e8c95952b",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "fixture tau2 failing-from --json": [
+   0,
+   "aaffbd6f023723b6ccc348369ae4114f83ed63b33fd6f10438c6e7f2b1082769",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "fixture tau2 every input": [
+   0,
+   "d1110f78cf34000ed6881964fc06e7d89c790789a2a84982a58eefb74bfad156",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "fixture tau2 every input --json": [
+   0,
+   "e312ffef8355a4e9300402fe47bb83e19fed05359f27e336e7cef643d6c0cf93",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "fixture tau2 every input at 0.05": [
+   0,
+   "798bd0abc5e5ac40a4dbac0d22c77e98ab88530d1da5d038e5be55e65c4d510e",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "fixture tau2 every input at 0.05 --json": [
+   0,
+   "296e0b1bd6f6f3b4d526155eeb9d1ef70c180ab240a48f2fda103ad5ca87995b",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "fixture humaneval": [
+   0,
+   "b1d5097399efed6e0d85374fb1f7d4e93d37a5a440b9e3e1c92d1414374069cc",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "fixture humaneval --json": [
+   0,
+   "0136289ffa1b102b2d5c7ee591e870989837ed85309e99e42fb413679d9fcffc",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "folders": [
+   0,
+   "4bb848b9fc36853ba0502321c8a910ce60539c151e90287855cf1f88c3fc39c6",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "folders --json": [
+   0,
+   "76cfdead30f4ed43f4265be21bf40ce27d05cf9aa098b275827f4dfd691190b0",
+   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ]
+ }
+}

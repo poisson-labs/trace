@@ -225,7 +225,8 @@ def _mn_oracle(tab, alpha):  # type: ignore[no-untyped-def]
 def test_tr49_the_difference_is_mantel_haenszel_with_sato_variance(tab, alpha) -> None:  # type: ignore[no-untyped-def]
     """ST3 (ruled 2026-10-20): the estimate is still Mantel-Haenszel's and the JSON's variance
     still Sato's; the interval is the stratified Miettinen-Nurminen score interval, printed where
-    Sato's variance is positive, as the interval was before."""
+    Sato's variance is positive, as the interval was before. trace#31 (2026-11-10): and where no
+    run failed in either version, at a variance of 0."""
     points, var, lo, hi = difference(counts_of(tab), alpha=alpha)
     t = paired_test(counts_of(tab))
     assert points == pytest.approx((t.observed_new - t.expected_new) / t.weight, abs=1e-12)
@@ -237,8 +238,16 @@ def test_tr49_the_difference_is_mantel_haenszel_with_sato_variance(tab, alpha) -
         assert lo == pytest.approx(want_lo, abs=1e-6)
         assert hi == pytest.approx(want_hi, abs=1e-6)
         assert lo <= points <= hi
-    else:
+    elif any(xa or xb for xa, _, xb, _ in tab):
         assert var is None and lo is None and hi is None
+    else:
+        # trace#31: where no run failed in either version Sato's variance is 0 and the score
+        # interval is printed all the same; it is this file's own oracle there too
+        assert points == 0.0 and var == 0.0
+        want_lo, want_hi = _mn_oracle(tab, alpha)
+        assert lo == pytest.approx(want_lo, abs=1e-6)
+        assert hi == pytest.approx(want_hi, abs=1e-6)
+        assert lo < 0.0 < hi
 
 
 @SETTINGS

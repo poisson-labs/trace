@@ -1,0 +1,208 @@
+{
+  "schema": "poisson-trace.fix-check/2",
+  "verdict": "too small to tell",
+  "sentence": "neither version failed, on too few tries to rule out a 20-point change",
+  "prove": {
+    "version": "0.1.3",
+    "store": "three-by-four"
+  },
+  "runs": {
+    "old": {
+      "run_id": "old",
+      "run_name": "synthetic 2026-01-01 a",
+      "target_id": "synthetic/target",
+      "status": "complete",
+      "created_at": "2026-01-01T00:00:00.000000Z",
+      "declared_repeats": null,
+      "tally": {
+        "rows": 12,
+        "with_outcome": 12,
+        "no_outcome": 0,
+        "timed_out": 0,
+        "infra": 0,
+        "other": 0
+      }
+    },
+    "new": {
+      "run_id": "new",
+      "run_name": "synthetic 2026-01-01 b",
+      "target_id": "synthetic/target",
+      "status": "complete",
+      "created_at": "2026-01-01T01:00:00.000000Z",
+      "declared_repeats": null,
+      "tally": {
+        "rows": 12,
+        "with_outcome": 12,
+        "no_outcome": 0,
+        "timed_out": 0,
+        "infra": 0,
+        "other": 0
+      }
+    }
+  },
+  "gap_seconds": 3600.0,
+  "events": [
+    "fail"
+  ],
+  "inputs": {
+    "rule": "all",
+    "failing_from": null,
+    "min_failures": null,
+    "selected": 3,
+    "compared": 3,
+    "informative": 0,
+    "left_out": {
+      "not re-run on the old version": 0,
+      "not re-run on the new version": 0,
+      "no outcome on the old version": 0,
+      "no outcome on the new version": 0
+    }
+  },
+  "rows": {
+    "old": {
+      "runs": 12,
+      "failed": 0,
+      "timed_out": 0,
+      "no_outcome": 0,
+      "short": 0,
+      "mixed": 0
+    },
+    "new": {
+      "runs": 12,
+      "failed": 0,
+      "timed_out": 0,
+      "no_outcome": 0,
+      "short": 0,
+      "mixed": 0
+    }
+  },
+  "control": {
+    "old_did_not_fail_share": 1.0,
+    "new_did_not_fail_share": 1.0
+  },
+  "test": {
+    "name": "exact conditional Cochran-Mantel-Haenszel",
+    "observed_new": 0,
+    "expected_new": 0.0,
+    "variance": 0.0,
+    "weight": 6.0,
+    "p": 1.0,
+    "alpha": 0.05
+  },
+  "difference": {
+    "points": 0.0,
+    "lo": -0.26785690833285813,
+    "hi": 0.26785690833285813,
+    "variance": 0.0,
+    "interval": "stratified Miettinen-Nurminen score interval, Mantel-Haenszel weights"
+  },
+  "by_input": {
+    "moved": 0,
+    "p": 1.0,
+    "method": "exact",
+    "draws": null,
+    "seed": null
+  },
+  "consistency": {
+    "failure_share": 0.0,
+    "fails_again": null,
+    "kappa": null,
+    "within": 0.0,
+    "pooled": 0.0
+  },
+  "limits": {
+    "drop": null,
+    "rise": 0.5760667868280507,
+    "power": 0.8,
+    "max_mde": 0.2
+  },
+  "direction": "no direction",
+  "guidance": {
+    "repeats": 6,
+    "inputs": 5,
+    "accepts_at": 0.2679
+  },
+  "changes": {
+    "tested": 3,
+    "flagged": 0,
+    "alpha": 0.05,
+    "lone_threshold": 0.016666666666666666,
+    "smallest_attainable_p": 0.028571428571428567,
+    "together": 2,
+    "lone_flip_repeats": 5,
+    "rows": [
+      {
+        "config_hash": "6cb444b82eb77bf3",
+        "config": {
+          "input": "i1"
+        },
+        "failed_a": 0,
+        "runs_a": 4,
+        "failed_b": 0,
+        "runs_b": 4,
+        "change": 0.0,
+        "p": 1.0,
+        "q": 1.0,
+        "flag": null
+      },
+      {
+        "config_hash": "91ab7270d2e2259a",
+        "config": {
+          "input": "i2"
+        },
+        "failed_a": 0,
+        "runs_a": 4,
+        "failed_b": 0,
+        "runs_b": 4,
+        "change": 0.0,
+        "p": 1.0,
+        "q": 1.0,
+        "flag": null
+      },
+      {
+        "config_hash": "cf57ed374bf44dfc",
+        "config": {
+          "input": "i0"
+        },
+        "failed_a": 0,
+        "runs_a": 4,
+        "failed_b": 0,
+        "runs_b": 4,
+        "change": 0.0,
+        "p": 1.0,
+        "q": 1.0,
+        "flag": null
+      }
+    ],
+    "cannot_say": [
+      "A difference between two stored runs is a difference between the runs. The version, the provider and the hour changed together unless the two were run side by side, and this test cannot separate them.",
+      "Repeat runs of one input are read as separate draws and never as replays: a served model is not bit-identical on repeat, so nothing here matches a run of the old version to a run of the new by seed.",
+      "If repeat runs of one input are near copies of one another, the run-level test overstates its confidence. The by-input line does not depend on that.",
+      "Rows with no outcome are left out of both arms and counted in the header. A new version that times out where the old one failed does not show as a failure here.",
+      "Trace reads the runs it is given. If the inputs were chosen by the old arm's own outcomes, or the more favourable of several runs was handed over, the confidence printed does not hold.",
+      "The detection limit and the run counts are computed from these runs' own failure rates, which are estimates. They are a guide to the next design, not a promise about it."
+    ]
+  },
+  "cannot_say": [
+    "A difference between two stored runs is a difference between the runs. The version, the provider and the hour changed together unless the two were run side by side, and this test cannot separate them.",
+    "Repeat runs of one input are read as separate draws and never as replays: a served model is not bit-identical on repeat, so nothing here matches a run of the old version to a run of the new by seed.",
+    "If repeat runs of one input are near copies of one another, the run-level test overstates its confidence. The by-input line does not depend on that.",
+    "Rows with no outcome are left out of both arms and counted in the header. A new version that times out where the old one failed does not show as a failure here.",
+    "Trace reads the runs it is given. If the inputs were chosen by the old arm's own outcomes, or the more favourable of several runs was handed over, the confidence printed does not hold.",
+    "The detection limit and the run counts are computed from these runs' own failure rates, which are estimates. They are a guide to the next design, not a promise about it."
+  ],
+  "failure_taxonomy_diff": {
+    "taxonomy_sha256": {
+      "old": "0c4fdf47aa7f7f88f5f1c3712bd2f662d8aafac08e6dfa50a84107c2c75706ba",
+      "new": "0c4fdf47aa7f7f88f5f1c3712bd2f662d8aafac08e6dfa50a84107c2c75706ba"
+    },
+    "same_rules": true,
+    "tries": {
+      "old": 12,
+      "new": 12
+    },
+    "kinds": [],
+    "signals": []
+  },
+  "next": "run 6 repeats per arm on these 3 inputs, then poisson-trace fix-check on the two new runs"
+}

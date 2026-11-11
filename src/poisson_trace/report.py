@@ -192,6 +192,10 @@ GUIDE_NOT_PROMISE = (
     "number has an expected limit at the ceiling asked for, so about half the time its own "
     "limit will land a little above."
 )
+CLEAN_GUIDANCE = (
+    "These numbers hold if neither version fails in the next runs either, and if new inputs "
+    "resemble the present ones. A run in which either version fails is read as any other."
+)
 CMH_CAPTION = (
     "exact conditional Cochran-Mantel-Haenszel test, stratified by input over {inputs} "
     "{input_word} ({informative} informative), two-sided; α = {alpha}"
@@ -890,7 +894,12 @@ class FixCheckReport:
         largest = self.data["_largest"]
         for name, extreme in (("drop", "every failure gone"), ("rise", "every run failing")):
             limit = limits[name]
-            if limit is None:
+            if limit is None and name == "drop" and self.data.get("_none_failed"):
+                lines.append(
+                    "- a drop in failure share: no limit; neither version failed on these "
+                    "inputs, so there is no failure to drop"
+                )
+            elif limit is None:
                 lines.append(
                     f"- a {name} in failure share: no limit; even {extreme}, a {name} of "
                     f"{_points(largest[name])} points, would have been detected less than four "
@@ -920,6 +929,24 @@ class FixCheckReport:
                 f"the {asked} asked for; the range, not the number of tries, reads this answer, "
                 "and a plan for more tries of this design would not be one Trace can stand behind"
             ]
+        if d.get("_none_failed") and d.get("_reliable"):
+            # no run failed in either version: the tries that bring the range inside
+            if g["repeats"] is not None:
+                lines.append(
+                    f"- repeats: {count(g['repeats'])} per arm on these "
+                    f"{_count(compared, 'input')}, with no failure in either version, would "
+                    f"bring the range inside ±{asked} points"
+                )
+            if g["inputs"] is not None:
+                lines.append(
+                    f"- inputs: {count(g['inputs'])} inputs like these, at the present repeats, "
+                    "would do the same"
+                )
+            if g["accepts_at"] is not None:
+                lines.append(
+                    f"- ceiling: --max-mde {g['accepts_at']:.4f} accepts this design as it stands"
+                )
+            return lines + ["", CLEAN_GUIDANCE]
         if g["repeats"] is None:
             lines.append(f"- no number of repeats on these inputs reaches {asked} points")
         else:
