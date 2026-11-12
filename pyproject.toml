@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "poisson-trace"
-version = "0.1.0rc2"
+version = "0.1.0a1"
 description = "Where in the workflow runs die, and whether a change made them fail less: survival curves and a controlled fix check, read from Prove's stored runs."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -51,8 +51,9 @@ packages = ["src/poisson_trace"]
 
 [tool.hatch.build.targets.sdist]
 # the repository's own working rules, and (with hatch_build.py) its ignore file, are not part of
-# the source a user gets
-exclude = ["docs/repo-hygiene.md", "/.gitignore"]
+# the source a user gets; nor is test_tf10_fixtures.py, which holds a path from the machine its
+# fixtures were made on (ruled 2026-11-11, the 0.1.0a1 cut; the path itself is owed to 0.1.0)
+exclude = ["docs/repo-hygiene.md", "/.gitignore", "/tests/test_tf10_fixtures.py"]
 
 [tool.hatch.build.targets.sdist.hooks.custom]
 

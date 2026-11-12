@@ -26,54 +26,55 @@ tell*, the report says how many repeats or how many inputs would settle it.
 
 Every number prints with what the run could not have detected.
 
-This copy is a private pre-release for design partners; Trace is not public yet. Trace is a
-reader of stored runs: it runs nothing, captures nothing, patches nothing, phones nowhere.
+This is an early pre-release, `0.1.0a1`, on PyPI; Trace's 0.1.0 release is still to come.
+Trace is a reader of stored runs: it runs nothing, captures nothing, patches nothing, phones
+nowhere.
 
-## Pre-release for design partners
+## Pre-release on PyPI
 
-This is Poisson Trace `0.1.0rc2`, a private pre-release for design partners. It is not on
-PyPI: the `poisson-trace` you would get there by name is a placeholder that does not run, so
-install from the files sent with this README. You get two:
+This is Poisson Trace `0.1.0a1`, an alpha. It is on PyPI as a pre-release, so pip takes it
+only when you name the version: `pip install poisson-trace` with no version still gets
+`0.0.1`, a placeholder that does not run, until 0.1.0 is released. Commands, flags and
+outputs may still change before 0.1.0.
 
-| File | What it is |
-|---|---|
-| `poisson_trace-0.1.0rc2-py3-none-any.whl` | Trace |
-| `poisson_trace-0.1.0rc2.tar.gz` | Trace's source: this README, the pages under `docs/`, and the example files the commands below read |
-
-Prove, whose stored runs Trace reads, is the `poisson-prove` package on PyPI, and the Trace
-wheel brings it. Before it was published Prove was called `proofload`; you will still see that
-name in the older stored runs and in some example folder names below.
+Prove, whose stored runs Trace reads, is the `poisson-prove` package on PyPI, and Trace brings
+it. Before it was published Prove was called `proofload`; you will still see that name in the
+older stored runs and in some example folder names below.
 
 The links to github.com/poisson-labs/trace, on this page, lead to a repository that is
 private for now; every page of it that this README names is in the source archive.
 
-### Install from the files
+### Install the pre-release
 
 Trace needs Python 3.11 or newer. Check yours first: the `python3` that macOS ships is 3.9,
 and pip refuses this package on it. If `python3 --version` prints a version below 3.11, type
 `python3.11`, `python3.12` or `python3.13` where the first line says `python3`, whichever your
 machine has. If it has none of them, install Python 3.11 or newer first (python.org or your
-package manager). In the folder holding the two files:
+package manager).
 
 ```
 python3 -m venv trace-env
 . trace-env/bin/activate
-pip install ./poisson_trace-0.1.0rc2-py3-none-any.whl
+pip install poisson-trace==0.1.0a1
 poisson-trace --version
 ```
 
-pip takes Prove, numpy, scipy and pandas, and the few packages they need, from PyPI. The last line prints
-`poisson-trace 0.1.0rc2 (poisson-prove 0.1.3, Python 3.11.7)`, with your Python's version in
-place of 3.11.7. Then unpack the source archive and work inside it; every command below, and
-every page under `docs/`, runs from there:
+pip takes Prove, numpy, scipy and pandas, and the few packages they need, from PyPI. The last
+line prints `poisson-trace 0.1.0a1 (poisson-prove 0.1.3, Python 3.11.7)`, with your Python's
+version in place of 3.11.7.
+
+The examples below read the example files in Trace's source archive, which is on PyPI beside
+the package. Fetch it and work inside it; every command below, and every page under `docs/`,
+runs from there:
 
 ```
-tar -xzf poisson_trace-0.1.0rc2.tar.gz
-cd poisson_trace-0.1.0rc2
+pip download --no-deps --no-binary poisson-trace poisson-trace==0.1.0a1
+tar -xzf poisson_trace-0.1.0a1.tar.gz
+cd poisson_trace-0.1.0a1
 ```
 
 The [Install](#install) section further down, and the Install section at the top of each page
-under `docs/integrations/`, are for the public release and do not apply to this one.
+under `docs/integrations/`, are for the 0.1.0 release: until then, name the version as above.
 
 ### A first result on each reader
 
@@ -244,7 +245,7 @@ runner puts each repeat of a test in a class of its own, as the example reports 
 - The commands: `init`, `doctor`, `runs`, `name`, `import`, `fix-check` and `changes` on any
   of the eight; `where` and `compare` on Prove's runs, which carry traces. An imported run
   carries none, so on one `where` says so and `compare` points to `fix-check`.
-- Checked on macOS with Python 3.11, 3.12 and 3.13, from the three files alone.
+- Checked on macOS with Python 3.11 and 3.12, from the built wheel and its source archive.
 
 ### What is coming
 

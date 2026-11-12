@@ -1,5 +1,80 @@
 # Changelog
 
+## 0.1.0a1 — pre-release
+
+A quiet alpha on PyPI, installed with `pip install poisson-trace==0.1.0a1`: pip takes a
+pre-release only when its version is named. It is not the 0.1.0 release and comes with no
+announcement. It reads `poisson-prove` 0.1.3, exactly, as 0.1.0rc2 does. 0.1.0rc2 was built on
+2026-10-28 and never sent, so this is the first release of everything under 0.1.0rc2 too,
+including three sections written into that entry after it was built (the same digits on every
+Python, Prove 0.1.3 and the clean look on a terminal). Everything below merged after 0.1.0rc2
+was built.
+
+### fix-check when no run failed
+
+- `fix-check` now answers when the runs compared hold no failed run (trace#31), where it
+  refused before. Its range is the stratified Miettinen–Nurminen interval it uses everywhere
+  else; *no significant difference* when that range lies inside plus or minus `--max-mde`,
+  *too small to tell* otherwise, with the tries or inputs that would bring it inside. The
+  range is marked *rough* on fewer than three inputs, and where the tries are unequal enough
+  that its one-sided miss is above 5%.
+- On such a pair `--json` keeps its keys and their order: `difference.lo` and `hi` are
+  numbers, the variance is 0.0, and under *too small to tell* `guidance.repeats` and `inputs`
+  are counts.
+- Still refused: no input with an outcome on both versions, and an event name neither run
+  carries while a run carries an outcome that is not a success word. Runs with no outcome now
+  say "no input is left to compare".
+
+### Failures by kind
+
+- `fix-check`, `compare` and `changes` break the failures down by kind, in the plain report,
+  `--json`, the saved verdict and the API, and say how many tries had no outcome and how that
+  squares with the verdict's count; nothing more prints when every try has an outcome.
+- Every import classifies what each try did into one of thirteen failure kinds, which
+  `trace.toml` can override, and records the signals it read beside the run, on the Prove,
+  DeepEval, JUnit, Ragas, table, promptfoo, Inspect and OpenAI Evals readers.
+- Verdict words are coloured by meaning, and no table cell breaks at any width.
+
+### Continuous measures and saved verdicts
+
+- Time, length, tokens and cost are compared between two runs in a table of their own, with
+  a verdict cell; `fix-check --measures` adds it to the fix check.
+- `--save` on `fix-check`, `compare`, `changes` and `where` keeps the verdict; `--out DIR`
+  writes it as a handover bundle, which `handover --check DIR` checks file by file.
+  `--verdicts` joins outcomes from outside on the import and on `fix-check`, `compare` and
+  `changes`, filling what the source left out and refusing disagreements.
+
+### Three more readers, and folders
+
+- Readers for promptfoo, Inspect AI (the `.eval` archive, the `.json` log and an unpacked
+  folder) and OpenAI Evals, each with its page under `docs/integrations/`.
+- The import and the four comparison verbs take a folder of results in place of files.
+- Each import writes Prove 0.1.3's store descriptor, its event log and what produced it, so
+  Prove can build its pages over Trace's stores.
+
+### Setting up with your coding agent
+
+- `init --agent` writes a skill a coding agent follows to set Trace up; `[[import]]` in
+  `trace.toml` lists the imports; `doctor --setup` checks them; `[signals]` stands in for the
+  import flags.
+
+### Pages, the report and the terminal app
+
+- `poisson-trace ui` and `poisson-trace report DIR` write Trace's pages and an HTML report;
+  `compare` saves its two charts. `report DIR --open` opens the page already there and writes
+  nothing.
+- `poisson-trace` on its own opens the terminal app on Prove's app shell: runs, imports,
+  compare, fix-check, the verdict and changes. Every fact on a screen is the plain command's.
+
+### The Python API
+
+- `poisson_trace.api` has one function per verb, with typed results; the command line calls
+  it once per command and prints every byte as before (`docs/python.md`).
+
+### compare
+
+- `compare` refuses two words that reach one run, as `fix-check` and `changes` do.
+
 ## 0.1.0rc2 — pre-release
 
 A second private pre-release for design partners, rebuilt from the first partner's hands-on

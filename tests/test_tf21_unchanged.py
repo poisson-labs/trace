@@ -16,29 +16,30 @@ from pathlib import Path
 import pytest
 from tf21_support import IMPORTS, digest, do_import, json_without_store, verb_view
 
-# (verb view, import --json) per import, as main d7e19c7 wrote them
+# (verb view, import --json) per import, as main d7e19c7 wrote them; the verb views re-pinned at
+# 0.1.0a1 (ruled 2026-11-11, the pre-release cut): the version the import records is their one change
 MAIN = {
-    "deepeval-a": ("474bacf0a600748e2744fb460bb84b7a41c9bf4828a0cf18c5a838fe473415ec",
+    "deepeval-a": ("944bc4c98a409ad780570e94898e13118c0b21066b165e42148f130f7e522936",
                    "6be6a1b07a7ef172808e2f6336abf5e7d8586799dd90955c3590021b70cb34c4"),
-    "deepeval-b": ("ee56b1df5d2adf53a1238411d7d344d383c574e7c469b85ee4e3725b0a40af41",
+    "deepeval-b": ("2bde2a00c6acaad070fed19266a7c4315b2033d97123cc981dbe2dfe6694d821",
                    "54333567690813ee0aed8f0cb52be6421322bff25af2f59e94cdc591259d27f8"),
-    "junit-a": ("053ede640e1ac4fffff2dfcadb552d89cc9aa4acc5d7482a3db0c55351871002",
+    "junit-a": ("710687d77c5103b9f1de901512003d0528d01d1a2c52cfa04d8f215bd382780e",
                 "1b5a845c8f2951fe04c7c6ad520e97bda431c231da90a140e04641161f5b1fbe"),
-    "junit-b": ("e15cee9a64d9d5e94855f906e6071fc7a455d941cc69c93cf5ba0ca61fbecbdc",
+    "junit-b": ("69763ad0c51d368911e8a52c34030f25322e22b26254482ddc71f175b7f990cf",
                 "4ddb2f827575e1ccda857e07c7be8018e9263fd23a2e46827334c337667938c1"),
-    "junit-suite": ("3ed3584fe5e591fb3b12995721b935025768bd0a6220f131e129662918858490",
+    "junit-suite": ("e8912171ab04f8850afa4faa8b6a4eb8e03dfcd7c7f8b48d3104227c0baa9258",
                     "8b9dc4c1acb02984465b2656076d11a04dc9455cc031211a999fefa2a9142daa"),
-    "ragas-base": ("599b50baa9b3f77dfaa5ab4370e4eceb1383e8067e2c51064a8100290c2181a2",
+    "ragas-base": ("296270ac52b49dfc2c513ab7e6dbba7fdb3707033d1802c3ebb6cd763c633f7d",
                    "90301d338d112fa1fcf31c6f127dd0d9ea4bcb49822a551df6291ec205aae4e5"),
-    "ragas-raft": ("0e9921cb735b5abc49f0f972e71b3697641bf334d1a7389293d0789e15e32d26",
+    "ragas-raft": ("16ddff84760cf0a7ec409bc502d7955f1a7ff7b23cb1be77b75abd2fbcd9e2ed",
                    "bd52ead150045c610dce8f62713ebd048bfbe677e78f882404d7678a3245cb0e"),
-    "ragas-causal": ("cd7d66d9840cdef47448407f7626bb0a72a5763194b78f004e7202e8794a4a6c",
+    "ragas-causal": ("1528b2d232e6542ccd6644fd896d673c7131974abb4257626fc9b7f1d6893350",
                      "07e919dd58c664f23b653013a86d9c5e5b9e0e67f87640793ae1f93affa3b805"),
-    "ragas-strong": ("18d5ce1d78be95d69f4a5e5b2538bb232ddc4a6b101d7e18caf430b5f5e42bcf",
+    "ragas-strong": ("36e3f077a4ad76fb12f14d8a2c1efca63cdd4ae02a43b87980df5aecf1aa4c03",
                      "f55598496888bf67921fc903fba57fc7ad23d79e0c2c20b651d0756cdaab4f2e"),
-    "table-a": ("a5102653f35fcf02db495857f16912deb094543ac1afd66f79174a2ce21828fc",
+    "table-a": ("e1df353693dd3cf82dff92cfd25587052ef502a2f8a5563f53de0fa3e581067d",
                 "ace3b96ac51458591fc266c3632ed0bd696947f3187204bf3196b1396837b180"),
-    "table-b": ("e8a746ecb420d6512cffd581de78a911abccb6ffe96f2cbf6152f91f8b82b1a1",
+    "table-b": ("156797b4342f31dba0c38f84b97df0b9724852798adf24bb739b49b44b874f8b",
                 "b918293b05b0464b75b22984c35abb34cb30fe1471d3151158c53f8b0cb1798a"),
 }
 

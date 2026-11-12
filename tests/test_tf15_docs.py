@@ -70,14 +70,15 @@ def test_tf15_s42_the_verdict_list_claims_no_more_than_the_statistics() -> None:
     assert "inside" in nsd and "--max-mde" in nsd, nsd
 
 
-def test_tf15_s45_the_rebuilt_files_are_0_1_0rc2() -> None:
-    """S8 (ruled 2026-10-20): two different files should not carry one version."""
+def test_tf15_s45_the_rebuilt_files_are_0_1_0a1() -> None:
+    """S8 (ruled 2026-10-20): two different files should not carry one version. Moved from
+    0.1.0rc2 to 0.1.0a1 by the pre-release cut (2026-11-11), the quiet alpha on PyPI."""
     import tomllib
 
     import poisson_trace
 
-    assert poisson_trace.__version__ == "0.1.0rc2"
-    assert tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"] == "0.1.0rc2"
+    assert poisson_trace.__version__ == "0.1.0a1"
+    assert tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"] == "0.1.0a1"
     readme = (REPO / "README.md").read_text(encoding="utf-8")
-    assert "0.1.0rc2" in readme and "0.1.0rc1" not in readme
-    assert "## 0.1.0rc2" in (REPO / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert "0.1.0a1" in readme and "0.1.0rc2" not in readme and "0.1.0rc1" not in readme
+    assert "## 0.1.0a1" in (REPO / "CHANGELOG.md").read_text(encoding="utf-8")
