@@ -465,7 +465,7 @@ IMPORT_REFUSALS_ARGV: dict[str, tuple[list[str], int]] = {
     "a cut with no side": (["ragas", "files/rag-base.jsonl", "--store", "new-store", "--run", "x", "--metric", "faithfulness", "--cut", "0.5", "--case-column", "case"], 1),
     "a run name that cannot be a folder": (["junit", "files/humaneval-a.xml", "--store", "new-store", "--run", "a/b"], 1),
     "no store and no config": (["junit", "files/humaneval-a.xml", "--run", "x"], 2),
-    "a tool not in this install": (["langsmith", "files/old.jsonl", "--store", "new-store", "--run", "x"], 1),
+    "a tool not in this install": (["otel", "files/old.jsonl", "--store", "new-store", "--run", "x"], 1),
 }
 
 

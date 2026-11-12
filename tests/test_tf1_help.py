@@ -36,6 +36,11 @@ TF10_FILES = {
     "inspect": {".eval": _TF10 / "inspect" / "2026-10-07T04-23-47-00-00_trace-fixture_CV3jq8f7FTjwkaYb3zj3m2.eval",
                 ".json": _TF10 / "inspect" / "2026-10-07T04-23-51-00-00_trace-fixture_2nSEDuHHzKiTUjJW3kXknY.json"},
     "openai-evals": {".jsonl": _TF10 / "openai-evals" / "old.jsonl"},
+    # the LangSmith reader's example, by its file's extension: the API's answer, the command's
+    # export or the page's CSV (the reader pair's TF24)
+    "langsmith": {".json": _TF10 / "langsmith" / "api" / "baseline.runs-v1.json",
+                  ".jsonl": _TF10 / "langsmith" / "cli" / "baseline-runs.jsonl",
+                  ".csv": _TF10 / "langsmith" / "ui" / "trace-fixture-baseline-bbb64b8e.csv"},
 }
 TRACE_HELPS = [[], *[[v] for v in (*VERBS, *NEW_VERBS)]]
 IMPORT_HELPS = [[], *[[t] for t in TOOLS]]

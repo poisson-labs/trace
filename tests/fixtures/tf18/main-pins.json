@@ -922,18 +922,6 @@
     "76f07257adb1931699ced58702328905aa2100a4199abee712fd6c91a62dbbe8"
    ]
   ],
-  "import refusal: a tool not in this install": [
-   [
-    1,
-    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "a86cc4b8b0f0d6c2e0aaf6f8e27b34fd42547cd857725f87e41d4cb870e0dc52"
-   ],
-   [
-    1,
-    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "a86cc4b8b0f0d6c2e0aaf6f8e27b34fd42547cd857725f87e41d4cb870e0dc52"
-   ]
-  ],
   "names": [
    [
     0,
@@ -1091,13 +1079,6 @@
    [
     0,
     "ea2c22ea7a6b4c73156ebf0317ec6a7d412d917e5a3192a1c8f27c8b430e447b",
-    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-   ]
-  ],
-  "help: import": [
-   [
-    0,
-    "3550d042f3e2967f6c8e308f83eb83a371a333603ca3d013838c14879ddd3dd9",
     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
    ]
   ],

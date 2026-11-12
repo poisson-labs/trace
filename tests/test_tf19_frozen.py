@@ -10,7 +10,7 @@ from pathlib import Path
 TESTS = Path(__file__).resolve().parent
 
 FROZEN = {
-    "fixtures/tf19/main-pins.json": "cdeedadf927e83d9f0541db93d38926951095ee01cb9c86562aea290f8913a45",
+    "fixtures/tf19/main-pins.json": "eab28b03b19077aba57a9f44397381dd1c4ab6be19c306b94688b4db9bfbec6f",
     "fixtures/tf19/make_main_pins.py": "5f07eb1e47483e4ca03842f573f6445590a3b6b7cb9d5bb1b77f64b4022e8dc8",
     "fixtures/tf19/prove-shell.json": "2bcdc708252ed0a82e52515ecfc14cc54e8d5365c365c9b3d63bff8095ab4743",
     "test_tf19_facts.py": "17c932c5d8e8a8195f70eeefc8e6f749cb8ad8da308adaf1ffe8db221b05d3a8",

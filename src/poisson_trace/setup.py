@@ -527,6 +527,8 @@ _FLAG = {
     "case_column": "--case-column",
     "outcome_column": "--outcome-column",
     "failed": "--failed",
+    "case_from": "--case-from",
+    "outcome_from": "--outcome-from",
 }
 # the forms of --case init takes that the JUnit reader reads; the other is its default
 _JUNIT_CASES = ("name",)
@@ -880,6 +882,15 @@ def _guessed(found: FoundFile) -> dict[str, Any]:
         return _deepeval_guess(path)
     if found.reader == "promptfoo":
         return _promptfoo_guess(path)
+    if found.reader == "langsmith":
+        from poisson_trace.ingest import langsmith
+
+        # the case is the dataset example where the export carries its id; what says a run
+        # failed is the user's to name
+        return {
+            "case_from": "example" if langsmith.carries_examples(path) else "CASE",
+            "outcome_from": "OUTCOME",
+        }
     if found.reader in ("ragas", "table"):
         try:
             head = _columns(path)
@@ -1027,6 +1038,9 @@ def file_lines(
                 words += _pair(_FLAG[dest], str(guess[dest]))
         for value in guess.get("failed", ()):
             words += _pair("--failed", str(value))
+        for dest in ("case_from", "outcome_from"):
+            if dest in guess:
+                words += _pair(_FLAG[dest], str(guess[dest]))
         lines.append(" ".join(_shell_word(w) for w in words))
     return lines
 
@@ -1257,6 +1271,8 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
             readers = list(dict.fromkeys(f.reader for f in found.files))
             if len(readers) > 1 and imported is not False:
                 _several_tools(ns, found.files, config.beside(path, IMPORTED_STORE), shown)
+            if imported is not False and readers[0] not in _ASKED:
+                _not_asked(ns, found.files, config.beside(path, IMPORTED_STORE), shown)
             if imported is not False:
                 answers_fit(readers, answers)
             if imported is None:
@@ -1324,6 +1340,32 @@ def _several_tools(
         "the old version's and the new one's, import each with its line below (a word in "
         f"capitals is yours to fill in), then run {finish}; or give --no-import to write "
         f"{shown} with no store first",
+        *shown_lines(files, store),
+    )
+
+
+def _not_asked(ns: argparse.Namespace, files: Sequence[FoundFile], store: str, shown: str) -> None:
+    """Refused: files of a tool whose import needs answers init has no question and no flag
+    for (a LangSmith export's case and outcome); the refusal carries one import line for each
+    file."""
+    from poisson_trace.ingest.importing import reader_options
+
+    tool = files[0].reader
+    needed = [option.flag for option in reader_options(tool).values() if option.required]
+    finish = look.command(
+        "poisson-trace",
+        "init",
+        "--force",
+        *(_shell_word(w) for w in _pair("--store", store)),
+        *_reach(ns),
+    )
+    raise Refused(
+        f"the {_plural(len(files), 'result file', 'result files')} here "
+        f"{'was' if len(files) == 1 else 'were'} written by {tool}, and an import of them needs "
+        f"{_and(needed) if needed else 'answers'}, which init does not ask for, so it imported "
+        "none; import the old version's file and the new one's, each with its line below (a "
+        f"word in capitals is yours to fill in), then run {finish}; or name them under "
+        f"[[import]] in {shown}; or give --no-import to write {shown} with no store first",
         *shown_lines(files, store),
     )
 
@@ -1428,7 +1470,7 @@ def _hand_over(
     made: list[Imported] = []
     for entry in pending:
         try:
-            run = imports.read(held, entry)
+            run = imports.read(held, entry, pull_into=store.path)
         except Refusal as e:
             raise Refused(str(e), *e.nexts) from e
         made.append(Imported(entry.file, entry.tool, run))

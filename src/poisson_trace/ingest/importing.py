@@ -187,8 +187,26 @@ _STAND_INS: dict[str, tuple[tuple[str, str], ...]] = {
 }
 
 
-def stand_ins(tool: str, signals: Mapping[str, Any]) -> dict[str, Any]:
-    """The reader's options ``[signals]`` stands in for, by dest, with the values it gives."""
+def pulls(tool: str) -> str | None:
+    """What an address the reader of ``tool`` pulls from starts with (``langsmith:``), or None
+    when the install has no such reader, or the reader reads files alone."""
+    if find_spec(module_name(tool)) is None:
+        return None
+    address = getattr(reader(tool), "ADDRESS", None)
+    return address if isinstance(address, str) and address else None
+
+
+def stand_ins(
+    tool: str, signals: Mapping[str, Any], said: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
+    """The reader's options ``[signals]`` stands in for, by dest, with the values it gives.
+    A reader whose flags name their sources in their own words (LangSmith's ``--outcome-from
+    feedback:KEY``) says what stands in for them itself, in its ``stand_ins(signals, said)``;
+    ``said`` holds what the call itself gave, by dest, which decides whether a cut is read."""
+    if tool not in _STAND_INS and find_spec(module_name(tool)) is not None:
+        own = getattr(reader(tool), "stand_ins", None)
+        if own is not None:
+            return dict(own(signals, said or {}))
     return {
         dest: signals[field]
         for field, dest in _STAND_INS.get(tool, ())
@@ -197,15 +215,19 @@ def stand_ins(tool: str, signals: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def filled_stand_ins(
-    tool: str, signals: Mapping[str, Any], given: Collection[str]
+    tool: str,
+    signals: Mapping[str, Any],
+    given: Collection[str],
+    values: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The reader's options ``[signals]`` fills in where the call leaves them out, by dest,
     with the values the parser would give for the words the command line fills in: a cut from
     the config with no side given reads below. For a table, the form the call reads (its
     outcome column, or its score column) is the one filled, and the outcome form when the call
-    says neither and the config gives both. ``given`` names the dests the call gave."""
+    says neither and the config gives both. ``given`` names the dests the call gave, and
+    ``values`` holds what it gave for them."""
     held = set(given)
-    filled = stand_ins(tool, signals)
+    filled = stand_ins(tool, signals, {dest: (values or {}).get(dest, True) for dest in held})
     if tool == "table":
         by_outcome = bool({"outcome_column", "failed"} & held)
         by_score = bool({"score_column", "cut", "below", "above"} & held)
@@ -321,6 +343,8 @@ def _failed_when(d: Mapping[str, Any]) -> str:
         return "its test failed or errored"
     if tool == "openai-evals":
         return "its match event was not correct"
+    if tool == "langsmith":
+        return _langsmith_failed_when(declared)
     side = "below" if declared.get("side") == "below" else "above"
     if tool == "promptfoo":
         if declared.get("outcome") == "score":
@@ -343,6 +367,21 @@ def _failed_when(d: Mapping[str, Any]) -> str:
     return f"its {scored} score is {side} {_value(declared['cut'])}"
 
 
+def _langsmith_failed_when(declared: Mapping[str, Any]) -> str:
+    """When a LangSmith try counts as failed: by its root run's status, by a feedback score
+    or a metadata number at the cut, or by a metadata value named as failed."""
+    source = str(declared["outcome_from"])
+    if source == "status":
+        return "its root run ended in error"
+    where, _, key = source.partition(":")
+    if "cut" in declared:
+        side = "below" if declared.get("side") == "below" else "above"
+        what = "feedback score" if where == "feedback" else "metadata value"
+        return f"its {key} {what} is {side} {_value(declared['cut'])}"
+    values = _or([json.dumps(v, ensure_ascii=False) for v in declared["failed"]])
+    return f"its root run's {key} metadata reads {values}"
+
+
 def _import_flags(declared: Mapping[str, Any]) -> list[str]:
     """The flags that read another file as this one was read, from what was declared."""
     words: list[str] = []
@@ -350,6 +389,8 @@ def _import_flags(declared: Mapping[str, Any]) -> list[str]:
         # a reader's default outcome, which the line need not spell
         declared = {k: v for k, v in declared.items() if k != "outcome"}
     for key, flag in (
+        ("case_from", "--case-from"),
+        ("outcome_from", "--outcome-from"),
         ("prompt", "--prompt"),
         ("scorer", "--scorer"),
         ("provider", "--provider"),
@@ -370,6 +411,7 @@ def _import_flags(declared: Mapping[str, Any]) -> list[str]:
         if key in declared:
             words.append(look.option(flag, _value(declared[key])))
     words += [look.option("--failed", str(v)) for v in declared.get("failed", ())]
+    words += [look.option("--select", str(v)) for v in declared.get("select", ())]
     return words
 
 
@@ -467,6 +509,16 @@ def _caveats(d: Mapping[str, Any]) -> list[str]:
         )
     if tool == "junit":
         said.append("A skipped test has no outcome and is left out.")
+    lacking = d["no_outcome"].get("no score", 0)
+    if tool == "langsmith" and lacking and not d["counts"].get("feedback records", 0):
+        # the run statistics of an export can trail the feedback records (the captures' TC-11):
+        # the score is never guessed, and this says where the records are
+        said.append(
+            f"{_plural(lacking, 'root run has', 'root runs have')} no score for the key read, "
+            "so no outcome. LangSmith's run statistics can trail its feedback records: give "
+            "the feedback list beside the runs (GET /api/v1/feedback), or pull with "
+            "langsmith:NAME, which reads the records."
+        )
     said.append(MAX_MDE_ADVICE)
     return said
 
@@ -503,6 +555,7 @@ def _written_lines(d: Mapping[str, Any], cells: Mapping[str, int]) -> list[str]:
         f"- tool: {d['tool']}",
         *[f"- file: {f['name']} · sha256 {f['sha256']}" for f in d["files"]],
         *_verdicts_line(d),
+        *_pulled_line(d),
         "- declared: " + " · ".join(f"{k} {_value(v)}" for k, v in declared.items()),
         f"- started: {started['at']} · from: {source}",
         f"- rows {count(d['rows'])} · cases {count(d['cases'])} · repeats of a case: smallest "
@@ -511,6 +564,18 @@ def _written_lines(d: Mapping[str, Any], cells: Mapping[str, int]) -> list[str]:
         "- rows with no outcome: "
         + (" · ".join(f"{reason} {count(n)}" for reason, n in none.items()) if none else "0"),
         *counted,
+    ]
+
+
+def _pulled_line(d: Mapping[str, Any]) -> list[str]:
+    """The pull, as one line of what was written, when the run was pulled from an API."""
+    if "pull" not in d:
+        return []
+    p = d["pull"]
+    text = "inputs and outputs measured and left out" if p["raw_text_stripped"] else "raw text kept"
+    return [
+        f"- pulled: {p['source_uri']} · raw copy {p['folder']} · runs {count(p['runs'])} · "
+        f"feedback records {count(p['feedback'])} · {text}"
     ]
 
 
@@ -662,6 +727,8 @@ def _read_and_write(
 
     written = write(run, store, form, rules=rules, budgets=budgets, verdicts=joined)
     data = _summary(run, written, str(ns.store), reach)
+    if run.pull is not None:
+        data = _with_pull(data, run.pull)
     if joined is not None:
         data = _with_verdicts(data, joined)
     return Imported(data, _markdown(data, run.cells, reach))
@@ -752,6 +819,14 @@ def one_run(
                     *nexts(),
                 )
             seen[case] = f
+
+
+def _with_pull(data: Mapping[str, Any], pull: Mapping[str, Any]) -> dict[str, Any]:
+    """The summary with what the pull did, before the command to run next."""
+    out = {key: value for key, value in data.items() if key != "next"}
+    out["pull"] = dict(pull)
+    out["next"] = data["next"]
+    return out
 
 
 def _with_verdicts(data: Mapping[str, Any], joined: Mapping[str, Any]) -> dict[str, Any]:

@@ -560,7 +560,9 @@ def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
     from breakdown_support import piped_corpus
 
     out = dict(piped_corpus())
-    for verb in ("init", "runs", "name", "where", "compare", "fix-check", "changes", "handover", "import", "doctor"):
+    # the import's help lists the readers, so it moves with each reader pair, which holds it (for
+    # LangSmith, test_tf24_unchanged.py)
+    for verb in ("init", "runs", "name", "where", "compare", "fix-check", "changes", "handover", "doctor"):
         out[f"help: {verb}"] = ("work", "trace", [[verb, "--help"]])
     for label, (_store, argv) in SAVES.items():
         out[f"save: {label}"] = ("work", "trace", [[*argv, "--save"], [*argv, "--save", "--json"], [*argv, "--save"]])

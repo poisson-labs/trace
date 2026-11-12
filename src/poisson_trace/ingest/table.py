@@ -147,13 +147,27 @@ def _score(cell: Any) -> float | None:
     return value if math.isfinite(value) else None
 
 
+def _is_langsmith(path: Path | str) -> bool:
+    """Whether the LangSmith reader, where the install has it, takes the file as its own."""
+    from importlib.util import find_spec
+
+    if find_spec(f"{__package__}.langsmith") is None:
+        return False
+    from poisson_trace.ingest import langsmith
+
+    return langsmith.looks_like(path) is not None
+
+
 def looks_like(path: Path | str) -> str | None:
     """One line describing ``path`` when it looks like a table of results, else None; it never
     raises. A table is a ``.csv``, ``.jsonl`` or ``.json`` file (a ``.json`` file being a list of
     rows) with a column named exactly one of ``OUTCOME_COLUMNS`` within its first 4 KB, and no
     column named like a Ragas metric: such a table is the Ragas reader's, so that no file is
-    read by two readers."""
+    read by two readers. A LangSmith export has a ``status`` column too, and is the LangSmith
+    reader's where that reader is in the install."""
     try:
+        if _is_langsmith(path):
+            return None
         head = tabular.head_columns(path)
         if head is None:
             return None

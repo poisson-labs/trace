@@ -121,7 +121,7 @@ FAULTS = [
     ("an unknown key", 'version = 1\n[events]\nfaild = ["x"]\n', "faild"),
     ("a wrong type", 'version = 1\n[store]\npath = 3\n', "path"),
     ("an import fault", config_text(ragas_entry("e.jsonl", "r", metrc="x"), store="store"), "metrc"),
-    ("a tool not in the install", config_text(import_entry("e.jsonl", "langsmith", "r"), store="store"), "langsmith"),
+    ("a tool not in the install", config_text(import_entry("e.jsonl", "otel", "r"), store="store"), "otel"),
     ("a signals fault", config_text(ragas_entry("evals/results/rag-base.jsonl", "r"), '[signals]\ncut = "high"\n', store="store"), "cut"),
     ("a rules fault", config_text(ragas_entry("evals/results/rag-base.jsonl", "r"), '[[taxonomy.rules]]\nfailure_kind = "oops"\nwhen_span_kind = "tool"\n', store="store"), "oops"),
 ]

@@ -376,6 +376,10 @@ def piped_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
         out[f"import: {label}"] = ("work", "import", [argv])
         out[f"import json: {label}"] = ("work", "import", [[*argv, "--json"]])
     for label, (argv, _code) in IMPORT_REFUSALS_ARGV.items():
+        if label == "a tool not in this install":
+            # it names every reader in the install, so it moves with each reader pair, which
+            # holds it (for LangSmith, test_tf24_unchanged.py)
+            continue
         out[f"import refusal: {label}"] = ("work", "import", [argv, [*argv, "--json"]])
     out["names"] = ("work", "trace", [
         ["name", "agent after", "shipped", "--store", "store"], ["name", "--list", "--store", "store"],

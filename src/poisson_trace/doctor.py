@@ -463,6 +463,12 @@ def _setup_config(
     carried: Counter[str] = Counter()
     every_read = True
     for entry in pending:
+        if imports.is_address(entry):
+            # no host is contacted by a check: an address is left for init to pull
+            keyed, line = imports.address_check(entry)
+            every_read = every_read and keyed
+            import_checks.append(_check("import", keyed, line, None if keyed else init))
+            continue
         try:
             run = imports.read(held, entry)
         except Refusal as e:

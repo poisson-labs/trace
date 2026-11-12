@@ -131,6 +131,13 @@ def _unpacked(folder: Path) -> Path:
     return folder
 
 
+def _langsmith(kind: str, root: Path, run: str) -> list[str]:
+    """A committed LangSmith capture read by its root runs' status (the reader pair's TF24)."""
+    from tf24_support import by_status, export
+
+    return by_status(export("baseline", kind), root, run)
+
+
 # key -> (reader, argv builder (store, run) -> argv without --json)
 READERS: dict[str, tuple[str, Callable[[Path, str], list[str]]]] = {
     "deepeval-a": ("deepeval", _tf21("deepeval-a")),
@@ -145,10 +152,13 @@ READERS: dict[str, tuple[str, Callable[[Path, str], list[str]]]] = {
     "inspect-json": ("inspect", lambda root, run: in_argv(IN_JSON, root, run)),
     "openai-evals-old": ("openai-evals", lambda root, run: oe_argv(OE_OLD, root, run)),
     "openai-evals-new": ("openai-evals", lambda root, run: oe_argv(OE_NEW, root, run)),
+    "langsmith-v2": ("langsmith", lambda root, run: _langsmith("v2", root, run)),
+    "langsmith-traces": ("langsmith", lambda root, run: _langsmith("cli-traces", root, run)),
+    "langsmith-csv": ("langsmith", lambda root, run: _langsmith("ui", root, run)),
 }
 # the pull-request lane imports these whole; the slow lane imports every one
 FAST = ("junit-a", "junit-suite", "ragas-base", "promptfoo-old", "inspect-eval", "inspect-json",
-        "openai-evals-old")
+        "openai-evals-old", "langsmith-v2", "langsmith-traces", "langsmith-csv")
 SLOW = tuple(k for k in READERS if k not in FAST)
 # every reader on main has a fast key
 assert {READERS[k][0] for k in FAST} | {"deepeval", "table"} == {r for r, _ in READERS.values()}

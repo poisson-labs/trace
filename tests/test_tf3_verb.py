@@ -58,7 +58,7 @@ CORPUS: dict[str, list[str]] = {
     **{f"{tool}'s help": [tool, "--help"] for tool in PRESENT},
     "the version": ["--version"],
     "no tool": [],
-    "an unknown tool": ["langsmith", "x.json", "--store", "st", "--run", "r1"],
+    "an unknown tool": ["otel", "x.json", "--store", "st", "--run", "r1"],
     "an unknown option": [*DE, "--bogus"],
     "an abbreviated option": [*DE[:-2], "--start", "2026-10-02T10:15:00Z"],
     "no --run": DE[:4] + DE[6:],
@@ -117,7 +117,7 @@ def test_tf3_01_every_help_reads_the_verb(tmp_path: Path) -> None:
             for tool in PRESENT:
                 assert re.search(rf"^ +{tool} {{2,}}\S", a.out, re.M), (tool, a.out)
     # the readers this install reads, named when a tool is not one of them
-    unknown = verb(["langsmith", "x.json", "--store", "st", "--run", "r1"])
+    unknown = verb(["otel", "x.json", "--store", "st", "--run", "r1"])
     assert unknown.code == 1 and all(tool in unknown.lines()[0] for tool in PRESENT), unknown.err
 
 

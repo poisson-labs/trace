@@ -17,8 +17,8 @@ FROZEN = {
     "test_tf18_report.py": "64a4cd222d742ae0ce4091ec5f98b39f603526b2d3d5938bb30859e536e0f1f1",
     "test_tf18_ui.py": "dbecb0e82c9522f4d6cb1a5cc8a07fa986f1c02e5cac4dc953073ac9e4273176",
     "test_tf18_unchanged.py": "66b046e2052b7e1757a28e4d6c1271a52b6e312cf77eba9a50152ec4fc13de72",
-    "tf18_support.py": "d5045895be180792023f8c3131895d4666454f67a4d368c73e36499ce11243db",
-    "fixtures/tf18/main-pins.json": "a5632b501ef1d6641d2bf339431c1b931aeb18f4bc6614a881653b06b810ec59",
+    "tf18_support.py": "7e27e4f534e4260a87db3ad55181ef2657519eacc4178a19ba5a932bd21774d9",
+    "fixtures/tf18/main-pins.json": "c2666be28bd93d5bde58cbd43dfbfd0dad51b77f847cf41de58c7c78a5212c90",
     "fixtures/tf18/make_main_pins.py": "12ad479fb934e6e551a38d07505e9730ff26b9dac5abdbbcf3db9d1e4bb945a6",
 }
 

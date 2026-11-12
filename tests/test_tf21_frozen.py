@@ -13,7 +13,7 @@ FROZEN = {
     "tf21_support.py": "eefa0e0b7ff018f4d285b13005a565a11d2c5e80e171187c96096bd82a36c467",
     "test_tf21_rows.py": "9d0faedfc7f4806b98a0e3f3fdc89b16d6a8925c110627e685e6f9f0462ac6af",
     "test_tf21_taxonomy.py": "98e6d47342aac30e37301767700b93ca0cc75c405ed9ec689f00bb6aa6096cef",
-    "test_tf21_writer.py": "185ef353e85c8742fc6829fb76b259e40bf1214b26f1962ae75061fe8d05b044",
+    "test_tf21_writer.py": "18aa5c69705c53aa72ec000dab220b617b00dfaeaddf03eb25051d9e24a6cb21",
     "test_tf21_prove.py": "df07589f3c7d67163057d3ab25020d9c744e73e20b2c9db6bb30bda2b032da35",
     "test_tf21_tries.py": "46643363680bcfd2d3025914384becdd578a62ee2976358dc051b8faf6f23157",
     "test_tf21_readers.py": "4b28600702c2f4cb61e12aa9c66e18e132a4ac170450b5e8211bf0b92e4636e7",

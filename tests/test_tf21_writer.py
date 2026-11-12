@@ -164,8 +164,11 @@ def test_tf21_27_t_and_horizon_are_the_recorded_steps_else_as_today(tmp_path: Pa
     by = {m["trace_signals"]["case"]: (t, h) for m, t, h in
           zip(df["meta"], df["t"], df["horizon"], strict=True)}
     assert by["case_042"] == (3.0, 8.0)
-    # no steps and no spans: one step, so Prove 0.1.3's pages build over the store (RR5)
-    assert by["case_007"] == (1.0, 1.0)
+    # no steps and no spans: one step, so Prove 0.1.3's pages build over the store (RR5); the
+    # rows whose source recorded no horizon share one, the most steps any of them took, since
+    # Prove's pages refuse a run of mixed horizons (found by the LangSmith reader's tests, the
+    # first reader whose rows record different numbers of steps)
+    assert by["case_007"] == (1.0, 4.0)
     assert by["s"] == (4.0, 4.0)
 
 

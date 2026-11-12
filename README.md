@@ -472,7 +472,7 @@ ok  this environment is ready
   prove     poisson-prove 0.1.3 (the version Trace reads)
   config    trace.toml: store proofload-runs (3 runs, 3 complete, 0 partial), failures unsolved
   names     proofload-runs: no names of yours yet
-  readers   deepeval, ragas, table, junit, promptfoo, inspect, openai-evals
+  readers   deepeval, ragas, table, junit, promptfoo, inspect, openai-evals, langsmith
 next: poisson-trace runs
 ```
 

@@ -74,7 +74,7 @@ def test_tf10_33_each_reader_s_flags_are_the_spec_s() -> None:
 
 
 def test_tf10_33_an_absent_tool_is_refused_naming_every_reader() -> None:
-    unknown = trace(["import", "langsmith", "x.json", "--store", "st", "--run", "r1"])
+    unknown = trace(["import", "otel", "x.json", "--store", "st", "--run", "r1"])
     assert unknown.code == 1 and all(tool in unknown.lines()[0] for tool in PRESENT), unknown.err
 
 

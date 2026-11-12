@@ -1039,7 +1039,8 @@ def import_run(
         flags = _reader_namespace(ns.tool, "import", reader_flags)
         given = set(reader_flags)
         if settings is not None and settings.signals:
-            for dest, value in importing.filled_stand_ins(ns.tool, settings.signals, given).items():
+            filled = importing.filled_stand_ins(ns.tool, settings.signals, given, reader_flags)
+            for dest, value in filled.items():
                 setattr(flags, dest, value)
                 given.add(dest)
         for dest, value in vars(flags).items():
@@ -1321,12 +1322,32 @@ def _readers() -> tuple[str, ...]:
     return importing.READERS
 
 
-def _stand_ins(tool: str, cfg: Config) -> dict[str, Any]:
+def _stand_ins(tool: str, cfg: Config, words: Sequence[str] = ()) -> dict[str, Any]:
     """What ``[signals]`` stands in for among the reader's flags, for the import's command
-    line to fill into its words before it parses them (SA8)."""
+    line to fill into its words before it parses them (SA8). ``words`` is the command line,
+    for a reader whose stand-ins depend on what the line itself says: a cut stands in for the
+    LangSmith reader only where the line or the config reads a score."""
     from poisson_trace.ingest import importing
 
-    return importing.stand_ins(tool, cfg._held.signals)
+    return importing.stand_ins(tool, cfg._held.signals, _typed(words))
+
+
+def _typed(words: Sequence[str]) -> dict[str, Any]:
+    """The long options on a command line, by dest: each with the word after it, or True for
+    one given alone. Read before the line is parsed, so a value is the next word as written."""
+    out: dict[str, Any] = {}
+    line = list(words)
+    for i, word in enumerate(line):
+        if not word.startswith("--") or word == "--":
+            continue
+        name, equals, value = word[2:].partition("=")
+        if equals:
+            out[name.replace("-", "_")] = value
+        elif i + 1 < len(line) and not line[i + 1].startswith("--"):
+            out[name.replace("-", "_")] = line[i + 1]
+        else:
+            out[name.replace("-", "_")] = True
+    return out
 
 
 def _import_folder_tool(path: str) -> str:

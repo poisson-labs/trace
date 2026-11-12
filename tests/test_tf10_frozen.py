@@ -15,7 +15,7 @@ FROZEN = {
     "test_tf10_promptfoo.py": "9c6c0c9b094810a778b2b95b3ba41408f273de1f08cea924dc8edfa7f51cc01a",
     "test_tf10_inspect.py": "d2291bff26ff8f3e86ce3bdac1f30574ec593b2bb6106a7da1775b2161ee3ce7",
     "test_tf10_openai_evals.py": "4025f587201d2e0b7cb8f6ebf0235f9a74973728d7972ef64e2c5bd6b89687d2",
-    "test_tf10_cli.py": "ca59604d32402b5e672a6ab9aade838c9b1e9096911f8bdd75fa9f69e095cb88",
+    "test_tf10_cli.py": "8b486f71b7a8eeb83582b4d5182691ba98f8b440572a47aa54cda3a2ae6c0060",
     "test_tf10_looks_like.py": "f0ed6bf9e81a8efe791142c0073d5f8db1b5dc92aa8c6745d26850e0ac2d4fd9",
     "test_tf10_pages.py": "3152aaa16601e108af530e62fc67b0ba90d6887430bdc8c9eeee7e7fb8221cfe",
     "test_tf10_unchanged.py": "21adfa0e9273a6cc971813e155ccc99827adcabd77b0c834981dd72c1bac6130",

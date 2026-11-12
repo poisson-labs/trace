@@ -416,7 +416,7 @@ def corpus() -> list[Item]:
     add("a file that is not there", "import", ["deepeval", "no-such-file.json", "--store", "store2", "--run", "x", "--metric", "Tests Passed", "--cut", "recorded", "--case", "name"], 1, "refusal")
     add("a metric no case carries", "import", ["deepeval", str(DEEPEVAL / "humaneval-a.json.gz"), "--store", "store2", "--run", "x", "--metric", "Tests Pased", "--cut", "recorded", "--case", "name"], 1, "refusal")
     add("a column the table lacks", "import", ["ragas", str(RAGAS / "rag-base.jsonl"), "--store", "store2", "--run", "x", "--metric", "faithfulnes", "--cut", "0.5", "--below", "--case-column", "case"], 1, "refusal")
-    add("a tool not in this install", "import", ["langsmith", "x.json", "--store", "store2", "--run", "x"], 1, "refusal")
+    add("a tool not in this install", "import", ["otel", "x.json", "--store", "store2", "--run", "x"], 1, "refusal")
     add("a start with no zone", "import", ragas_import("store2", "x")[:-2] + ["--started", "2025-03-31T06:56:41"], 1, "refusal")
     add("a start that is not a time", "import", ragas_import("store2", "x")[:-2] + ["--started", "yesterday"], 1, "refusal")
     add("a cut with no side", "import", [w for w in ragas_import("store2", "x") if w != "--below"], 1, "refusal")

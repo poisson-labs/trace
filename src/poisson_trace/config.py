@@ -784,7 +784,7 @@ class _Checker:
                     f'[[{_IMPORT}]] tool "{tool}" is not in this install; the readers here are '
                     f"{_and(list(here))}",
                 )
-            self.import_file(at, file)
+            self.import_file(at, file, tool)
             hole = import_name_refusal(name)
             if hole is not None:
                 raise self.fault((*at, "name"), f"[[{_IMPORT}]] name: {hole}")
@@ -796,7 +796,7 @@ class _Checker:
                 )
             seen[name] = line
             options = self.import_options(at, tool, table, reader_options(tool))
-            given = {*stand_ins(tool, signals), *options}
+            given = {*stand_ins(tool, signals, options), *options}
             for dest, option in reader_options(tool).items():
                 if option.required and dest not in given:
                     raise self.fault(
@@ -807,9 +807,21 @@ class _Checker:
             held.append(ImportEntry(file, tool, name, options, line))
         return tuple(held)
 
-    def import_file(self, at: tuple[Any, ...], file: str) -> None:
+    def import_file(self, at: tuple[Any, ...], file: str, tool: str) -> None:
+        """The entry's file: a relative path inside the repository, or an address the entry's
+        own reader pulls from (``langsmith:NAME`` under ``tool = "langsmith"``)."""
+        from poisson_trace.ingest.importing import pulls
+
         key = (*at, "file")
         puller = file.split(":", 1)[0] if ":" in file else None
+        if puller in PULLERS and pulls(puller) is not None:
+            if tool != puller:
+                raise self.fault(
+                    key,
+                    f'[[{_IMPORT}]] file "{file}" is an address the {puller} reader pulls from; '
+                    f'an entry that names it has tool = "{puller}", not "{tool}"',
+                )
+            return
         if puller in PULLERS:
             raise self.fault(
                 key,

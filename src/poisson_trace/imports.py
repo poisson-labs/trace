@@ -130,7 +130,7 @@ def options_of(held: Config, entry: ImportEntry) -> dict[str, Any]:
     from poisson_trace.ingest.importing import stand_ins
 
     options: dict[str, Any] = {}
-    filled = stand_ins(entry.tool, held.signals)
+    filled = stand_ins(entry.tool, held.signals, entry.options)
     for dest, value in filled.items():
         if dest in entry.options:
             continue
@@ -141,8 +141,32 @@ def options_of(held: Config, entry: ImportEntry) -> dict[str, Any]:
     return options
 
 
+def is_address(entry: ImportEntry) -> bool:
+    """Whether the entry names an address its reader pulls from (``langsmith:NAME``), not a
+    file."""
+    from poisson_trace.ingest.importing import pulls
+
+    address = pulls(entry.tool)
+    return address is not None and entry.file.startswith(address)
+
+
+def address_check(entry: ImportEntry) -> tuple[bool, str]:
+    """A pending address, as the setup check says it: it is not pulled there, since a check
+    asks no outside service anything; whether the key ``init`` pulls it with is set, which
+    is whether the check passes. The key itself is never read here."""
+    from poisson_trace.ingest import pulling
+
+    keyed = pulling.key_is_set()
+    return keyed, (
+        f"{entry.file}: an address the {entry.tool} reader pulls from, not pulled here; init "
+        f"pulls it with {pulling.KEY_VARIABLE}, which is {'set' if keyed else 'not set'}"
+    )
+
+
 def file_of(held: Config, entry: ImportEntry) -> str:
-    """The entry's file as the current folder reads it."""
+    """The entry's file as the current folder reads it; an address as it is written."""
+    if is_address(entry):
+        return entry.file
     return config.beside(held.path, entry.file)
 
 
@@ -179,10 +203,12 @@ def _as_keys(said: str) -> str:
     return _FLAG.sub(lambda m: m.group(1).replace("-", "_"), said)
 
 
-def read(held: Config, entry: ImportEntry) -> Run:
+def read(held: Config, entry: ImportEntry, pull_into: str | None = None) -> Run:
     """The entry read with its reader, writing nothing: the file (or the folder, through the
     folder resolver, as the named tool's files alone), the reader's own usage rules, then its
-    read; refused with the entry's file first when any of it fails."""
+    read; refused with the entry's file first when any of it fails. An address is pulled
+    only when ``pull_into`` names the store its raw copy is saved under, which ``init`` does
+    and a check never does."""
     from poisson_trace.ingest import importing as importer
     from poisson_trace.ingest.folder import resolve
     from poisson_trace.ingest.writer import runs_in
@@ -190,9 +216,13 @@ def read(held: Config, entry: ImportEntry) -> Run:
     path = file_of(held, entry)
     where = f"the [[import]] entry on line {entry.line}"
     try:
-        if not os.path.lexists(path):
+        if is_address(entry):
+            if pull_into is None:
+                raise Refusal(f"is an address to pull from, which only init pulls ({where})")
+            files = [path]
+        elif not os.path.lexists(path):
             raise Refusal(f"is not there ({where} names it)")
-        if os.path.isdir(path):
+        elif os.path.isdir(path):
             if runs_in(Path(path)):
                 raise Refusal(
                     f"is a store Prove wrote, not a file to import; name it under [store], not "
@@ -208,6 +238,8 @@ def read(held: Config, entry: ImportEntry) -> Run:
         else:
             files = [path]
         ns = namespace(held, entry, files)
+        if pull_into is not None:
+            ns.store = pull_into
         module = importer.reader(entry.tool)
         wrong = getattr(module, "usage", None)
         said = wrong(ns) if wrong is not None else None

@@ -405,6 +405,9 @@ class Run:
     # input: what ``--verdicts`` joins by when a verdict names no case (FI18, FI19); never the
     # input's text
     inputs: Mapping[str, str] = field(default_factory=dict)
+    # what a pull did, when the run was pulled from a service's API and read from the raw copy
+    # it saved (section 18.3.2): the address, the raw copy's folder, what it holds
+    pull: Mapping[str, Any] | None = None
 
 
 def digest_id(text: str) -> str:

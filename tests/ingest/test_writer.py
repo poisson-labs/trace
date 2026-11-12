@@ -241,8 +241,9 @@ def test_ic4_t_and_horizon_are_the_number_of_leaf_spans(tmp_path: Path) -> None:
     root = tmp_path / "store"
     write(make_run([Row("c1", "met", None, 1.0, _spans(False)), Row("c2", "missed", None, 0.0, _spans(False)[:1])]), root)
     got = {r["case"]: (r["t"], r["horizon"]) for r in read_rows(root, "run")}
-    # a1 holds b1 and b2; b1 holds c1: the leaves are b2 and c1
-    assert got == {"c1": (2.0, 2.0), "c2": (1.0, 1.0)}
+    # a1 holds b1 and b2; b1 holds c1: the leaves are b2 and c1. The rows share one horizon, the
+    # most steps any of them took: Prove's pages refuse a run of mixed horizons
+    assert got == {"c1": (2.0, 2.0), "c2": (1.0, 2.0)}
 
 
 # ---------- IC8 ----------

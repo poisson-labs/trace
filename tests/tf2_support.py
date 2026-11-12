@@ -52,7 +52,7 @@ KEYS = {
 }
 # the readers a module of the install carries today, and those named in the import's tuple that are not
 PRESENT_READERS = ("deepeval", "ragas")
-ABSENT_READERS = ("langsmith", "otel", "lemma")
+ABSENT_READERS = ("otel", "lemma")
 DOCTOR_CHECKS = ("python", "package", "prove", "config", "names", "readers")
 
 

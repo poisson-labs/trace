@@ -251,7 +251,7 @@ def _read(
         word = _config_word(args)
         config = api.load_config(word) if word is not None else api._config_here()
         if config is not None:
-            filled = api._stand_ins(args[at], config)
+            filled = api._stand_ins(args[at], config, args)
             if filled:
                 args = _with_stand_ins(args, args[at], filled)
         if word is not None:

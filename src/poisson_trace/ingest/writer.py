@@ -23,7 +23,9 @@ Rows are counted as Prove counts its own: a row with no outcome is ``errored``, 
 made from with the verdicts file last, the tool, the reader and the import's options; RR3, RR4),
 added after Prove's last write of the manifest, which does not carry the key. A row with an
 outcome and no recorded steps and no spans is stored as one step, so Prove's pages build over
-the store (RR5).
+the store (RR5). The rows of a run whose source recorded no horizon share one, the most steps
+any of them took, so that the pages also build over a run whose rows took different numbers of
+steps.
 """
 
 from __future__ import annotations
@@ -34,7 +36,7 @@ import shutil
 import time
 from collections import Counter
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -230,6 +232,22 @@ def _record(run: str, row: Row, repeat: int) -> EpisodeRecord:
     )
 
 
+def _sharing_a_horizon(rows: Sequence[Row], records: list[EpisodeRecord]) -> list[EpisodeRecord]:
+    """The records, with one horizon for the rows whose source recorded none: the most steps
+    any of them took. Each such row's horizon was its own step count, which Prove's pages
+    refuse once the rows of a run take different numbers of steps ("mixed horizons within a
+    run"). A horizon the source recorded is kept, a row with no outcome has none, and the
+    signals record still says the horizon was not recorded."""
+    free = [i for i, row in enumerate(rows) if row.outcome is not None and row.horizon is None]
+    if not free:
+        return records
+    shared = max(records[i].t or 0.0 for i in free)
+    out = list(records)
+    for i in free:
+        out[i] = replace(records[i], horizon=shared)
+    return out
+
+
 def _now() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
@@ -416,6 +434,7 @@ def write(
             else:
                 kept += 1
             log.progress(kept + errored, kept, errored, total)
+        records = _sharing_a_horizon(run.rows, records)
     except (TypeError, ValueError) as e:
         raise Refusal(f"a row could not be written as Prove stores it ({why(e)})") from e
     recorded: dict[str, Any] = {

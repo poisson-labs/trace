@@ -24,6 +24,12 @@ from tf13_support import (
 )
 
 
+# The refusal of a tool the install lacks names every reader it has, and the import's help lists
+# them: both gain a reader with each reader pair, so neither is pinned here. The pair that adds a
+# reader holds them (for LangSmith, test_tf24_unchanged.py).
+NAMES_THE_READERS = "a tool not in this install"
+
+
 def _cases() -> dict[str, tuple[str, list[list[str]]]]:
     out: dict[str, tuple[str, list[list[str]]]] = {}
     for label, argv in VERBS_ARGV.items():
@@ -34,6 +40,8 @@ def _cases() -> dict[str, tuple[str, list[list[str]]]]:
     for label, (argv, _code) in REFUSALS_ARGV.items():
         out[f"refusal: {label}"] = ("trace", [argv, [*argv, "--json"]])
     for label, (argv, _code) in IMPORT_REFUSALS_ARGV.items():
+        if label == NAMES_THE_READERS:
+            continue
         out[f"import refusal: {label}"] = ("import", [argv, [*argv, "--json"]])
     for verb, argv in (("where", VERBS_ARGV["where"]), ("compare", VERBS_ARGV["compare"]),
                        ("fix-check", VERBS_ARGV["fix-check measures"]), ("changes", VERBS_ARGV["changes verdicts"])):
@@ -536,12 +544,6 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
         (2, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '76f07257adb1931699ced58702328905aa2100a4199abee712fd6c91a62dbbe8'),
     ],
-    'import refusal: a tool not in this install': [
-        (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-         'a86cc4b8b0f0d6c2e0aaf6f8e27b34fd42547cd857725f87e41d4cb870e0dc52'),
-        (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-         'a86cc4b8b0f0d6c2e0aaf6f8e27b34fd42547cd857725f87e41d4cb870e0dc52'),
-    ],
     'save: where': [
         (0, '059ed63192014937228496010e478c4b67d159e5988de759d30e458e688ddbf9',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
@@ -694,7 +696,6 @@ def test_tf13_32_a_every_case_is_pinned() -> None:
 
 HELPS: dict[str, tuple[str, list[str]]] = {
     **{f"{verb} help": ("trace", [verb, "--help"]) for verb in ("runs", "name", "where", "compare", "fix-check", "changes", "handover")},
-    "import help": ("import", ["--help"]),
     **{f"import {tool} help": ("import", [tool, "--help"]) for tool in
        ("deepeval", "ragas", "table", "junit", "promptfoo", "inspect", "openai-evals")},
 }
@@ -706,7 +707,6 @@ HELP_PINNED: dict[str, str] = {
     'fix-check help': 'e6b54d82cd40ab0b8cac8db007b858fd9a286e4bdfa6815dd58c7cf923b16497',
     'changes help': '79d1c0cbacb5c852c9e4f7185734056811d5591aa325d6f14c0438d21d7365e4',
     'handover help': 'ea2c22ea7a6b4c73156ebf0317ec6a7d412d917e5a3192a1c8f27c8b430e447b',
-    'import help': '3550d042f3e2967f6c8e308f83eb83a371a333603ca3d013838c14879ddd3dd9',
     'import deepeval help': 'fa997eb02bd609e9e62e14a7ab4c9ca960e33b3534cefe5a259631424ab1390d',
     'import ragas help': '2fd4273275204f7ff58bcd03e1acb7a66b8861b22fe08d2b9ea6149893dbadd9',
     'import table help': '82a3700050edd09b2a9e9c6f76ee978d986576af4af29bf5cdb1ce5e86620dd9',
