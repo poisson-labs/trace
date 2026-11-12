@@ -142,8 +142,8 @@ def options_of(held: Config, entry: ImportEntry) -> dict[str, Any]:
 
 
 def is_address(entry: ImportEntry) -> bool:
-    """Whether the entry names an address its reader pulls from (``langsmith:NAME``), not a
-    file."""
+    """Whether the entry names an address its reader pulls from (``langsmith:NAME``,
+    ``braintrust:PROJECT/EXPERIMENT``), not a file."""
     from poisson_trace.ingest.importing import pulls
 
     address = pulls(entry.tool)
@@ -156,10 +156,11 @@ def address_check(entry: ImportEntry) -> tuple[bool, str]:
     is whether the check passes. The key itself is never read here."""
     from poisson_trace.ingest import pulling
 
-    keyed = pulling.key_is_set()
+    keyed = pulling.key_is_set(entry.tool)
     return keyed, (
         f"{entry.file}: an address the {entry.tool} reader pulls from, not pulled here; init "
-        f"pulls it with {pulling.KEY_VARIABLE}, which is {'set' if keyed else 'not set'}"
+        f"pulls it with {pulling.key_variable(entry.tool)}, which is "
+        f"{'set' if keyed else 'not set'}"
     )
 
 

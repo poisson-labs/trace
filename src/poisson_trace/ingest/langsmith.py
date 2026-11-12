@@ -82,6 +82,9 @@ OUTPUT_CHARS = "_poisson_output_chars"
 INPUT_KEY = "_poisson_input_key"
 ERROR_KIND = "_poisson_error_kind"
 
+#: What the detector says of a file of feedback records alone, which is no run of its own.
+FEEDBACK_SAID = "LangSmith feedback records"
+
 #: Why a row has no outcome.
 NO_SCORE = "no score"
 NO_OUTCOME = "no outcome recorded"
@@ -1290,6 +1293,26 @@ def carries_examples(path: Path | str) -> bool:
     )
 
 
+def feedback_beside(paths: Sequence[Path | str]) -> dict[str, str | None]:
+    """Each of the files that holds feedback records and no run, with the file among them
+    whose runs its records score: the runs it is given beside in one import. None where no
+    file given holds those runs. A file that cannot be read is neither. It never raises."""
+    held: dict[str, _File] = {}
+    for path in paths:
+        try:
+            held[str(path)] = _load(Path(path))
+        except Exception:
+            continue
+    runs = {path: {item.id for item in file.runs} for path, file in held.items() if file.runs}
+    beside: dict[str, str | None] = {}
+    for path, file in held.items():
+        if file.runs or file.table or not file.feedback:
+            continue
+        scored = {str(record.get("run_id")) for record in file.feedback}
+        beside[path] = next((r for r, ids in runs.items() if not scored.isdisjoint(ids)), None)
+    return beside
+
+
 def looks_like(path: Path | str) -> str | None:
     """One line describing ``path`` when it is a LangSmith export, else None; it never
     raises. The CSV is told by its header; a ``.json`` or ``.jsonl`` file by its first row: a
@@ -1312,7 +1335,7 @@ def looks_like(path: Path | str) -> str | None:
             return None
         shape = _shape(doc)
         if shape == "feedback":
-            return "LangSmith feedback records" if "run_id" in doc else None
+            return FEEDBACK_SAID if "run_id" in doc else None
         if shape is None or "trace_id" not in doc or "start_time" not in doc:
             return None
         if shape == "cli":

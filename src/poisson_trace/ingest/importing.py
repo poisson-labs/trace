@@ -63,6 +63,7 @@ READERS: tuple[str, ...] = (
     "inspect",
     "openai-evals",
     "langsmith",
+    "braintrust",
     "otel",
     "lemma",
 )
@@ -345,6 +346,8 @@ def _failed_when(d: Mapping[str, Any]) -> str:
         return "its match event was not correct"
     if tool == "langsmith":
         return _langsmith_failed_when(declared)
+    if tool == "braintrust":
+        return _braintrust_failed_when(declared)
     side = "below" if declared.get("side") == "below" else "above"
     if tool == "promptfoo":
         if declared.get("outcome") == "score":
@@ -380,6 +383,21 @@ def _langsmith_failed_when(declared: Mapping[str, Any]) -> str:
         return f"its {key} {what} is {side} {_value(declared['cut'])}"
     values = _or([json.dumps(v, ensure_ascii=False) for v in declared["failed"]])
     return f"its root run's {key} metadata reads {values}"
+
+
+def _braintrust_failed_when(declared: Mapping[str, Any]) -> str:
+    """When a Braintrust try counts as failed: by its root span's error, by a score or a
+    metadata number at the cut, or by a metadata value named as failed."""
+    source = str(declared["outcome_from"])
+    if source == "error":
+        return "its root span ended in error"
+    where, _, key = source.partition(":")
+    if "cut" in declared:
+        side = "below" if declared.get("side") == "below" else "above"
+        what = "score" if where == "score" else "metadata value"
+        return f"its {key} {what} is {side} {_value(declared['cut'])}"
+    values = _or([json.dumps(v, ensure_ascii=False) for v in declared["failed"]])
+    return f"its root span's {key} metadata reads {values}"
 
 
 def _import_flags(declared: Mapping[str, Any]) -> list[str]:
@@ -573,10 +591,12 @@ def _pulled_line(d: Mapping[str, Any]) -> list[str]:
         return []
     p = d["pull"]
     text = "inputs and outputs measured and left out" if p["raw_text_stripped"] else "raw text kept"
-    return [
-        f"- pulled: {p['source_uri']} · raw copy {p['folder']} · runs {count(p['runs'])} · "
-        f"feedback records {count(p['feedback'])} · {text}"
-    ]
+    # a pull says what it read in its own service's words: runs and feedback records, or events
+    if "events" in p:
+        held = f"events {count(p['events'])}"
+    else:
+        held = f"runs {count(p['runs'])} · feedback records {count(p['feedback'])}"
+    return [f"- pulled: {p['source_uri']} · raw copy {p['folder']} · {held} · {text}"]
 
 
 def _verdicts_line(d: Mapping[str, Any]) -> list[str]:

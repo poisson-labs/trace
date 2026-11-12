@@ -2,7 +2,8 @@
 as the API returned them, and only then read (spec section 18.3.2).
 
 ``send`` is the one function in the package that reaches the network, and ``sleep`` the one
-wait between tries; a test replaces both. Everything else here is the LangSmith pull, in the
+wait between tries; a test replaces both. Every pull goes through them, and each reads its own
+key and its own endpoint: LangSmith's are not Braintrust's. First the LangSmith pull, in the
 order it happens:
 
 1. Before any request: the address names a project or experiment, the store holds no run and
@@ -24,7 +25,29 @@ order it happens:
 
 The key is read from ``LANGSMITH_API_KEY`` alone, sent in the ``x-api-key`` header, and is
 never printed and never written: no message here quotes a response's body, which may repeat
-it. Standard library only.
+it.
+
+The Braintrust pull keeps the same order and the same refusals, with its own requests:
+
+1. Before any request, as above; the address is ``braintrust:PROJECT/EXPERIMENT``, the
+   project's name before the first slash.
+2. The requests: the project's experiments (``GET /v1/experiment?project_name=PROJECT``),
+   then the events of the one named (``GET /v1/experiment/{id}/fetch?limit=N``, following
+   the answer's ``cursor``). Braintrust lists 1,000 experiments an answer, the newest first:
+   an answer that holds that many is followed by a request for the ones after its last
+   (``starting_after``), until an answer holds fewer, so an experiment is found however many
+   the project holds. A page shorter
+   than asked is not the end: the fetch is asked until a page comes back empty or names no
+   cursor, and a cursor that repeats is a failure. Nothing sent narrows the events, so every
+   event is read however old.
+3. The raw copy: ``STORE/.poisson/raw/braintrust/RUN/`` holds ``raw.jsonl`` (the events, one
+   a line, in the order returned) and ``pull.json``. By default each event is stripped
+   (``strip_event``); ``--keep-raw-text`` saves the events as the API returned them.
+
+Its key is read from ``BRAINTRUST_API_KEY`` alone and sent as a bearer token;
+``BRAINTRUST_API_URL`` moves every request, for a company's own data plane.
+
+Standard library only.
 """
 
 from __future__ import annotations
@@ -49,6 +72,15 @@ from poisson_trace.ingest.rows import Refusal
 LANGSMITH_API = "https://api.smith.langchain.com"
 KEY_VARIABLE = "LANGSMITH_API_KEY"
 ENDPOINT_VARIABLE = "LANGSMITH_ENDPOINT"
+#: Where Braintrust's API is, unless ``BRAINTRUST_API_URL`` names another host.
+BRAINTRUST_API = "https://api.braintrust.dev"
+BRAINTRUST_KEY_VARIABLE = "BRAINTRUST_API_KEY"
+BRAINTRUST_ENDPOINT_VARIABLE = "BRAINTRUST_API_URL"
+#: The one variable each tool's key is read from.
+KEY_VARIABLES: Mapping[str, str] = {
+    "langsmith": KEY_VARIABLE,
+    "braintrust": BRAINTRUST_KEY_VARIABLE,
+}
 RAW = "raw.jsonl"
 
 #: How many times one request is asked while the service answers 429, and the waits between.
@@ -150,12 +182,23 @@ def sleep(seconds: float) -> None:
 
 
 def endpoint() -> str:
-    """Where the requests go: LangSmith's API, or the host ``LANGSMITH_ENDPOINT`` names (the
-    EU region, a company's own host), which must be https, or http to this machine alone,
-    since the key goes with every request."""
-    given = os.environ.get(ENDPOINT_VARIABLE, "").strip().rstrip("/")
+    """Where LangSmith's requests go: its API, or the host ``LANGSMITH_ENDPOINT`` names (the
+    EU region, a company's own host)."""
+    return _endpoint(ENDPOINT_VARIABLE, LANGSMITH_API)
+
+
+def braintrust_endpoint() -> str:
+    """Where Braintrust's requests go: its API, or the host ``BRAINTRUST_API_URL`` names (a
+    company's own data plane)."""
+    return _endpoint(BRAINTRUST_ENDPOINT_VARIABLE, BRAINTRUST_API)
+
+
+def _endpoint(variable: str, default: str) -> str:
+    """The host the variable names, else ``default``. It must be https, or http to this
+    machine alone, since the key goes with every request."""
+    given = os.environ.get(variable, "").strip().rstrip("/")
     if not given:
-        return LANGSMITH_API
+        return default
     try:
         parts = urllib.parse.urlsplit(given)
         host = parts.hostname or ""
@@ -166,30 +209,48 @@ def endpoint() -> str:
     if host and (scheme == "https" or (scheme == "http" and here)):
         return given
     raise Refusal(
-        f"{ENDPOINT_VARIABLE} is {given}, and the key is sent only over https, or over http "
+        f"{variable} is {given}, and the key is sent only over https, or over http "
         "to this machine: give an https address"
     )
 
 
-def key_is_set() -> bool:
-    """Whether ``LANGSMITH_API_KEY`` holds a key. The key itself goes nowhere but a request."""
-    return bool(os.environ.get(KEY_VARIABLE, "").strip())
+def key_variable(tool: str = "langsmith") -> str:
+    """The one variable the key of ``tool`` is read from."""
+    return KEY_VARIABLES[tool]
 
 
-def raw_folder(store: Path, run: str) -> Path:
-    """Where a pull of LangSmith under the run name ``run`` keeps its raw copy."""
-    return store / ".poisson" / "raw" / "langsmith" / run
+def key_is_set(tool: str = "langsmith") -> bool:
+    """Whether the variable ``tool`` reads its key from holds one. The key itself goes
+    nowhere but a request."""
+    return bool(os.environ.get(key_variable(tool), "").strip())
+
+
+def raw_folder(store: Path, run: str, tool: str = "langsmith") -> Path:
+    """Where a pull of ``tool`` under the run name ``run`` keeps its raw copy."""
+    return store / ".poisson" / "raw" / tool / run
 
 
 # ---------- the requests ----------
 
 
 class _Service:
-    """LangSmith's API at one endpoint, asked with one key."""
+    """A tool's API at one endpoint, asked with one key: LangSmith's, which takes the key in
+    its own header, unless ``bearer`` says the key goes as a bearer token."""
 
-    def __init__(self, base: str, key: str) -> None:
+    def __init__(
+        self,
+        base: str,
+        key: str,
+        *,
+        name: str = "LangSmith",
+        variable: str = KEY_VARIABLE,
+        bearer: bool = False,
+    ) -> None:
         self.base = base
-        self._headers = {"x-api-key": key, "Accept": "application/json"}
+        self.name = name
+        self.variable = variable
+        held = {"Authorization": f"Bearer {key}"} if bearer else {"x-api-key": key}
+        self._headers = {**held, "Accept": "application/json"}
 
     def ask(self, method: str, path: str, body: Mapping[str, Any] | None = None) -> Any:
         """The JSON the service answers to one request. A 429 is waited out and the same
@@ -215,26 +276,27 @@ class _Service:
                 break
             if attempt == TRIES:
                 raise look.Failed(
-                    f"the pull failed: LangSmith answered 429 (too many requests) {TRIES} times "
-                    f"on {asked}; {_NOTHING_SAVED}"
+                    f"the pull failed: {self.name} answered 429 (too many requests) {TRIES} "
+                    f"times on {asked}; {_NOTHING_SAVED}"
                 )
             named = _retry_after(answered)
             sleep(min(wait if named is None else named, LONGEST_WAIT_S))
             wait *= 2
         if status in (401, 403):
             raise Refusal(
-                f"LangSmith refused the key in {KEY_VARIABLE} ({status} on {asked}); "
+                f"{self.name} refused the key in {self.variable} ({status} on {asked}); "
                 f"{_NOTHING_SAVED}"
             )
         if status != 200:
             raise look.Failed(
-                f"the pull failed: LangSmith answered {status} on {asked}; {_NOTHING_SAVED}"
+                f"the pull failed: {self.name} answered {status} on {asked}; {_NOTHING_SAVED}"
             )
         try:
             return json.loads(raw.decode("utf-8"))
         except ValueError:
             raise look.Failed(
-                f"the pull failed: LangSmith's answer to {asked} is not JSON; {_NOTHING_SAVED}"
+                f"the pull failed: {self.name}'s answer to {asked} is not JSON; "
+                f"{_NOTHING_SAVED}"
             ) from None
 
 
@@ -250,9 +312,9 @@ def _retry_after(headers: Mapping[str, str]) -> float | None:
     return None
 
 
-def _not_the_shape(asked: str, what: str) -> look.Failed:
+def _not_the_shape(asked: str, what: str, service: str = "LangSmith") -> look.Failed:
     return look.Failed(
-        f"the pull failed: LangSmith's answer to {asked} is not {what}; {_NOTHING_SAVED}"
+        f"the pull failed: {service}'s answer to {asked} is not {what}; {_NOTHING_SAVED}"
     )
 
 
@@ -506,3 +568,207 @@ def _save(folder: Path, raw: bytes, record: Mapping[str, Any]) -> None:
                 f"{_NOTHING_SAVED}"
             ) from None
         raise
+
+
+# ---------- the Braintrust pull ----------
+
+_LISTING = "GET /v1/experiment"
+_FETCH = "GET /v1/experiment/{id}/fetch"
+
+# what an event holds that is text, or says where and by whom it was made: its input, output
+# and expected value; ``context``, the paths and line numbers of the machine that ran the
+# experiment; ``audit_data``, which repeats the metadata written and who wrote it
+_EVENT_TEXT = ("input", "output", "expected", "context", "audit_data")
+# what is kept of the metadata of a span under the root: a scorer's can hold its rationale and
+# a model call's its prompt, so only what names the model stays
+_STEP_METADATA = ("model", "provider")
+
+
+#: How many experiments Braintrust lists in one answer when the request names no limit.
+LISTED_AT_ONCE = 1000
+
+
+def _experiments(service: _Service, project: str) -> list[Mapping[str, Any]]:
+    """Every experiment of the project named ``project``. Braintrust lists them newest first,
+    ``LISTED_AT_ONCE`` an answer, with no cursor in the answer: one that holds that many is
+    followed by a request for the experiments after its last, by that one's id
+    (``starting_after``), until an answer holds fewer. An answer that ends where the one
+    before it ended is a failure, never a loop."""
+    listed: list[Mapping[str, Any]] = []
+    asked_after: set[str] = set()
+    after: str | None = None
+    while True:
+        query = {"project_name": project}
+        if after is not None:
+            query["starting_after"] = after
+        found = service.ask("GET", f"/v1/experiment?{urllib.parse.urlencode(query)}")
+        page = found.get("objects") if isinstance(found, Mapping) else None
+        if not isinstance(page, list):
+            raise _not_the_shape(_LISTING, "a list of experiments", service.name)
+        listed.extend(e for e in page if isinstance(e, Mapping))
+        if len(page) < LISTED_AT_ONCE:
+            return listed
+        last = page[-1].get("id") if isinstance(page[-1], Mapping) else None
+        if not last or str(last) in asked_after:
+            raise _not_the_shape(
+                _LISTING, "a new page of experiments (its last one repeats)", service.name
+            )
+        after = str(last)
+        asked_after.add(after)
+
+
+def _experiment(service: _Service, project: str, name: str) -> str:
+    """The id of the experiment named ``name`` in the project named ``project``."""
+    listed = _experiments(service, project)
+    named = [e for e in listed if e.get("id") and e.get("name") == name]
+    if not named:
+        raise Refusal(
+            f"Braintrust holds no experiment named {name} in a project named {project} that "
+            f"this key can read; {_NOTHING_SAVED}"
+        )
+    if len(named) > 1:
+        raise Refusal(
+            f"Braintrust holds {len(named)} experiments named {name} in the project {project}, "
+            f"and a pull reads one; {_NOTHING_SAVED}"
+        )
+    return str(named[0]["id"])
+
+
+def _events(service: _Service, experiment: str, page_size: int) -> list[Mapping[str, Any]]:
+    """Every event of the experiment, a page at a time, following the answer's ``cursor``. A
+    page shorter than asked is not the end, and every whole fetch ends with a cursor: the
+    next page is asked for until one comes back empty or names no cursor. Nothing sent
+    narrows the events."""
+    events: list[Mapping[str, Any]] = []
+    cursor: Any = None
+    while True:
+        query: dict[str, Any] = {"limit": page_size}
+        if cursor:
+            query["cursor"] = cursor
+        page = service.ask(
+            "GET", f"/v1/experiment/{experiment}/fetch?{urllib.parse.urlencode(query)}"
+        )
+        items = page.get("events") if isinstance(page, Mapping) else None
+        if not isinstance(items, list) or not all(isinstance(i, Mapping) for i in items):
+            raise _not_the_shape(_FETCH, "a page of events", service.name)
+        events.extend(items)
+        following = page.get("cursor")
+        if not following or not items:
+            return events
+        if following == cursor:
+            raise _not_the_shape(_FETCH, "a new page (its cursor repeats)", service.name)
+        cursor = following
+
+
+def strip_event(event: Mapping[str, Any]) -> dict[str, Any]:
+    """The event as the raw copy keeps it by default: its input, output and expected value
+    measured and removed; its ``context`` and ``audit_data`` removed; its comments emptied; an
+    error its class alone, since an error's own words can quote a reply; and, of a span under
+    the root, the metadata but for the model's name and provider. The root's metadata stays:
+    the case, the outcome and a selection can be read from it. Stamped beside them: the
+    lengths, a root's input key (so the saved copy still reads with ``--case-from input``)
+    and the kind the error's words said (so it reads to the same failure kinds)."""
+    from poisson_trace.ingest import braintrust
+
+    out = dict(event)
+    out[braintrust.INPUT_CHARS] = braintrust.chars(event.get("input"))
+    out[braintrust.OUTPUT_CHARS] = braintrust.chars(event.get("output"))
+    is_root = not event.get("span_parents")
+    if is_root and event.get("input") is not None:
+        out[braintrust.INPUT_KEY] = braintrust.input_key(event["input"])
+    for key in _EVENT_TEXT:
+        out.pop(key, None)
+    if "comments" in out:
+        out["comments"] = None
+    error = out.get("error")
+    if error:
+        # an error with no class to name stays an error, by a word that is none of its own
+        out[braintrust.ERROR_KIND] = braintrust.error_kind(error)
+        out["error"] = braintrust.error_class(error) or "error"
+    if not is_root and out.get("metadata") is not None:
+        held = out["metadata"] if isinstance(out["metadata"], Mapping) else {}
+        out["metadata"] = {k: v for k, v in held.items() if k in _STEP_METADATA}
+    return out
+
+
+def pull_braintrust(
+    address: str,
+    store: Path,
+    run: str | None,
+    *,
+    keep_raw_text: bool,
+    page_size: int,
+    flags: Sequence[str] = (),
+) -> Pulled:
+    """Pull the experiment ``braintrust:PROJECT/EXPERIMENT`` names and save its raw copy
+    under ``store`` for the run ``run``. Nothing is read here: the caller reads the file
+    saved. ``flags`` are the reader's flags of this call, for the command that reads a raw
+    copy already there."""
+    named = address.split(":", 1)[1] if ":" in address else ""
+    project, slash, experiment = named.partition("/")
+    if not slash or not project.strip() or not experiment.strip():
+        raise Refusal(
+            f"{address} names no experiment: write braintrust:PROJECT/EXPERIMENT, the names "
+            "Braintrust shows for the project and for the experiment"
+        )
+    if run is None:
+        raise Refusal("a pull needs --run NAME: the raw copy is kept under the run's name")
+    folder = raw_folder(store, run, "braintrust")
+    if os.path.lexists(store / run):
+        raise Refusal(
+            f"the store {store} already holds a run named {run}; an import writes a new run "
+            "and never adds to one, so pull under another name. Nothing was asked of Braintrust"
+        )
+    if os.path.lexists(folder):
+        raise Refusal(
+            f"{folder} already holds a pull, and a raw copy is never written over: read the "
+            "saved copy, or pull under another run name",
+            look.command(
+                "poisson-trace",
+                "import",
+                "braintrust",
+                look.word(str(folder)),
+                look.option("--store", str(store)),
+                look.option("--run", run),
+                *flags,
+            ),
+        )
+    if not key_is_set("braintrust"):
+        raise Refusal(
+            f"{BRAINTRUST_KEY_VARIABLE} is not set, and a pull from Braintrust needs your key: "
+            "set it in the environment, or download the experiment to a file and import that"
+        )
+    base = braintrust_endpoint()
+    service = _Service(
+        base,
+        os.environ[BRAINTRUST_KEY_VARIABLE].strip(),
+        name="Braintrust",
+        variable=BRAINTRUST_KEY_VARIABLE,
+        bearer=True,
+    )
+    experiment_id = _experiment(service, project, experiment)
+    events = _events(service, experiment_id, page_size)
+    if not events:
+        raise Refusal(f"the experiment {experiment} holds no event; {_NOTHING_SAVED}")
+    rows = [event if keep_raw_text else strip_event(event) for event in events]
+    raw = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows).encode("utf-8")
+    record = {
+        "schema": PULL_SCHEMA,
+        "tool": "braintrust",
+        "pulled_at": _now(),
+        "source_uri": address,
+        "endpoint": f"{base}/v1/experiment/{experiment_id}/fetch",
+        "raw_text_stripped": not keep_raw_text,
+        "files": [{"path": RAW, "sha256": hashlib.sha256(raw).hexdigest(), "rows": len(rows)}],
+    }
+    _save(folder, raw, record)
+    return Pulled(
+        folder=folder,
+        files=(folder / RAW,),
+        summary={
+            "source_uri": address,
+            "folder": str(folder),
+            "events": len(events),
+            "raw_text_stripped": not keep_raw_text,
+        },
+    )

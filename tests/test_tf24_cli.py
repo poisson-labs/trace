@@ -100,7 +100,8 @@ def test_tf24_47_the_module_has_the_readers_shape() -> None:
     from poisson_trace.ingest import langsmith
     from poisson_trace.ingest.importing import READERS, present, reader_options
 
-    assert "langsmith" in READERS and present() == PRESENT
+    # the readers through this one, in the import's order; a reader after it is its own pair's
+    assert "langsmith" in READERS and present()[:len(PRESENT)] == PRESENT
     for attr in ("add_arguments", "read", "usage", "looks_like", "DESCRIPTION", "EXAMPLE", "SHAPES"):
         assert hasattr(langsmith, attr), attr
     assert langsmith.EXAMPLE.startswith("poisson-trace import langsmith "), langsmith.EXAMPLE

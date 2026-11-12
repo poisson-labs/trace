@@ -41,6 +41,10 @@ TF10_FILES = {
     "langsmith": {".json": _TF10 / "langsmith" / "api" / "baseline.runs-v1.json",
                   ".jsonl": _TF10 / "langsmith" / "cli" / "baseline-runs.jsonl",
                   ".csv": _TF10 / "langsmith" / "ui" / "trace-fixture-baseline-bbb64b8e.csv"},
+    # the Braintrust reader's example, by its file's extension: the experiment fetch's answer
+    # or the page's CSV (the reader pair's TF25)
+    "braintrust": {".json": _TF10 / "braintrust" / "api" / "slice-baseline.fetch.json",
+                   ".csv": _TF10 / "braintrust" / "ui" / "slice-baseline.csv"},
 }
 TRACE_HELPS = [[], *[[v] for v in (*VERBS, *NEW_VERBS)]]
 IMPORT_HELPS = [[], *[[t] for t in TOOLS]]

@@ -138,6 +138,13 @@ def _langsmith(kind: str, root: Path, run: str) -> list[str]:
     return by_status(export("baseline", kind), root, run)
 
 
+def _braintrust(kind: str, root: Path, run: str) -> list[str]:
+    """A committed Braintrust capture read by its root spans' error (the reader pair's TF25)."""
+    from tf25_support import by_error, export
+
+    return by_error(export("baseline", kind), root, run)
+
+
 # key -> (reader, argv builder (store, run) -> argv without --json)
 READERS: dict[str, tuple[str, Callable[[Path, str], list[str]]]] = {
     "deepeval-a": ("deepeval", _tf21("deepeval-a")),
@@ -155,10 +162,14 @@ READERS: dict[str, tuple[str, Callable[[Path, str], list[str]]]] = {
     "langsmith-v2": ("langsmith", lambda root, run: _langsmith("v2", root, run)),
     "langsmith-traces": ("langsmith", lambda root, run: _langsmith("cli-traces", root, run)),
     "langsmith-csv": ("langsmith", lambda root, run: _langsmith("ui", root, run)),
+    "braintrust-fetch": ("braintrust", lambda root, run: _braintrust("fetch", root, run)),
+    "braintrust-summary": ("braintrust", lambda root, run: _braintrust("summary", root, run)),
+    "braintrust-page": ("braintrust", lambda root, run: _braintrust("ui-csv", root, run)),
 }
 # the pull-request lane imports these whole; the slow lane imports every one
 FAST = ("junit-a", "junit-suite", "ragas-base", "promptfoo-old", "inspect-eval", "inspect-json",
-        "openai-evals-old", "langsmith-v2", "langsmith-traces", "langsmith-csv")
+        "openai-evals-old", "langsmith-v2", "langsmith-traces", "langsmith-csv",
+        "braintrust-fetch", "braintrust-summary", "braintrust-page")
 SLOW = tuple(k for k in READERS if k not in FAST)
 # every reader on main has a fast key
 assert {READERS[k][0] for k in FAST} | {"deepeval", "table"} == {r for r, _ in READERS.values()}

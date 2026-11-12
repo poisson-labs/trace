@@ -33,6 +33,7 @@ unedited, and the same eleven imports' summaries are main's here too.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -116,12 +117,15 @@ def test_tf24_67_the_import_s_help_gains_the_reader_and_its_example_and_nothing_
     m_before, m_tools, m_examples = _help_parts(main_out)
     assert [line for line in before if not line.startswith(("usage:", " "))] == [line for line in m_before if not line.startswith(("usage:", " "))]
     assert list(m_tools) == list(EARLIER), m_tools
-    assert list(tools) == [*EARLIER, "langsmith"], tools
+    # this reader after main's; a reader after it is its own pair's to hold (TF25-67)
+    assert list(tools)[:len(EARLIER) + 1] == [*EARLIER, "langsmith"], tools
     assert {name: tools[name] for name in EARLIER} == m_tools
     assert "LangSmith" in tools["langsmith"], tools["langsmith"]
     gained = [line for line in examples if line not in m_examples]
     assert [line for line in examples if line in m_examples] == m_examples
-    assert len(gained) == 1 and gained[0].strip().startswith("poisson-trace import langsmith "), gained
+    ours = [line for line in gained if line.strip().startswith("poisson-trace import langsmith ")]
+    assert len(ours) == 1 and all(line.strip().startswith("poisson-trace import ") for line in gained), gained
+    assert len(gained) == len(tools) - len(EARLIER), gained
     usage = " ".join(" ".join(line for line in before if line.startswith(("usage:", " "))).split())
     m_usage = " ".join(" ".join(line for line in m_before if line.startswith(("usage:", " "))).split())
     assert usage == m_usage
@@ -134,7 +138,11 @@ def test_tf24_67_the_refusal_of_an_absent_tool_names_one_reader_more(tmp_path: P
     following = "  next: poisson-trace import --help\n"
     for (code, out, err), (m_code, m_out, m_err) in zip(got, main, strict=True):
         assert (m_code, m_out, m_err) == (1, "", said + "\n" + following)
-        assert (code, out, err) == (1, "", said + ", langsmith\n" + following)
+        # main's sentence with this reader after the last it named; a reader after it is its
+        # own pair's to hold (TF25-67)
+        assert (code, out) == (1, "") and err.endswith("\n" + following), err
+        named = err[: -len("\n" + following)]
+        assert named.startswith(said + ", langsmith") and re.fullmatch(r"(?:, [a-z-]+)*", named[len(said + ", langsmith"):]), err
 
 
 # ---------- TF24-68 ----------

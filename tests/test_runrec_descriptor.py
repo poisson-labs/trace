@@ -259,7 +259,7 @@ def _prove_reads(root: Path) -> None:
 
 def test_runrec_7_prove_lists_reads_and_builds_its_pages_over_trace_imports(tmp_path: Path) -> None:
     root = tmp_path / "store"
-    for key in ("junit-a", "ragas-base", "promptfoo-old", "inspect-eval", "openai-evals-old", "langsmith-v2"):
+    for key in ("junit-a", "ragas-base", "promptfoo-old", "inspect-eval", "openai-evals-old", "langsmith-v2", "braintrust-fetch"):
         import_key(key, root)
     _prove_reads(root)
 
@@ -300,7 +300,7 @@ def test_runrec_7_the_fast_twin_covers_a_fast_key_of_every_reader() -> None:
     from runrec_support import SLOW
 
     fast_readers = {READERS[k][0] for k in ("junit-a", "ragas-base", "promptfoo-old", "inspect-eval",
-                                             "openai-evals-old", "langsmith-v2")}
+                                             "openai-evals-old", "langsmith-v2", "braintrust-fetch")}
     assert fast_readers | {READERS[k][0] for k in SLOW} == {r for r, _ in READERS.values()}
     assert set(FAST) <= set(READERS)
 

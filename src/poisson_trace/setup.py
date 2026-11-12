@@ -891,6 +891,15 @@ def _guessed(found: FoundFile) -> dict[str, Any]:
             "case_from": "example" if langsmith.carries_examples(path) else "CASE",
             "outcome_from": "OUTCOME",
         }
+    if found.reader == "braintrust":
+        from poisson_trace.ingest import braintrust
+
+        # the case is the dataset record where every root carries its id, else the input,
+        # which every export carries; what says a case failed is the user's to name
+        return {
+            "case_from": "record" if braintrust.carries_records(path) else "input",
+            "outcome_from": "OUTCOME",
+        }
     if found.reader in ("ragas", "table"):
         try:
             head = _columns(path)
@@ -1018,13 +1027,16 @@ def file_lines(
     opened for its answers): every answer init can read from the file filled in, and a word in
     capitals for each it cannot (METRIC, CUT, CASE). ``limit`` None gives every file its line
     (the terminal app's imports screen, TF19-A9); the run names are read over every file
-    either way, so a line is the same whether or not the ones before it are shown."""
-    ordered = by_tool(files)
+    either way, so a line is the same whether or not the ones before it are shown. A file
+    that is no run of its own (a LangSmith feedback list) has no line: its path goes after
+    its runs file's, on that file's line."""
+    ordered, beside = _runs_and_beside(by_tool(files))
     run_names = _run_names(ordered)
     lines = []
     for f in ordered[:limit]:
         guess = _guessed(f)
-        words = ["poisson-trace", "import", f.reader, f.path, *_pair("--store", store)]
+        words = ["poisson-trace", "import", f.reader, f.path, *beside.get(f.path, ())]
+        words += _pair("--store", store)
         words += _pair("--run", run_names[f.path])
         for dest in ("metric", "cut"):
             if dest in guess:
@@ -1045,11 +1057,32 @@ def file_lines(
     return lines
 
 
+def _runs_and_beside(files: Sequence[FoundFile]) -> tuple[list[FoundFile], dict[str, list[str]]]:
+    """The files that each get an import line, in the order given, and by a file's path the
+    files that go beside it on its line. A LangSmith feedback list is no run of its own: it
+    goes beside the runs file whose runs its records score, and has no line at all where no
+    file here holds them. The files are opened only when a feedback list is among them."""
+    if not any(f.reader == "langsmith" for f in files):
+        return list(files), {}
+    from poisson_trace.ingest import langsmith
+
+    lists = [f for f in files if f.reader == "langsmith" and f.said == langsmith.FEEDBACK_SAID]
+    if not lists:
+        return list(files), {}
+    owner = langsmith.feedback_beside([f.path for f in files if f.reader == "langsmith"])
+    beside: dict[str, list[str]] = {}
+    for path, runs in owner.items():
+        if runs is not None:
+            beside.setdefault(runs, []).append(path)
+    return [f for f in files if f.path not in owner], beside
+
+
 def shown_lines(files: Sequence[FoundFile], store: str) -> list[str]:
     """The lines a refusal or a summary prints: at most 12, then how many more and where the
-    import's help is."""
+    import's help is. What is counted as more is the files that have a line and are not
+    shown, which a file shown beside another is not."""
     shown = file_lines(files, store)
-    more = len(files) - len(shown)
+    more = len(_runs_and_beside(by_tool(files))[0]) - len(shown)
     if more > 0:
         word = "file" if more == 1 else "files"
         shown.append(f"and {count(more)} more {word}: {_IMPORT_HELP}")
@@ -1346,8 +1379,8 @@ def _several_tools(
 
 def _not_asked(ns: argparse.Namespace, files: Sequence[FoundFile], store: str, shown: str) -> None:
     """Refused: files of a tool whose import needs answers init has no question and no flag
-    for (a LangSmith export's case and outcome); the refusal carries one import line for each
-    file."""
+    for (a LangSmith or Braintrust export's case and outcome); the refusal carries one import
+    line for each run."""
     from poisson_trace.ingest.importing import reader_options
 
     tool = files[0].reader

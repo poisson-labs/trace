@@ -142,7 +142,7 @@ def _pull_cases(tmp: Path) -> dict[str, Path]:
     good = {"path": f.name, "sha256": sha256_of(f), "rows": None}
     return {
         "schema": pull_folder(tmp / "schema", "junit", [f], schema="poisson.raw-pull/9"),
-        "tool": pull_folder(tmp / "tool", "braintrust", [f]),
+        "tool": pull_folder(tmp / "tool", "weave", [f]),
         "missing": pull_folder(tmp / "missing", "junit", [f], files=[good, {**good, "path": "gone.xml"}]),
         "digest": pull_folder(tmp / "digest", "junit", [f], files=[{**good, "sha256": "0" * 64}]),
         "outside": pull_folder(tmp / "outside", "junit", [f], files=[good, {**good, "path": "../x.xml"}]),
@@ -165,10 +165,10 @@ def test_tf22_5_a_pull_folder_that_is_not_whole_is_refused(tmp_path: Path, fault
 
 
 def test_tf22_5_a_pull_of_a_tool_not_in_this_install_names_the_tool(tmp_path: Path) -> None:
-    folder = pull_folder(tmp_path / "bt", "braintrust", [JUNIT / "trace-suite-1.xml"])
+    folder = pull_folder(tmp_path / "wv", "weave", [JUNIT / "trace-suite-1.xml"])
     with pytest.raises(Refusal) as e:
         _resolve(folder)
-    assert names(str(e.value), "braintrust", tmp=tmp_path)
+    assert names(str(e.value), "weave", tmp=tmp_path)
 
 
 def test_tf22_5_a_tool_given_that_differs_from_the_pull_is_refused(tmp_path: Path) -> None:
