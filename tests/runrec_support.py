@@ -145,6 +145,13 @@ def _braintrust(kind: str, root: Path, run: str) -> list[str]:
     return by_error(export("baseline", kind), root, run)
 
 
+def _weave(kind: str, root: Path, run: str) -> list[str]:
+    """A committed Weave capture read by whether each case errored (the reader pair's TF26)."""
+    from tf26_support import of
+
+    return of("baseline", kind, root, run, mode="status")
+
+
 # key -> (reader, argv builder (store, run) -> argv without --json)
 READERS: dict[str, tuple[str, Callable[[Path, str], list[str]]]] = {
     "deepeval-a": ("deepeval", _tf21("deepeval-a")),
@@ -165,11 +172,15 @@ READERS: dict[str, tuple[str, Callable[[Path, str], list[str]]]] = {
     "braintrust-fetch": ("braintrust", lambda root, run: _braintrust("fetch", root, run)),
     "braintrust-summary": ("braintrust", lambda root, run: _braintrust("summary", root, run)),
     "braintrust-page": ("braintrust", lambda root, run: _braintrust("ui-csv", root, run)),
+    "weave-answer": ("weave", lambda root, run: _weave("pull", root, run)),
+    "weave-page": ("weave", lambda root, run: _weave("ui-json", root, run)),
+    "weave-table": ("weave", lambda root, run: _weave("ui-csv", root, run)),
 }
 # the pull-request lane imports these whole; the slow lane imports every one
 FAST = ("junit-a", "junit-suite", "ragas-base", "promptfoo-old", "inspect-eval", "inspect-json",
         "openai-evals-old", "langsmith-v2", "langsmith-traces", "langsmith-csv",
-        "braintrust-fetch", "braintrust-summary", "braintrust-page")
+        "braintrust-fetch", "braintrust-summary", "braintrust-page",
+        "weave-answer", "weave-page", "weave-table")
 SLOW = tuple(k for k in READERS if k not in FAST)
 # every reader on main has a fast key
 assert {READERS[k][0] for k in FAST} | {"deepeval", "table"} == {r for r, _ in READERS.values()}

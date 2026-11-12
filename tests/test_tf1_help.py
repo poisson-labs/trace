@@ -45,6 +45,10 @@ TF10_FILES = {
     # or the page's CSV (the reader pair's TF25)
     "braintrust": {".json": _TF10 / "braintrust" / "api" / "slice-baseline.fetch.json",
                    ".csv": _TF10 / "braintrust" / "ui" / "slice-baseline.csv"},
+    # the Weave reader's example: the service's answer for one evaluation, a call a line (the
+    # page's downloads hold every evaluation, so an example on one would have to name one; the
+    # reader pair's TF26)
+    "weave": {".jsonl": _TF10 / "weave" / "api" / "trace-fixture-slice-baseline.jsonl"},
 }
 TRACE_HELPS = [[], *[[v] for v in (*VERBS, *NEW_VERBS)]]
 IMPORT_HELPS = [[], *[[t] for t in TOOLS]]

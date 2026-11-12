@@ -52,6 +52,8 @@ LS = INGEST / "langsmith"
 SAMPLES: dict[str, tuple[tuple[Path, str, str], ...]] = {
     "langsmith": ((LS / "api" / "baseline.runs-v2.json", "old.json", "example"), (LS / "api" / "candidate.runs-v2.json", "new.json", "example")),
     "braintrust": ((export("baseline", "fetch")[0], "old.json", "record"), (export("candidate", "ui-json")[0], "new.json", "input")),
+    "weave": ((INGEST / "weave" / "api" / "trace-fixture-slice-baseline.jsonl", "old.jsonl", "example"),
+              (INGEST / "weave" / "api" / "trace-fixture-slice-candidate.expanded.jsonl", "new.jsonl", "example")),
 }
 
 

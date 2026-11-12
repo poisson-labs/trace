@@ -96,7 +96,8 @@ def test_tf25_47_the_module_has_the_readers_shape() -> None:
     from poisson_trace.ingest import braintrust
     from poisson_trace.ingest.importing import READERS, present, pulls, reader_options
 
-    assert "braintrust" in READERS and present() == PRESENT
+    # the readers through this one, in the import's order; a reader after it is its own pair's
+    assert "braintrust" in READERS and present()[:len(PRESENT)] == PRESENT
     assert READERS.index("langsmith") < READERS.index("braintrust") < READERS.index("otel")
     for attr in ("add_arguments", "read", "usage", "looks_like", "DESCRIPTION", "EXAMPLE", "SHAPES", "ADDRESS"):
         assert hasattr(braintrust, attr), attr
@@ -562,7 +563,7 @@ def test_tf25_56_doctor_lists_braintrust_among_the_readers(tmp_path: Path) -> No
     line = check(data, "readers")["line"]
     for tool in PRESENT:
         assert tool in line, line
-    for absent in ("otel", "lemma", "weave"):
+    for absent in ("otel", "lemma"):
         assert absent not in line, line
 
 
@@ -668,7 +669,7 @@ def test_tf25_58_an_address_is_an_entry_of_the_braintrust_reader(tmp_path: Path)
     assert held.imports[0].file == "braintrust/old.json"
 
 
-@pytest.mark.parametrize("puller", ["weave", "lemma"])
+@pytest.mark.parametrize("puller", ["lemma"])
 def test_tf25_58_the_addresses_of_the_pullers_this_install_lacks_stay_refused(tmp_path: Path, puller: str) -> None:
     from poisson_trace import config
 

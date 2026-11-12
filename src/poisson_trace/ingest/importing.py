@@ -64,6 +64,7 @@ READERS: tuple[str, ...] = (
     "openai-evals",
     "langsmith",
     "braintrust",
+    "weave",
     "otel",
     "lemma",
 )
@@ -348,6 +349,8 @@ def _failed_when(d: Mapping[str, Any]) -> str:
         return _langsmith_failed_when(declared)
     if tool == "braintrust":
         return _braintrust_failed_when(declared)
+    if tool == "weave":
+        return _weave_failed_when(declared)
     side = "below" if declared.get("side") == "below" else "above"
     if tool == "promptfoo":
         if declared.get("outcome") == "score":
@@ -400,6 +403,16 @@ def _braintrust_failed_when(declared: Mapping[str, Any]) -> str:
     return f"its root span's {key} metadata reads {values}"
 
 
+def _weave_failed_when(declared: Mapping[str, Any]) -> str:
+    """When a Weave try counts as failed: by its case having errored, or by a scorer's output
+    at the cut."""
+    source = str(declared["outcome_from"])
+    if source == "status":
+        return "its case errored"
+    side = "below" if declared.get("side") == "below" else "above"
+    return f"its {source.partition(':')[2]} score is {side} {_value(declared['cut'])}"
+
+
 def _import_flags(declared: Mapping[str, Any]) -> list[str]:
     """The flags that read another file as this one was read, from what was declared."""
     words: list[str] = []
@@ -430,13 +443,15 @@ def _import_flags(declared: Mapping[str, Any]) -> list[str]:
             words.append(look.option(flag, _value(declared[key])))
     words += [look.option("--failed", str(v)) for v in declared.get("failed", ())]
     words += [look.option("--select", str(v)) for v in declared.get("select", ())]
+    if "evaluation" in declared:
+        words.append(look.option("--evaluation", str(declared["evaluation"])))
     return words
 
 
 def _extension(name: str) -> str:
     """The extensions that say a file's format: ``.csv``, ``.jsonl.gz``."""
     lowered = name.lower()
-    for ext in (".csv", ".jsonl", ".json", ".parquet", ".xml", ".eval"):
+    for ext in (".csv", ".tsv", ".jsonl", ".json", ".parquet", ".xml", ".eval"):
         for whole in (ext + ".gz", ext):
             if lowered.endswith(whole):
                 return name[-len(whole) :]
@@ -591,8 +606,11 @@ def _pulled_line(d: Mapping[str, Any]) -> list[str]:
         return []
     p = d["pull"]
     text = "inputs and outputs measured and left out" if p["raw_text_stripped"] else "raw text kept"
-    # a pull says what it read in its own service's words: runs and feedback records, or events
-    if "events" in p:
+    # a pull says what it read in its own service's words: runs and feedback records, events,
+    # or calls
+    if "calls" in p:
+        held = f"calls {count(p['calls'])}"
+    elif "events" in p:
         held = f"events {count(p['events'])}"
     else:
         held = f"runs {count(p['runs'])} · feedback records {count(p['feedback'])}"

@@ -3653,6 +3653,9 @@ def found_results(folder: Any, *, store: str = "trace-store") -> list[FoundResul
     them, each with the import line init prints for it (``--store STORE``), every file its own
     line past the twelve init shows (TF19-A9), and whether a run of a store under the folder
     was imported from a file with these bytes (by the digest the run's record keeps, TF19-A7).
+    A file init prints no line for is no run of its own and is left out (a LangSmith feedback
+    list, which goes on its runs' line; a Weave file that holds no case); a file init prints
+    several lines for, one for each evaluation a Weave file holds, is here once for each.
     init's search reads paths relative to the current folder, so the folder is the current one
     while it runs."""
     import contextlib
@@ -3665,8 +3668,9 @@ def found_results(folder: Any, *, store: str = "trace-store") -> list[FoundResul
     with contextlib.chdir(root):
         found = setup.search(Path("."))
         files = setup._not_empty(found.files)
-        lines = setup.file_lines(files, store, limit=None)
-        command_of = {f.path: line for f, line in zip(setup.by_tool(files), lines, strict=True)}
+        commands_of = {
+            f.path: lines for f, lines in setup.lines_by_file(files, store, limit=None)
+        }
         digests: set[str] = set()
         for held in found.stores:
             for run in held.runs:
@@ -3676,8 +3680,11 @@ def found_results(folder: Any, *, store: str = "trace-store") -> list[FoundResul
                 )
         out = []
         for f in files:
-            command = command_of[f.path]
-            fill = tuple(w for w in command.split() if w.isupper() and w.isalpha())
+            commands = commands_of.get(f.path, ())
+            if not commands:
+                continue
             digest = hashlib.sha256(Path(f.path).read_bytes()).hexdigest()
-            out.append(FoundResult(f.path, f.reader, f.said, command, fill, digest in digests))
+            for command in commands:
+                fill = tuple(w for w in command.split() if w.isupper() and w.isalpha())
+                out.append(FoundResult(f.path, f.reader, f.said, command, fill, digest in digests))
     return out

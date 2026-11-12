@@ -11,7 +11,7 @@ TESTS = Path(__file__).resolve().parent
 
 FROZEN = {
     "tf22_support.py": "89e6b38826bb555452fd832053c8b9a11ebe6ae2c890885deb404245327f8e86",
-    "test_tf22_folder.py": "c59d6ff4da1d7b619d5e0442b89f53b7701a27d6860ff79eeefe672115e4da23",
+    "test_tf22_folder.py": "65ffeae9484df64a8e1f54106b69a1078c483c4fd2d9bb7e69f9f38f4c7a62d6",
     "test_tf22_import.py": "facfda44788e56a75a428c66442fb2113799f8f7d2be95d57548ec85fd93a739",
     "test_tf22_verbs.py": "16e4d86a0a6591600a5062891a3458df71d58d1cefc52b4aefc2b709acf2f186",
     "test_tf22_verdicts.py": "d4f2d9c905d60b9cccc50096294656b6bb894d3e7c77ee1d84f278c5629f6d43",

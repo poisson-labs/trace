@@ -14,7 +14,7 @@ FROZEN = {
     "tf17_support.py": "ceebb5ad5a1ec3edfbe6ef71b6272fe6ed30f892ca64d46b1830ebfdbd4820c6",
     "test_tf17_agent.py": "9cc94aca1a3e1d2e1fbb7cb17bec94d70139a8d870de9ad8d2aaf05e16a045a8",
     "test_tf17_skill.py": "024d5a288dd82b84838b8fe21c558d4610f838a64236bcac564432895f76784e",
-    "test_tf17_config.py": "23368dca1e05720362ebe8040730f01b532fd03f02a77a5d7d73ab9d9cd57786",
+    "test_tf17_config.py": "df5dde51c3d58b26864de200b680d4815da34a056324507451410baa981ac6ba",
     "test_tf17_setup_check.py": "d7254e23ffe1b2b23c6789c969658db5dbdf1a89c29219879f1a3f666ad0c7a9",
     "test_tf17_handover.py": "2be418fef5aa1cfa4033cec0aae689f0b213228fbce57bbe7cf04c514e488914",
     "test_tf17_scripted.py": "2b3680b7c0b31c324dcb63b3eb31e4c65180657a5aba5878989c461769baa860",

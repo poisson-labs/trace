@@ -147,7 +147,7 @@ def test_tf17_14_import_as_one_table_and_a_near_miss_are_refused(tmp_path: Path)
 # ---------- TF17-15 ----------
 
 
-@pytest.mark.parametrize("tool", ["otel", "lemma", "weave", "nothing"])
+@pytest.mark.parametrize("tool", ["otel", "lemma", "nothing"])
 def test_tf17_15_a_tool_not_in_the_install_is_refused_naming_the_readers_here(tmp_path: Path, tool: str) -> None:
     folder = work(tmp_path)
     text = config_text(import_entry("a.jsonl", tool, "a"), store="s")
@@ -254,7 +254,7 @@ def test_tf17_19_a_folder_reads_at_the_config_level_and_opens_nothing(tmp_path: 
 # ---------- TF17-20 ----------
 
 
-@pytest.mark.parametrize("address", [f"{p}:{rest}" for p, rest in zip(PULLERS[2:], ("me/proj/eval", "tr_1"), strict=True)])
+@pytest.mark.parametrize("address", [f"{p}:{rest}" for p, rest in zip(PULLERS[3:], ("tr_1",), strict=True)])
 def test_tf17_20_an_address_to_pull_from_is_refused_naming_the_missing_puller(tmp_path: Path, address: str) -> None:
     folder = work(tmp_path)
     puller = address.split(":", 1)[0]

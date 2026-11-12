@@ -3,8 +3,8 @@ as the API returned them, and only then read (spec section 18.3.2).
 
 ``send`` is the one function in the package that reaches the network, and ``sleep`` the one
 wait between tries; a test replaces both. Every pull goes through them, and each reads its own
-key and its own endpoint: LangSmith's are not Braintrust's. First the LangSmith pull, in the
-order it happens:
+key and its own endpoint: LangSmith's are not Braintrust's, and neither is Weave's. First the
+LangSmith pull, in the order it happens:
 
 1. Before any request: the address names a project or experiment, the store holds no run and
    no raw copy of that name (a raw copy is never written over), the key is set, and the
@@ -47,11 +47,34 @@ The Braintrust pull keeps the same order and the same refusals, with its own req
 Its key is read from ``BRAINTRUST_API_KEY`` alone and sent as a bearer token;
 ``BRAINTRUST_API_URL`` moves every request, for a company's own data plane.
 
+The Weave pull keeps the same order and the same refusals, with its own requests:
+
+1. Before any request, as above; the address is ``weave:ENTITY/PROJECT/EVALUATION``, the
+   entity and the project as W&B shows them, then the evaluation.
+2. The requests, each ``POST /calls/stream_query``, which Weave answers with a call a line:
+   the project's root calls (``filter.trace_roots_only``), to find the evaluation named, by
+   its name, by the name Weave shows for one run of it, or by that run's call id; then every
+   call of that run's trace (``filter.trace_ids``), with each row's example expanded
+   (``expand_columns``), so that the dataset row can be measured. Every request asks for the
+   costs and the feedback, which Weave leaves out unless asked, and for the calls oldest
+   first. Each query is asked a page at a time by ``limit`` and ``offset`` until a page comes
+   back empty. The offset moves by the calls received, so a service that answers with fewer
+   than asked loses none; an answer that repeats a call is a failure, never a loop. Nothing
+   sent bounds the calls by time, so every call is read however old.
+3. The raw copy: ``STORE/.poisson/raw/weave/RUN/`` holds ``raw.jsonl`` (the calls of the
+   trace, one a line, in the order returned) and ``pull.json``. By default each call is
+   stripped (``strip_call``); ``--keep-raw-text`` saves the calls as the API returned them.
+
+Its key is read from ``WANDB_API_KEY`` alone and sent as basic auth under the user ``api``;
+``WF_TRACE_SERVER_URL``, the variable Weave's own SDK reads, moves every request, for a
+company's own deployment. ``WANDB_BASE_URL`` names W&B's other API and moves nothing here.
+
 Standard library only.
 """
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
@@ -76,10 +99,15 @@ ENDPOINT_VARIABLE = "LANGSMITH_ENDPOINT"
 BRAINTRUST_API = "https://api.braintrust.dev"
 BRAINTRUST_KEY_VARIABLE = "BRAINTRUST_API_KEY"
 BRAINTRUST_ENDPOINT_VARIABLE = "BRAINTRUST_API_URL"
+#: Where Weave's trace service is, unless ``WF_TRACE_SERVER_URL`` names another host.
+WEAVE_API = "https://trace.wandb.ai"
+WEAVE_KEY_VARIABLE = "WANDB_API_KEY"
+WEAVE_ENDPOINT_VARIABLE = "WF_TRACE_SERVER_URL"
 #: The one variable each tool's key is read from.
 KEY_VARIABLES: Mapping[str, str] = {
     "langsmith": KEY_VARIABLE,
     "braintrust": BRAINTRUST_KEY_VARIABLE,
+    "weave": WEAVE_KEY_VARIABLE,
 }
 RAW = "raw.jsonl"
 
@@ -193,6 +221,12 @@ def braintrust_endpoint() -> str:
     return _endpoint(BRAINTRUST_ENDPOINT_VARIABLE, BRAINTRUST_API)
 
 
+def weave_endpoint() -> str:
+    """Where Weave's requests go: its trace service, or the host ``WF_TRACE_SERVER_URL``
+    names (a company's own deployment)."""
+    return _endpoint(WEAVE_ENDPOINT_VARIABLE, WEAVE_API)
+
+
 def _endpoint(variable: str, default: str) -> str:
     """The host the variable names, else ``default``. It must be https, or http to this
     machine alone, since the key goes with every request."""
@@ -235,7 +269,8 @@ def raw_folder(store: Path, run: str, tool: str = "langsmith") -> Path:
 
 class _Service:
     """A tool's API at one endpoint, asked with one key: LangSmith's, which takes the key in
-    its own header, unless ``bearer`` says the key goes as a bearer token."""
+    its own header, unless ``bearer`` says the key goes as a bearer token, or ``basic`` that
+    it goes as basic auth under the user ``api``."""
 
     def __init__(
         self,
@@ -245,19 +280,52 @@ class _Service:
         name: str = "LangSmith",
         variable: str = KEY_VARIABLE,
         bearer: bool = False,
+        basic: bool = False,
     ) -> None:
         self.base = base
         self.name = name
         self.variable = variable
-        held = {"Authorization": f"Bearer {key}"} if bearer else {"x-api-key": key}
+        if basic:
+            token = base64.b64encode(f"api:{key}".encode()).decode("ascii")
+            held = {"Authorization": f"Basic {token}"}
+        elif bearer:
+            held = {"Authorization": f"Bearer {key}"}
+        else:
+            held = {"x-api-key": key}
         self._headers = {**held, "Accept": "application/json"}
 
     def ask(self, method: str, path: str, body: Mapping[str, Any] | None = None) -> Any:
         """The JSON the service answers to one request. A 429 is waited out and the same
         request asked again: the wait is the answer's ``Retry-After`` where it gives one,
         else one that doubles."""
+        asked, raw = self._answer(method, path, body, self._headers)
+        try:
+            return json.loads(raw.decode("utf-8"))
+        except ValueError:
+            raise look.Failed(
+                f"the pull failed: {self.name}'s answer to {asked} is not JSON; "
+                f"{_NOTHING_SAVED}"
+            ) from None
+
+    def ask_lines(self, method: str, path: str, body: Mapping[str, Any]) -> list[Any]:
+        """The values of an answer that is JSON Lines, one a line, in order; an answer with
+        no line is an empty list. Waited out and refused as ``ask`` is."""
+        headers = {**self._headers, "Accept": "application/jsonl"}
+        asked, raw = self._answer(method, path, body, headers)
+        try:
+            return [json.loads(line) for line in raw.decode("utf-8").splitlines() if line.strip()]
+        except ValueError:
+            raise look.Failed(
+                f"the pull failed: {self.name}'s answer to {asked} is not JSON Lines; "
+                f"{_NOTHING_SAVED}"
+            ) from None
+
+    def _answer(
+        self, method: str, path: str, body: Mapping[str, Any] | None, sent: Mapping[str, str]
+    ) -> tuple[str, bytes]:
+        """The request as a message names it, and the body of the service's 200 answer."""
         url = self.base + path
-        headers = dict(self._headers)
+        headers = dict(sent)
         data = None
         if body is not None:
             data = json.dumps(body).encode("utf-8")
@@ -291,13 +359,7 @@ class _Service:
             raise look.Failed(
                 f"the pull failed: {self.name} answered {status} on {asked}; {_NOTHING_SAVED}"
             )
-        try:
-            return json.loads(raw.decode("utf-8"))
-        except ValueError:
-            raise look.Failed(
-                f"the pull failed: {self.name}'s answer to {asked} is not JSON; "
-                f"{_NOTHING_SAVED}"
-            ) from None
+        return asked, raw
 
 
 def _retry_after(headers: Mapping[str, str]) -> float | None:
@@ -769,6 +831,295 @@ def pull_braintrust(
             "source_uri": address,
             "folder": str(folder),
             "events": len(events),
+            "raw_text_stripped": not keep_raw_text,
+        },
+    )
+
+
+# ---------- the Weave pull ----------
+
+_QUERY = "POST /calls/stream_query"
+_QUERY_PATH = "/calls/stream_query"
+# what is kept of a call's inputs: the references that say which evaluation and which model
+# the call was made on, and of a row's example the reference to its dataset row
+_INPUT_REFS = ("self", "model")
+# who ran a call, and the W&B run it belongs to: emptied
+_WHO = ("wb_user_id", "wb_run_id")
+# what is kept of a call's summary, and of what Weave itself says in it
+_SUMMARY_KEPT = ("usage", "status_counts")
+_WEAVE_KEPT = ("status", "trace_name", "display_name", "latency_ms", "costs")
+# what is kept of a feedback entry: what it is and when it was made; a reaction keeps its name
+_FEEDBACK_KEPT = ("id", "feedback_type", "created_at", "weave_ref")
+_REACTION_KEPT = ("emoji", "alias")
+
+
+def _calls(service: _Service, query: Mapping[str, Any], page_size: int) -> list[Mapping[str, Any]]:
+    """Every call a query answers with, a page at a time by ``limit`` and ``offset``, until a
+    page comes back empty. The offset moves by the calls received, so a service that answers
+    with fewer than asked loses none, and a short page is not the end. A service that took no
+    notice of the offset would answer with the same page for ever: a call seen twice ends the
+    pull as a failure."""
+    calls: list[Mapping[str, Any]] = []
+    seen: set[str] = set()
+    while True:
+        page = service.ask_lines(
+            "POST", _QUERY_PATH, {**query, "limit": page_size, "offset": len(calls)}
+        )
+        if not page:
+            return calls
+        for call in page:
+            if not isinstance(call, Mapping) or not call.get("id") or "op_name" not in call:
+                raise _not_the_shape(_QUERY, "a call a line", service.name)
+            if str(call["id"]) in seen:
+                raise _not_the_shape(_QUERY, "a new page (its calls repeat)", service.name)
+            seen.add(str(call["id"]))
+            calls.append(call)
+
+
+def _weave_query(project: str, **more: Any) -> dict[str, Any]:
+    """A query of a project's calls, oldest first, always with their costs and their
+    feedback, and with nothing that bounds them by time."""
+    return {
+        "project_id": project,
+        "sort_by": [{"field": "started_at", "direction": "asc"}],
+        "include_costs": True,
+        "include_feedback": True,
+        **more,
+    }
+
+
+def _weave_evaluation(
+    service: _Service, project: str, name: str, page_size: int
+) -> Mapping[str, Any]:
+    """The one run of an evaluation ``name`` names in the project, as its
+    ``Evaluation.evaluate`` call: by the evaluation's name, by the name Weave shows for the
+    run, or by the call's id. A root call that is no evaluation is never one, whatever it is
+    named."""
+    from poisson_trace.ingest import weave
+
+    roots = _calls(service, _weave_query(project, filter={"trace_roots_only": True}), page_size)
+    runs = [call for call in roots if weave.op_name(call.get("op_name")) == weave.EVALUATE]
+    named = [
+        call
+        for call in runs
+        if name
+        in (
+            call.get("id"),
+            weave.shown_name(call),
+            weave.object_name(_mapping(call.get("inputs")).get("self")),
+        )
+    ]
+    if not named:
+        raise Refusal(
+            f"Weave holds no evaluation named {name} in the project {project} that this key "
+            f"can read; {_NOTHING_SAVED}"
+        )
+    if len(named) > 1:
+        each = ", ".join(
+            f"{weave.shown_name(call) or 'a run with no name'} ({call.get('id')})"
+            for call in named
+        )
+        raise Refusal(
+            f"Weave holds {len(named)} runs of the evaluation {name} in the project {project}: "
+            f"{each}. A pull reads one, so name it by the name Weave shows for the run or by "
+            f"its id; {_NOTHING_SAVED}"
+        )
+    return named[0]
+
+
+def _mapping(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _kept_scores(scores: Any) -> dict[str, Any]:
+    """A row's scores as the raw copy keeps them: the values that are numbers or true or
+    false, where they were. A scorer's text, such as a judge's reason, is left out."""
+    from poisson_trace.ingest import weave
+
+    kept: dict[str, Any] = {}
+    for path, value in weave.leaves(_mapping(scores)):
+        if path and weave.is_score(value):
+            into = kept
+            for part in path[:-1]:
+                into = into.setdefault(part, {})
+            into[path[-1]] = value
+    return kept
+
+
+def _kept_feedback(entry: Mapping[str, Any]) -> dict[str, Any]:
+    """A feedback entry as the raw copy keeps it: what it is and when it was made, and of a
+    reaction its name. A note's text and an annotation's value are left out."""
+    from poisson_trace.ingest import weave
+
+    kept = {key: entry[key] for key in _FEEDBACK_KEPT if key in entry}
+    if entry.get("feedback_type") == weave.REACTION:
+        payload = _mapping(entry.get("payload"))
+        kept["payload"] = {key: payload[key] for key in _REACTION_KEPT if key in payload}
+    return kept
+
+
+def _kept_summary(summary: Any) -> dict[str, Any]:
+    """A call's summary as the raw copy keeps it: the tokens, the counts of calls under it by
+    status, and of what Weave itself says the status, the names, the time, the costs and the
+    feedback entries, each stripped. Anything else a summary holds is left out."""
+    held = _mapping(summary)
+    kept: dict[str, Any] = {key: held[key] for key in _SUMMARY_KEPT if key in held}
+    if "weave" in held:
+        said = _mapping(held["weave"])
+        own: dict[str, Any] = {key: said[key] for key in _WEAVE_KEPT if key in said}
+        if isinstance(said.get("feedback"), list):
+            own["feedback"] = [
+                _kept_feedback(entry) for entry in said["feedback"] if isinstance(entry, Mapping)
+            ]
+        kept["weave"] = own
+    return kept
+
+
+def strip_call(call: Mapping[str, Any]) -> dict[str, Any]:
+    """The call as the raw copy keeps it by default. Its inputs and its output are measured
+    and removed: of the inputs the references that say which evaluation and which model stay,
+    and of a row's example the reference to its dataset row; of a row's output the scores
+    that are numbers or true or false and Weave's own figure for the model's run. An
+    exception keeps its class alone, since its own words can quote a reply. The attributes,
+    which hold the build strings of the machine that ran the call, keep the call's kind
+    alone, and who ran the call is emptied. The summary keeps the status, the counts, the
+    tokens and the costs; a feedback entry keeps what it is and when it was made, and a
+    reaction its name. Stamped beside them: the lengths, a row's input key (so the saved copy
+    still reads with ``--case-from input``) and the kind the exception's words said (so it
+    reads to the same failure kinds). A row whose answer is a reference, which has no length,
+    is stamped as answered, so the saved copy does not read it as a row with no answer."""
+    from poisson_trace.ingest import weave
+
+    out = dict(call)
+    inputs = _mapping(call.get("inputs"))
+    output = call.get("output")
+    kept = {key: inputs[key] for key in _INPUT_REFS if weave.is_ref(inputs.get(key))}
+    if weave.op_name(call.get("op_name")) == weave.PREDICT_AND_SCORE:
+        row, ref = weave.example_of(call)
+        out[weave.INPUT_CHARS] = weave.chars(row)
+        if row is not None:
+            out[weave.INPUT_KEY] = weave.input_key(row)
+        if ref is not None:
+            kept["example"] = {"_ref": ref}
+        held = _mapping(output)
+        out[weave.OUTPUT_CHARS] = weave.chars(held.get("output"))
+        if weave.is_ref(held.get("output")):
+            out[weave.OUTPUT_REF] = True
+        if isinstance(output, Mapping):
+            scored: dict[str, Any] = {"scores": _kept_scores(held.get("scores"))}
+            latency = held.get("model_latency")
+            if isinstance(latency, (int, float)) and not isinstance(latency, bool):
+                scored["model_latency"] = latency
+            out["output"] = scored
+        else:
+            out["output"] = None
+    else:
+        out[weave.INPUT_CHARS] = weave.chars(inputs) if inputs else None
+        out[weave.OUTPUT_CHARS] = weave.chars(output)
+        out["output"] = None
+    out["inputs"] = kept
+    if call.get("exception"):
+        raised, _ = weave.exception_of(call["exception"])
+        out[weave.ERROR_KIND] = weave.error_kind(call["exception"])
+        out["exception"] = json.dumps({"type": raised})
+    marked = _mapping(_mapping(call.get("attributes")).get("weave")).get("kind")
+    out["attributes"] = {"weave": {"kind": marked}} if isinstance(marked, str) and marked else {}
+    for key in _WHO:
+        if key in out:
+            out[key] = None
+    out["summary"] = _kept_summary(call.get("summary"))
+    return out
+
+
+def pull_weave(
+    address: str,
+    store: Path,
+    run: str | None,
+    *,
+    keep_raw_text: bool,
+    page_size: int,
+    flags: Sequence[str] = (),
+) -> Pulled:
+    """Pull the evaluation ``weave:ENTITY/PROJECT/EVALUATION`` names and save its raw copy
+    under ``store`` for the run ``run``. Nothing is read here: the caller reads the file
+    saved. ``flags`` are the reader's flags of this call, for the command that reads a raw
+    copy already there."""
+    named = address.split(":", 1)[1] if ":" in address else ""
+    parts = [part.strip() for part in named.split("/", 2)]
+    if len(parts) != 3 or not all(parts):
+        raise Refusal(
+            f"{address} names no evaluation: write weave:ENTITY/PROJECT/EVALUATION, the names "
+            "W&B shows for the entity and the project, then the evaluation"
+        )
+    entity, project, evaluation = parts
+    if run is None:
+        raise Refusal("a pull needs --run NAME: the raw copy is kept under the run's name")
+    folder = raw_folder(store, run, "weave")
+    if os.path.lexists(store / run):
+        raise Refusal(
+            f"the store {store} already holds a run named {run}; an import writes a new run "
+            "and never adds to one, so pull under another name. Nothing was asked of Weave"
+        )
+    if os.path.lexists(folder):
+        raise Refusal(
+            f"{folder} already holds a pull, and a raw copy is never written over: read the "
+            "saved copy, or pull under another run name",
+            look.command(
+                "poisson-trace",
+                "import",
+                "weave",
+                look.word(str(folder)),
+                look.option("--store", str(store)),
+                look.option("--run", run),
+                *flags,
+            ),
+        )
+    if not key_is_set("weave"):
+        raise Refusal(
+            f"{WEAVE_KEY_VARIABLE} is not set, and a pull from Weave needs your key: set it in "
+            "the environment, or download the evaluation's calls to a file and import that"
+        )
+    base = weave_endpoint()
+    service = _Service(
+        base,
+        os.environ[WEAVE_KEY_VARIABLE].strip(),
+        name="Weave",
+        variable=WEAVE_KEY_VARIABLE,
+        basic=True,
+    )
+    project_id = f"{entity}/{project}"
+    found = _weave_evaluation(service, project_id, evaluation, page_size)
+    trace = found.get("trace_id")
+    if not isinstance(trace, str) or not trace:
+        raise _not_the_shape(_QUERY, "an evaluation's call with its trace", service.name)
+    calls = _calls(
+        service,
+        _weave_query(
+            project_id, filter={"trace_ids": [trace]}, expand_columns=["inputs.example"]
+        ),
+        page_size,
+    )
+    if not calls:
+        raise Refusal(f"the evaluation {evaluation} holds no call; {_NOTHING_SAVED}")
+    rows = [call if keep_raw_text else strip_call(call) for call in calls]
+    raw = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows).encode("utf-8")
+    record = {
+        "schema": PULL_SCHEMA,
+        "tool": "weave",
+        "pulled_at": _now(),
+        "source_uri": address,
+        "endpoint": f"{base}{_QUERY_PATH}",
+        "raw_text_stripped": not keep_raw_text,
+        "files": [{"path": RAW, "sha256": hashlib.sha256(raw).hexdigest(), "rows": len(rows)}],
+    }
+    _save(folder, raw, record)
+    return Pulled(
+        folder=folder,
+        files=(folder / RAW,),
+        summary={
+            "source_uri": address,
+            "folder": str(folder),
+            "calls": len(calls),
             "raw_text_stripped": not keep_raw_text,
         },
     )

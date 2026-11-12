@@ -61,10 +61,10 @@ SUCCESS_WORDS: tuple[str, ...] = (
 # most 10,000 entries read in all, files and folders alike
 DEPTH = 6
 ENTRIES = 10_000
-# the most candidate result files (.csv, .jsonl, .json, .xml, .eval) opened to see whether a
-# reader reads them
+# the most candidate result files (.csv, .tsv, .jsonl, .json, .xml, .eval) opened to see
+# whether a reader reads them
 CANDIDATES = 200
-RESULT_FILES = (".csv", ".jsonl", ".json", ".xml", ".eval")
+RESULT_FILES = (".csv", ".tsv", ".jsonl", ".json", ".xml", ".eval")
 # the runs whose outcomes the failure question reads, newest first
 NEWEST = 20
 # the folders never searched; every other folder whose name opens with a dot is skipped too,
@@ -679,7 +679,7 @@ def answers_fit(readers: Sequence[str], answers: Answers) -> None:
 def run_name(path: str) -> str:
     """A run named after its file, without the extensions that say its format."""
     name = Path(path).name.lstrip(".")
-    for suffix in (".gz", ".csv", ".jsonl", ".json", ".xml", ".eval"):
+    for suffix in (".gz", ".csv", ".tsv", ".jsonl", ".json", ".xml", ".eval"):
         if name.lower().endswith(suffix):
             name = name[: -len(suffix)]
     return name
@@ -900,6 +900,13 @@ def _guessed(found: FoundFile) -> dict[str, Any]:
             "case_from": "record" if braintrust.carries_records(path) else "input",
             "outcome_from": "OUTCOME",
         }
+    if found.reader == "weave":
+        from poisson_trace.ingest import weave
+
+        # the case is the dataset row where every row carries the reference to it, else the
+        # input, which the page's table holds; what says a case failed is the user's to name
+        held = weave.found_runs(path)
+        return {"case_from": held[0].case_from if held else "CASE", "outcome_from": "OUTCOME"}
     if found.reader in ("ragas", "table"):
         try:
             head = _columns(path)
@@ -1023,17 +1030,47 @@ def _run_names(files: Sequence[FoundFile]) -> dict[str, str]:
 def file_lines(
     files: Sequence[FoundFile], store: str, *, limit: int | None = LINES_SHOWN
 ) -> list[str]:
-    """One import line for each file, grouped by tool, at most 12 of them (each file shown is
-    opened for its answers): every answer init can read from the file filled in, and a word in
-    capitals for each it cannot (METRIC, CUT, CASE). ``limit`` None gives every file its line
-    (the terminal app's imports screen, TF19-A9); the run names are read over every file
-    either way, so a line is the same whether or not the ones before it are shown. A file
-    that is no run of its own (a LangSmith feedback list) has no line: its path goes after
-    its runs file's, on that file's line."""
-    ordered, beside = _runs_and_beside(by_tool(files))
+    """The import lines of the files, grouped by tool, for at most 12 files (each file shown
+    is opened for its answers): every answer init can read from the file filled in, and a
+    word in capitals for each it cannot (METRIC, CUT, CASE). ``limit`` None gives every file
+    its lines (the terminal app's imports screen, TF19-A9); the run names are read over every
+    file either way, so a line is the same whether or not the ones before it are shown. A
+    file that is no run of its own has no line: a LangSmith feedback list, whose path goes
+    after its runs file's, on that file's line; and a Weave file that holds no case. A Weave
+    file that holds several evaluations is several runs, and has a line for each."""
+    return [line for _, lines in lines_by_file(files, store, limit=limit) for line in lines]
+
+
+def lines_by_file(
+    files: Sequence[FoundFile], store: str, *, limit: int | None = LINES_SHOWN
+) -> list[tuple[FoundFile, list[str]]]:
+    """Each file that is a run of its own, in the order its lines are printed, with its
+    import lines: one, or one for each evaluation a Weave file holds."""
+    return _lines(_runs_and_beside(by_tool(files)), store, limit)
+
+
+def _lines(
+    planned: tuple[list[FoundFile], dict[str, list[str]]], store: str, limit: int | None
+) -> list[tuple[FoundFile, list[str]]]:
+    ordered, beside = planned
     run_names = _run_names(ordered)
-    lines = []
+    taken = set(run_names.values())
+    out: list[tuple[FoundFile, list[str]]] = []
     for f in ordered[:limit]:
+        several = _weave_evaluations(f)
+        if several:
+            # one file, several runs: each line names its evaluation and a run of its own
+            lines = []
+            for found in several:
+                name = _free_name(str(found.evaluation), taken)
+                words = ["poisson-trace", "import", f.reader, f.path]
+                words += _pair("--store", store) + _pair("--run", name)
+                words += _pair(_FLAG["case_from"], found.case_from)
+                words += _pair(_FLAG["outcome_from"], "OUTCOME")
+                words += _pair("--evaluation", str(found.evaluation))
+                lines.append(" ".join(_shell_word(w) for w in words))
+            out.append((f, lines))
+            continue
         guess = _guessed(f)
         words = ["poisson-trace", "import", f.reader, f.path, *beside.get(f.path, ())]
         words += _pair("--store", store)
@@ -1053,15 +1090,45 @@ def file_lines(
         for dest in ("case_from", "outcome_from"):
             if dest in guess:
                 words += _pair(_FLAG[dest], str(guess[dest]))
-        lines.append(" ".join(_shell_word(w) for w in words))
-    return lines
+        out.append((f, [" ".join(_shell_word(w) for w in words)]))
+    return out
+
+
+def _weave_evaluations(found: FoundFile) -> list[Any]:
+    """The evaluations of a Weave file that holds more than one, each a run of its own; none
+    for any other file."""
+    if found.reader != "weave":
+        return []
+    from poisson_trace.ingest import weave
+
+    held = weave.found_runs(found.path)
+    return held if len(held) > 1 else []
+
+
+def _free_name(wanted: str, taken: set[str]) -> str:
+    """A run name for a line: ``wanted``, with a number after it where a line before took
+    it; RUN where it cannot be a run's name. The name is taken from here on."""
+    if names.import_name_refusal(wanted) is not None:
+        return "RUN"
+    name, number = wanted, 1
+    while name in taken:
+        number += 1
+        name = f"{wanted}-{number}"
+    taken.add(name)
+    return name
 
 
 def _runs_and_beside(files: Sequence[FoundFile]) -> tuple[list[FoundFile], dict[str, list[str]]]:
     """The files that each get an import line, in the order given, and by a file's path the
-    files that go beside it on its line. A LangSmith feedback list is no run of its own: it
-    goes beside the runs file whose runs its records score, and has no line at all where no
-    file here holds them. The files are opened only when a feedback list is among them."""
+    files that go beside it on its line. A Weave file that holds no case (the Traces page
+    with no filter) is no run: it is listed and has no line. A LangSmith feedback list is no
+    run of its own: it goes beside the runs file whose runs its records score, and has no
+    line at all where no file here holds them. LangSmith's files are opened only when a
+    feedback list is among them."""
+    if any(f.reader == "weave" for f in files):
+        from poisson_trace.ingest import weave
+
+        files = [f for f in files if f.reader != "weave" or weave.found_runs(f.path)]
     if not any(f.reader == "langsmith" for f in files):
         return list(files), {}
     from poisson_trace.ingest import langsmith
@@ -1078,11 +1145,14 @@ def _runs_and_beside(files: Sequence[FoundFile]) -> tuple[list[FoundFile], dict[
 
 
 def shown_lines(files: Sequence[FoundFile], store: str) -> list[str]:
-    """The lines a refusal or a summary prints: at most 12, then how many more and where the
-    import's help is. What is counted as more is the files that have a line and are not
-    shown, which a file shown beside another is not."""
-    shown = file_lines(files, store)
-    more = len(_runs_and_beside(by_tool(files))[0]) - len(shown)
+    """The lines a refusal or a summary prints: those of at most 12 files, then how many
+    more files and where the import's help is. What is counted as more is the files that
+    have a line and are not shown, which a file shown beside another is not; a file of
+    several evaluations is one file, however many lines it has."""
+    planned = _runs_and_beside(by_tool(files))
+    held = _lines(planned, store, LINES_SHOWN)
+    shown = [line for _, lines in held for line in lines]
+    more = len(planned[0]) - len(held)
     if more > 0:
         word = "file" if more == 1 else "files"
         shown.append(f"and {count(more)} more {word}: {_IMPORT_HELP}")
