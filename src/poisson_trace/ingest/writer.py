@@ -33,11 +33,10 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import time
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -248,8 +247,12 @@ def _sharing_a_horizon(rows: Sequence[Row], records: list[EpisodeRecord]) -> lis
     return out
 
 
+def _written(at: datetime) -> str:
+    return at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
 def _now() -> str:
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    return _written(datetime.now(UTC))
 
 
 def _event(at: str, kind: str, detail: Mapping[str, Any]) -> str:
@@ -257,18 +260,27 @@ def _event(at: str, kind: str, detail: Mapping[str, Any]) -> str:
 
 
 class _Log:
-    """The run's event log, kept as Prove's own ``_Events`` keeps it: one line per event in
-    Prove's line format, each stamped when it is emitted; a line emitted before the run's
-    folder exists is held and written once the folder is there, ahead of the next; progress
-    at most once a second, plus the closing one the writer emits itself."""
+    """The run's event log, in Prove's line format: one line per event, each stamped when it
+    is emitted; a line emitted before the run's folder exists is held and written once the
+    folder is there, ahead of the next; progress at most once a second, plus the closing one
+    the writer emits itself.
+
+    Progress is paced by the clock it is stamped with, not as Prove's own ``_Events`` paces
+    it (by the monotonic clock, stamped with the wall clock a moment later). One reading of
+    the wall clock both decides whether a progress line is written and is the time written on
+    it: the first progress is written, and after it a line goes out when that reading is at
+    least a second after the time written on the last paced line, so the log's own times keep
+    the promise however long the process stalls between readings. A clock set back writes no
+    progress until it is a second past the last line again; the closing progress and the
+    other events are not paced, and carry the clock's time as it is."""
 
     def __init__(self, root: Path, run: str) -> None:
         self.path = root / run / EVENTS
         self.held: list[str] = []
-        self.last_progress: float | None = None
+        self.last_progress: datetime | None = None
 
-    def emit(self, kind: str, detail: Mapping[str, Any]) -> None:
-        self.held.append(_event(_now(), kind, detail))
+    def emit(self, kind: str, detail: Mapping[str, Any], at: datetime | None = None) -> None:
+        self.held.append(_event(_now() if at is None else _written(at), kind, detail))
         self.flush()
 
     def flush(self) -> None:
@@ -279,10 +291,12 @@ class _Log:
             self.held.clear()
 
     def progress(self, done: int, kept: int, errored: int, total: int) -> None:
-        now = time.monotonic()
-        if self.last_progress is None or now - self.last_progress >= 1.0:
+        now = datetime.now(UTC)
+        if self.last_progress is None or now - self.last_progress >= timedelta(seconds=1):
             self.last_progress = now
-            self.emit("progress", {"done": done, "kept": kept, "errored": errored, "total": total})
+            self.emit(
+                "progress", {"done": done, "kept": kept, "errored": errored, "total": total}, now
+            )
 
 
 def _check_descriptor(root: Path) -> None:

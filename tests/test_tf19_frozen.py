@@ -14,7 +14,7 @@ FROZEN = {
     "fixtures/tf19/make_main_pins.py": "5f07eb1e47483e4ca03842f573f6445590a3b6b7cb9d5bb1b77f64b4022e8dc8",
     "fixtures/tf19/prove-shell.json": "2bcdc708252ed0a82e52515ecfc14cc54e8d5365c365c9b3d63bff8095ab4743",
     "test_tf19_facts.py": "17c932c5d8e8a8195f70eeefc8e6f749cb8ad8da308adaf1ffe8db221b05d3a8",
-    "test_tf19_keys.py": "c90611ed7446e23beb3eada4f8ddff9282fc6a9d870cc4369f62341ce92d298b",
+    "test_tf19_keys.py": "feaa0d7a5008f04266034b27025c4692b7be13845e24b30555fc9a6be91aac07",
     "test_tf19_links.py": "4e4207229a36cd5b1508d1fb50a834dc11d2e89faca2e8129a6884e24b2d4ebb",
     "test_tf19_never.py": "e107c5b07fb9aa48fb6f046ad89d32d29708fb6f1380117b1d0521f15033d6c3",
     "test_tf19_objects.py": "467edf74cf99e56f97d7ecb2e56d435cb1b552146e00f3a2259b0b4711f1d4b4",

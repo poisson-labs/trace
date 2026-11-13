@@ -10,7 +10,7 @@ from pathlib import Path
 TESTS = Path(__file__).resolve().parent
 
 FROZEN = {
-    "runrec_support.py": "b17c6c76cad84529076e8857f8ae49bfb0b55b24633b1d97db9b785c4eaae160",
+    "runrec_support.py": "3c0e83d480641d33a673a07d94d4d7b5c222b9413b4565739a39672fd86bc338",
     "test_runrec_descriptor.py": "ae86dbd55c8de1af6911d462bc9ce7bace1773327e57b7b6d849c56b94cca473",
     "test_runrec_events.py": "24c985de9935630787e2f4780c6a8840740609c9ea68b9014a02c816cb405298",
     "test_runrec_produced_by.py": "b6a0357b4a1b93b17b46702855ff6e190d71ef2623020bdb571357d8909e86ff",

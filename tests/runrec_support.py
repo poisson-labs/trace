@@ -291,9 +291,9 @@ def copy_store(source: Path, dest: Path) -> Path:
 
 
 def seconds(at: str) -> float:
-    from datetime import datetime
+    from datetime import UTC, datetime
 
-    return datetime.strptime(at, "%Y-%m-%dT%H:%M:%S.%fZ").timestamp()
+    return datetime.strptime(at, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=UTC).timestamp()
 
 
 def check_log(log: Sequence[Mapping[str, Any]], run: str, rows: int, *,

@@ -14,7 +14,6 @@ key bar, and each screen's own letters mean one thing.
 from __future__ import annotations
 
 import threading
-import time
 from pathlib import Path
 
 import pytest
@@ -387,10 +386,12 @@ def test_tf19_6_ctrl_c_during_an_import(work: Path) -> None:
 
 HOLD_IMPORT = """\
 import time
+from pathlib import Path
 from poisson_trace import api
 _real = api.import_run
 def _held(*a, **k):
     time.sleep(20)
+    Path(__file__).with_name("ran-out").write_text("the 20 s hold ran out\\n", encoding="utf-8")
     return _real(*a, **k)
 api.import_run = _held
 """
@@ -398,7 +399,10 @@ api.import_run = _held
 
 def test_tf19_6_ctrl_c_during_an_import_on_a_terminal(work: Path, tmp_path: Path) -> None:
     """On a terminal, the import held back 20 s before it writes (a ``sitecustomize`` the test
-    puts first): Ctrl-C exits 130 at once, the line names no import, and the store is as it was."""
+    puts first): Ctrl-C exits 130 at once, the line names no import, and the store is as it was.
+    "At once" is held by the hold itself, not by a time bound (S-2): the held import writes
+    ``ran-out`` beside it only if its 20 s sleep runs out, so the process did not wait for it if
+    there is none; the terminal driver's own deadline is the guard against a hang."""
     from poisson_trace import core
 
     found = [f for f in core.found_results(work, store="jstore") if not f.imported]
@@ -409,10 +413,9 @@ def test_tf19_6_ctrl_c_during_an_import_on_a_terminal(work: Path, tmp_path: Path
     before = {p.name for p in (work / "jstore").iterdir()}
     steps = (Step(b"i", until=HOME), *[Step(b"\x1b[B", until="found by init") for _ in range(i)],
              Step(b"\r", until="found by init"), Step(b"y", until="[y/N]"), Step(b"\x03", until="importing", delay=0.5))
-    started = time.monotonic()
     run = run_pty([], home=tmp_path, cwd=work, steps=steps, python_path=(hold,))
     assert run.code == 130
-    assert time.monotonic() - started < 18, "Ctrl-C waited for the import"
+    assert not (hold / "ran-out").exists(), "Ctrl-C waited for the import"
     assert after_app(run.out).strip() == KEPT_NONE
     assert {p.name for p in (work / "jstore").iterdir()} == before
 
