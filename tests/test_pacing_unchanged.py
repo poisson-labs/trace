@@ -55,7 +55,14 @@ def test_pace_10_every_case_is_pinned_on_main() -> None:
 @pytest.mark.parametrize("label", [pytest.param(k, marks=pytest.mark.slow) if k in SLOW else k for k in CORPUS])
 def test_pace_10_as_main_prints_it(tmp_path: Path, label: str) -> None:
     place, kind, steps = CORPUS[label]
-    assert digest_steps(ran_case(tmp_path, place, kind, steps)) == PINNED["piped"][label], label
+    from tf5_pins import as_main_printed
+
+    # the docs pair (TF5) renamed the helps' example store, made the top help's first sentence and list of tools
+    # whole, and lists the verbs of both refusals in the top help's order (ruled 2026-11-13: DOC-14, DOC-33, DOC-35);
+    # TF5-3 holds those changes, and this goes on holding every other byte, as TF26-66 does
+    ran = [(code, as_main_printed(label, out), as_main_printed(label, err) if not label.startswith("help") else err)
+           for code, out, err in ran_case(tmp_path, place, kind, steps)]
+    assert digest_steps(ran) == PINNED["piped"][label], label
 
 
 def test_pace_10_a_fast_case_stands_for_each_slow_one() -> None:

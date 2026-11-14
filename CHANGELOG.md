@@ -1,5 +1,119 @@
 # Changelog
 
+## 0.1.0 — unreleased
+
+The first release of Poisson Trace. Trace reads results you already have and says where in
+the workflow an agent's runs die, and whether a change made them fail less, each with a stated
+confidence and with what the tries could not have shown. It runs nothing, captures nothing
+and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
+
+### Where runs die, and whether a change helped
+
+- `where` reads one run and says at which step, and at which kind of step, its failing tries
+  stopped, with a band round every share. `compare` reads two runs and says whether tries
+  fail sooner or later in one than in the other. Both need runs that carry traces.
+- `fix-check` reads an old and a new version run on the same inputs, with a control: how
+  often the old version failed again with nothing changed. `changes` names the inputs whose
+  share of failures moved. Neither needs traces.
+- `compare` and `fix-check` end in one of three verdicts: *different*, *no significant
+  difference* or *too small to tell*. Under the last, the report says how many more tries
+  would settle it.
+- Every report opens with a summary in plain words, then what to check before acting on it,
+  and ends with what it cannot say.
+- `fix-check`, `compare` and `changes` count the failures by kind in the two runs, so the
+  kinds of failure that grew and that shrank show beside the verdict.
+- Where tries have no outcome, the reports say how many and how that squares with the count
+  the verdict rests on.
+- `fix-check` answers when no run failed in either version: *no significant difference* when
+  the range of differences lies inside the size asked about, *too small to tell* otherwise.
+- `compare` refuses two words that reach one run: a run cannot be compared with itself.
+- `fix-check --measures` also compares the two runs' time, length, tokens and cost, in a
+  table of its own.
+
+### Setting up
+
+- `poisson-trace init` finds the results in a folder, asks which outcomes count as a failure
+  and writes `trace.toml`, which every command then reads. `poisson-trace doctor` says
+  whether the setup is ready.
+- `poisson-trace init --agent` writes a setup file that your own coding agent follows to
+  write `trace.toml`, and `poisson-trace doctor --setup` checks what it wrote before you
+  import anything.
+- `runs` lists a store's runs and `name` gives one a name of yours. Wherever a command takes
+  a run it takes a name, latest or previous, or the run's number in the listing.
+
+### Results from other tools
+
+- `poisson-trace import` reads the results of ten tools beside the runs Prove stored, each
+  with a page: DeepEval (`docs/integrations/deepeval.md`), Ragas
+  (`docs/integrations/ragas.md`), tables (`docs/integrations/table.md`), JUnit
+  (`docs/integrations/junit.md`), promptfoo (`docs/integrations/promptfoo.md`), Inspect
+  (`docs/integrations/inspect.md`), OpenAI Evals (`docs/integrations/openai-evals.md`),
+  LangSmith (`docs/integrations/langsmith.md`), Braintrust
+  (`docs/integrations/braintrust.md`) and Weave (`docs/integrations/weave.md`).
+- The promptfoo reader takes its results file, the Inspect reader its `.eval` and `.json`
+  logs, and the OpenAI Evals reader the records `oaieval` writes.
+- The LangSmith reader takes exported runs, or pulls an experiment by its address,
+  `langsmith:NAME`, with the key in `LANGSMITH_API_KEY`.
+- The Braintrust reader takes exported events, or pulls an experiment by its address,
+  `braintrust:PROJECT/EXPERIMENT`, with the key in `BRAINTRUST_API_KEY`.
+- The Weave reader takes exported calls, or pulls an evaluation by its address,
+  `weave:ENTITY/PROJECT/EVALUATION`, with the key in `WANDB_API_KEY`.
+- A pull saves a copy of what the service returned under the store, in `.poisson/raw/`, with
+  the input and output text left out, and reads that copy.
+- The import, and the four commands that read runs, take a folder of result files in place
+  of the files.
+- `--verdicts FILE` joins outcomes given outside the tool onto the rows, on the import and on
+  `fix-check`, `compare` and `changes`.
+- Every import reads the signals each try carries and gives each failed try one of thirteen
+  kinds of failure, by rules that `trace.toml` can add to.
+- Each import writes a store descriptor, an event log and what produced the run, so that
+  Prove can read a store Trace wrote.
+- In that event log, the lines that report an import's progress are at least a second apart
+  by the times written on them, however busy the machine is.
+
+### Saving a result, and showing it
+
+- `--save` on `where`, `compare`, `fix-check` and `changes` keeps the verdict in the store.
+- `--out DIR` writes the result as a folder of files, and `poisson-trace handover --check DIR`
+  checks that folder file by file (`docs/handover.md`).
+- `poisson-trace ui` builds pages over a store's runs and saved verdicts, and
+  `poisson-trace report DIR` writes one result as a single HTML page that opens from disk.
+- `poisson-trace` with no verb opens the terminal app: the runs, the imports, a comparison, a
+  fix check and the verdict, a screen each.
+- `poisson_trace.api` has a function for each command, with typed results
+  (`docs/python.md`).
+
+### How it prints
+
+- On a terminal, results are drawn with the verdict word in its colour and long lines
+  wrapped. On a pipe every result is plain text. `--plain` prints the plain text on a
+  terminal too, and so does `NO_COLOR`.
+- `--json` prints any result as one JSON document, the same bytes whenever the inputs are
+  the same.
+- A refusal is one line that opens `error:`, with the command that moves you on under it.
+  The exit codes are the same on every command.
+
+### The docs
+
+- Fifteen recipes under `docs/recipes/`, and `docs/commands.md`, `docs/config.md`,
+  `docs/how-it-decides.md`, `docs/handover.md` and `docs/app.md`. Every command a page shows
+  is run, and what the page says it printed is checked.
+
+### Installing
+
+- `pip install poisson-trace` brings `poisson-prove`, which Trace reads stored runs through,
+  at one exact version. Any other version of it is refused, with the command that mends it.
+- `pyarrow` is a declared dependency: Trace uses it to write a saved result's table.
+
+### If you used a pre-release
+
+- The examples in `--help` name the store folder `prove-runs`, the folder the published Prove
+  writes. They named `proofload-runs` before. Nothing else a command prints has moved but
+  the two items below.
+- The help of the command now says Trace reads the results of ten other tools, and names all
+  of them.
+- The two refusals that list the verbs now list them in the order the help does.
+
 ## 0.1.0a1 — pre-release
 
 A quiet alpha on PyPI, installed with `pip install poisson-trace==0.1.0a1`: pip takes a

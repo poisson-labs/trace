@@ -1,0 +1,222 @@
+# CI: the suite's lanes on every pull request, on every push to main and every night, and a
+# check that the package installs clean and that its docs run as written.
+#
+# The lanes are the four pyproject.toml names, mark for mark, and release.yml runs the same
+# ones on a tag, so CI and a release cannot drift apart.
+#
+# - pull-request: on every pull request, push and night, on Python 3.11, the oldest the package
+#   declares: the pull-request lane, ruff check src tests and mypy --strict. Nothing skips it.
+# - math: the statistics' slow checks against their references. Every night and on every push
+#   to main; on a pull request only when .github/lanes/math_lane.py says the pull request could
+#   have moved a statistic (the statistics code, a test of the math suite, the declared
+#   dependencies, or a numpy, scipy, pandas or lifelines other than the lanes were green with).
+# - full: on main and every night, never on a pull request: the pull-request lane and the slow
+#   lane on Python 3.11, 3.12 and 3.13, with ruff and mypy --strict on each.
+# - lane-j: on main and every night, never on a pull request: the one job that reads the
+#   package index for other tools. It installs the real DeepEval and Ragas and runs the tests
+#   that run them, and the test that the built wheel brings the Prove it pins.
+# - clean-install: builds the source archive and the wheel from the commit; installs one of
+#   them with plain pip into a fresh environment (the wheel in one cell, the source archive in
+#   the other); moves to an empty folder with a home of its own; checks that the package
+#   imported is the installed one; then, with every connection but to this machine refused,
+#   runs every marked block of the README and the docs through tools/docs_check.py. Every
+#   block the docs check skipped is listed in the job's summary.
+#
+# Left for the CI setup session to choose, and written here only so the file runs: the runner
+# of each job and the systems the full job covers (macos-latest below, where the lanes were
+# last made green), how the jobs are cut into shards, how the socket guard is made, and
+# whether clean-install runs on every pull request.
+#
+# The workflow reads the repository and nothing else. It holds no secret and asks for no
+# token. Every action is pinned to a full commit SHA. CI is unset for every pytest line: Trace
+# reads CI as a reason to print plain text, and the tests pin what it prints without it.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  BUILD_VERSION: "1.6.1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  OPENBLAS_NUM_THREADS: "1"
+
+jobs:
+  pull-request:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: Environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --quiet -c .github/release/lanes-3.11.txt -e ".[dev]"
+          .venv/bin/python --version
+          .venv/bin/poisson-trace --version
+      - name: Pull-request lane
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m "not math and not lane_j and not slow" tests
+      - name: ruff
+        run: .venv/bin/ruff check src tests
+      - name: mypy --strict
+        run: .venv/bin/mypy --strict
+
+  math:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: Environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --quiet -e ".[dev]"
+          .venv/bin/python -m pip freeze | grep -i -E "^(numpy|scipy|pandas|lifelines)=="
+      # The rule is .github/lanes/math_lane.py's: the statistics code (src/poisson_trace/paired.py,
+      # src/poisson_trace/survival.py, src/poisson_trace/stats), a test of the math suite, the
+      # declared dependencies, or a resolved numpy, scipy, pandas or lifelines that moved.
+      - name: Whether this event runs the math lane
+        id: rule
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: .venv/bin/python .github/lanes/math_lane.py $BASE
+      - name: Math lane
+        if: steps.rule.outputs.run == 'true'
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m math tests
+
+  full:
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    runs-on: macos-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      # The versions the lanes were last green with are recorded for Python 3.11 and 3.12; on
+      # a Python with no such file, pip resolves the newest versions the package allows.
+      - name: Environment
+        run: |
+          python -m venv .venv
+          constraints=".github/release/lanes-${{ matrix.python }}.txt"
+          if [ -f "$constraints" ]; then
+            .venv/bin/python -m pip install --quiet -c "$constraints" -e ".[dev]"
+          else
+            .venv/bin/python -m pip install --quiet -e ".[dev]"
+          fi
+          .venv/bin/python --version
+      - name: Pull-request lane
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m "not math and not lane_j and not slow" tests
+      - name: Slow lane
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m slow tests
+      - name: ruff
+        run: .venv/bin/ruff check src tests
+      - name: mypy --strict
+        run: .venv/bin/mypy --strict
+
+  lane-j:
+    if: github.event_name != 'pull_request'
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --quiet -c .github/release/lanes-3.12.txt -e ".[dev]"
+      # The tests install the two tools themselves, each at the version it pins. This step
+      # fails early and plainly when the package index cannot serve them, and warms pip's cache.
+      - name: The real DeepEval and Ragas, from the package index
+        run: |
+          DEEPEVAL=$(sed -n 's/^DEEPEVAL = "\(.*\)"$/\1/p' tests/ingest/test_deepeval_package.py)
+          python -m venv "$RUNNER_TEMP/tools"
+          "$RUNNER_TEMP/tools/bin/python" -m pip install --quiet "deepeval==$DEEPEVAL" ragas
+      - name: Lane J
+        run: env -u CI .venv/bin/python -m pytest -q -p no:cacheprovider -m lane_j tests
+
+  clean-install:
+    strategy:
+      fail-fast: false
+      matrix:
+        install: [wheel, sdist]
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: Build the source archive and the wheel from the commit
+        run: |
+          python -m pip install --quiet "build==$BUILD_VERSION"
+          mkdir "$RUNNER_TEMP/tree"
+          git archive --format=tar HEAD | tar -x -C "$RUNNER_TEMP/tree"
+          python -m build --outdir "$RUNNER_TEMP/dist" "$RUNNER_TEMP/tree"
+          ls -l "$RUNNER_TEMP/dist"
+      - name: Install it with plain pip into a fresh environment
+        run: |
+          python -m venv "$RUNNER_TEMP/clean"
+          if [ "${{ matrix.install }}" = "wheel" ]; then
+            "$RUNNER_TEMP/clean/bin/python" -m pip install --quiet "$RUNNER_TEMP"/dist/*.whl
+          else
+            "$RUNNER_TEMP/clean/bin/python" -m pip install --quiet "$RUNNER_TEMP"/dist/*.tar.gz
+          fi
+          "$RUNNER_TEMP/clean/bin/python" -m pip check
+      - name: An empty folder, a home of its own, and the package that was installed
+        run: |
+          mkdir "$RUNNER_TEMP/empty" "$RUNNER_TEMP/home"
+          cd "$RUNNER_TEMP/empty"
+          export HOME="$RUNNER_TEMP/home"
+          "$RUNNER_TEMP/clean/bin/poisson-trace" --version | tee -a "$GITHUB_STEP_SUMMARY"
+          "$RUNNER_TEMP/clean/bin/python" -c "import pathlib, sys, poisson_trace; where = pathlib.Path(poisson_trace.__file__).resolve(); env = pathlib.Path(sys.prefix).resolve(); assert env in where.parents, (where, env); print(where)"
+      # From here on every Python refuses a connection to any address that is not this
+      # machine's, and writes it down: the guard is sitecustomize.py in a folder on PYTHONPATH.
+      - name: Socket guard, so that no connection leaves this machine
+        run: |
+          mkdir "$RUNNER_TEMP/guard"
+          cp .github/lanes/socket_guard.py "$RUNNER_TEMP/guard/sitecustomize.py"
+          echo "PYTHONPATH=$RUNNER_TEMP/guard" >> "$GITHUB_ENV"
+          echo "POISSON_TRACE_REFUSED=$RUNNER_TEMP/refused.log" >> "$GITHUB_ENV"
+      - name: Every marked block of the README and the docs, run as written
+        run: |
+          cd "$RUNNER_TEMP/empty"
+          export HOME="$RUNNER_TEMP/home"
+          export PATH="$RUNNER_TEMP/clean/bin:$PATH"
+          python "$GITHUB_WORKSPACE/tools/docs_check.py" --summary "$GITHUB_STEP_SUMMARY"
+      - name: Nothing reached for the network, and nothing was left in the empty folder
+        run: |
+          if [ -e "$RUNNER_TEMP/refused.log" ]; then cat "$RUNNER_TEMP/refused.log"; exit 1; fi
+          test -z "$(ls -A "$RUNNER_TEMP/empty")"

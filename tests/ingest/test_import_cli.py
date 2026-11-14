@@ -54,7 +54,9 @@ def test_s22_the_script_entry_is_declared_and_no_dependency_is_added() -> None:
     # Rich, which the clean look renders through (TF9-5a; LB2, ruled 2026-11-03), and Textual,
     # which the terminal app is built with at the floor Prove declares (section 17.2, AD5; TF19's
     # FT1)
-    assert sorted(project["dependencies"]) == sorted(["numpy", "scipy", "pandas>=2", REQUIREMENT, "rich>=14.2.0",
+    # and pyarrow, which Trace imports itself to write a saved verdict's table, declared at the
+    # floor Prove declares (spec section 8.5; the docs pair, TF5-96)
+    assert sorted(project["dependencies"]) == sorted(["numpy", "scipy", "pandas>=2", "pyarrow>=17.0.0", REQUIREMENT, "rich>=14.2.0",
                                                       "textual>=6.4.0"])
 
 

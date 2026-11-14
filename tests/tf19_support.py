@@ -217,7 +217,9 @@ RESULT_FILES = (
     ("junit", "trace-suite-2.xml"),
 )
 
-NO_VERB = "error: no verb was given; the verbs are init, runs, name, where, compare, fix-check, changes, handover, import, doctor, ui and report"
+# the verbs in the top help's order, as the docs pair (TF5) leaves the refusal (ruled 2026-11-13, DOC-33; TF5-3 holds it);
+# main 2ff191b listed them "…, changes, handover, import, doctor, ui and report"
+NO_VERB = "error: no verb was given; the verbs are init, runs, name, where, compare, fix-check, changes, import, doctor, handover, ui and report"
 NO_TEXTUAL = "error: the terminal app cannot start: Textual cannot be imported"
 KEPT_NONE = "stopped  interrupted; nothing was saved, named or imported"
 KEPT = "stopped  interrupted; kept "

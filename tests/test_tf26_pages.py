@@ -141,9 +141,17 @@ def test_tf26_63_every_marked_block_of_the_page_holds(tmp_path: Path, monkeypatc
 
 
 def test_tf26_63_no_marked_command_pulls() -> None:
+    """Changed by the docs pair (TF5): a command that names the service's address stands in a
+    block marked ``pull``, which is answered from the committed captures with no network
+    (TF5-16); no other marked command names one."""
+    from tf5_support import parse
+    from tf5_support import words as commands_of
+
     for path in (PAGE, RECIPE):
-        for words in _commands(path.read_text(encoding="utf-8")):
-            assert not [w for w in words if w.startswith("weave:")], (path.name, words)
+        for block in parse(path.read_text(encoding="utf-8"))[0]:
+            if block.kind == "command" and not block.pull:
+                for words in commands_of(block):
+                    assert not [w for w in words if w.startswith("weave:")], (path.name, words)
 
 
 # ---------- TF26-64 ----------

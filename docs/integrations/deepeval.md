@@ -10,6 +10,7 @@ the metric is ours.
 
 ## Install
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install poisson-trace
 ```
@@ -20,6 +21,7 @@ Nothing here imports DeepEval. Tested on files written by DeepEval 4.2.6.
 
 DeepEval writes a result file when you set a folder for it:
 
+<!-- skip reason="runs DeepEval, which Trace never does" -->
 ```
 DEEPEVAL_RESULTS_FOLDER=./results deepeval test run test_agent.py
 ```
@@ -33,12 +35,13 @@ run per case is the smallest design there is.
 One import is one version. Each import reads one metric and writes one new run into a store
 in Prove's format; `poisson-trace fix-check` then compares the two runs.
 
+<!-- skip reason="the form of the command: the words in capitals are yours to fill in" -->
 ```
 poisson-trace import deepeval FILE [FILE ...] --store ROOT --run NAME
         --metric NAME
         --cut ( recorded | X ( --below | --above ) )
         --case ( name | input | position )
-        [--started ISO-8601] [--json]
+        [--started ISO-8601] [--verdicts FILE] [--json]
 ```
 
 Nothing has a default but the start time. You say which metric, where the cut is and what
@@ -64,6 +67,11 @@ identifies a test case.
   the zone of the machine running the import, and the summary says so and names the zone.
   A file with another name gives its modification time. The summary prints which of the
   three was used.
+- `--verdicts FILE` joins outcomes given outside DeepEval onto the rows: a `.csv` with the
+  columns `case`, `input`, `outcome` (`pass` or `fail`), `score` and `failure_kind`, or a
+  `.jsonl` with the same keys. A row of it joins every try of the case it names. It fills
+  what the files left out, a try with no outcome above all; a verdict that differs from
+  what the files recorded refuses the import, naming the case, and nothing is written.
 - `.json` and `.json.gz` are read: the file in the results folder,
   `.deepeval/.latest_run_full.json`, and `.deepeval/.latest_test_run.json` when it holds
   results.
@@ -76,10 +84,10 @@ identifies a test case.
 The two files are in `tests/fixtures/ingest/deepeval/`. They are one agent run twice, 56
 minutes apart, with nothing changed: 164 HumanEval problems at two temperatures, 32 runs of
 each, 10,496 test cases per file. Each test case is named by its problem and temperature,
-and the metric `Tests Passed` scores 1.0 when the stored run passed the problem's tests and
-0.0 when it did not, with a threshold of 1.0. DeepEval's `evaluate()` ran that metric and
+and the metric `Tests Passed` scores `1.0` when the stored run passed the problem's tests and
+`0.0` when it did not, with a threshold of 1.0. DeepEval's `evaluate()` ran that metric and
 wrote both files; `make.py` beside them is the recipe. DeepEval reports 9,158 of 10,496
-passed, then 9,109: 87.3%, then 86.8%.
+test cases passed in the first file and 9,109 test cases in the second: 87.3%, then 86.8%.
 
 The commands run from the root of a clone and write the store to `./store`.
 
@@ -264,7 +272,7 @@ A lone changed input is flagged only if its p is below α / M = 0.000152, and th
 The report closes with its block *What this cannot say*, left out here for length.
 
 Half a point separates the two pass rates. The two runs do differ (p = 0.036): the second
-missed 49 more times than the first, and 32 of those 49 are one problem. HumanEval/129
+missed 49 more times than the first, and 32 of those 49 misses are one problem. HumanEval/129
 missed 12 times in 32, then 32 in 32, at temperature 0.7, and 20 in 32, then 32 in 32, at
 temperature 0.0, in an agent nobody changed. No other case is flagged. The by-input line
 (p = 0.127) says the cases did not move as a body. The report says what it cannot say: a

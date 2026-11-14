@@ -724,4 +724,8 @@ def test_tf13_33_every_help_is_as_main_prints_it(tmp_path: Path, label: str) -> 
     work.mkdir()
     ran = (cli if kind == "trace" else cli_import)(work, argv)
     assert ran.code == 0 and ran.err == ""
-    assert _digest(ran.out, work) == HELP_PINNED[label], label
+    from tf5_pins import as_main_printed
+
+    # the docs pair (TF5) renamed the helps' example store and made the top help's list of tools whole;
+    # TF5-3 holds those two changes, and this goes on holding every other byte of each help
+    assert _digest(as_main_printed("help", ran.out), work) == HELP_PINNED[label], label

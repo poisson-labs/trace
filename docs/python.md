@@ -23,8 +23,8 @@ runs `failure_taxonomy_diff` and `continuous_measures`. On every result:
   for the bundle `to_bundle` writes, whether or not the result was saved; nothing is written.
 
 Every refusal is `api.Refusal`, carrying `message` (the sentence the command prints after
-`error:`), `next` (the commands under it), `exit_code` (1; 2 for a setting the verb needs that
-nothing gives; 3 for a failure after work started) and `notes`. A value the flag itself would
+`error:`), `next` (the commands under it), `exit_code` (1 for a refusal; exit code 2 for a setting the
+verb needs that nothing gives; exit code 3 for a failure after work started) and `notes`. A value the flag itself would
 refuse (a wrong type, a choice it lacks, a flag the verb or the reader does not take) is a
 `ValueError`, raised before anything is read.
 
@@ -292,7 +292,7 @@ next: poisson-trace runs --store store
 api.import_run(store, tool, files, *, config=None, run=None, started=None, verdicts=None, **reader_flags)
 ```
 
-`poisson-trace import TOOL FILE [FILE ...]`: the files read with the tool's reader (`deepeval`, `ragas`, `table`, `junit`, `promptfoo`, `inspect`, `openai-evals`), written as one new run of the store. Each reader's flags are keywords named by the same rule (`case_column="case"` for `--case-column case`). `tool` may be None when `files` is one folder, whose files say which tool wrote them. `ImportResult` holds the summary's keys (`run`, `store`, `tool`, `files`, `declared`, `started`, `rows`, `cases`, `outcomes`).
+`poisson-trace import TOOL FILE [FILE ...]`: the files read with the tool's reader (`deepeval`, `ragas`, `table`, `junit`, `promptfoo`, `inspect`, `openai-evals`, `langsmith`, `braintrust` or `weave`), written as one new run of the store. Each reader's flags are keywords named by the same rule (`case_column="case"` for `--case-column case`). `tool` may be None when `files` is one folder, whose files say which tool wrote them. `ImportResult` holds the summary's keys (`run`, `store`, `tool`, `files`, `declared`, `started`, `rows`, `cases`, `outcomes`).
 
 **Refusals.** `api.Refusal` for a file that is not there, a run name the store holds already or that cannot be a folder's name, a metric no case carries, a start with no zone, a tool this install lacks; with exit code 2 when `run` is not given for files, when a reader's required flag is left out, or when nothing gives a store. `ValueError` for a flag the reader lacks, a flag of the wrong type, or a choice it lacks.
 

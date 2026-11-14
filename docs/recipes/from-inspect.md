@@ -9,6 +9,7 @@ and runs no task.
 Inspect writes a log for each run, in `./logs`. Reading a `.eval` log needs the `zstandard`
 package:
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install 'poisson-trace[inspect]'
 ```
@@ -79,6 +80,8 @@ too small to tell  too few tries to see a drop of any size
 Three failures down to one, on three samples run twice, is too few to tell from chance. The
 report's Guidance section says how many epochs would: give the task that many and run both
 versions again.
+
+The [Inspect page](../integrations/inspect.md) has every flag and what the reader refuses.
 
 ## What this does not do
 

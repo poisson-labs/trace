@@ -8,6 +8,7 @@ and runs no eval.
 
 Save a record for each version:
 
+<!-- skip reason="runs oaieval, which Trace never does" -->
 ```
 oaieval my-completion-fn my-eval --record_path old.jsonl
 oaieval my-new-completion-fn my-eval --record_path new.jsonl
@@ -74,6 +75,8 @@ too small to tell  too few tries to see a drop of any size
 
 `dummy` gets every sample wrong in both records, and three samples run once cannot show a
 change either way. The report's Guidance section says how many runs would.
+
+The [OpenAI Evals page](../integrations/openai-evals.md) has every flag and what the reader refuses.
 
 ## What this does not do
 

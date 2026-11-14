@@ -46,7 +46,11 @@ def test_tf18_20_every_case_is_pinned_on_main() -> None:
 @pytest.mark.parametrize("label", [pytest.param(k, marks=pytest.mark.slow) if k in SLOW else k for k in CORPUS])
 def test_tf18_20_as_main_prints_it(tmp_path: Path, label: str) -> None:
     place, kind, steps = CORPUS[label]
-    got = [[code, digest(out), digest(err)] for code, out, err in _ran(tmp_path, place, kind, steps)]
+    from tf5_pins import as_main_printed
+
+    # the docs pair (TF5) renamed the helps' example store and made the top help's list of tools whole;
+    # TF5-3 holds those two changes, and this goes on holding every other byte of each help
+    got = [[code, digest(as_main_printed(label, out)), digest(err)] for code, out, err in _ran(tmp_path, place, kind, steps)]
     assert got == PINNED["piped"][label], label
 
 
@@ -56,7 +60,12 @@ NEW_VERBS = ("ui", "report")
 
 
 def test_tf18_21_the_top_help_gains_the_two_verbs_and_nothing_else(tmp_path: Path) -> None:
+    from tf5_pins import as_main_printed
+
     (code, out, err), = _ran(tmp_path, *CHANGED["help: top"])
+    # the docs pair (TF5) renamed the helps' example store and made the top help's list of tools whole;
+    # TF5-3 holds those two changes, and this goes on holding every other byte of each help
+    out = as_main_printed("help: top", out)
     (main_code, main_out, main_err), = PINNED["changed"]["help: top"]
     assert (code, err) == (main_code, main_err)
     old, new = main_out.splitlines(), _without_the_app_s_options(out).splitlines()
@@ -107,6 +116,12 @@ def test_tf18_21_the_verbs_named_in_a_refusal(tmp_path: Path, label: str) -> Non
     (main_code, main_out, main_err), = PINNED["changed"][label]
     want = main_err.replace("handover, import and doctor", "handover, import, doctor, ui and report")
     assert want != main_err
+    # the docs pair (TF5) lists the verbs in the top help's order in both refusals, from one list
+    # (ruled 2026-11-13, DOC-33 and DOC-35; TF5-3 holds it)
+    from tf5_pins import VERBS_MAIN, VERBS_SAID
+
+    assert want.count(VERBS_MAIN) == 1
+    want = want.replace(VERBS_MAIN, VERBS_SAID)
     assert (code, out, err) == (main_code, main_out, want)
 
 

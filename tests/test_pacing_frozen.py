@@ -13,7 +13,7 @@ FROZEN = {
     "pacing_support.py": "e36d6b5f3a8b64af5d18c1982b422b224b6cee2649bfa5f5db6781e8c9b96448",
     "test_pacing.py": "466b58f63e8c03fc29f1e26b63e7c0c9bed6a134518cc6d0b56f780bb19bf5a8",
     "pacing_pins.py": "c6357b08921fcddc320afdbf9915d63e438ed5cce4c881348b30b20076a1b50e",
-    "test_pacing_unchanged.py": "06629eb938b423b99c54b5b495f85727bacbd74466b3197787585e6b522ac4c9",
+    "test_pacing_unchanged.py": "2a64d89d2c2738308df50622f2fa22888b2d4acf66e49100458a66624600997b",
     "fixtures/pacing/make_main_pins.py": "388b49551914da0f9cfe584e9fcf126ede958bce1b6eca9abc1f26eb0871a8ed",
     "fixtures/pacing/main-pins.json": "63e452a2007dec2e5743b56ebd256a2ac1316af8e70b09cab87ff36c4529aa01",
 }

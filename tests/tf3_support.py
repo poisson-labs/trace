@@ -13,11 +13,9 @@ import gzip
 import hashlib
 import io
 import json
-import os
 import re
 import shutil
 import stat
-import subprocess
 import sys
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -308,7 +306,6 @@ def refusal(result: Ran) -> str:
 # ---------- the pages ----------
 
 FENCE = re.compile(r"^```")
-MARK = re.compile(r"^<!-- (command|output|excerpt)(?: exit=(\d+))? -->$")
 
 
 @dataclass(frozen=True)
@@ -317,26 +314,16 @@ class Block:
     code: int | None
     line: int  # the first line of the body, counting from 1
     body: str
+    varies: bool = False
 
 
 def blocks(text: str) -> list[Block]:
-    """Every marked fenced block of a page, in order."""
-    lines = text.split("\n")
-    found = []
-    i = 0
-    while i < len(lines):
-        m = MARK.match(lines[i])
-        if m:
-            j = i + 1
-            assert FENCE.match(lines[j]), (i + 1, lines[j])
-            k = j + 1
-            while not FENCE.match(lines[k]):
-                k += 1
-            found.append(Block(m.group(1), None if m.group(2) is None else int(m.group(2)), j + 2, "\n".join(lines[j + 1 : k])))
-            i = k + 1
-        else:
-            i += 1
-    return found
+    """Every block of a page that is run or held against what was printed, in order. The marks
+    are read by the one reader every page is held to (``tf5_support.parse``): ``command`` in
+    each of its forms, ``output`` and ``excerpt``."""
+    from tf5_support import parse
+
+    return [Block(b.kind, b.code, b.line, b.body, b.varies) for b in parse(text)[0] if b.kind in ("command", "output", "excerpt")]
 
 
 def fenced(text: str) -> list[str]:
@@ -385,29 +372,31 @@ class Checked:
 
 
 def run_page(page: Path, root: Path, home: Path, bin_dir: Path) -> list[Checked]:
-    """Every command block of the page run in ``root``, in page order, with bash, the shims
-    first on PATH and HOME a folder of its own; each output and excerpt block paired with the
-    command above it, its exit code and what it printed (stdout, then stderr)."""
-    env = dict(os.environ, PATH=f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}", HOME=str(home))
-    env.pop("VIRTUAL_ENV", None)
+    """Every command block of the page run in ``root``, in page order, by the one runner every
+    page is held to (``tf5_support.run_block``: bash, the shims first on PATH, HOME a folder of
+    its own, a pull answered from the committed captures); each output and excerpt block
+    paired with the command above it, its exit code and what it printed (stdout, then
+    stderr)."""
+    import tf5_support as tf5
+
+    tf5.shims(bin_dir)
     out: list[Checked] = []
     last: tuple[str, int, str] | None = None
-    for block in blocks(page.read_text(encoding="utf-8")):
+    for block in tf5.parse(page.read_text(encoding="utf-8"))[0]:
         if block.kind == "command":
-            command = block.body.replace("\\\n", " ")
-            proc = subprocess.run(["bash", "-c", command], cwd=root, env=env, capture_output=True, text=True, timeout=300)
-            last = (command, proc.returncode, (proc.stdout + proc.stderr).rstrip("\n"))
-            continue
-        assert last is not None, (page.name, block.line)
-        out.append(Checked(block, *last))
+            code, printed = tf5.run_block(block, root, tf5.page_env(home, bin_dir, pull=block.pull))
+            last = (block.body.replace("\\\n", " "), code, printed.replace("\r\n", "\n"))
+        elif block.kind in ("output", "excerpt"):
+            assert last is not None, (page.name, block.line)
+            out.append(Checked(Block(block.kind, block.code, block.line, block.body, block.varies), *last))
     return out
 
 
 def holds_block(checked: Checked) -> bool:
     """An output block is the whole of what the command printed; an excerpt a run of whole lines
-    of it; both with the exit code the mark names."""
-    if checked.code != checked.block.code:
-        return False
-    if checked.block.kind == "output":
-        return checked.printed == checked.block.body
-    return ("\n" + checked.block.body + "\n") in ("\n" + checked.printed + "\n")
+    of it; both with the exit code the mark names, and under ``varies`` by that rule."""
+    import tf5_support as tf5
+
+    block = checked.block
+    return tf5.holds(tf5.Checked(tf5.Block(block.kind, block.line, block.body, code=block.code, varies=block.varies),
+                                 checked.command, checked.code, checked.printed))

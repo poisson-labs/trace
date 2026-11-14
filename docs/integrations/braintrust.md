@@ -9,6 +9,7 @@ model, and it keeps no prompt, input, output or error text.
 
 ## Install
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install poisson-trace
 ```
@@ -26,9 +27,10 @@ Put your key in `BRAINTRUST_API_KEY` and name the experiment where the files wou
 `braintrust:PROJECT/EXPERIMENT`: the project's name and the experiment's name as Braintrust
 shows them, the project before the first slash.
 
+<!-- skip reason="needs your own key and your own project: the words in capitals are yours to fill in" -->
 ```
 export BRAINTRUST_API_KEY=...
-poisson-trace import braintrust braintrust:my-project/my-experiment --store ./store --run old \
+poisson-trace import braintrust braintrust:PROJECT/EXPERIMENT --store ./store --run old \
   --case-from record --outcome-from score:correct --cut 0.5 --below
 ```
 
@@ -40,7 +42,7 @@ and `pull.json`, which says what was pulled, when, and the file's digest. Then i
 folder as it reads any file.
 
 - The experiment is found however many the project holds: Braintrust lists 1,000 experiments
-  an answer, and the pull asks for the next 1,000 until it has them all.
+  an answer, and the pull asks for the next 1,000 experiments until it has them all.
 - The pull reads every event of the experiment, however old. It sends nothing that narrows
   them, and it keeps asking for the next page until one comes back empty: a page shorter than
   asked is not the end.
@@ -87,6 +89,7 @@ beside an answer of the API, is refused.
 One import is one version. Each import writes one new run into a store in Prove's format;
 `poisson-trace fix-check` then compares the two runs.
 
+<!-- skip reason="the form of the command: the words in capitals are yours to fill in" -->
 ```
 poisson-trace import braintrust FILE [FILE ...] --store ROOT --run NAME
         --case-from ( record | metadata:KEY | input | none )

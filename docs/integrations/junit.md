@@ -8,6 +8,7 @@ Poisson Trace reads the reports your runner already wrote. It runs no test.
 
 ## Install
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install poisson-trace
 ```
@@ -27,9 +28,11 @@ reports of one version together, as repeats.
 One import is one version. Each import writes one new run into a store in Prove's format;
 `poisson-trace fix-check` then compares the two runs.
 
+<!-- skip reason="the form of the command: the words in capitals are yours to fill in" -->
 ```
 poisson-trace import junit FILE [FILE ...] --store ROOT --run NAME
-        [--case ( classname-name | name )] [--started ISO-8601] [--json]
+        [--case ( classname-name | name )] [--started ISO-8601]
+        [--verdicts FILE] [--json]
 ```
 
 Nothing needs declaring: a JUnit report says what failed.
@@ -49,6 +52,11 @@ Nothing needs declaring: a JUnit report says what failed.
   read as UTC, and the summary says so; one that is not a time refuses the import. With no
   timestamp, the first file's modification time is used. `--started` gives it instead, with
   its zone. The summary prints which it was.
+- `--verdicts FILE` joins outcomes given outside the reports onto the rows: a `.csv` with the
+  columns `case`, `input`, `outcome` (`pass` or `fail`), `score` and `failure_kind`, or a
+  `.jsonl` with the same keys. A row of it joins every try of the case it names. It fills
+  what the files left out, a try with no outcome above all; a verdict that differs from
+  what the files recorded refuses the import, naming the case, and nothing is written.
 - A file that is not XML, whose root is another element, that holds no test case or a test
   case inside another, whose declaration names an encoding the reader does not take, or that
   declares a document type is refused. No runner writes a document type, and a report that
@@ -146,7 +154,7 @@ no significant difference  the gap could be chance
 ```
 
 These are the same two runs that read *different* (p = 0.036) on the tables page, where every
-stored run is a row: 32 at each of two temperatures. The suite reads four of them, at one
+stored run is a row: 32 runs at each of two temperatures. The suite reads four of them, at one
 temperature, and at that size the difference is not there to see. The line says so, and how
 small a change it could have seen.
 

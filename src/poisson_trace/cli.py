@@ -28,7 +28,7 @@ from typing import Any
 from poisson_trace import api, commands, look
 
 _NAMED = (
-    "init, runs, name, where, compare, fix-check, changes, handover, import, doctor, ui and report"
+    "init, runs, name, where, compare, fix-check, changes, import, doctor, handover, ui and report"
 )
 # the column the top help's words start at, as main laid it out before the bare command's two
 # options joined (TF19-A3)
@@ -58,10 +58,10 @@ class _Refusal(look.Refused):
 
 
 _ABOUT = """\
-Poisson Trace reads the runs Prove has stored and says where in the workflow their episodes
-died, and whether a change made them fail less. A store is the folder Prove writes its runs
-into; a run is one stored sweep, and its episodes are its rows. Every number prints with what
-the runs could not have detected.
+Poisson Trace reads the runs Prove has stored and the results ten other tools wrote, and says
+where in the workflow their episodes died, and whether a change made them fail less. A store is
+the folder Prove writes its runs into; a run is one stored sweep, and its episodes are its rows.
+Every number prints with what the runs could not have detected.
 
 A run is named by a name you gave it with poisson-trace name; by the name it has from its
 manifest, the record Prove keeps of it (its target, the day it started in UTC and a letter, such
@@ -69,11 +69,12 @@ as "tau2-airline 2026-09-15 a"); by latest or previous, the newest complete runs
 latest:TARGET and previous:TARGET, a target's ("latest:tau2-airline"); by its number in the
 runs listing ("#3"); or by its full id.
 
-Results another tool wrote (DeepEval, Ragas, a table of results, JUnit reports) are read in
-with poisson-trace import. where, compare, fix-check and changes also take a folder in a run's
-place, when no stored run answers to the word: a run Prove stored, a store of one run, or one
-tool's result files, read with the flags poisson-trace import takes for that tool. Nothing is
-written; the folder's name is the run's name in the report.
+Results another tool wrote (DeepEval, Ragas, a table of results, JUnit reports, promptfoo,
+Inspect, OpenAI Evals, LangSmith, Braintrust, Weave) are read in with poisson-trace import.
+where, compare, fix-check and changes also take a folder in a run's place, when no stored run
+answers to the word: a run Prove stored, a store of one run, or one tool's result files, read
+with the flags poisson-trace import takes for that tool. Nothing is written; the folder's name
+is the run's name in the report.
 
 To begin, run poisson-trace init: it finds the results already here, asks what counts as a
 failure and writes trace.toml, from which every verb then takes its store and its failures.
@@ -116,9 +117,9 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
         formatter_class=lambda prog: look._HelpFormatter(prog, max_help_position=_HELP_COLUMN),
         description=_ABOUT,
         epilog=_example(
-            "poisson-trace runs --store proofload-runs --event unsolved",
-            "poisson-trace where previous --store proofload-runs --event unsolved --at 20",
-            "poisson-trace fix-check previous latest --store proofload-runs --event unsolved \\",
+            "poisson-trace runs --store prove-runs --event unsolved",
+            "poisson-trace where previous --store prove-runs --event unsolved --at 20",
+            "poisson-trace fix-check previous latest --store prove-runs --event unsolved \\",
             "    --inputs all --max-mde 0.2",
         ),
     )
@@ -156,7 +157,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "it started (UTC) and its status. The newest 50 complete runs are listed. A run's\n"
             'number, such as "#1", names it to every verb.'
         ),
-        epilog=_example("poisson-trace runs --store proofload-runs --event unsolved"),
+        epilog=_example("poisson-trace runs --store prove-runs --event unsolved"),
     )
     runs.add_argument("--store", metavar="ROOT", help=_STORE_HELP)
     runs.add_argument(
@@ -183,8 +184,8 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "has from its manifest again. --list shows the names of yours."
         ),
         epilog=_example(
-            'poisson-trace name previous "tau2 old re-run" --store proofload-runs',
-            "poisson-trace name --list --store proofload-runs",
+            'poisson-trace name previous "tau2 old re-run" --store prove-runs',
+            "poisson-trace name --list --store prove-runs",
         ),
     )
     name.add_argument("run", nargs="?", metavar="RUN", help=f"the run to name, {_RUN_HELP}")
@@ -259,7 +260,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "censored."
         ),
         epilog=_example(
-            "poisson-trace where previous --store proofload-runs --event unsolved --at 20",
+            "poisson-trace where previous --store prove-runs --event unsolved --at 20",
         ),
     )
     where.add_argument("run", metavar="RUN", help=f"the run, {_RUN_OR_FOLDER}")
@@ -298,7 +299,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "largest detectable hazard ratio you accept, and it has no default."
         ),
         epilog=_example(
-            'poisson-trace compare "#3" previous --store proofload-runs --event unsolved \\',
+            'poisson-trace compare "#3" previous --store prove-runs --event unsolved \\',
             "    --max-mde-hr 1.5",
         ),
     )
@@ -352,7 +353,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "and neither has --max-mde."
         ),
         epilog=_example(
-            "poisson-trace fix-check previous latest --store proofload-runs --event unsolved \\",
+            "poisson-trace fix-check previous latest --store prove-runs --event unsolved \\",
             "    --inputs all --max-mde 0.2",
         ),
     )
@@ -420,7 +421,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             "changes this design could not have flagged. An input is one config cell."
         ),
         epilog=_example(
-            "poisson-trace changes previous latest --store proofload-runs --event unsolved",
+            "poisson-trace changes previous latest --store prove-runs --event unsolved",
         ),
     )
     changes.add_argument("a", metavar="A", help=f"the first run, {_RUN_OR_FOLDER}")
@@ -602,7 +603,7 @@ def _init_parser(verbs: Any) -> look.Parser:
         ),
         epilog=_example(
             "poisson-trace init",
-            "poisson-trace init --yes --store proofload-runs --event unsolved",
+            "poisson-trace init --yes --store prove-runs --event unsolved",
             "poisson-trace init --add-store imported",
             "poisson-trace init --agent",
         ),

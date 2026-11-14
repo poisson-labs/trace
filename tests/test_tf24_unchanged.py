@@ -69,7 +69,14 @@ def test_tf24_66_every_case_is_pinned_on_main() -> None:
 @pytest.mark.parametrize("label", [pytest.param(k, marks=pytest.mark.slow) if k in SLOW else k for k in HELD])
 def test_tf24_66_as_main_prints_it(tmp_path: Path, label: str) -> None:
     place, kind, steps = CORPUS[label]
-    got = [[code, digest(out), digest(err)] for code, out, err in ran_case(tmp_path, place, kind, steps)]
+    from tf5_pins import as_main_printed
+
+    # the docs pair (TF5) renamed the helps' example store and made the top help's list of tools whole;
+    # TF5-3 holds those two changes, and this goes on holding every other byte of each help
+    # the docs pair (TF5) also lists the bare command's verbs in the top help's order (ruled 2026-11-13, DOC-33);
+    # TF5-3 holds that, and this goes on holding every other byte of the refusal
+    got = [[code, digest(as_main_printed(label, out)), digest(as_main_printed(label, err) if not label.startswith("help") else err)]
+           for code, out, err in ran_case(tmp_path, place, kind, steps)]
     assert got == PINNED["piped"][label], label
 
 

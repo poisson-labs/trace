@@ -8,6 +8,7 @@ Poisson Trace reads the table as it is. It runs nothing and calls no model.
 
 ## Install
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install poisson-trace
 ```
@@ -28,12 +29,13 @@ the smallest design there is.
 One import is one version. Each import reads one result column and writes one new run into a
 store in Prove's format; `poisson-trace fix-check` then compares the two runs.
 
+<!-- skip reason="the form of the command: the words in capitals are yours to fill in" -->
 ```
 poisson-trace import table FILE [FILE ...] --store ROOT --run NAME
         --case-column COLUMN
         ( --outcome-column COLUMN --failed VALUE [--failed VALUE ...]
         | --score-column COLUMN --cut X ( --below | --above ) )
-        [--started ISO-8601] [--json]
+        [--started ISO-8601] [--verdicts FILE] [--json]
 ```
 
 Nothing has a default but the start time. You say which column identifies a case, which column
@@ -46,11 +48,11 @@ gives the result, and what counts as a failure.
   `missed`; any other cell is `met`. Equal means the same text: `FAIL` is not `fail`, and
   neither is ` fail` with a space. A true, false or number in a JSON or Parquet table is
   compared as JSON writes it, so `--failed false` or `--failed 1`; but a column of whole numbers
-  that pandas saved with a missing value holds decimals, and its 1 is `1.0`. The summary counts
-  the rows each `--failed` value matched, so a value that matched nothing shows as 0.
+  that pandas saved with a missing value holds decimals, and its `1` is `1.0`. The summary counts
+  the rows each `--failed` value matched, so a value that matched nothing shows as `0`.
 - `--score-column` reads the result as a number at the cut you declare, with exactly one side:
   `--cut 0.5 --below` counts a score under 0.5 as missed. A score equal to the cut met it.
-  A cell that holds no number has no outcome; it is never read as 0.
+  A cell that holds no number has no outcome; it is never read as a score of 0.
 - An empty cell (empty text, `null`, a key a JSON row leaves out) has no outcome. The summary
   counts it, and Trace leaves it out and counts it in the header of its report.
 - Giving neither form, both, or one form's flags beside the other's is a wrong command line
@@ -64,6 +66,11 @@ gives the result, and what counts as a failure.
   the file names twice.
 - `--started` is when that version's run started, with its zone. Without it the first
   file's modification time is used, and the summary says which of the two it was.
+- `--verdicts FILE` joins outcomes given outside the table onto the rows: a `.csv` with the
+  columns `case`, `input`, `outcome` (`pass` or `fail`), `score` and `failure_kind`, or a
+  `.jsonl` with the same keys. A row of it joins every try of the case it names. It fills
+  what the files left out, a try with no outcome above all; a verdict that differs from
+  what the files recorded refuses the import, naming the case, and nothing is written.
 - `--store` may be left out when a `trace.toml` in the current folder (or the file `--config
   PATH` names) names a store: the import writes into it. `--store NAME` takes the store that
   file names so.

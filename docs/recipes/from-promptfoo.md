@@ -8,6 +8,7 @@ starts from the file promptfoo already wrote and runs no prompt.
 
 Save the evaluation as JSON, both prompts in one file:
 
+<!-- skip reason="runs promptfoo, which Trace never does" -->
 ```
 promptfoo eval -o results.json
 ```
@@ -80,6 +81,8 @@ too small to tell  too few tries to see a drop of any size
 Two failures gone out of four tests run once is no evidence either way. The report's Guidance
 section says how many repeats of these tests would be: run the evaluation that many times, each
 run to a file of its own, and give each import a version's files together.
+
+The [promptfoo page](../integrations/promptfoo.md) has every flag and what the reader refuses.
 
 ## What this does not do
 

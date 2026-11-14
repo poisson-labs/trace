@@ -9,6 +9,7 @@ and it keeps no prompt, input, output or error text.
 
 ## Install
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install poisson-trace
 ```
@@ -26,9 +27,10 @@ Put your W&B key in `WANDB_API_KEY` and name the evaluation where the files woul
 `weave:ENTITY/PROJECT/EVALUATION`: the entity and the project as W&B shows them, then the
 evaluation.
 
+<!-- skip reason="needs your own key and your own project: the words in capitals are yours to fill in" -->
 ```
 export WANDB_API_KEY=...
-poisson-trace import weave weave:my-team/my-project/my-evaluation --store ./store --run old \
+poisson-trace import weave weave:ENTITY/PROJECT/EVALUATION --store ./store --run old \
   --case-from example --outcome-from score:correct --cut 0.5 --below
 ```
 
@@ -112,6 +114,7 @@ of the service, is refused.
 One import is one version. Each import writes one new run into a store in Prove's format;
 `poisson-trace fix-check` then compares the two runs.
 
+<!-- skip reason="the form of the command: the words in capitals are yours to fill in" -->
 ```
 poisson-trace import weave FILE [FILE ...] --store ROOT --run NAME
         --case-from ( example | example:KEY | input | none )

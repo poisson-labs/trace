@@ -88,6 +88,37 @@ poisson-trace where old --store ./store --event missed
 ok  3 of 9 tries failed; each one's last step was another kind of step (not necessarily the cause)
 ```
 
+## 5. Or pull it with your key
+
+With `BRAINTRUST_API_KEY` set, an address goes where the file went: `braintrust:`, the project's name, a slash and the experiment's name. The pull saves a copy of what
+Braintrust returned under the store, in `.poisson/raw/`, with the input and output text left out,
+and reads that copy as it reads a file. On this page the pull is answered from Braintrust's own
+answers, saved with the example files, so it needs no key and no network. With your key the
+same command asks Braintrust.
+
+<!-- command pull -->
+```
+poisson-trace import braintrust braintrust:trace-fixture/slice-baseline \
+  --store ./pulled --run pulled-old --case-from input --outcome-from score:exact --cut 0.5 --below
+```
+
+<!-- excerpt exit=0 -->
+```
+ok  wrote run pulled-old to ./pulled: 10 rows, 10 cases, 1 repeat each; 6 passed, 3 failed, 1 with no outcome
+```
+
+The pulled run carries its steps, so `where` reads it:
+
+<!-- command -->
+```
+poisson-trace where pulled-old --store ./pulled --event missed
+```
+
+<!-- excerpt exit=0 -->
+```
+ok  3 of 9 tries failed; each one's last step was another kind of step (not necessarily the cause)
+```
+
 ## What this does not do
 
 - It does not run Braintrust, your agent or a model; it reads the experiments Braintrust holds.

@@ -7,6 +7,7 @@ Poisson Trace reads the logs Inspect already wrote. It runs no task and calls no
 
 ## Install
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install poisson-trace
 ```
@@ -19,6 +20,7 @@ Inspect's default log is a `.eval` file: a zip whose members are Zstandard-compr
 Python's own `zipfile` cannot read before Python 3.14. Reading one needs the `zstandard`
 package, which this extra installs:
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install 'poisson-trace[inspect]'
 ```
@@ -42,10 +44,11 @@ than once per version: one run per sample is the smallest design there is. Run w
 One import is one version. Each import writes one new run into a store in Prove's format;
 `poisson-trace fix-check` then compares the two runs.
 
+<!-- skip reason="the form of the command: the words in capitals are yours to fill in" -->
 ```
 poisson-trace import inspect FILE [FILE ...] --store ROOT --run NAME
         [--scorer NAME] [--outcome ( correct | score --cut X ( --below | --above ) | value --failed V [--failed V ...] )]
-        [--started ISO-8601] [--json]
+        [--started ISO-8601] [--verdicts FILE] [--json]
 ```
 
 - A sample is one row; its case is its `id`. Its epochs are its repeats, in epoch order,
@@ -63,6 +66,11 @@ poisson-trace import inspect FILE [FILE ...] --store ROOT --run NAME
   kept.
 - The start is the log's `eval.created`; `--started` gives it instead, with its zone. The
   model and the task are recorded with what was declared.
+- `--verdicts FILE` joins outcomes given outside Inspect onto the rows: a `.csv` with the
+  columns `case`, `input`, `outcome` (`pass` or `fail`), `score` and `failure_kind`, or a
+  `.jsonl` with the same keys. A row of it joins every try of the case it names. It fills
+  what the files left out, a try with no outcome above all; a verdict that differs from
+  what the files recorded refuses the import, naming the case, and nothing is written.
 - The file is a `.eval` or a `.json` log, told by its extension. A folder holding
   `header.json` beside `samples/`, as a `.eval` unpacked, is read as that log.
 

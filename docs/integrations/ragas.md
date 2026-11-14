@@ -7,6 +7,7 @@ Poisson Trace reads the score table you saved. It runs no metric and calls no mo
 
 ## Install
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install poisson-trace
 ```
@@ -41,12 +42,13 @@ a random usage id to a file, `uuid.json`, in its folder under the user data dire
 One import is one version. Each import reads one score column and writes one new run into a
 store in Prove's format; `poisson-trace fix-check` then compares the two runs.
 
+<!-- skip reason="the form of the command: the words in capitals are yours to fill in" -->
 ```
 poisson-trace import ragas FILE [FILE ...] --store ROOT --run NAME
         --metric COLUMN
         --cut X ( --below | --above )
         --case-column COLUMN
-        [--started ISO-8601] [--json]
+        [--started ISO-8601] [--verdicts FILE] [--json]
 ```
 
 Nothing has a default but the start time. You say which column holds the score, where the
@@ -56,14 +58,14 @@ cut is and which column identifies a case.
   extension; `.gz` is read on the first three. Any other extension is refused, and so is a
   file that is not what its extension says.
 - `--metric` is the score column. A column the file lacks is refused, and the refusal lists
-  the file's columns. A number outside 0 to 1 is kept as it is: the cut decides.
+  the file's columns. A score below 0 or above 1 is kept as it is: the cut decides.
 - `--cut` takes a number and exactly one side: `--cut 0.5 --below` counts a score under 0.5
   as missed, `--cut 0.3 --above` counts a score over 0.3 as missed. A score equal to the cut
   met it. The outcome is the word `met` or the word `missed`. A Ragas table records no
   threshold, so there is none to fall back on.
 - A cell that is empty, `NaN`, `null` or not a number has no score. Its row has no outcome,
   the summary counts it as `no score`, and Trace leaves it out and counts it in the header
-  of its report. A missing score is never read as 0.
+  of its report. A missing score is never read as a score of 0.
 - `--case-column` is the column that identifies a case. Rows that share a value are repeats
   of that case, in the order read, and several files given to one import are read as one
   version, in the order given. A row with no value there refuses the whole import, and the
@@ -71,6 +73,11 @@ cut is and which column identifies a case.
   cases.
 - `--started` is when that version's run started, with its zone. Without it the first
   file's modification time is used, and the summary says which of the two it was.
+- `--verdicts FILE` joins outcomes given outside Ragas onto the rows: a `.csv` with the
+  columns `case`, `input`, `outcome` (`pass` or `fail`), `score` and `failure_kind`, or a
+  `.jsonl` with the same keys. A row of it joins every try of the case it names. It fills
+  what the files left out, a try with no outcome above all; a verdict that differs from
+  what the files recorded refuses the import, naming the case, and nothing is written.
 - `--store` may be left out when a `trace.toml` in the current folder (or the file `--config
   PATH` names) names a store: the import writes into it. `--store NAME` takes the store that
   file names so.
@@ -84,8 +91,8 @@ times and two are asked twice
 (`huggingface.co/datasets/R0bfried/RAGAS-BASE-llama-3-2-1B-eval2` and
 `…RAGAS-RAFT-llama-3-2-1B-eval2`). Those sets carry no licence, so the files hold a hash of
 each question and the scores, and no text; `make.py` beside them is the recipe. The Ragas
-version that scored them is not stated. Over the rows that have a score, mean faithfulness
-is 0.550 for the base model and 0.566 for the fine-tuned one.
+version that scored them is not stated. Over the rows that have a score, the mean faithfulness
+score is 0.550 for the base model, and the fine-tuned one's mean is 0.566.
 
 The commands run from the root of a clone and write the store to `./store`. The start times
 are when each set was last changed where it is published.
@@ -261,13 +268,13 @@ proportional change on every input, 80% power, α = 0.05, continuity-corrected n
 The report goes on with a note on its guidance, the inputs that changed (no question has
 enough runs to be flagged) and its block *What this cannot say*, left out here for length.
 
-Mean faithfulness rose from 0.550 to 0.566. The run could not have detected a drop in the
+The mean faithfulness score rose from 0.550 to 0.566. The run could not have detected a drop in the
 share of misses smaller than 15.9 points, and 10 was asked for, so it cannot say whether
 faithfulness moved. It says what would: each question three times per version, or 356
 questions.
 
 The Consistency block prints no κ because only three of the 137 questions compared were
-asked more than once on a version: on the other 134 the only pairs of runs set the base
+asked more than once on a version: on the other 134 questions the only pairs of runs set the base
 model beside the fine-tuned one, not a model beside itself.
 
 The same two files at the same cut, on the other two scores:
@@ -359,7 +366,7 @@ difference: -11.3 points, new minus old (-22.6 to -2.6; Mantel-Haenszel weights;
 ```
 
 On both, the fine-tuned model missed the cut less often: 107 rows of 150, then 87, on answer
-correctness, and 49 of 150, then 32, on answer relevancy. Three scores at one cut are three
+correctness, and 49 rows of 150, then 32, on answer relevancy. Three scores at one cut are three
 tests. The cut, 0.5, was written down before any of them was run.
 
 These are two stored tables. Whether the two models were scored on the same day, with the
@@ -433,8 +440,8 @@ difference: -0.1 points, new minus old (-1.6 to +1.1; Mantel-Haenszel weights; r
 On the 670 cases left the report reads *no significant difference*: 339 misses, then 338,
 a 0.15-point drop, in a design that could have detected a drop of 1.7 points. The header says
 that 1,130 cases were left out and why, and they are the cases where the causal memory
-returned nothing. Read that line before the verdict. The two means do not show it: 0.453
-over the 670 rows Ragas scored, against 0.458 over 1,800.
+returned nothing. Read that line before the verdict. The two means do not show it: a mean
+of 0.453 over the 670 rows Ragas scored, against a mean of 0.458 over 1,800 rows.
 
 ## From `poisson-trace init`
 

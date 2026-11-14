@@ -7,6 +7,7 @@ Poisson Trace reads the records `oaieval` already wrote. It runs no eval and cal
 
 ## Install
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install poisson-trace
 ```
@@ -17,6 +18,7 @@ Nothing here imports OpenAI Evals. Tested on records written by evals 3.0.1.post
 
 Ask `oaieval` for its record, once per version:
 
+<!-- skip reason="runs oaieval, which Trace never does" -->
 ```
 oaieval my-completion-fn my-eval --record_path old.jsonl
 ```
@@ -30,9 +32,10 @@ events of one sample are read as its repeats.
 One import is one version. Each import writes one new run into a store in Prove's format;
 `poisson-trace fix-check` then compares the two runs.
 
+<!-- skip reason="the form of the command: the words in capitals are yours to fill in" -->
 ```
 poisson-trace import openai-evals FILE [FILE ...] --store ROOT --run NAME
-        [--started ISO-8601] [--json]
+        [--started ISO-8601] [--verdicts FILE] [--json]
 ```
 
 Nothing needs declaring: the record says what was right.
@@ -46,6 +49,13 @@ Nothing needs declaring: the record says what was right.
   not JSON or a `match` whose `correct` is not true or false, naming the file and the line.
 - The start is the spec's `created_at`. `oaieval` writes it with no zone, so it is read as
   UTC, and the summary says so. `--started` gives it instead, with its zone.
+- `--verdicts FILE` joins outcomes given outside the record onto the rows: a `.csv` with the
+  columns `case`, `input`, `outcome` (`pass` or `fail`), `score` and `failure_kind`, or a
+  `.jsonl` with the same keys. A row of it joins every try of the case it names. It fills
+  what the files left out, a try with no outcome above all; a verdict that differs from
+  what the files recorded refuses the import, naming the case, and nothing is written.
+- The record is the file you give the import. `oaieval` spells its own flag `--record_path`;
+  the import has no `--record` flag.
 - The eval's name and its completion functions are recorded with what was declared.
 
 ## The worked example

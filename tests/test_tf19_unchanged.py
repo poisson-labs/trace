@@ -49,7 +49,14 @@ def test_tf19_10_every_case_is_pinned_on_main() -> None:
 @pytest.mark.parametrize("label", [pytest.param(k, marks=pytest.mark.slow) if k in SLOW else k for k in CORPUS])
 def test_tf19_10_as_main_prints_it(tmp_path: Path, label: str) -> None:
     place, kind, steps = CORPUS[label]
-    got = [[code, digest(out), digest(err)] for code, out, err in _ran(tmp_path, place, kind, steps)]
+    from tf5_pins import as_main_printed
+
+    # the docs pair (TF5) renamed the helps' example store and made the top help's list of tools whole;
+    # TF5-3 holds those two changes, and this goes on holding every other byte of each help
+    # the docs pair (TF5) also lists the bare command's verbs in the top help's order (ruled 2026-11-13, DOC-33);
+    # TF5-3 holds that, and this goes on holding every other byte of the refusal
+    got = [[code, digest(as_main_printed(label, out)), digest(as_main_printed(label, err) if not label.startswith("help") else err)]
+           for code, out, err in _ran(tmp_path, place, kind, steps)]
     assert got == PINNED["piped"][label], label
 
 
@@ -83,7 +90,12 @@ def test_tf19_11_the_top_help_gains_the_two_options_and_nothing_else(tmp_path: P
     other option's words as main prints them (the column the helps start at may move, as
     argparse sets it by the longest option); the description and everything from ``verbs:`` on
     are main's byte for byte."""
+    from tf5_pins import as_main_printed
+
     (code, out, err), = _ran(tmp_path, *CHANGED["help: top"])
+    # the docs pair (TF5) renamed the helps' example store and made the top help's list of tools whole;
+    # TF5-3 holds those two changes, and this goes on holding every other byte of each help
+    out = as_main_printed("help: top", out)
     (main_code, main_out, main_err), = PINNED["changed"]["help: top"]
     assert (code, err) == (main_code, main_err)
     usage, description, options, rest = _help_parts(out)
@@ -104,7 +116,10 @@ def test_tf19_11_the_bare_options_on_a_pipe_are_the_no_verb_refusal(tmp_path: Pa
     assert code == 2 == none[0][0]
     assert out == ""
     assert err == f"{NO_VERB}\n  next: poisson-trace --help\n"
-    assert digest(err) == none[0][2]
+    from tf5_pins import as_main_printed
+
+    # main's refusal but for the order of its verbs, which the docs pair (TF5) made the top help's (ruled 2026-11-13, DOC-33)
+    assert digest(as_main_printed("verb: none", err)) == none[0][2]
 
 
 # ---------- TF19-12: the pages ----------

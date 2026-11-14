@@ -9,6 +9,7 @@ it keeps no prompt, input, output or error text.
 
 ## Install
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install poisson-trace
 ```
@@ -26,9 +27,10 @@ There are three ways, and all three read to the same rows.
 Put your key in `LANGSMITH_API_KEY` and name the project or experiment where the files would
 go, as `langsmith:NAME`:
 
+<!-- skip reason="needs your own key and your own project: the words in capitals are yours to fill in" -->
 ```
 export LANGSMITH_API_KEY=...
-poisson-trace import langsmith langsmith:my-experiment --store ./store --run old \
+poisson-trace import langsmith langsmith:NAME --store ./store --run old \
   --case-from example --outcome-from feedback:correct --cut 0.5 --below
 ```
 
@@ -63,6 +65,7 @@ file's digest. Then it reads that folder as it reads any file.
 
 Give `--full`, which is what carries each run's inputs, outputs, error, tokens and metadata:
 
+<!-- skip reason="runs the langsmith command, which Trace never does" -->
 ```
 langsmith runs export old.jsonl --project my-experiment --full
 langsmith traces export ./old-traces --project my-experiment --full
@@ -90,6 +93,7 @@ giving the same run twice, or the CSV beside a run export, is refused.
 One import is one version. Each import writes one new run into a store in Prove's format;
 `poisson-trace fix-check` then compares the two runs.
 
+<!-- skip reason="the form of the command: the words in capitals are yours to fill in" -->
 ```
 poisson-trace import langsmith FILE [FILE ...] --store ROOT --run NAME
         --case-from ( example | metadata:KEY | input | none )

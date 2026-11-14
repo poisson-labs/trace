@@ -8,6 +8,7 @@ model.
 
 ## Install
 
+<!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
 pip install poisson-trace
 ```
@@ -18,6 +19,7 @@ Nothing here imports promptfoo. Tested on files written by promptfoo 0.120.19.
 
 Ask promptfoo for its results as JSON:
 
+<!-- skip reason="runs promptfoo, which Trace never does" -->
 ```
 promptfoo eval -o results.json
 ```
@@ -34,16 +36,17 @@ and give one import a version's files together: its results are read as repeats.
 One import is one version: one prompt, from one provider. Each import writes one new run into
 a store in Prove's format; `poisson-trace fix-check` then compares the two runs.
 
+<!-- skip reason="the form of the command: the words in capitals are yours to fill in" -->
 ```
 poisson-trace import promptfoo FILE [FILE ...] --store ROOT --run NAME
         [--prompt ( LABEL | N )] [--provider ID]
         --case ( var:NAME | test )
         [--outcome ( success | score --cut X ( --below | --above ) )]
-        [--started ISO-8601] [--json]
+        [--started ISO-8601] [--verdicts FILE] [--json]
 ```
 
-- `--prompt` names the version by its label, or by its number counting from 1 in the order
-  the file holds the prompts. A file with one prompt needs none; a file with several and no
+- `--prompt` names the version by its label, or by its number in the order the file holds
+  the prompts, the first being `1`. A file with one prompt needs none; a file with several and no
   `--prompt` is refused, listing them. When promptfoo is given no label, it makes one from the
   prompt itself, so the label printed may be your prompt's template; the filled-in prompts are
   kept nowhere. `--provider` names the provider by its id when the file has more than one.
@@ -59,6 +62,11 @@ poisson-trace import promptfoo FILE [FILE ...] --store ROOT --run NAME
   limit, a context overflow, else a crash). The text is not kept.
 - The start is the JSON file's `timestamp`. A `.jsonl` file carries none, so it is the file's
   modification time unless `--started` gives it, with its zone. The summary prints which.
+- `--verdicts FILE` joins outcomes given outside promptfoo onto the rows: a `.csv` with the
+  columns `case`, `input`, `outcome` (`pass` or `fail`), `score` and `failure_kind`, or a
+  `.jsonl` with the same keys. A row of it joins every try of the case it names. It fills
+  what the files left out, a try with no outcome above all; a verdict that differs from
+  what the files recorded refuses the import, naming the case, and nothing is written.
 - The summary counts the file's results per prompt and per provider, so a version picked by
   mistake shows.
 
