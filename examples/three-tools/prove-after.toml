@@ -1,0 +1,18 @@
+# What Prove runs in this example: every task in tasks/, many times.
+# The two spec files are the same but for the target, the version of the agent.
+target = "prove_rollout:after"
+target_id = "agent"
+t_unit = "steps"
+# The fewest tries of each task that let these sweeps see a 20-point change in a failure share.
+replicates = 260
+
+# One value for each committed task: depth-d3-01 is the first line of tasks/depth-d3.jsonl.
+[axes.task]
+type = "categorical"
+values = ["depth-d1-01", "depth-d1-02", "depth-d1-03", "depth-d1-04", "depth-d1-05", "depth-d1-06", "depth-d1-07", "depth-d1-08", "depth-d1-09", "depth-d1-10", "depth-d3-01", "depth-d3-02", "depth-d3-03", "depth-d3-04", "depth-d3-05", "depth-d3-06", "depth-d3-07", "depth-d3-08", "depth-d3-09", "depth-d3-10"]
+
+# Every label the tasks' checker can give. All but "passed" count as failures.
+[declare]
+outcomes = ["verifier_error", "replay_mismatch", "api_error", "wall_timeout", "malformed_call", "turn_limit", "overshoot", "wrong_state", "collateral_mutation", "passed"]
+failures = ["verifier_error", "replay_mismatch", "api_error", "wall_timeout", "malformed_call", "turn_limit", "overshoot", "wrong_state", "collateral_mutation"]
+successes = ["passed"]

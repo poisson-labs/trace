@@ -19,6 +19,11 @@ python3.11 -m venv .venv311 && .venv311/bin/pip install -e '.[dev]'
 .venv/bin/poisson-trace --version
 ```
 
+The development install also brings Poisson Tasks, which one recipe the suite runs needs
+(`docs/recipes/with-tasks-and-prove.md`). Tasks needs a tokenizer file it does not ship. Fetch
+it once in each environment, or that recipe's tests fail at its first command:
+`.venv/bin/poisson-tasks doctor --fix --yes`, and the same with `.venv311`.
+
 The last line prints the version of Trace, of Prove and of Python. Prove is the
 `poisson-prove` package, which Trace reads stored runs through. `pyproject.toml` pins it to
 one exact version, and `pip` brings it.

@@ -74,7 +74,7 @@ def test_tf5_10_the_page_is_written(page: Path) -> None:
 
 
 def test_tf5_10_the_pages_are_these_and_no_recipe_that_waits_is_written() -> None:
-    assert len(RECIPES) == 15 and len(INTEGRATIONS) == 10 and len(DOCS_SET) == 7
+    assert len(RECIPES) == 16 and len(INTEGRATIONS) == 10 and len(DOCS_SET) == 7
     written = {p.name for p in (DOCS / "recipes").glob("*.md")}
     assert not written & set(WAITING), written & set(WAITING)
     assert not (DOCS / "pull-request-check.md").exists(), "the pull-request check's page waits with the check"

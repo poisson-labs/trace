@@ -10,10 +10,10 @@ from pathlib import Path
 TESTS = Path(__file__).resolve().parent
 
 FROZEN = {
-    "tf5_support.py": "5c99b4d6bdc4de1683b626d4f926ba666ddce6945d26f19c76e53b28e477df5d",
+    "tf5_support.py": "a8a8138ea087c38b61d3694f51eea2afe8c9b9db4fdcdd2a39e4a4b78631d1e6",
     "tf5_pins.py": "de21957269747c522c62d068d66e61245c3eb6037e93bf3cc238a47a4249a8a4",
     "test_tf5_unchanged.py": "b5a0980c1255065716138baf8f47e25e2e83344a83f35118fc716051332016b6",
-    "test_tf5_blocks.py": "f85a12d5e5d1c0f9b8808ecab138a92b572b3427d6e7377408f67e745076afa5",
+    "test_tf5_blocks.py": "5ba9df36a8e7049a2dc442af51a35d69f3d00eaec9360747d40d8cd4217b25c8",
     "test_tf5_readers.py": "f216740c2ee2c2879ed280d0805f237f4e557380b6e04d9e451a8a7e70022a80",
     "test_tf5_stale.py": "c54f706c1956a2c2f46dab7867f3076f90ab7b7c0f3fc2248d548dc079cf3e2d",
     "test_tf5_readme.py": "d665ddb2d71fd2e13fcc76402b60f55d6861765882715d1baecf73dc09769cf6",

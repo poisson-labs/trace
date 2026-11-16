@@ -7,7 +7,7 @@ What Session B writes, in one place (each test file's opening says which invaria
 the pages
     ``README.md``; ``CONTRIBUTING.md``; ``CHANGELOG.md``; under ``docs/``: ``commands.md``,
     ``config.md``, ``how-it-decides.md``, ``handover.md``, ``app.md``, ``python.md``,
-    ``setup-with-your-agent.md``; the ten pages of ``docs/integrations/``; and the fifteen
+    ``setup-with-your-agent.md``; the ten pages of ``docs/integrations/``; and the sixteen
     recipes of ``docs/recipes/`` (``RECIPES``). The two standards (``docs/cli-look.md``,
     ``docs/repo-hygiene.md``) are not Trace's to change.
 ``tools/docs_check.py``
@@ -25,9 +25,11 @@ already use keep their meaning; the rest are new here.
 
 ``<!-- command -->``
     The block is run with bash, in a folder laid out as a clone (the committed fixtures under
-    ``tests/fixtures/``, an empty ``docs/figures/``), with a home folder of its own, no key in
-    the environment, and stdin, stdout and stderr not a terminal. Blocks of one page run in
-    page order in one folder.
+    ``tests/fixtures/``, the committed examples under ``examples/``, an empty ``docs/figures/``),
+    with a home folder of its own, no key in the environment, and stdin, stdout and stderr not
+    a terminal; the commands of the environment under test (``poisson-prove``,
+    ``poisson-tasks``, ``pytest``) come first on PATH after Trace's own. Blocks of one page run
+    in page order in one folder.
 ``<!-- command pull -->``
     The same, with LangSmith, Braintrust and Weave answered from the committed captures (each
     request with the response that service gave to it), a planted key for each, and no network.
@@ -70,6 +72,8 @@ from typing import Any
 TESTS = Path(__file__).resolve().parent
 REPO = TESTS.parent
 FIXTURES = TESTS / "fixtures"
+#: The examples a recipe runs on (the three-tools recipe's, TF20), copied beside the fixtures.
+EXAMPLES = REPO / "examples"
 DOCS = REPO / "docs"
 README = REPO / "README.md"
 CHANGELOG = REPO / "CHANGELOG.md"
@@ -104,7 +108,7 @@ ADDRESS = {
 }
 
 #: The recipes of 0.1.0 (spec section 7.1, less the two that wait with the pull-request check
-#: and the upload, and the three-tools recipe, which is TF20's): the page and the source whose
+#: and the upload; and section 17.6's three-tools recipe, TF20's): the page and the source whose
 #: first result it shows (None: the recipe is about something else).
 RECIPES: dict[str, str | None] = {
     "first-look.md": "prove",
@@ -122,6 +126,7 @@ RECIPES: dict[str, str | None] = {
     "a-page-to-send.md": None,
     "into-the-product.md": None,
     "what-it-cannot-say.md": None,
+    "with-tasks-and-prove.md": None,
 }
 #: The recipes that wait: the page must not exist until its feature does.
 WAITING = ("on-a-pull-request.md", "sending-results.md")
@@ -405,16 +410,19 @@ def shims(folder: Path) -> Path:
 
 
 def page_root(tmp: Path) -> Path:
-    """A folder laid out as a clone's root for a page's commands: the committed fixtures,
-    copied, and an empty ``docs/figures/``, so nothing a page runs can touch the repository."""
+    """A folder laid out as a clone's root for a page's commands: the committed fixtures and
+    the committed examples, copied, and an empty ``docs/figures/``, so nothing a page runs can
+    touch the repository."""
     root = tmp / "clone"
-    shutil.copytree(FIXTURES, root / "tests" / "fixtures", ignore=shutil.ignore_patterns("tf5", "tf9", "tf18", "tf19", "tf24", "tf25", "tf26"))
+    shutil.copytree(FIXTURES, root / "tests" / "fixtures", ignore=shutil.ignore_patterns("tf5", "tf9", "tf18", "tf19", "tf20", "tf24", "tf25", "tf26"))
+    if EXAMPLES.is_dir():
+        shutil.copytree(EXAMPLES, root / "examples", ignore=shutil.ignore_patterns("__pycache__"))
     (root / "docs" / "figures").mkdir(parents=True)
     return root
 
 
 def page_env(home: Path, bin_dir: Path, *, pull: bool) -> dict[str, str]:
-    env = dict(os.environ, PATH=f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}", HOME=str(home))
+    env = dict(os.environ, PATH=f"{bin_dir}{os.pathsep}{Path(sys.executable).parent}{os.pathsep}{os.environ.get('PATH', '')}", HOME=str(home))
     for name in ("VIRTUAL_ENV", "BROWSER", "CI", "FORCE_COLOR", "POISSON_TRACE_STYLE", PULL_SWITCH, *_PLANTED, *_SERVICE_VARIABLES):
         env.pop(name, None)
     for name in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY"):

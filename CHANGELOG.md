@@ -95,7 +95,7 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
 
 ### The docs
 
-- Fifteen recipes under `docs/recipes/`, and `docs/commands.md`, `docs/config.md`,
+- Sixteen recipes under `docs/recipes/`, and `docs/commands.md`, `docs/config.md`,
   `docs/how-it-decides.md`, `docs/handover.md` and `docs/app.md`. Every command a page shows
   is run, and what the page says it printed is checked.
 

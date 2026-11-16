@@ -146,6 +146,8 @@ jobs:
           python -m venv .venv
           .venv/bin/python -m pip install --quiet -c ".github/release/lanes-${{ matrix.python }}.txt" -e ".[dev]"
           .venv/bin/python --version
+      - name: Tasks' tokenizer file, which the three-tools recipe the lanes run needs
+        run: .venv/bin/poisson-tasks doctor --fix --yes
       # CI is unset for the tests, as on the machines the lanes were made green on: Trace reads CI
       # as a reason to print plain, and the tests of the terminal look set it themselves.
       - name: Pull-request lane

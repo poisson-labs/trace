@@ -69,6 +69,8 @@ jobs:
           .venv/bin/python -m pip install --quiet -c .github/release/lanes-3.11.txt -e ".[dev]"
           .venv/bin/python --version
           .venv/bin/poisson-trace --version
+      - name: Tasks' tokenizer file, which the three-tools recipe the lanes run needs
+        run: .venv/bin/poisson-tasks doctor --fix --yes
       - name: Pull-request lane
         run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m "not math and not lane_j and not slow" tests
       - name: ruff
@@ -131,6 +133,8 @@ jobs:
             .venv/bin/python -m pip install --quiet -e ".[dev]"
           fi
           .venv/bin/python --version
+      - name: Tasks' tokenizer file, which the three-tools recipe the lanes run needs
+        run: .venv/bin/poisson-tasks doctor --fix --yes
       - name: Pull-request lane
         run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m "not math and not lane_j and not slow" tests
       - name: Slow lane
@@ -195,6 +199,12 @@ jobs:
             "$RUNNER_TEMP/clean/bin/python" -m pip install --quiet "$RUNNER_TEMP"/dist/*.tar.gz
           fi
           "$RUNNER_TEMP/clean/bin/python" -m pip check
+      # The three-tools recipe runs Poisson Tasks and the team's own pytest file. Neither Trace
+      # nor Tasks brings pytest, so it is installed here, as the recipe's install line does.
+      - name: Poisson Tasks at its pin, its tokenizer file and pytest, for the three-tools recipe
+        run: |
+          "$RUNNER_TEMP/clean/bin/python" -m pip install --quiet "poisson-tasks==0.4.2" pytest
+          "$RUNNER_TEMP/clean/bin/poisson-tasks" doctor --fix --yes
       - name: An empty folder, a home of its own, and the package that was installed
         run: |
           mkdir "$RUNNER_TEMP/empty" "$RUNNER_TEMP/home"

@@ -13,9 +13,11 @@ for each, where LINE is the first line of the block. Every skipped block is list
 with its reason, and appended to the file ``--summary`` names (a CI job's summary).
 
 How a page is run. Each page gets a scratch folder of its own, laid out as a clone of the
-repository: the checkout's ``tests/fixtures`` copied in, and an empty ``docs/figures``. Its
-command blocks run there with bash, in page order, with whatever ``poisson-trace`` is first on
-``PATH``, a home folder of its own and no key in the environment. Nothing is written to the
+repository: the checkout's ``tests/fixtures`` and ``examples`` copied in, and an empty
+``docs/figures``. Its command blocks run there with bash, in page order, with whatever
+``poisson-trace`` is first on ``PATH`` (and, for the one recipe that runs them, whatever
+``poisson-tasks``, ``poisson-prove`` and ``pytest``), a home folder of its own and no key in the
+environment. Nothing is written to the
 checkout, to the folder the checker was started in, or to the user's home.
 
 The marks. A mark is an HTML comment alone on the line just above a fenced block:
@@ -71,6 +73,8 @@ from typing import Any
 
 CHECKOUT = Path(__file__).resolve().parents[1]
 FIXTURES = CHECKOUT / "tests" / "fixtures"
+#: The examples a recipe runs on (the three-tools recipe's), copied beside the fixtures.
+EXAMPLES = CHECKOUT / "examples"
 INGEST = FIXTURES / "ingest"
 STANDARDS = ("cli-look.md", "repo-hygiene.md")
 #: Fixture folders no page reads: earlier outputs the test suite pins. Left out of the copy.
@@ -490,6 +494,8 @@ def scratch(tmp: Path) -> tuple[Path, Path]:
     shutil.copytree(
         FIXTURES, root / "tests" / "fixtures", ignore=shutil.ignore_patterns(*NOT_COPIED)
     )
+    if EXAMPLES.is_dir():
+        shutil.copytree(EXAMPLES, root / "examples", ignore=shutil.ignore_patterns("__pycache__"))
     (root / "docs" / "figures").mkdir(parents=True)
     home.mkdir()
     return root, home

@@ -519,6 +519,11 @@ One problem failed on every try of the second run, and nothing else is flagged. 
 are [Check a fix](https://github.com/poisson-labs/trace/blob/main/docs/recipes/check-a-fix.md)
 and [What it cannot say](https://github.com/poisson-labs/trace/blob/main/docs/recipes/what-it-cannot-say.md).
 
+[Tasks, Prove and Trace together](https://github.com/poisson-labs/trace/blob/main/docs/recipes/with-tasks-and-prove.md)
+runs the three tools end to end with no model: Poisson Tasks makes tasks whose right answer is
+known, Prove runs an agent on them before and after a change, and Trace says whether the new
+version fails less and at which step the old one stopped.
+
 ## The commands
 
 - `poisson-trace init`: set Trace up in a folder, by questions or by flags.
