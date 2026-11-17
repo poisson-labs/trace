@@ -113,7 +113,13 @@ def test_tf5_2_as_main_prints_it(tmp_path: Path, label: str) -> None:
     place, kind, steps = CORPUS[label]
     # the two refusals that list the verbs list them in the top help's order (TF5-3 holds that); every other byte of them is main's
     moved = (*NO_VERB_CASES, *NOT_A_VERB_CASES)
-    got = [[code, digest(out), digest(as_main_printed(label, err) if label in moved else err)] for code, out, err in ran_case(tmp_path, place, kind, steps)]
+    # the Prove label kinds pair names, in these five, the labels that have no kind (test_pl_unchanged.py, PL-52, holds
+    # that); this goes on holding every other byte of them
+    from pl_pins import MOVED_SHARED, unmoved
+
+    ran = ran_case(tmp_path, place, kind, steps)
+    ran = unmoved(ran) if label in MOVED_SHARED else ran
+    got = [[code, digest(out), digest(as_main_printed(label, err) if label in moved else err)] for code, out, err in ran]
     assert got == PINNED["piped"][label], label
 
 

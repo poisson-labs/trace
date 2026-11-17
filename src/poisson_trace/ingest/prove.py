@@ -9,7 +9,16 @@ row, else ``pass``; the time is the ``wall_time`` column; steps and the horizon 
 spans; the tool calls are the ``tool`` spans; the error's type is the last line's class of a
 traceback, else the first failing span's error, and the span kind where it happened is that
 span's; a cost is read only from ``meta["cost_usd"]``. Nothing is read from a span's content.
-Every row is then classified by the built-in rules.
+
+A failed or errored try of a run Prove swept takes its kind from the first of these that gives
+one: the kind its rollout recorded itself (``failure_kind`` in a ``poisson.trace-signals/1``
+record with no ``case``, one of the 13 kinds; nothing else of that record is read); Prove's own
+word ``timeout`` short of the step cap; the team's ``[[taxonomy.rules]]``, the first that
+matches in the order written; the built-in rules that find a cause; the kind its outcome label
+names (the team's ``[taxonomy.labels]``, else ``LABEL_KINDS``); ``wrong_answer`` for a graded
+try; else ``unclassified_error``. Every try, failed or not, is held to the team's
+``[signals.budgets]`` by what it records: its wall time, its tokens in and out together when
+both are recorded, and its ``cost_usd``. An imported run's rows are not classified again.
 
 Reading writes nothing, and goes through the writer's ``stored``, so that the writer stays the
 one module under ``ingest/`` that imports ``poisson_prove``. This is not an import tool:
@@ -24,8 +33,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from poisson_trace.ingest.rows import Row, SpanRecord, ToolCallRecord
-from poisson_trace.ingest.taxonomy import classify
+from poisson_trace.ingest.rows import FAILURE_KINDS, Row, SpanRecord, ToolCallRecord
+from poisson_trace.ingest.taxonomy import LABEL_KINDS, Budgets, Rule, classify
 from poisson_trace.ingest.writer import RECORD_SCHEMA, stored
 
 #: The class a traceback's last line names, ``package.module.Error: message`` or the class alone.
@@ -134,8 +143,10 @@ def _class_of(error: str | None) -> str | None:
     return found.group(1) if found else None
 
 
-def _swept(record: Mapping[str, Any], failed: Sequence[str]) -> Row:
-    """A row of a run Prove swept, from its columns and its trace."""
+def _swept(record: Mapping[str, Any], failed: Sequence[str], own: Any = None) -> Row:
+    """A row of a run Prove swept, from its columns and its trace. ``own`` is the kind its
+    rollout recorded itself, if any: kept on a failed or errored try when it is one of the 13
+    kinds, before Prove's own ``timeout``."""
     meta = record.get("meta") if isinstance(record.get("meta"), Mapping) else {}
     outcome = _str(record.get("outcome"))
     error = _str(record.get("error"))
@@ -151,7 +162,9 @@ def _swept(record: Mapping[str, Any], failed: Sequence[str]) -> Row:
         result = "fail" if outcome in failed else "pass"
     kind = None
     at_cap = steps is not None and horizon is not None and horizon > 0 and steps >= horizon
-    if result == "fail" and outcome == TIMEOUT_WORD and not at_cap:
+    if result in ("fail", "censored") and isinstance(own, str) and own in FAILURE_KINDS:
+        kind = own
+    elif result == "fail" and outcome == TIMEOUT_WORD and not at_cap:
         kind = TIMEOUT_WORD
     error_type = _class_of(error)
     if error_type is None and failing:
@@ -221,17 +234,33 @@ def _imported(record: Mapping[str, Any], signals: Mapping[str, Any]) -> Row:
     )
 
 
-def read_rows(root: Path, run_id: str, failed: Sequence[str]) -> tuple[Row, ...]:
+def read_rows(
+    root: Path,
+    run_id: str,
+    failed: Sequence[str],
+    labels: Mapping[str, str] | None = None,
+    rules: Sequence[Rule] = (),
+    budgets: Budgets | None = None,
+) -> tuple[Row, ...]:
     """The rows of the run ``run_id`` of the store at ``root``, classified. ``failed`` names the
-    outcome words that are failures of a run Prove swept; an imported run's result was decided
-    at the import and the words are not read."""
+    outcome words that are failures of a run Prove swept; ``labels`` is the team's
+    ``[taxonomy.labels]``, which wins over ``LABEL_KINDS``; ``rules`` and ``budgets`` are the
+    team's ``[[taxonomy.rules]]`` and ``[signals.budgets]``. An imported run's result, kind and
+    signals were decided at the import, and none of the four is read for it."""
     frame = stored(root, run_id)
+    named = {**LABEL_KINDS, **(labels or {})}
     rows = []
     for record in frame.to_dict("records"):
         meta = record.get("meta")
         signals = meta.get("trace_signals") if isinstance(meta, Mapping) else None
-        if isinstance(signals, Mapping) and signals.get("schema") == RECORD_SCHEMA:
+        if not isinstance(signals, Mapping) or signals.get("schema") != RECORD_SCHEMA:
+            signals = None
+        if signals is not None and "case" in signals:
+            # the whole record Trace's own import wrote
             rows.append(_imported(record, signals))
         else:
-            rows.append(classify(_swept(record, tuple(failed))))
+            # a rollout's own record of that schema carries no case: only its kind is read
+            own = None if signals is None else signals.get("failure_kind")
+            row = _swept(record, tuple(failed), own)
+            rows.append(classify(row, tuple(rules), budgets, labels=named))
     return tuple(rows)

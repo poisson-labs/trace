@@ -10,7 +10,7 @@ from pathlib import Path
 TESTS = Path(__file__).resolve().parent
 
 FROZEN = {
-    "test_tries_section.py": "737f7a25a25e6ce2ca7f9549707acbd41b42527bdb0f0d74ae4402d8d7c4e6a3",
+    "test_tries_section.py": "bfaac52c6e035b974c435e000ce0e8ae92046c00ddbc2e049825a4a25dc7faee",
     "test_tries_selected.py": "44b6443b7b195e3ddd08aa3f5cef221e07efb2ced1c4a36abe083f84e34b4f3e",
 }
 

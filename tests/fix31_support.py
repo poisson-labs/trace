@@ -309,7 +309,12 @@ def run_corpus(tmp: Path) -> dict[str, list[Any]]:
         pin(label, cli(work, argv), work)
     for label, argv in fixture_argv().items():
         with chdir(REPO):
-            pin(label, trace(argv), REPO)
+            ran = trace(argv)
+        # the Prove label kinds pair names, on tau2 and HumanEval, the labels that have no kind (test_pl_unchanged.py,
+        # PL-52, holds that); this goes on holding every other byte of them
+        from pl_pins import unmoved_text
+
+        pin(label, Ran(ran.code, unmoved_text(ran.out), ran.err), REPO)
     folders = tmp / "folders"
     folders.mkdir()
     for label, argv in folder_argv(folders).items():

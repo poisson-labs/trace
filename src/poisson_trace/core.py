@@ -756,13 +756,18 @@ def _signals(
     ns: argparse.Namespace, arms: Sequence[tuple[str, Any]], events: frozenset[str]
 ) -> tuple[dict[str, tuple[Any, ...]], dict[str, tuple[Any, ...]]]:
     """Each arm's rows as TF21's reader classifies them, before and after the ``--verdicts``
-    join (the same rows when there is no file). On stored runs the join is made here, over both
-    runs' rows at once, by case (SV10), and a failure the file filled in is given its kind after
-    it (FD8); on tool folders it was made as they were read."""
+    join (the same rows when there is no file). A run Prove swept is classified by the config's
+    own taxonomy (``_team``). On stored runs the join is made here, over both runs' rows at
+    once, by case (SV10), and a failure the file filled in is given its kind after it (FD8); on
+    tool folders it was made as they were read."""
     from poisson_trace.ingest.prove import read_rows
 
     root = Path(ns.store_root)
-    before = {arm: read_rows(root, run.run_id, sorted(events)) for arm, run in arms}
+    labels, rules, budgets = _team(ns)
+    before = {
+        arm: read_rows(root, run.run_id, sorted(events), labels, rules, budgets)
+        for arm, run in arms
+    }
     after = dict(before)
     if ns.verdicts is not None and ns.joined is None:
         from poisson_trace.ingest import verdicts
@@ -915,15 +920,74 @@ def _settings(ns: argparse.Namespace, verb: str, selecting: Any = None) -> dict[
     return settings
 
 
-def _digest_of(manifest: Any) -> str:
-    """The digest of the rules a run's failure types were decided by: the one its import
-    recorded, or the built-in rules' for a run Prove swept (SV4 item 4)."""
-    from poisson_trace.ingest.taxonomy import taxonomy_sha256
+def _team(ns: argparse.Namespace) -> tuple[Mapping[str, str], tuple[Any, ...], Any]:
+    """The config's own taxonomy, which a run Prove swept is classified by as it is read: its
+    ``[taxonomy.labels]``, its ``[[taxonomy.rules]]`` and its ``[signals.budgets]``; none of
+    them without a config."""
+    held = getattr(ns, "settings", None)
+    if held is None:
+        return {}, (), None
+    return held.labels, held.rules, held.budgets
 
+
+def _imports_digest(manifest: Any) -> str | None:
+    """The digest a run's import recorded; None for a run Prove swept."""
     environment = getattr(manifest, "environment", None)
     recorded = environment.get("import") if isinstance(environment, Mapping) else None
     digest = recorded.get("taxonomy_sha256") if isinstance(recorded, Mapping) else None
-    return digest if isinstance(digest, str) else taxonomy_sha256((), None)
+    return digest if isinstance(digest, str) else None
+
+
+def _digest_of(
+    manifest: Any,
+    labels: Mapping[str, str] | None = None,
+    rules: Sequence[Any] = (),
+    budgets: Any = None,
+) -> str:
+    """The digest of the rules a run's failure types were decided by: the one its import
+    recorded, or, for a run Prove swept, that of the taxonomy it was read under (SV4 item 4):
+    the built-in rules' when the config has no rules, no budgets and no labels table."""
+    from poisson_trace.ingest.taxonomy import taxonomy_sha256
+
+    digest = _imports_digest(manifest)
+    return digest if digest is not None else taxonomy_sha256(tuple(rules), budgets, labels)
+
+
+#: The outcome words that say only that a try failed: never named as a label with no kind.
+PLAIN_WORDS: frozenset[str] = frozenset({"fail", "failed", "failure", "missed"})
+
+
+def _labels_without_kind(
+    arms: Sequence[str],
+    rows: Mapping[str, Sequence[Any]],
+    manifests: Mapping[str, Any],
+    labels: Mapping[str, str],
+    rules: Sequence[Any],
+) -> list[dict[str, Any]]:
+    """The outcome labels Trace has no kind for, sorted, each with its count in each run: the
+    failed tries of a run Prove swept that count as ``unclassified_error`` because their label
+    is in neither the team's table nor the defaults and no rule of the team's matched them. A
+    plain word for a failure is not a label, and an imported run counts none."""
+    from poisson_trace.ingest.taxonomy import LABEL_KINDS
+
+    counts: dict[str, Counter[str]] = {}
+    for arm in arms:
+        found: Counter[str] = Counter()
+        if _imports_digest(manifests[arm]) is None:
+            for r in rows[arm]:
+                if (
+                    r.result == "fail"
+                    and r.failure_kind == "unclassified_error"
+                    and r.outcome is not None
+                    and r.outcome not in PLAIN_WORDS
+                    and r.outcome not in labels
+                    and r.outcome not in LABEL_KINDS
+                    and not any(rule.matches(r) for rule in rules)
+                ):
+                    found[r.outcome] += 1
+        counts[arm] = found
+    named = sorted({label for found in counts.values() for label in found})
+    return [{"label": label, **{arm: counts[arm][label] for arm in arms}} for label in named]
 
 
 DIFFERENT_RULES = (
@@ -937,15 +1001,21 @@ def _taxonomy_diff(
     rows: Mapping[str, Sequence[Any]],
     manifests: Mapping[str, Any],
     verdict_tries: Mapping[str, int] | None = None,
+    labels: Mapping[str, str] | None = None,
+    rules: Sequence[Any] = (),
+    budgets: Any = None,
 ) -> tuple[dict[str, Any], str | None]:
     """The saved verdict's failure-type diff (SV4 item 4, SV9): each run's taxonomy digest,
     whether the rules are the same, the tries, and each kind's and signal's count in each run
     in section 18.5.1's order; no counts, and a note, when the rules differ. Where a run has
     tries with no outcome, each run's number of them and the tries the verdict counts follow
-    the tries (FD15); where none has, the diff is as it was."""
+    the tries (FD15); where none has, the diff is as it was. ``labels``, ``rules`` and
+    ``budgets`` are the config's own taxonomy, which the runs Prove swept were read under;
+    where the rules are the same and such a run has failed tries whose label has no kind, the
+    labels and their counts come last (``labels_without_kind``)."""
     from poisson_trace.ingest.rows import FAILURE_KINDS, SIGNALS
 
-    digests = {arm: _digest_of(manifests[arm]) for arm in arms}
+    digests = {arm: _digest_of(manifests[arm], labels, rules, budgets) for arm in arms}
     same = len(set(digests.values())) == 1
     kinds = signals = None
     if same:
@@ -970,6 +1040,10 @@ def _taxonomy_diff(
         diff["verdict_tries"] = {arm: verdict_tries[arm] for arm in arms}
     diff["kinds"] = kinds
     diff["signals"] = signals
+    if same:
+        without = _labels_without_kind(arms, rows, manifests, labels or {}, rules)
+        if without:
+            diff["labels_without_kind"] = without
     return diff, None if same else DIFFERENT_RULES
 
 
@@ -1057,11 +1131,32 @@ def _no_outcome_line(c: Counted, diff: Mapping[str, Any]) -> str:
     )
 
 
+def _labels_note(labels: Sequence[str]) -> str:
+    """The one paragraph ``Failures by kind`` gives the labels Trace has no kind for, as the
+    diff lists them (sorted): what their tries count as, and how a team names a label's kind,
+    the first label written as ``trace.toml`` writes a key."""
+    from poisson_trace.config import label_key
+    from poisson_trace.ingest.rows import FAILURE_KINDS
+
+    kinds = [k for k in FAILURE_KINDS if k != "unclassified_error"]
+    if len(labels) == 1:
+        first = f"Trace has no kind for the label {labels[0]}, so its failed tries"
+    else:
+        named = ", ".join(labels[:-1]) + " and " + labels[-1]
+        first = f"Trace has no kind for the labels {named}, so their failed tries"
+    return (
+        f"{first} count as unclassified_error. To name a label's kind, add it to trace.toml "
+        f'under [taxonomy.labels], as {label_key(labels[0])} = "KIND", where KIND is '
+        f"{', '.join(kinds[:-1])} or {kinds[-1]}."
+    )
+
+
 def _breakdown_section(c: Counted) -> list[str]:
     """The report's ``Failures by kind`` section (DM1, DM2), the counts of the failure-type diff
     the saved verdict holds: one sentence on what is counted; a table of each kind either run
     has, by its count over both runs (a tie in the diff's order, section 18.5.1's precedence),
-    ``all failures`` last; the tries; and, when either run has a signal, the signals' table.
+    ``all failures`` last; the tries; once, the labels of a run Prove swept that Trace has no
+    kind for, when the diff names any; and, when either run has a signal, the signals' table.
     Runs classified by different rules get the note and each run's digest, no counts (FD4).
     ``compare`` and ``changes`` name their runs as their reports do, A and B (FD3)."""
     from poisson_trace.ingest.taxonomy import taxonomy_sha256
@@ -1116,6 +1211,8 @@ def _breakdown_section(c: Counted) -> list[str]:
     ]
     if "no_outcome" in diff:
         lines += ["", _no_outcome_line(c, diff)]
+    if diff.get("labels_without_kind"):
+        lines += ["", _labels_note([x["label"] for x in diff["labels_without_kind"]])]
     if diff["signals"]:
         signal_rows = [
             [s["signal"], count(s[a]), _share(s[a], tries_a), count(s[b]), _share(s[b], tries_b)]
@@ -1347,7 +1444,9 @@ class Counted:
         if self.signals is None:
             self.signals = _signals(self.ns, _arm_runs(self), frozenset(self.ns.event))
         manifests = {arm: manifest for arm, _run, manifest in self.runs}
-        self.diff = _taxonomy_diff(self.arms, self.signals[1], manifests, _verdict_tries(self))
+        self.diff = _taxonomy_diff(
+            self.arms, self.signals[1], manifests, _verdict_tries(self), *_team(self.ns)
+        )
 
     def two_run_parts(self) -> None:
         """The diff and the measures of a verb of two runs, read now if not yet."""

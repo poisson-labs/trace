@@ -9,6 +9,11 @@ each reader records, and this module classifies what it finds. A kind the source
 ``trace.toml``'s ``[[taxonomy.rules]]`` are tried first, in the order written, and every
 condition of a rule must hold for it to match (SG12).
 
+A reader may also give the kinds its outcome labels name (``labels``): a failed try no rule
+found a cause for takes the kind of its label, before the two rules that find none
+(``wrong_answer`` for a graded try, else ``unclassified_error``). Only the Prove reader gives
+them: ``LABEL_KINDS`` holds its defaults, and a team's ``[taxonomy.labels]`` adds to them.
+
 ``taxonomy_sha256`` is the digest an import records beside what it declared, so a verdict can say
 which rules classified a run (SA5, SA9).
 
@@ -23,6 +28,7 @@ import math
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
+from types import MappingProxyType
 from typing import Any
 
 from poisson_trace.ingest.rows import (
@@ -38,6 +44,7 @@ from poisson_trace.ingest.rows import (
 __all__ = [
     "FAILURE_KINDS",
     "SIGNALS",
+    "LABEL_KINDS",
     "SCHEMA",
     "Budgets",
     "Rule",
@@ -74,6 +81,23 @@ CAP_KINDS: tuple[str, ...] = ("timeout", "context_overflow", "step_limit")
 STORM_RETRIES = 3
 STORM_RUN = 3
 STORM_FAILED = 2
+#: The kind an outcome label of a run Prove swept gives by its name, matched letter for letter:
+#: each kind's own name, and the nine labels Poisson Tasks' checker gives a failure. Nothing
+#: else has a default; a team names its own under ``[taxonomy.labels]``.
+LABEL_KINDS: Mapping[str, str] = MappingProxyType(
+    {
+        **{kind: kind for kind in FAILURE_KINDS},
+        "wrong_state": "wrong_answer",
+        "overshoot": "wrong_answer",
+        "collateral_mutation": "wrong_answer",
+        "malformed_call": "format_error",
+        "turn_limit": "step_limit",
+        "wall_timeout": "timeout",
+        "api_error": "crash",
+        "verifier_error": "crash",
+        "replay_mismatch": "crash",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -168,14 +192,20 @@ def _metric_below(value: Any) -> dict[str, Any]:
     return {"metric": metric, "cut": cut}
 
 
-def taxonomy_sha256(rules: Sequence[Rule], budgets: Budgets | None) -> str:
+def taxonomy_sha256(
+    rules: Sequence[Rule], budgets: Budgets | None, labels: Mapping[str, str] | None = None
+) -> str:
     """SHA-256 of the compact, key-sorted JSON of the schema, the rules in order (each its set
-    fields) and the budgets set (SA9). Signal field mappings are not in it."""
-    doc = {
+    fields) and the budgets set (SA9). Signal field mappings are not in it. ``labels`` is a
+    team's ``[taxonomy.labels]`` table, which only a run Prove swept is classified by: it is in
+    the document only when it names a label, so every digest without a table is as it was."""
+    doc: dict[str, Any] = {
         "schema": SCHEMA,
         "rules": [rule.to_dict() for rule in rules],
         "budgets": {} if budgets is None else budgets.to_dict(),
     }
+    if labels:
+        doc["labels"] = dict(labels)
     text = json.dumps(doc, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -225,8 +255,10 @@ def retry_storm(row: Row) -> bool:
     return False
 
 
-def _built_in(row: Row) -> str:
-    """The kind the built-in rules give a failed or censored row, in precedence order."""
+def _built_in(row: Row, labels: Mapping[str, str] | None = None) -> str:
+    """The kind the built-in rules give a failed or censored row, in precedence order. With
+    ``labels``, a failed row no rule found a cause for takes the kind its outcome label names
+    there, before the two rules that find none."""
     text = _text(row)
     at_cap = _at_cap(row)
     calls = row.tool_calls or ()
@@ -256,6 +288,8 @@ def _built_in(row: Row) -> str:
         or (row.error is not None and row.error.startswith(INFRA))
     ):
         return "crash"
+    if labels and row.result == "fail" and row.outcome is not None and row.outcome in labels:
+        return labels[row.outcome]
     graded = (
         row.score is not None
         or bool(row.scores)
@@ -267,10 +301,13 @@ def _built_in(row: Row) -> str:
     return "unclassified_error"
 
 
-def kind_of(row: Row, rules: Sequence[Rule] = ()) -> str | None:
+def kind_of(
+    row: Row, rules: Sequence[Rule] = (), labels: Mapping[str, str] | None = None
+) -> str | None:
     """The failure kind of ``row``: None unless its result is ``fail`` or ``censored``; the kind
     the source gave, when it gave one; else the first user rule that matches, in the order
-    written; else the built-in rules in precedence order."""
+    written; else the built-in rules in precedence order, the kind ``labels`` names for the
+    row's outcome label among them."""
     if row.result not in ("fail", "censored"):
         return None
     if row.failure_kind is not None:
@@ -278,7 +315,7 @@ def kind_of(row: Row, rules: Sequence[Rule] = ()) -> str | None:
     for rule in rules:
         if rule.matches(row):
             return rule.failure_kind
-    return _built_in(row)
+    return _built_in(row, labels)
 
 
 def signals_of(row: Row, budgets: Budgets | None = None) -> tuple[str, ...]:
@@ -316,11 +353,17 @@ def _over(row: Row, budgets: Budgets | None) -> bool:
     return False
 
 
-def classify(row: Row, rules: Sequence[Rule] = (), budgets: Budgets | None = None) -> Row:
+def classify(
+    row: Row,
+    rules: Sequence[Rule] = (),
+    budgets: Budgets | None = None,
+    *,
+    labels: Mapping[str, str] | None = None,
+) -> Row:
     """``row`` with its failure kind and its signals filled: the kind from ``kind_of``, the
     signals it already holds plus those of ``signals_of``, in ``SIGNALS`` order. Nothing else
     changes."""
-    kind = kind_of(row, rules)
+    kind = kind_of(row, rules, labels)
     classified = row if kind == row.failure_kind else replace(row, failure_kind=kind)
     found = set(classified.signals) | set(signals_of(classified, budgets))
     signals = tuple(s for s in SIGNALS if s in found)

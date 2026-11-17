@@ -68,6 +68,8 @@ def _digest(text: str) -> str:
 # the pins on the larger fixtures run in the slow lane; the Prove 0.1.3 store's four and tau2's
 # fix-check are their fast twins
 SLOW_PINS = ("where cs", "compare tau2", "fix-check tau2 all", "changes humaneval")
+#: The four the Prove label kinds pair moves.
+LABELS_MOVED = ("fix-check tau2", "fix-check tau2 all", "compare tau2", "changes humaneval")
 
 
 @pytest.mark.parametrize("name", [pytest.param(n, marks=pytest.mark.slow) if n in SLOW_PINS else n for n in PINNED])
@@ -75,7 +77,12 @@ def test_tf6_1_every_verb_prints_what_it_printed_before(name: str) -> None:
     argv, plain_digest, json_digest = PINNED[name]
     plain, as_json = trace(argv), trace([*argv, "--json"])
     assert plain.code == 0 and as_json.code == 0, plain.text + as_json.text
-    assert (_digest(plain.out), _digest(as_json.out)) == (plain_digest, json_digest), name
+    # the Prove label kinds pair names, on tau2 and HumanEval, the labels that have no kind (test_pl_unchanged.py,
+    # PL-52, holds that); this goes on holding every other byte of them
+    from pl_pins import unmoved_text
+
+    out, out_json = (unmoved_text(plain.out), unmoved_text(as_json.out)) if name in LABELS_MOVED else (plain.out, as_json.out)
+    assert (_digest(out), _digest(out_json)) == (plain_digest, json_digest), name
     assert plain.err == as_json.err == ""
 
 
@@ -93,8 +100,13 @@ def test_tf6_1_a_max_change_in_the_config_prints_nothing_new(tmp_path: Path, nam
         assert plain.code == 0 and as_json.code == 0, plain.text + as_json.text
         # the next commands carry --config, as they do for any config named by flag; nothing else moves
         flag = f" --config {config}"
-        assert _digest(plain.out.replace(flag, "")) == plain_digest, name
-        assert _digest(as_json.out.replace(flag, "")) == json_digest, name
+        # the Prove label kinds pair names, on tau2, the labels that have no kind (test_pl_unchanged.py, PL-52, holds
+        # that); this goes on holding every other byte of them
+        from pl_pins import unmoved_text
+
+        out, out_json = (unmoved_text(plain.out), unmoved_text(as_json.out)) if name in LABELS_MOVED else (plain.out, as_json.out)
+        assert _digest(out.replace(flag, "")) == plain_digest, name
+        assert _digest(out_json.replace(flag, "")) == json_digest, name
 
 
 # ---------- TF6-2 ----------

@@ -108,7 +108,12 @@ def test_tf20_80_no_pin_holds_a_path_of_the_machine_that_took_it() -> None:
 @pytest.mark.parametrize("label", [pytest.param(k, marks=pytest.mark.slow) if k in SLOW else k for k in CORPUS])
 def test_tf20_81_as_main_prints_it(tmp_path: Path, label: str) -> None:
     place, kind, steps = CORPUS[label]
-    assert digest_text_steps(ran_case(tmp_path, place, kind, steps)) == PINNED["piped"][label], label
+    # the Prove label kinds pair names, in these five, the labels that have no kind (test_pl_unchanged.py, PL-52, holds
+    # that); this goes on holding every other byte of them
+    from pl_pins import MOVED_SHARED, unmoved
+
+    ran = ran_case(tmp_path, place, kind, steps)
+    assert digest_text_steps(unmoved(ran) if label in MOVED_SHARED else ran) == PINNED["piped"][label], label
 
 
 def test_tf20_81_a_fast_case_stands_for_each_slow_one() -> None:
@@ -169,6 +174,11 @@ def test_tf20_86_every_other_file_is_main_s() -> None:
         path = REPO / name
         assert path.is_file(), f"{name} is gone"
         if name in CHANGED or name in FREE:
+            continue
+        # the Prove label kinds pair builds its rule in these (test_pl_unchanged.py, PL-56, holds every other file)
+        from pl_pins import BUILT
+
+        if name in BUILT:
             continue
         if file_digest(path) != digest:
             moved.append(name)
@@ -258,6 +268,8 @@ def _files_on_disk() -> list[str]:
 def test_tf20_91_no_other_file_is_added() -> None:
     pinned = set(PINNED["files"])
     added = [name for name in pinned_paths(_files_on_disk()) if name not in pinned]
+    # the Prove label kinds pair's own pins (test_pl_unchanged.py, PL-56, holds that it adds nothing else)
+    added = [name for name in added if not name.startswith("tests/fixtures/pl/")]
     assert added == [PAGE.relative_to(REPO).as_posix()], added
     top = {name.split("/")[0] for name in _files_on_disk()} - {name.split("/")[0] for name in tracked_at_main()}
     assert top <= {"examples"}, top

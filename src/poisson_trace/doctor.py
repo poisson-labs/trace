@@ -121,6 +121,15 @@ def _store_words(name: str | None, path: str) -> str:
 _IMPORT_HELP = "poisson-trace import --help"
 
 
+def _kinds_named(held: config.Config, shown: str) -> str:
+    """What the config line goes on to say when ``[taxonomy.labels]`` names a kind: each label
+    and the kind it is given, sorted by label; nothing when the table names none."""
+    if not held.labels:
+        return ""
+    named = ", ".join(f"{label} is {kind}" for label, kind in held.labels.items())
+    return f"; kinds named in {shown}: {named}"
+
+
 def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]:
     """The config check and the names check, which reads the stores the config names."""
     reach = [look.option("--config", given)] if given is not None else []
@@ -150,6 +159,7 @@ def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]
     if not prove_ok:
         stores = "; ".join(_store_words(n, p) for n, p in held.stores()) or "no store"
         line = f"{shown}: {stores}, {failures} (runs not counted without Prove)"
+        line += _kinds_named(held, shown)
         return [
             _check("config", events is not None and held.store is not None, line, init),
             _names_unchecked(held),
@@ -213,6 +223,7 @@ def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]
                     f"store {name} carries none of the failures (give --event with --store {name})"
                 )
     said = f"{shown}: {'; '.join(described)}, {failures}" + "".join(f"; {n}" for n in notes)
+    said += _kinds_named(held, shown)
     first = indexes[0][2]
     if not isinstance(first, names.Index):
         return [_check("config", events is not None, said, init), _names(indexes)]

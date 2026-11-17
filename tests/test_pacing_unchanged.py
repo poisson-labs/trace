@@ -60,8 +60,14 @@ def test_pace_10_as_main_prints_it(tmp_path: Path, label: str) -> None:
     # the docs pair (TF5) renamed the helps' example store, made the top help's first sentence and list of tools
     # whole, and lists the verbs of both refusals in the top help's order (ruled 2026-11-13: DOC-14, DOC-33, DOC-35);
     # TF5-3 holds those changes, and this goes on holding every other byte, as TF26-66 does
+    # the Prove label kinds pair names, in these five, the labels that have no kind (test_pl_unchanged.py, PL-52, holds
+    # that); this goes on holding every other byte of them
+    from pl_pins import MOVED_SHARED, unmoved
+
+    found = ran_case(tmp_path, place, kind, steps)
+    found = unmoved(found) if label in MOVED_SHARED else found
     ran = [(code, as_main_printed(label, out), as_main_printed(label, err) if not label.startswith("help") else err)
-           for code, out, err in ran_case(tmp_path, place, kind, steps)]
+           for code, out, err in found]
     assert digest_steps(ran) == PINNED["piped"][label], label
 
 

@@ -62,7 +62,7 @@ _SETTINGS: dict[str, tuple[str, ...]] = {
     "names": ("from",),
     "upload": ("enabled", "url", "token_env"),
     "signals": ("case_field", "outcome_field", "score_field", "cut", "cost_field", "budgets"),
-    "taxonomy": ("rules",),
+    "taxonomy": ("rules", "labels"),
 }
 # the array of tables that lists the files to import, checked after the tables above
 _IMPORT = "import"
@@ -124,6 +124,10 @@ class Config:
     signals: Mapping[str, Any] = field(default_factory=dict)
     budgets: Budgets | None = None
     rules: tuple[Rule, ...] = ()
+    # [taxonomy.labels]: the kind each outcome label of a run Prove swept names, sorted by
+    # label; empty when the file names none. An import is not classified by it, so it is not
+    # in ``taxonomy_sha256``.
+    labels: Mapping[str, str] = field(default_factory=dict)
     # [[import]]: the files to import, in the file's order
     imports: tuple[ImportEntry, ...] = ()
 
@@ -300,6 +304,29 @@ def _quoted(text: str) -> str:
     return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+_BARE_KEY = re.compile(r"[A-Za-z0-9_-]+")
+# the escapes of a TOML basic string that have a short form
+_SHORT = {'"': '\\"', "\\": "\\\\", "\b": "\\b", "\t": "\\t", "\n": "\\n", "\f": "\\f", "\r": "\\r"}
+
+
+def label_key(label: str) -> str:
+    """An outcome label as ``[taxonomy.labels]`` writes it: bare when it is letters, digits,
+    ``-`` and ``_``, else a TOML basic string in double quotes, a control character escaped."""
+    if _BARE_KEY.fullmatch(label):
+        return label
+    out = []
+    for ch in label:
+        if ch in _SHORT:
+            out.append(_SHORT[ch])
+        elif ord(ch) < 0x20:
+            out.append(f"\\u{ord(ch):04x}")
+        elif ord(ch) == 0x7F:
+            out.append("\\u007F")
+        else:
+            out.append(ch)
+    return '"' + "".join(out) + '"'
+
+
 def _value(value: Any) -> str:
     """A value as the file writes it, for a sentence."""
     if isinstance(value, bool):
@@ -429,6 +456,7 @@ class _Checker:
             signals=values.get("signals", {}),
             budgets=values.get("budgets"),
             rules=values.get("rules", ()),
+            labels=values.get("labels", {}),
             imports=imports,
         )
 
@@ -681,16 +709,44 @@ class _Checker:
 
     def table_taxonomy(self, table: Mapping[str, Any]) -> dict[str, Any]:
         for key, value in table.items():
-            if key != "rules":
+            if key not in _SETTINGS["taxonomy"]:
                 raise self.unknown(("taxonomy", key), _SETTINGS["taxonomy"], "taxonomy")
-            if not isinstance(value, list) or not all(isinstance(r, dict) for r in value):
+            if key == "labels":
+                if not isinstance(value, dict):
+                    raise self.fault(
+                        ("taxonomy", "labels"),
+                        "[taxonomy] labels is a table, written [taxonomy.labels] on a line of "
+                        f"its own, not {_value(value)}",
+                    )
+            elif not isinstance(value, list) or not all(isinstance(r, dict) for r in value):
                 raise self.fault(
                     ("taxonomy", "rules"),
                     "[taxonomy] rules is an array of tables, each written [[taxonomy.rules]] on a "
                     f"line of its own, not {_value(value)}",
                 )
         rules = [self.rule(i, rule) for i, rule in enumerate(table.get("rules", []))]
-        return {"rules": tuple(rules)}
+        return {"rules": tuple(rules), "labels": self.labels(table.get("labels", {}))}
+
+    def labels(self, table: Mapping[str, Any]) -> dict[str, str]:
+        """``[taxonomy.labels]``: each line an outcome label as Prove stores it and the kind it
+        names, one of the 13, in quotes; sorted by label."""
+        kept: dict[str, str] = {}
+        for label, kind in table.items():
+            at = ("taxonomy", "labels", label)
+            if label == "":
+                raise self.fault(
+                    at, '[taxonomy.labels] "" is no label: a label is an outcome as Prove stores it'
+                )
+            if not isinstance(kind, str) or kind not in FAILURE_KINDS:
+                given = f"[taxonomy.labels] {label_key(label)} is given {_value(kind)}"
+                near = nearest(kind, FAILURE_KINDS) if isinstance(kind, str) else None
+                if near is not None:
+                    raise self.fault(at, f'{given}, which is not a kind; did you mean "{near}"?')
+                raise self.fault(
+                    at, f"{given}, which is not a kind; the kinds are {_and(list(FAILURE_KINDS))}"
+                )
+            kept[label] = kind
+        return dict(sorted(kept.items()))
 
     def rule(self, i: int, table: Mapping[str, Any]) -> Rule:
         """One ``[[taxonomy.rules]]``: a failure_kind and at least one when_ condition."""

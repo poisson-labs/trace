@@ -142,9 +142,39 @@ failure_kind = "tool_error"
 when_error_matches = "BookingServiceError"
 ```
 
+Your `rules` apply to a run Prove swept as they do to an import, after any kind the try
+recorded itself, and so do your `budgets` under `[signals]`. A try of a run Prove swept is held
+to `max_wall_time_s` by its wall time, to `max_total_tokens` by its steps' tokens in and out
+together, and to `max_cost_usd` by the `cost_usd` its rollout records; a try that does not
+record one of these is never over it.
+
 The thirteen kinds are `timeout`, `rate_limit`, `context_overflow`, `loop_detected`,
 `step_limit`, `guardrail_blocked`, `tool_error`, `retrieval_error`, `format_error`,
 `abstained`, `crash`, `wrong_answer` and `unclassified_error`.
+
+`labels` names the kind of a Prove run's outcome labels. A run Prove swept records each try's
+outcome as a label, and a failed try takes its label's kind when nothing on its record says why
+it failed. Each line of `[taxonomy.labels]` is a label, as Prove stores it, and the kind it
+names:
+
+```toml
+[taxonomy.labels]
+forbidden_action = "guardrail_blocked"
+"not solved" = "wrong_answer"
+```
+
+A label that is the name of a kind gives that kind without a line here, and so do the labels
+Poisson Tasks gives a failure: `wrong_state`, `overshoot` and `collateral_mutation` give
+`wrong_answer`, `malformed_call` gives `format_error`, `turn_limit` gives `step_limit`,
+`wall_timeout` gives `timeout`, and `api_error`, `verifier_error` and `replay_mismatch` give
+`crash`. A line of yours wins over these. A label is matched letter for letter.
+
+A failed try of a run Prove swept takes its kind from the first of these that gives one: the
+kind the try recorded itself, Prove's own `timeout` short of the step limit, your `rules`, the
+built-in rules that find a cause on the try's record, then its label's kind. A try none of
+these names is `wrong_answer` when it was graded and `unclassified_error` otherwise, and the
+report's `Failures by kind` names the labels left without a kind. `labels` applies only to
+runs Prove swept: an import's kinds were decided when it was imported.
 
 ## `[[import]]`: the files to import
 

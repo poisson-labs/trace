@@ -50,7 +50,13 @@ def test_tf18_20_as_main_prints_it(tmp_path: Path, label: str) -> None:
 
     # the docs pair (TF5) renamed the helps' example store and made the top help's list of tools whole;
     # TF5-3 holds those two changes, and this goes on holding every other byte of each help
-    got = [[code, digest(as_main_printed(label, out)), digest(err)] for code, out, err in _ran(tmp_path, place, kind, steps)]
+    # the Prove label kinds pair names, in these five, the labels that have no kind (test_pl_unchanged.py, PL-52, holds
+    # that); this goes on holding every other byte of them
+    from pl_pins import MOVED_SHARED, unmoved
+
+    ran = _ran(tmp_path, place, kind, steps)
+    ran = unmoved(ran) if label in MOVED_SHARED else ran
+    got = [[code, digest(as_main_printed(label, out)), digest(err)] for code, out, err in ran]
     assert got == PINNED["piped"][label], label
 
 
