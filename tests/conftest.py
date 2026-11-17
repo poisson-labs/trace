@@ -231,6 +231,25 @@ SYNTH_COUNTS = {
 }
 
 
+@pytest.fixture(autouse=True)
+def _no_real_browser(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """No test opens a real browser tab. The suite runs ``poisson-trace`` in-process, and a case
+    such as ``report ra --open`` or ``ui --open`` reaches ``webbrowser.open``; here every open is
+    recorded and returns as a browser would. A test that fakes the browser itself patches over
+    this; one that runs the command in a subprocess fakes it there with ``BROWSER``."""
+    import webbrowser
+
+    opened: list[str] = []
+
+    def recorded(url: str, *a: object, **k: object) -> bool:
+        opened.append(url)
+        return True
+
+    for name in ("open", "open_new", "open_new_tab"):
+        monkeypatch.setattr(webbrowser, name, recorded)
+    return opened
+
+
 @pytest.fixture
 def synth(tmp_path: Path) -> tuple[Path, str]:
     root = tmp_path / "synth"
