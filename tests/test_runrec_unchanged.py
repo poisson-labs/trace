@@ -41,7 +41,10 @@ def _digest(ran: Ran, places: dict[str, str]) -> str:
     text = f"{ran.code}\n{ran.out}\n{ran.err}"
     for path, word in places.items():
         text = text.replace(path, word)
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    from pin_support import as_pinned
+
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    return hashlib.sha256(as_pinned(text).encode("utf-8")).hexdigest()
 
 
 def outputs(tmp: Path, pairs: list[tuple[str, str]]) -> dict[str, str]:

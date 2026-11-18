@@ -332,6 +332,79 @@ def descriptor_path(root: Path) -> Path:
     return root / ".poisson" / "store.json"
 
 
+class Unwritable(Exception):
+    """A store Trace writes nothing into as it stands: the file where it keeps its descriptor
+    is not a descriptor, or the descriptor says the store is in a newer format than Trace
+    knows. The exception's text is the sentence that says which."""
+
+
+def _read_descriptor(root: Path) -> tuple[dict[str, Any] | None, str | None]:
+    """The descriptor of the store at ``root`` as JSON reads it, and why the file is not a
+    descriptor: ``(None, None)`` for a store that has none yet, the document and None for one
+    that reads, and None with the fault in a few words for a file that is not JSON, or is JSON
+    and not an object. Raises ``OSError`` where the file is there and cannot be read: that is
+    the system's to say, and says nothing of what the file holds."""
+    path = descriptor_path(root)
+    if not path.is_file():
+        return None, None
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as e:
+        return None, type(e).__name__
+    if not isinstance(doc, dict):
+        return None, "not a JSON object"
+    return doc, None
+
+
+def _newer(doc: Mapping[str, Any] | None) -> str | None:
+    """The format a descriptor names when it is a newer major of the store format than the one
+    Trace knows, read as Prove reads it: the same kind, and a major that is a number above."""
+    found = doc.get("format") if doc is not None else None
+    if not isinstance(found, str):
+        return None
+    kind, _, known = STORE_FORMAT.rpartition("/")
+    found_kind, _, major = found.rpartition("/")
+    if found_kind != kind:
+        return None
+    try:
+        return found if int(major) > int(known) else None
+    except ValueError:
+        return None
+
+
+def newer_format(root: Path) -> str | None:
+    """The format the descriptor of the store at ``root`` names, when that is a newer major of
+    the store format than the one Trace knows (``STORE_FORMAT``); else None. The format's minor
+    versions are written nowhere and only add keys a reader passes over, so the major is all
+    there is to tell. A store with no descriptor, one whose descriptor does not read, and one
+    in this major or an older one are all None: none of them is known to be newer."""
+    try:
+        return _newer(_read_descriptor(root)[0])
+    except OSError:
+        return None
+
+
+def newer_said(store: str, found: str, does: str = "reads") -> str:
+    """The sentence for a store in a newer format: ``store`` is how the sentence names it (``the
+    store at PATH``), ``found`` the format its descriptor names, and ``does`` what this Trace
+    would have done with it."""
+    return f"{store} holds {found}, a newer format than this Trace {does} ({STORE_FORMAT})"
+
+
+def check_store_descriptor(root: Path) -> dict[str, Any] | None:
+    """The descriptor of the store at ``root`` once it is known that Trace may write into the
+    store: the document, or None for a store that has none yet. Raises ``Unwritable`` for a
+    file that is not a descriptor and for a descriptor in a newer major (the format's sections
+    3 and 9), and ``OSError`` where the file cannot be read."""
+    doc, fault = _read_descriptor(root)
+    if fault is not None:
+        raise Unwritable(f"{descriptor_path(root)} is not a store descriptor ({fault})")
+    found = _newer(doc)
+    if found is not None:
+        raise Unwritable(newer_said(f"the store at {root}", found, "writes"))
+    return doc
+
+
 def _write_descriptor_file(path: Path, doc: Any) -> None:
     """A JSON file written whole through a temporary sibling renamed in."""
     staging = path.with_name(f".{path.name}.{os.getpid()}.tmp")
@@ -346,12 +419,12 @@ def _write_descriptor_file(path: Path, doc: Any) -> None:
 def write_store_descriptor(root: Path) -> None:
     """The store descriptor on Trace's first write into a store, or Trace and its major.minor
     version added once to ``writers``; a descriptor that lists this version already, and every
-    other key, is left exactly as it is. Raises ``OSError`` where the store cannot be written."""
+    other key, is left exactly as it is. Raises ``Unwritable`` for a store Trace writes nothing
+    into, leaving its file as it is, and ``OSError`` where the descriptor cannot be read or the
+    store cannot be written."""
     path = descriptor_path(root)
-    if path.is_file():
-        doc = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(doc, dict):
-            raise OSError(f"{path} is not a store descriptor")
+    doc = check_store_descriptor(root)
+    if doc is not None:
         writers = doc.get("writers")
         if not isinstance(writers, list):
             writers = []
@@ -391,8 +464,9 @@ def _open_to_others(folder: Path) -> None:
 def save_artifact(root: Path, staging: Path, kind: str, identity: str) -> bool:
     """Save the artifact built in ``staging`` into the store at ``root``: the descriptor first,
     then a copy of the folder renamed into its place. True when it was written, False when an
-    artifact of that id was there already. Raises ``OSError`` where the store cannot be written,
-    leaving nothing behind."""
+    artifact of that id was there already. Raises ``Unwritable`` for a store whose descriptor is
+    not one or is in a newer format, and ``OSError`` where the store cannot be written, leaving
+    nothing behind either way."""
     write_store_descriptor(root)
     parent = root / ".poisson" / "artifacts" / kind
     folder = parent / identity

@@ -188,7 +188,8 @@ def test_tf2_19_the_config_line_names_the_line_of_the_fault(ready: Path) -> None
     assert "line 10" in check(data, "config")["line"], data
 
 
-@pytest.mark.parametrize("prove", ["absent", "9.9.9"])
+# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
+@pytest.mark.parametrize("prove", ["absent", "0.3.0"])
 def test_tf2_19_the_prove_line_fails_without_the_prove_trace_reads(ready: Path, prove: str) -> None:
     result = run(["doctor", "--json"], cwd=ready, prove=prove)
     assert result.code == 4, result.text

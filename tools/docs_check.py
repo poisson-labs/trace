@@ -65,6 +65,7 @@ import sys
 import tempfile
 import termios
 import threading
+import time
 import urllib.parse
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
@@ -411,6 +412,26 @@ def environment(home: Path, addresses: dict[str, str] | None) -> dict[str, str]:
     return env
 
 
+#: The error number macOS gives ``openpty`` when the kernel's own "ask again" for an open leaks out
+#: to the caller (XNU's ``EREDRIVEOPEN``); no terminal was opened and nothing is wrong with it.
+_OPEN_AGAIN = -6
+
+
+def _open_terminal(tries: int = 50) -> tuple[int, int]:
+    """A new pseudo-terminal: its controlling end and the end a command is given. On macOS, while
+    other processes open and close pseudo-terminals, ``os.openpty`` now and then fails with
+    ``OSError: [Errno -6]``; that one error is asked again, a moment later each time, and any
+    other, and this one ``tries`` times running, is raised (as ``tests/tf9_support.py`` does)."""
+    for attempt in range(tries):
+        try:
+            return os.openpty()
+        except OSError as e:
+            if e.errno != _OPEN_AGAIN or attempt == tries - 1:
+                raise
+            time.sleep(0.01 * (attempt + 1))
+    raise AssertionError("unreachable")
+
+
 def run(block: Block, folder: Path, env: dict[str, str]) -> tuple[int, str]:
     """The block run with bash in the folder: its exit code and what it printed, stdout then
     stderr."""
@@ -425,7 +446,7 @@ def run(block: Block, folder: Path, env: dict[str, str]) -> tuple[int, str]:
             return -1, f"still running after {TIME_LIMIT} s, and stopped"
         return done.returncode, (done.stdout + done.stderr).rstrip("\n")
     # stdin a terminal, with the answers typed into it; stdout and stderr stay pipes
-    controller, user = os.openpty()
+    controller, user = _open_terminal()
     attrs = termios.tcgetattr(user)
     attrs[3] &= ~termios.ECHO
     termios.tcsetattr(user, termios.TCSANOW, attrs)

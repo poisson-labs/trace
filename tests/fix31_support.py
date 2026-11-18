@@ -162,10 +162,13 @@ def digest(text: str) -> str:
 
 
 def normal(text: str, *roots: Path) -> str:
+    from pin_support import as_pinned
+
     for root in roots:
         for shown in {str(root), str(root.resolve())}:
             text = text.replace(shown, "<ROOT>")
-    return text
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    return as_pinned(text)
 
 
 # Synthetic pairs: the table, the event's name is ``fail``. None of them is a pair in which the
@@ -593,7 +596,10 @@ def printed(tmp: Path) -> dict[str, str]:
         ran = cli(tmp, argv)
         assert ran.code == 0 and ran.err == "", (name, ran.text)
         assert str(tmp) not in ran.out, name
-        out[name] = ran.out
+        from pin_support import as_pinned
+
+        # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+        out[name] = as_pinned(ran.out)
     return out
 
 

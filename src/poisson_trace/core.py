@@ -175,7 +175,7 @@ def _ceilings(held: Any, flags: Sequence[tuple[str, float]]) -> dict[str, float]
 def prepare(ns: argparse.Namespace) -> None:
     """What every verb that reads a store does before any work, in the command's order: the
     config's store, failures and ceilings (what nothing gives is a wrong command line), Prove
-    present at the version this package reads, and the settings checked."""
+    present at a version this package reads, and the settings checked."""
     words = run_words(ns)
     folders = [w for _, w in words if is_folder(w)]
     _from_config(ns, folders=bool(words) and len(folders) == len(words))
@@ -524,9 +524,16 @@ _ARMS = ("a", "b", "old", "new")
 
 def _open(path: str) -> tuple[Any, list[str]]:
     """The store and the runs it holds, or a refusal when no folder under the path holds a run
-    Prove stored: a path that is not there, an empty folder and a plain file alike."""
+    Prove stored: a path that is not there, an empty folder and a plain file alike. A store
+    whose descriptor says it is in a newer format than Trace knows is refused before anything
+    of it is read: every verb opens its store here, so none reads or writes into one."""
     from poisson_prove.store import Store
 
+    from poisson_trace import saved
+
+    newer = saved.newer_format(Path(path))
+    if newer is not None:
+        raise _Refusal(saved.newer_said(f"the store at {look.shown(path)}", newer))
     store = Store(path)
     try:
         held = store.runs()
@@ -1589,7 +1596,8 @@ def save(c: Counted, d: Delivered, out: str | None, force: bool) -> Delivered:
     folder, saved into the runs' store (a store that cannot be written to is a note, and the
     result goes on), and handed over as a bundle into ``out`` where asked (section 17.3 items
     3 to 5). A verdict saved already is not saved again; its bundle is a copy of the artifact
-    as the store holds it."""
+    as the store holds it. A store whose descriptor is not one, or is in a newer format, is
+    refused with nothing written: what is wrong there is the store's, not this save's."""
     import shutil
     import tempfile
 
@@ -1612,8 +1620,14 @@ def save(c: Counted, d: Delivered, out: str | None, force: bool) -> Delivered:
                     "the verdict was not saved: the runs were read from folders, not a store"
                 )
             else:
+                # the store as it was given, while the process is still where it read it from,
+                # so that a refusal names the file by the path the user knows
+                moved = os.path.abspath(ns.store) != ns.store_root
+                root = Path(ns.store_root if moved else ns.store)
                 try:
-                    saved.save_artifact(Path(ns.store_root), staging, c.kind, identity)
+                    saved.save_artifact(root, staging, c.kind, identity)
+                except saved.Unwritable as e:
+                    raise _Refusal(f"{e}; nothing was written") from None
                 except OSError as e:
                     held_notes.append(f"the verdict was not saved: {look.why(e)}")
                 else:

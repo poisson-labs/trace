@@ -14,7 +14,7 @@ import hashlib
 from pathlib import Path
 
 import pytest
-from tf21_support import IMPORTS, digest, do_import, json_without_store, verb_view
+from tf21_support import IMPORTS, do_import, json_without_store, verb_view
 
 # (verb view, import --json) per import, as main d7e19c7 wrote them; the verb views re-pinned at
 # 0.1.0a1 (ruled 2026-11-11, the pre-release cut): the version the import records is their one change
@@ -52,8 +52,12 @@ def test_tf21_64_every_committed_import_is_pinned() -> None:
 def test_tf21_64_what_a_verb_reads_is_unchanged(tmp_path: Path, key: str) -> None:
     root = tmp_path / "store"
     result = do_import(key, root)
-    assert digest(verb_view(root, key)) == MAIN[key][0]
-    out = json_without_store(result, root)
+    from pin_support import as_pinned
+    from tf21_support import canonical
+
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    assert hashlib.sha256(as_pinned(canonical(verb_view(root, key)).decode("utf-8")).encode("utf-8")).hexdigest() == MAIN[key][0]
+    out = as_pinned(json_without_store(result, root))
     assert hashlib.sha256(out.encode("utf-8")).hexdigest() == MAIN[key][1]
 
 

@@ -471,6 +471,17 @@ class Index:
         shown = [r.shown() for r in self.runs[:SHOWN]]
         more = len(self.runs) - SHOWN
         held = ", ".join(shown) + (f" and {look.count(more)} more" if more > 0 else "")
+        if self.unreadable:
+            # a run's name is in its record, so the word may be the name of a run whose record
+            # Prove could not read: it is not known to be no run of this store
+            unread = ", ".join(self.unreadable)
+            one = len(self.unreadable) == 1
+            meant = "which may be the run meant" if one else "one of which may be the run meant"
+            holds = f"the store holds {held}, and " if shown else ""
+            return (
+                f'"{text}" reaches no run Prove could read; {holds}Prove could not read the '
+                f"record or the start time of {unread}, {meant}"
+            )
         return f'unknown run "{text}"; the store holds {held}'
 
     def _newest(self, form: str, target: str | None) -> Named:

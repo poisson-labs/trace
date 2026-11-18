@@ -1,19 +1,23 @@
-"""PIN-1 to PIN-6: Trace pins the published Prove (Taylor's ruling of 2026-11-03).
+"""PIN-1 to PIN-6: Trace declares the oldest published Prove it reads (Taylor's rulings of
+2026-11-17 and 2026-11-18, PV-2 to PV-7; an exact pin before them, by the ruling of 2026-11-03).
 
-Trace pins exactly ``poisson-prove`` 0.1.3, by Taylor's ruling of 2026-11-04 (``pin_support.RECORDED``;
-0.1.2 when these tests were frozen), as a declared dependency, and the pin moves later only on purpose.
+Trace declares ``poisson-prove>=0.4.0`` with no upper cap (``pin_support.RECORDED`` is the floor;
+an exact pin of 0.1.3 until these rulings, and of 0.1.2 when these tests were frozen), as a
+declared dependency, and the floor moves later only on purpose.
 
-- PIN-1: ``pyproject.toml`` declares ``poisson-prove==`` the recorded version as a dependency, and
-  installing the Trace wheel into a clean environment installs that Prove: nothing asks for a
-  second install line (the clean install runs in lane J, as it reads PyPI).
-- PIN-2: the version Trace reads (``look.PROVE_VERSION``) is the declared pin, written in one place
-  so the two cannot drift; the pages show no other.
-- PIN-3: with any other ``poisson-prove``, or none, every command refuses as it does today: exit 1,
-  one ``error:`` line naming the version Trace reads and the one it found, and under it the one
-  command that fixes it, ``pip install poisson-prove==`` the recorded version; ``doctor`` fails
-  its Prove check (exit 4) naming the same command. With the recorded Prove nothing refuses.
-- PIN-4: every fixture store the suite reads that was made with Prove is listed, each is made by
-  the recorded published Prove, and the recipe names that PyPI version, never a commit.
+- PIN-1: ``pyproject.toml`` declares ``poisson-prove>=`` the recorded floor as a dependency, with
+  no cap, and installing the Trace wheel into a clean environment installs a Prove at or above
+  it: nothing asks for a second install line (the clean install runs in lane J, as it reads PyPI).
+- PIN-2: the floor Trace reads (``look.PROVE_VERSION``) is the declared one, written in one place
+  so the two cannot drift; the pages name no other floor.
+- PIN-3: with a ``poisson-prove`` below the floor, or none, every command refuses: exit 1, one
+  ``error:`` line naming the floor and the version it found, and under it the one command that
+  fixes it, ``pip install "poisson-prove>=`` the floor ``"``; ``doctor`` fails its Prove check
+  (exit 4) naming the same command. With the Prove installed nothing refuses.
+- PIN-4: every fixture store the suite reads that was made with Prove is listed. The store the
+  recipe makes is made by the floor, the recorded published Prove, and the recipe names that PyPI
+  version, never a commit, and refuses any other. The store 0.1.3 made is kept as it wrote it,
+  the fixture of the stored format's 1.0.
 - PIN-5: no commit of the archived Prove repository is named anywhere in the repository.
 - PIN-6: the README and the install pages give one install line: no line installs Prove on its
   own, and no page says Prove is off the package index or installed separately.
@@ -37,7 +41,7 @@ from pathlib import Path
 
 import pytest
 
-from pin_support import INSTALL, OLD_PROVE_COMMITS, RECORDED, REQUIREMENT
+from pin_support import FORMAT_1_0, INSTALL, OLD_PROVE_COMMITS, OR_LATER, RECORDED, REQUIREMENT, at_or_above_the_floor, installed
 
 TESTS = Path(__file__).resolve().parent
 REPO = TESTS.parent
@@ -45,6 +49,10 @@ SRC = REPO / "src" / "poisson_trace"
 FIXTURES = TESTS / "fixtures"
 STORES = FIXTURES / "prove-stores"
 PINNED_STORE = STORES / f"prove-{RECORDED}"
+#: The store poisson-prove 0.1.3 made, kept as the fixture of the stored format's 1.0 (PV-7).
+KEPT_STORE = STORES / f"prove-{FORMAT_1_0}"
+#: The floor as one exact published version: what the recipe installs to make the floor's store.
+EXACT = f"poisson-prove=={RECORDED}"
 PAGES = [REPO / "README.md", *sorted((REPO / "docs").rglob("*.md"))]
 INSTALL_PAGES = sorted((REPO / "docs" / "integrations").glob("*.md"))
 # what a reader reads about installing: the pages, the licence notes and the package's own note
@@ -66,17 +74,18 @@ def _project() -> dict:  # type: ignore[type-arg]
 
 def _declared_pin() -> str:
     (prove,) = [d for d in _project().get("dependencies", []) if _name(d) == "poisson-prove"]
-    return prove.replace(" ", "").removeprefix("poisson-prove==")
+    return prove.replace(" ", "").removeprefix("poisson-prove>=")
 
 
 # ---------- PIN-1 ----------
 
 
 def test_pin_1_pyproject_declares_exactly_the_recorded_prove() -> None:
+    """The recorded floor and nothing more: no upper cap, no excluded version, no marker."""
     project = _project()
     assert "dependencies" not in project.get("dynamic", []), project.get("dynamic")
     prove = [d.replace(" ", "") for d in project.get("dependencies", []) if _name(d) == "poisson-prove"]
-    assert prove == [REQUIREMENT], project.get("dependencies")
+    assert prove == [REQUIREMENT] == [f"poisson-prove>={RECORDED}"], project.get("dependencies")
     # no extra adds a second way to get Prove, and the old name is never asked for
     for extra, deps in project.get("optional-dependencies", {}).items():
         assert not [d for d in deps if _name(d) in ("poisson-prove", "proofload")], (extra, deps)
@@ -85,17 +94,18 @@ def test_pin_1_pyproject_declares_exactly_the_recorded_prove() -> None:
 
 def test_pin_1_the_installed_trace_requires_the_recorded_prove_and_has_it() -> None:
     """The metadata the installed package carries (what a wheel built from this tree says), and
-    the Prove this suite runs against."""
+    the Prove this suite runs against: the floor or any Prove above it."""
     requires = [r.replace(" ", "") for r in importlib.metadata.requires("poisson-trace") or []]
     assert [r for r in requires if _name(r) == "poisson-prove"] == [REQUIREMENT], requires
-    assert importlib.metadata.version("poisson-prove") == RECORDED
+    assert at_or_above_the_floor(installed()), installed()
 
 
 @pytest.mark.lane_j
 def test_pin_1_a_clean_install_of_the_wheel_brings_the_recorded_prove(tmp_path: Path) -> None:
     """Lane J: reads PyPI. The wheel built from this tree, installed by one line into a fresh
-    environment, brings ``poisson-prove`` at the recorded version, and Trace then reads a store
-    with nothing more installed and no line asking for another install."""
+    environment, brings a ``poisson-prove`` at or above the recorded floor (the newest the index
+    serves, there being no cap), and Trace then reads the store the floor made and the store
+    0.1.3 made with nothing more installed and no line asking for another install."""
     venv = tmp_path / "venv"
     subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True, timeout=600)
     python, bin_ = str(venv / "bin" / "python"), venv / "bin"
@@ -119,13 +129,15 @@ def test_pin_1_a_clean_install_of_the_wheel_brings_the_recorded_prove(tmp_path: 
 
     found = subprocess.run([python, "-c", "import importlib.metadata as m; print(m.version('poisson-prove'))"],
                            capture_output=True, text=True, check=True, timeout=120)
-    assert found.stdout.strip() == RECORDED
+    brought = found.stdout.strip()
+    assert at_or_above_the_floor(brought), brought
     assert subprocess.run([python, "-m", "pip", "check"], capture_output=True, timeout=300).returncode == 0
     version = run("--version")
-    assert version.returncode == 0 and f"(poisson-prove {RECORDED}, Python " in version.stdout, version
-    store = tmp_path / "store"
+    assert version.returncode == 0 and f"(poisson-prove {brought}, Python " in version.stdout, version
+    store, kept = tmp_path / "store", tmp_path / "kept"
     shutil.copytree(PINNED_STORE, store)
-    for argv in (["runs", "--store", str(store)], ["doctor", "--json"]):
+    shutil.copytree(KEPT_STORE, kept)
+    for argv in (["runs", "--store", str(store)], ["runs", "--store", str(kept)], ["doctor", "--json"]):
         ran = run(*argv)
         assert "pip install" not in ran.stdout + ran.stderr, ran
         if argv[0] == "runs":
@@ -143,6 +155,7 @@ def test_pin_2_the_version_trace_reads_is_the_declared_pin() -> None:
 
     assert _declared_pin() == RECORDED
     assert look.PROVE_VERSION == _declared_pin()
+    assert at_or_above_the_floor(look.PROVE_VERSION) and not at_or_above_the_floor(FORMAT_1_0)
 
 
 def _written(path: Path) -> list[str]:
@@ -151,41 +164,54 @@ def _written(path: Path) -> list[str]:
 
 
 def test_pin_2_the_pin_is_written_in_one_place() -> None:
-    """The recorded version is written once, in ``pyproject.toml``'s dependency: the package's
-    source, its build hook and the refusal's install command take it from there, so moving the pin
-    is one edit and the version Trace reads cannot drift from the one it declares."""
+    """The recorded floor is written once, in ``pyproject.toml``'s dependency: the package's
+    source, its build hook and the refusal's install command take it from there, so moving the
+    floor is one edit and the floor Trace checks cannot drift from the one it declares."""
     places = [REPO / "pyproject.toml", REPO / "hatch_build.py",
               *sorted(p for p in SRC.rglob("*") if p.is_file() and p.suffix in (".py", ".toml", ".json", ".txt"))]
     found = [hit for path in places if path.is_file() for hit in _written(path)]
     assert len(found) == 1 and found[0].startswith("pyproject.toml:"), found
 
 
-PROVE_SHOWN = (
-    re.compile(r"\(poisson-prove (\d+\.\d+\.\d+\S*), Python "),  # the version line
-    re.compile(r"poisson-prove (\d+\.\d+\.\d+\S*) \(the version Trace reads\)"),  # doctor
-    re.compile(r"poisson-prove\s*==\s*(\d+\.\d+\.\d+\S*)"),  # a requirement
-    re.compile(r"Trace reads version (\d+\.\d+\.\d+\S*)"),  # doctor, on another Prove
-    re.compile(r"the poisson-prove package, version (\d+\.\d+\.\d+\S*)\)"),  # the refusal
-    re.compile(r"Poisson Trace \u00b7 Prove (\d+\.\d+\.\d+\S*?) \u00b7"),  # a figure's footer
+# where a page names the floor Trace reads: nothing but the recorded floor
+FLOOR_SHOWN = (
+    re.compile(r"poisson-prove\s*[>=]=\s*(\d+\.\d+\.\d+[\w.]*)"),  # a requirement
+    re.compile(r"Trace reads version (\d+\.\d+\.\d+[\w.]*)"),  # doctor
+    re.compile(r"the poisson-prove package, version (\d+\.\d+\.\d+[\w.]*)"),  # the refusal
+    re.compile(r"Prove[^.\n]*?\bat version (\d+\.\d+\.\d+[\w.]*) or later"),  # prose
 )
+# where a page shows a Prove that was installed when it was written: the floor or one above it
+FOUND_SHOWN = (
+    re.compile(r"\(poisson-prove (\d+\.\d+\.\d+[\w.]*), Python "),  # the version line
+    re.compile(r"poisson-prove (\d+\.\d+\.\d+[\w.]*) \(Trace reads version"),  # doctor
+)
+# a figure's footer names the Prove it was drawn with: 0.1.3 for the figures drawn before the floor
+FOOTER = re.compile(r"Poisson Trace \u00b7 Prove (\d+\.\d+\.\d+[\w.]*?) \u00b7")
 FIGURES = sorted((REPO / "docs" / "figures").glob("*.svg"))
 
 
 def test_pin_2_the_pages_show_no_other_prove_as_the_one_trace_reads() -> None:
-    """The README, the pages under docs/ and the figures they show."""
+    """The README, the pages under docs/ and the figures they show: no page names another floor,
+    shows a Prove below it as installed, or says any more that Trace reads one exact version."""
     wrong = []
     for page in [*PAGES, *FIGURES]:
         for n, line in enumerate(page.read_text(encoding="utf-8").splitlines(), 1):
-            wrong += [f"{page.relative_to(REPO)}:{n}: {line.strip()}" for pattern in PROVE_SHOWN
-                      for shown in pattern.findall(line) if shown != RECORDED]
+            where = f"{page.relative_to(REPO)}:{n}: {line.strip()}"
+            wrong += [where for pattern in FLOOR_SHOWN for shown in pattern.findall(line) if shown != RECORDED]
+            wrong += [where for pattern in FOUND_SHOWN for shown in pattern.findall(line) if not at_or_above_the_floor(shown)]
+            wrong += [where for shown in FOOTER.findall(line) if shown != FORMAT_1_0 and not at_or_above_the_floor(shown)]
+            if "(the version Trace reads)" in line or re.search(r"\bone exact version\b", line):
+                wrong.append(where)
     assert wrong == []
 
 
 # ---------- PIN-3 ----------
 
-OTHERS = ("0.1.2", "0.1.1", "0.1.0", "0.0.1", "0.1.4", "1.0.0")
+# every one a published Prove below the floor: the three releases before it, the exact pin it
+# replaces, and the two oldest
+OTHERS = ("0.3.0", "0.2.2", "0.2.0", "0.1.3", "0.1.0", "0.0.1")
 # each command, the module that runs it, and the words its refusal opens with, as Trace says
-# them today; only the version and the install command move
+# them today; only how the version is named and the install command move
 FAMILIES = {
     "runs": ("poisson_trace.cli", ["runs", "--store", "STORE"], "Poisson Trace reads stored runs"),
     "where": ("poisson_trace.cli", ["where", "agent before", "--store", "STORE", "--event", "violated"],
@@ -236,7 +262,7 @@ def _files(root: Path) -> dict[str, str]:
 
 @pytest.mark.parametrize("prove", [*OTHERS, "absent"])
 @pytest.mark.parametrize("family", list(FAMILIES))
-def test_pin_3_without_the_recorded_prove_every_command_refuses_naming_both_versions_and_the_fix(
+def test_pin_3_without_the_recorded_prove_every_command_refuses_naming_both_versions_and_the_fix(  # below the floor, or none
     tmp_path: Path, family: str, prove: str
 ) -> None:
     module, _, does = FAMILIES[family]
@@ -244,25 +270,25 @@ def test_pin_3_without_the_recorded_prove_every_command_refuses_naming_both_vers
     before = _files(tmp_path)
     ran = _with_prove(module, argv, prove, tmp_path)
     if prove == "absent":
-        sentence = f"error: {does} through Prove (the poisson-prove package, version {RECORDED}), which is not installed here"
+        sentence = f"error: {does} through Prove (the poisson-prove package, version {OR_LATER}), which is not installed here"
     else:
-        sentence = f"error: {does} through Prove (the poisson-prove package, version {RECORDED}) and found poisson-prove {prove}"
+        sentence = f"error: {does} through Prove (the poisson-prove package, version {OR_LATER}) and found poisson-prove {prove}"
     assert ran.returncode == 1, ran.stdout + ran.stderr
     assert ran.stdout == "", ran.stdout
     assert [line for line in ran.stderr.splitlines() if line.strip()] == [sentence, f"  next: {INSTALL}"], ran.stderr
     assert _files(tmp_path) == before
 
 
-@pytest.mark.parametrize("prove", ["0.1.1", "0.0.1", "absent"])
+@pytest.mark.parametrize("prove", ["0.3.0", "0.1.3", "absent"])
 def test_pin_3_doctor_fails_its_prove_check_naming_the_fix(tmp_path: Path, prove: str) -> None:
     ran = _with_prove("poisson_trace.cli", ["doctor", "--json"], prove, tmp_path)
     assert ran.returncode == 4, ran.stdout + ran.stderr
     doc = json.loads(ran.stdout)
     (check,) = [c for c in doc["checks"] if c["name"] == "prove"]
     if prove == "absent":
-        line = f"poisson-prove is not installed, and Trace reads stores through it (version {RECORDED})"
+        line = f"poisson-prove is not installed, and Trace reads stores through it (version {OR_LATER})"
     else:
-        line = f"poisson-prove {prove} is installed, and Trace reads version {RECORDED}"
+        line = f"poisson-prove {prove} is installed, and Trace reads version {OR_LATER}"
     assert check == {"name": "prove", "ok": False, "line": line, "next": INSTALL}, check
     assert doc["next"] == INSTALL
 
@@ -270,7 +296,7 @@ def test_pin_3_doctor_fails_its_prove_check_naming_the_fix(tmp_path: Path, prove
 def test_pin_3_the_fix_names_the_recorded_version_from_pypi() -> None:
     from poisson_trace import look
 
-    assert look.INSTALL_PROVE == INSTALL == f"pip install poisson-prove=={_declared_pin()}"
+    assert look.INSTALL_PROVE == INSTALL == f'pip install "poisson-prove>={_declared_pin()}"'
 
 
 @pytest.mark.parametrize("family", [f for f in FAMILIES if f not in ("init",)])
@@ -293,7 +319,8 @@ MADE_WITH_PROVE = {
     "cs": "real runs, 2026-09-25, copied with their observation bodies removed",
     "humaneval": "real runs, 2026-09-05, copied outcome-only",
     "prove-stores/prove-0.0.1": "Prove's own sweep on its mock agent, under its old name proofload 0.0.1",
-    f"prove-stores/prove-{RECORDED}": "Prove's own sweep on its mock agent, poisson-prove from PyPI",
+    f"prove-stores/prove-{FORMAT_1_0}": "Prove's own sweep on its mock agent, poisson-prove 0.1.3 from PyPI: the stored format's 1.0",
+    f"prove-stores/prove-{RECORDED}": "Prove's own sweep on its mock agent, poisson-prove from PyPI at the floor",
 }
 
 
@@ -322,14 +349,36 @@ def test_pin_4_every_store_made_with_prove_is_listed() -> None:
 
 # PP1 (PENDING): the stores Prove made before it was published are kept as they were written: the
 # three real-run pairs cannot be made again without paying for the model runs, and the 0.0.1
-# store is the old shape TF16 reads beside the new. The rest are made by the recorded Prove.
+# store is the old shape TF16 reads beside the new. The store 0.1.3 made is kept as the fixture of
+# the stored format's 1.0 (PV-7). The rest are made by the recorded Prove, the floor.
 BEFORE_PUBLISHED = {"tau2", "cs", "humaneval", "prove-stores/prove-0.0.1"}
+KEPT_1_0 = {f"prove-stores/prove-{FORMAT_1_0}"}
 
 
-@pytest.mark.parametrize("root", sorted(set(MADE_WITH_PROVE) - BEFORE_PUBLISHED))
+def test_pin_4_the_store_0_1_3_made_is_kept_as_written() -> None:
+    """PV-7: the fixture of the stored format's 1.0 states the Prove that wrote it and no other,
+    in its runs, its descriptor and its saved comparison, and holds no key a later format added."""
+    runs = sorted(KEPT_STORE.glob("*/manifest.json"))
+    assert len(runs) == 2
+    descriptor = json.loads((KEPT_STORE / ".poisson" / "store.json").read_text(encoding="utf-8"))
+    assert descriptor["format"] == "poisson.store/1" and descriptor["created_by"] == {"tool": "poisson-prove", "version": FORMAT_1_0}
+    assert [(w["tool"], w["version"]) for w in descriptor["writers"]] == [("poisson-prove", FORMAT_1_0)]
+    (artifact,) = (KEPT_STORE / ".poisson" / "artifacts" / "comparison").glob("*/artifact.json")
+    made = json.loads(artifact.read_text(encoding="utf-8"))
+    assert (made["tool"], made["tool_version"]) == ("poisson-prove", FORMAT_1_0), artifact
+    comparison = json.loads((artifact.parent / "comparison.json").read_text(encoding="utf-8"))
+    assert "note_a" not in comparison and "note_b" not in comparison
+    for path in runs:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        assert set(_versions(manifest, "poisson_prove_version")) == {FORMAT_1_0}, path
+        assert _versions(manifest, "proofload_version") == [], path
+        assert not {"produced_by", "stopped_by", "note"} & set(manifest), path
+
+
+@pytest.mark.parametrize("root", sorted(set(MADE_WITH_PROVE) - BEFORE_PUBLISHED - KEPT_1_0))
 def test_pin_4_every_store_made_with_prove_is_made_by_the_recorded_prove(root: str) -> None:
     """Every store the suite reads that Prove made is made with the recorded published Prove, but
-    the ones it made before it was published (PP1)."""
+    the ones it made before it was published (PP1) and the one kept as the format's 1.0 (PV-7)."""
     manifests = sorted((FIXTURES / root).glob("*/manifest.json"))
     assert manifests, root
     for path in manifests:
@@ -351,33 +400,62 @@ def test_pin_4_the_stores_made_before_prove_was_published_are_kept_as_written(ro
 
 
 def test_pin_4_the_store_made_now_is_written_whole_by_the_recorded_prove() -> None:
-    """The pinned store's runs, its store descriptor and its saved comparison."""
+    """The floor's store: its runs, its store descriptor and its saved comparison, with every key
+    the stored format has gained since 1.0 (``produced_by``, 1.1; the notes, 1.2)."""
     runs = sorted(PINNED_STORE.glob("*/manifest.json"))
     assert len(runs) == 2
     assert json.loads((PINNED_STORE / ".poisson" / "store.json").read_text())["format"] == "poisson.store/1"
     (artifact,) = (PINNED_STORE / ".poisson" / "artifacts" / "comparison").glob("*/artifact.json")
     made = json.loads(artifact.read_text(encoding="utf-8"))
     assert (made["tool"], made["tool_version"]) == ("poisson-prove", RECORDED), artifact
+    comparison = json.loads((artifact.parent / "comparison.json").read_text(encoding="utf-8"))
+    notes = []
     for path in runs:
-        assert set(_versions(json.loads(path.read_text()), "poisson_prove_version")) == {RECORDED}, path
+        manifest = json.loads(path.read_text())
+        assert set(_versions(manifest, "poisson_prove_version")) == {RECORDED}, path
+        assert manifest["produced_by"]["tool"] == "poisson-prove" and manifest["produced_by"]["version"] == RECORDED, path
+        notes.append(manifest["note"])
+    assert notes == ["the agent as it was", "retry each tool call once"] == [comparison["note_a"], comparison["note_b"]]
 
 
 def test_pin_4_the_recipe_names_the_pypi_version() -> None:
     """The store's recipe and its provenance say which published Prove made it, by the PyPI
-    requirement, and how to get it."""
+    requirement of that one version (the floor, exactly), and how to get it; the provenance also
+    gives the requirement Trace declares and Trace's own install line, and says the 0.1.3 store
+    is kept."""
     provenance = (STORES / "PROVENANCE.md").read_text(encoding="utf-8")
     make = (STORES / "make.py").read_text(encoding="utf-8")
     for text in (provenance, make):
-        assert REQUIREMENT in text and "PyPI" in text
-    assert INSTALL in provenance
+        assert EXACT in text and "PyPI" in text
+    assert f"pip install {EXACT}" in provenance and REQUIREMENT in provenance and INSTALL in provenance
     assert f"prove-{RECORDED}/" in provenance and "make.py" in provenance
+    assert f"prove-{FORMAT_1_0}/" in provenance and f"poisson-prove=={FORMAT_1_0}" in provenance
+    assert f"poisson-prove=={FORMAT_1_0}" not in make
+
+
+def test_pin_4_the_recipe_refuses_a_prove_that_is_not_the_floor(tmp_path: Path) -> None:
+    """The recipe makes the floor's store with the floor and nothing else: given a Python whose
+    Prove states another version, it stops, names the floor, and writes nothing."""
+    python = tmp_path / "python-with-another-prove"
+    python.write_text(f"#!/bin/sh\necho {FORMAT_1_0}\n", encoding="utf-8")
+    python.chmod(0o755)
+    dest = tmp_path / "made"
+    ran = subprocess.run([sys.executable, str(STORES / "make.py"), str(dest), "--python", str(python)],
+                         capture_output=True, text=True, timeout=120)
+    assert ran.returncode != 0, ran.stdout + ran.stderr
+    assert FORMAT_1_0 in ran.stderr and EXACT in ran.stderr, ran.stderr
+    assert not dest.exists()
 
 
 def test_pin_4_the_recipe_makes_the_store_again(tmp_path: Path) -> None:
-    """Run with the recorded Prove (the one this suite runs against), the recipe writes a store
-    of the same files, holding the same outcomes row for row; only the run ids, the times and the
-    files that carry them differ."""
+    """Run with the recorded Prove, the floor, the recipe writes a store of the same files,
+    holding the same outcomes row for row; only the run ids, the times and the files that carry
+    them differ. Under a Prove above the floor the recipe refuses (the test above), so this is
+    skipped there and says so."""
     from poisson_prove.store import Store
+
+    if installed() != RECORDED:
+        pytest.skip(f"poisson-prove {installed()} is installed; the recipe makes the floor's store with {RECORDED}")
 
     dest = tmp_path / "made"
     env = {**os.environ, "HOME": str(tmp_path / "home"), "NO_COLOR": "1"}
@@ -539,8 +617,8 @@ def test_pin_6_no_page_says_prove_is_off_the_index_or_installed_apart() -> None:
 # ---------- PIN-F ----------
 
 FROZEN = {
-    "pin_support.py": "740a7fa00730fdb7d26dc859f125a3f2cb835d2f7dce38369b950db9e7319f34",
-    "test_prove_pin.py": "5f1dcd324e7710d1cb80d1e283a1f96219ac45265e67c7998871074cddc2a61e",
+    "pin_support.py": "5a4e5f5adb08ba184364efc0f0039105e758ed4150bff0b08f1f0e8aa35f3d18",
+    "test_prove_pin.py": "41160b622a42897859bf11ab2a9d6f35d525a5ac9905e986ed7dec9504ef6dc0",
 }
 
 

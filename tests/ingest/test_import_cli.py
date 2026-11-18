@@ -157,15 +157,16 @@ def test_ic9_without_poisson_prove_the_command_refuses_before_it_opens_a_file(tm
     assert tree(root) == {}
 
 
+# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
 def test_ic9_with_poisson_prove_at_another_version_the_command_refuses_before_it_opens_a_file(tmp_path: Path) -> None:
     fake = tmp_path / "fake" / "poisson_prove"
     fake.mkdir(parents=True)
-    (fake / "__init__.py").write_text('__version__ = "9.9.9"\n')
+    (fake / "__init__.py").write_text('__version__ = "0.3.0"\n')
     env = dict(os.environ)
     env["PYTHONPATH"] = str(tmp_path / "fake") + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     r, opened, f, root = _probe(tmp_path, "", env)
     refused(r)
-    assert "poisson-prove" in r.err and RECORDED in r.err and "9.9.9" in r.err
+    assert "poisson-prove" in r.err and RECORDED in r.err and "0.3.0" in r.err
     _no_open_of(opened, f)
     assert tree(root) == {}
 
@@ -464,13 +465,13 @@ FROZEN = {
     "conftest.py": "88bc21fd208111bd673ebadda9d42899ad120b978110aa085821f4e4b495f79c",
     "fixcheck_support.py": "3781fa2e753462c5d168b747f815ec7bdad6797914041bcdbfa76829568114ad",
     "test_changes.py": "b60b8f37a4d67753e9d26b0bea5d70c2950c808cc365372f7bcaadf3350ec99a",
-    "test_cli.py": "c774681b114efcc6ebe860a8991992d202c3a5d34c0a859b42a5ad51d7976149",
+    "test_cli.py": "293a88916d0510d1eb4977ba7f1908e1f6f50fc005a4e416eb5aeecb755c0de4",
     "test_clock.py": "4c63abd620252f7dd4033f81403a3311af85e9161ad16e05ba372f36f798b8f2",
-    "test_fix_check_cli.py": "30ee68972b123e64777e18cbeadaded1ce3a9d055bb110d3afc730306242b6fb",
+    "test_fix_check_cli.py": "3cf4683ef0a9e039aaa39ee945ca3f77efaebd1b4f6b0b8e537cdf347e6191d8",
     "test_fix_check_golden.py": "9b851201ed0b74bf04b2a28a5f3b83fdc85175bd929c6e7db72a8a21889262a3",
     "test_golden.py": "96336168933b628ccd373b58882dfa84d641872556a71567863fb2f90bc5fdcd",
     "test_paired.py": "3905e6d4a27c6a4201ca56a064cb6b209da118a4c1c5fe77a5da24c4fef640bb",
-    "test_report.py": "38c7be36113f2721de26773f5d4cdb42a7617b41f13aca9a9b7e87e0c1d3ca7f",
+    "test_report.py": "ca0648b5b9f350597e242bbb81572a8891f83096d6e6196129b43b98cb0c61e8",
     "test_survival.py": "975c37e9344c4d62595e8cc37c0d4c2921ecd131d5985408520692a87ca5a51b",
 }
 

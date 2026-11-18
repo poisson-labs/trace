@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from pin_support import RECORDED
+from pin_support import RECORDED, installed
 from conftest import (
     FIXTURES, TAU2, TAU2_A, TAU2_B, chdir, compare, deaths_rows, norm,
 )
@@ -447,17 +447,18 @@ def test_tr41_without_prove_both_verbs_refuse_before_the_store(argv) -> None:  #
 
 
 @pytest.mark.parametrize("argv", NEW_CALLS)
+# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
 def test_tr41_on_the_wrong_prove_both_verbs_refuse(tmp_path: Path, argv) -> None:  # type: ignore[no-untyped-def]
     ok(changes(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS))
     fake = tmp_path / "fake" / "poisson_prove"
     fake.mkdir(parents=True)
-    (fake / "__init__.py").write_text('__version__ = "9.9.9"\n')
+    (fake / "__init__.py").write_text('__version__ = "0.3.0"\n')
     env = dict(os.environ)
     env["PYTHONPATH"] = str(tmp_path / "fake") + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     proc = _sub(f"import sys; from poisson_trace.cli import main; sys.exit(main({argv!r}))", env)
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
     assert proc.returncode == 1 and lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
-    assert "9.9.9" in lines[0] and RECORDED in lines[0]
+    assert "0.3.0" in lines[0] and RECORDED in lines[0]
 
 
 # ---------- TR42 ----------
@@ -722,7 +723,7 @@ def test_tr61_the_json_keys_bytes_and_numbers() -> None:
     d = a.json()
     assert tuple(d) == FIX_KEYS
     assert d["schema"] == "poisson-trace.fix-check/2"  # ST9 (ruled 2026-10-20)
-    assert set(d["prove"]) == {"version", "store"} and d["prove"]["version"] == RECORDED
+    assert set(d["prove"]) == {"version", "store"} and d["prove"]["version"] == installed()  # the Prove installed, at or above the floor (PV-5)
     assert set(d["runs"]) == {"old", "new"} and all(set(h) == HEADER_KEYS for h in d["runs"].values())
     assert set(d["inputs"]) == INPUTS_KEYS
     assert set(d["rows"]) == {"old", "new"} and all(set(r) == ROWS_KEYS for r in d["rows"].values())

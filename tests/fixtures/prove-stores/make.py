@@ -1,8 +1,9 @@
-"""Make the Prove store TF16's tests and the pin's tests read, ``prove-0.1.3/``, by running the
-published Prove's own sweep on its keyless mock agent: poisson-prove 0.1.3 from PyPI
-(``poisson-prove==0.1.3``, installed with ``pip install poisson-prove==0.1.3``). Its runs are
-named at sweep time and a comparison of them is saved, so it holds the store descriptor, the event
-logs and an artifact under ``.poisson/``.
+"""Make the Prove store the floor's tests read, ``prove-0.4.0/``, by running the published Prove's
+own sweep on its keyless mock agent: poisson-prove 0.4.0 from PyPI (``poisson-prove==0.4.0``,
+installed with ``pip install poisson-prove==0.4.0``), the oldest Prove that Trace reads. Its runs
+are named and given a note at sweep time and a comparison of them is saved, so it holds the store
+descriptor, the event logs and an artifact under ``.poisson/``, and every key the stored format
+has gained since 1.0: ``produced_by`` (1.1), and ``note``, ``note_a`` and ``note_b`` (1.2).
 
 usage: python make.py DEST [--python PYTHON]
 
@@ -11,9 +12,10 @@ recipe refuses any other version. Nothing here calls a model or the network; the
 so a second run stores the same outcomes, and only the run ids, the times and the files that
 carry them differ.
 
-The other store beside it, ``prove-0.0.1/``, is not made here: it is kept as Prove wrote it in
-October under its old name, ``proofload`` 0.0.1, which was never on a package index (see
-PROVENANCE.md).
+The two stores beside it are not made here. ``prove-0.1.3/`` is kept as poisson-prove 0.1.3
+wrote it on 2026-11-04, by this recipe as it then was (the same sweeps, with no notes): it is the
+fixture of the stored format's 1.0. ``prove-0.0.1/`` is kept as Prove wrote it in October under
+its old name, ``proofload`` 0.0.1, which was never on a package index (see PROVENANCE.md).
 """
 
 from __future__ import annotations
@@ -25,7 +27,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-PROVE = "0.1.3"  # poisson-prove==0.1.3, from PyPI
+PROVE = "0.4.0"  # poisson-prove==0.4.0, from PyPI
+NOTES = ("the agent as it was", "retry each tool call once")
 SALT = "5eed000000000016"
 
 
@@ -47,9 +50,10 @@ def store(python: str, dest: Path) -> Path:
     spec = str(dest / "sweep.toml")
     agent = "poisson_prove.examples.mock_agent"
     run(python, *prove, "sweep", spec, "--target", f"{agent}:rollout", "--salt", SALT,
-        "--name", "agent before", "--max-mde", "0.5", "--yes", *where, cwd=dest)
+        "--name", "agent before", "--note", NOTES[0], "--max-mde", "0.5", "--yes", *where, cwd=dest)
     run(python, *prove, "sweep", spec, "--target", f"{agent}:rollout_patched", "--pair-with",
-        "latest", "--name", "agent after", "--max-mde", "0.5", "--yes", *where, cwd=dest)
+        "latest", "--name", "agent after", "--note", NOTES[1], "--max-mde", "0.5", "--yes", *where,
+        cwd=dest)
     run(python, *prove, "diff", "agent before", "agent after", "--event", "violated", "--save",
         *where, cwd=dest)
     return root

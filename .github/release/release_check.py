@@ -10,7 +10,8 @@ entry headed ``## VERSION — `` and a date or ``pre-release``.
 
 ``dist``: DIR holds one wheel and one sdist of that version, built from this tree. Their
 metadata agree; every requirement is one an index can serve (no direct reference, no URL);
-Prove is pinned exactly, as ``pyproject.toml`` pins it; the wheel holds the package and its
+Prove is required as ``pyproject.toml`` declares it, which is a floor and nothing more (the
+oldest version Trace reads, with no cap); the wheel holds the package and its
 metadata only (no test, no fixture, no ``.env``); and neither file holds an absolute home or
 temporary path or anything shaped like an API key.
 
@@ -106,10 +107,12 @@ def check_dist(folder: Path) -> list[str]:
     metas = {"wheel": Parser().parsestr(members[f"{stem}.dist-info/METADATA"].decode("utf-8")),
              "sdist": Parser().parsestr(sd[f"{stem}/PKG-INFO"].decode("utf-8"))}
     declared = pyproject()["project"]["dependencies"]
-    pinned = [r for r in declared if requirement_name(r) == "poisson-prove"]
-    exact = r"poisson-prove==\d+\.\d+\.\d+"
-    if len(pinned) != 1 or not re.fullmatch(exact, pinned[0].replace(" ", "")):
-        out.append(f"pyproject.toml does not pin poisson-prove exactly: {pinned}")
+    floor = [r for r in declared if requirement_name(r) == "poisson-prove"]
+    # the oldest Prove Trace reads and nothing more: no cap, no excluded version, no marker
+    shape = r"poisson-prove>=\d+\.\d+\.\d+"
+    if len(floor) != 1 or not re.fullmatch(shape, floor[0].replace(" ", "")):
+        out.append("pyproject.toml does not declare poisson-prove as a floor with no cap "
+                   f"(poisson-prove>=X.Y.Z): {floor}")
     for kind, meta in metas.items():
         if meta["Name"] != NAME or meta["Version"] != version:
             out.append(f"the {kind} says {meta['Name']} {meta['Version']}")
@@ -119,8 +122,8 @@ def check_dist(folder: Path) -> list[str]:
                 out.append(f"the {kind} requires {line!r}, which no index can serve")
         prove = [r.split(";")[0].replace(" ", "") for r in requires
                  if requirement_name(r) == "poisson-prove"]
-        if prove != [p.replace(" ", "") for p in pinned]:
-            out.append(f"the {kind} requires Prove as {prove}, pyproject.toml as {pinned}")
+        if prove != [p.replace(" ", "") for p in floor]:
+            out.append(f"the {kind} requires Prove as {prove}, pyproject.toml as {floor}")
     requires_of = {kind: meta.get_all("Requires-Dist") or [] for kind, meta in metas.items()}
     if requires_of["wheel"] != requires_of["sdist"]:
         out.append("the wheel and the sdist do not require the same packages")
@@ -145,7 +148,7 @@ def check_dist(folder: Path) -> list[str]:
         print(f"{wheel.name} and {sdist.name}: {NAME} {version}, "
               f"requires {', '.join(requires_of['wheel'])}")
         print(f"the wheel holds {len(members)} files, the sdist {len(sd)}; "
-              f"Prove pinned as {pinned[0]}")
+              f"Prove required as {floor[0]}")
     return out
 
 

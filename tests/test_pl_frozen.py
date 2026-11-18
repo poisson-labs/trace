@@ -17,7 +17,7 @@ FROZEN = {
     "test_pl_section.py": "80967c61f6877f305b4f0bd7829e9e7f545de57127de88322ee4f14938ebc014",
     "test_pl_recipe.py": "da89faf58701fd79bf8ae99d9677296f8607c03ab84a637dccd7572fbcaf3aee",
     "test_pl_docs.py": "31c152a444f535321b0e8fc75399340ed55e1c3544ee6c93af8c57c390d8bac5",
-    "test_pl_unchanged.py": "78386008233cd48691ee962dfdbb931fe89155fdeacf7f0739d9371085dc801a",
+    "test_pl_unchanged.py": "7486c7fa98ae4421e848a49557d0f30ed6416511cfeafed3395c2210390f498f",
     "fixtures/pl/make_main_pins.py": "a3f0528f27e875c8e234f692f3fc1a4e37f90813c2c74110d2d609f39e4d91fd",
     "fixtures/pl/main-pins.json": "7b1fe0b471a5cadbe439757462b9cd3e14f0b5f0d335b3adca083bac77a9a6bc",
 }

@@ -482,7 +482,8 @@ class _Counting:
     def to_bundle(self, folder: str, *, force: bool = False) -> Any:
         """``--out DIR``: the verdict saved into the runs' store and handed over as a bundle
         into ``folder``, which is made; one that is there is refused without ``force``. The
-        result as the command prints it with ``--out``."""
+        result as the command prints it with ``--out``. A store whose ``store.json`` is not a
+        store descriptor is refused, as ``save`` refuses it."""
         _text("folder", folder)
         with _calling(self._counted.ns):
             delivered = core.save(self._counted, self._delivered, folder, _bool("force", force))
@@ -767,7 +768,8 @@ class Bundle:
 
 
 def open_store(path: str) -> Store:
-    """A store Prove wrote, at ``path``; refused when no folder under it holds a run."""
+    """A store Prove wrote, at ``path``; refused when no folder under it holds a run, and when
+    its descriptor says it is in a newer format than this Trace reads."""
     _text("path", path)
     with _calling():
         core.prove_present()
@@ -1103,7 +1105,8 @@ def _settings_of(given: Any) -> Any:
 def save(result: Any) -> Any:
     """``--save``: the verdict saved as an artifact in the runs' store, under
     ``.poisson/artifacts``. The result as the command prints it with ``--save``; a store that
-    cannot be written to is a note, and the result goes on."""
+    cannot be written to is a note, and the result goes on. A store whose ``store.json`` is
+    not a store descriptor is refused, and nothing is written."""
     if not isinstance(result, _Counting):
         raise ValueError(
             "save takes the result of where, compare, fix_check or changes, not "

@@ -27,6 +27,21 @@ import pytest
 from tf19_support import PACKAGE, PROVE_SHELL, REPO, SHELL_MODULE, app_files, imports_of
 
 SHELL = json.loads(PROVE_SHELL.read_text(encoding="utf-8"))
+#: The two app files of the floor, poisson-prove 0.4.0 from PyPI (ruled 2026-11-17, PV-7): what the installed
+#: Prove's are when the floor is the Prove installed. Every definition the copy holds is still theirs.
+FLOOR_FILES = {
+    "_cli_app.py": "faf945a4876b22849af98d70ef4f732234e14cd1c07a38bb1182db0fde85ba9b",
+    "_cli_app_pages.py": "d6eb2cea14b01ba6a4f37d61bf3abeaf9a595cc660f571b122eb957c0c3185fa",
+}
+
+
+def _at_the_floor() -> None:
+    """The copy is compared with the floor's app files, the oldest Prove Trace reads. A later Prove's are its own
+    to change, and nothing of them is held: under one, the comparison is skipped and says so."""
+    from pin_support import RECORDED, installed
+
+    if installed() != RECORDED:
+        pytest.skip(f"poisson-prove {installed()} is installed; the copy is compared with the floor's files ({RECORDED})")
 
 
 def _prove_file(name: str) -> Path:
@@ -95,10 +110,13 @@ def test_tf19_8_the_copy_names_the_prove_commit() -> None:
 
 @pytest.mark.parametrize("name", sorted(SHELL["files"]))
 def test_tf19_8_the_installed_prove_is_the_commit(name: str) -> None:
-    """The installed Prove's app files are the named commit's (and the 0.1.3 release's), so the
-    copy is compared with that commit's bytes; a moved Prove pin shows here."""
+    """The installed Prove's app files are the floor's (``FLOOR_FILES``; the fixture's ``files`` are the
+    0.1.3 release's, which the copy was first compared with), so the copy is compared with the floor's bytes;
+    a moved floor shows here."""
+    _at_the_floor()
+    assert set(FLOOR_FILES) == set(SHELL["files"])
     data = _prove_file(name).read_bytes()
-    assert hashlib.sha256(data).hexdigest() == SHELL["files"][name]
+    assert hashlib.sha256(data).hexdigest() == FLOOR_FILES[name]
 
 
 COPIED = [(f, n) for f, names in SHELL["copied"].items() for n in names]
@@ -106,6 +124,7 @@ COPIED = [(f, n) for f, names in SHELL["copied"].items() for n in names]
 
 @pytest.mark.parametrize(("source", "name"), COPIED, ids=[f"{f}:{n}" for f, n in COPIED])
 def test_tf19_8_each_definition_is_the_commits(source: str, name: str) -> None:
+    _at_the_floor()
     prove = _definitions(ast.parse(_prove_file(source).read_text(encoding="utf-8")))
     trace = _definitions(_shell_tree())
     theirs = prove[name]

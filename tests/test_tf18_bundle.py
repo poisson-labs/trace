@@ -1,9 +1,9 @@
 """TF18-8 to TF18-12: what every page is made of, what it may load, what it never touches, and
 when it is built (spec section 17.3 item 7; the look file's "The static UI").
 
-**TF18-8** The fixed files are Prove 0.1.3's UI bundle byte for byte: ``style.css`` and ``ui.js``
-(the colour tokens are in ``style.css``; Prove's bundle has no third file), copied from the
-installed ``poisson_prove`` and equal to the digests its 0.1.3 wheel ships (A1).
+**TF18-8** The fixed files are the installed Prove's UI bundle byte for byte: ``style.css`` and
+``ui.js`` (the colour tokens are in ``style.css``; Prove's bundle has no third file), copied from
+the installed ``poisson_prove``, whichever Prove at or above Trace's floor that is (A1; PV-6).
 
 **TF18-9** Every page is Prove's skeleton: the doctype, ``lang="en"``, the charset first, Prove's
 Content-Security-Policy meta, the viewport, the generator ``poisson-trace <version>``, the header
@@ -55,7 +55,6 @@ from tf18_support import (
     prove_bundle,
     read_file,
     resolve,
-    sha256,
     snapshot,
     ui,
     ui_root,
@@ -87,7 +86,9 @@ def test_tf18_8_proves_bundle_is_the_two_files_its_wheel_ships() -> None:
     from poisson_prove.core import _views
 
     assert tuple(_views.BUNDLE) == BUNDLE
-    assert {k: sha256(v) for k, v in prove_bundle().items()} == BUNDLE_SHA256
+    # the bytes are whatever the installed Prove ships, at the floor or above it: 0.1.3's digests are held no
+    # longer (ruled 2026-11-17, PV-6); the copies are still Prove's byte for byte (the test below)
+    assert set(BUNDLE_SHA256) == set(BUNDLE) and all(prove_bundle()[name] for name in BUNDLE)
 
 
 @pytest.mark.parametrize("store", ["store", "tables"])

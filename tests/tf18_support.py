@@ -595,9 +595,12 @@ SLOW = frozenset({"import: deepeval", "import json: deepeval", "fixture: where c
 
 
 def normal(text: str, *roots: Path) -> str:
+    from pin_support import as_pinned
+
     for root in roots:
         text = text.replace(str(root.resolve()), "<ROOT>").replace(str(root), "<ROOT>")
-    return text
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    return as_pinned(text)
 
 
 def run_steps(work: Path, place: str, kind: str, steps: Sequence[Sequence[str]]) -> Iterator[Ran]:

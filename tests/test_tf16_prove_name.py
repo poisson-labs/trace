@@ -104,7 +104,8 @@ COMMANDS = {
     "import": ["import", "junit", REPO / "tests" / "fixtures" / "ingest" / "junit" / "trace-suite-1.xml",
                "--store", "STORE", "--run", "suite"],
 }
-STATES = {"absent": "absent", "proofload 0.0.1 alone": "old", "poisson_prove 9.9.9": "9.9.9"}
+# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
+STATES = {"absent": "absent", "proofload 0.0.1 alone": "old", "poisson_prove 0.3.0": "0.3.0"}
 
 
 @pytest.mark.parametrize("state", list(STATES))
@@ -123,8 +124,8 @@ def test_tf16_2_without_poisson_prove_at_its_version_a_command_refuses_naming_it
     lines = ran.err_lines()
     assert lines[0].startswith("error: "), lines
     assert "poisson-prove" in lines[0] and PROVE_VERSION in lines[0], lines[0]
-    if state == "poisson_prove 9.9.9":
-        assert "9.9.9" in lines[0], lines[0]
+    if state == "poisson_prove 0.3.0":
+        assert "0.3.0" in lines[0], lines[0]
     assert "proofload" not in ran.text, ran.text
     assert f"  next: {INSTALL_PROVE}" in lines[1:], lines
     assert all(line.startswith("  next: ") for line in lines[1:]), lines

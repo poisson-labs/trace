@@ -72,6 +72,13 @@ def _main(name: str) -> str:
 
 
 def _now(name: str) -> str:
+    # the Prove floor pair changes some of these files after this pair did (ruled 2026-11-17, PV-2 to PV-8): what this
+    # pair gave each is read from the file as main 4bb4b95 held it, and test_pf_unchanged.py (PF-91 to PF-96) holds
+    # what the floor moves in it since
+    from pf_pins import TEXTS as FLOOR_TEXTS, main_text
+
+    if name in FLOOR_TEXTS:
+        return main_text(name)
     return (REPO / name).read_text(encoding="utf-8")
 
 
@@ -180,6 +187,12 @@ def test_tf20_86_every_other_file_is_main_s() -> None:
 
         if name in BUILT:
             continue
+        # the Prove floor pair builds the floor in these, and its frozen commits change or add those
+        # (test_pf_unchanged.py, PF-90, holds every other file)
+        from pf_pins import BUILT as FLOOR_BUILT, OURS as FLOOR_OURS
+
+        if name in FLOOR_BUILT or name in FLOOR_OURS:
+            continue
         # TF9's list of frozen tests moves when a frozen test moves on a ruling (test_tf9_plain.py, TF9-1a, holds
         # each line of it): tests/conftest.py for trace#50, ruled 2026-11-17 (PV-1)
         if name == "tests/fixtures/tf9/frozen-tests.sha256":
@@ -274,6 +287,10 @@ def test_tf20_91_no_other_file_is_added() -> None:
     added = [name for name in pinned_paths(_files_on_disk()) if name not in pinned]
     # the Prove label kinds pair's own pins (test_pl_unchanged.py, PL-56, holds that it adds nothing else)
     added = [name for name in added if not name.startswith("tests/fixtures/pl/")]
+    # nor the Prove floor pair's pins and the store the floor made (test_pf_unchanged.py, PF-90, holds them)
+    from pf_pins import FLOOR_STORE
+
+    added = [name for name in added if not name.startswith(("tests/fixtures/pf/", FLOOR_STORE))]
     assert added == [PAGE.relative_to(REPO).as_posix()], added
     top = {name.split("/")[0] for name in _files_on_disk()} - {name.split("/")[0] for name in tracked_at_main()}
     assert top <= {"examples"}, top

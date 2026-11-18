@@ -10,7 +10,7 @@ from pathlib import Path
 TESTS = Path(__file__).resolve().parent
 
 FROZEN = {
-    "tf5_support.py": "a8a8138ea087c38b61d3694f51eea2afe8c9b9db4fdcdd2a39e4a4b78631d1e6",
+    "tf5_support.py": "c9fb7f7fa4b7968bb13bcc06bc1806379c0a835960515815661d8a3398b5418b",
     "tf5_pins.py": "de21957269747c522c62d068d66e61245c3eb6037e93bf3cc238a47a4249a8a4",
     "test_tf5_unchanged.py": "111165aaa3c0d4b8e5734ff270e9bd42dafb7ab94885ccb65ca330a50349efad",
     "test_tf5_blocks.py": "5ba9df36a8e7049a2dc442af51a35d69f3d00eaec9360747d40d8cd4217b25c8",

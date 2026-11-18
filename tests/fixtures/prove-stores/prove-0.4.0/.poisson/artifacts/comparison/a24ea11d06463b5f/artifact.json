@@ -1,0 +1,188 @@
+{
+  "format": "poisson.artifact/1",
+  "kind": "comparison",
+  "id": "a24ea11d06463b5f",
+  "tool": "poisson-prove",
+  "tool_version": "0.4.0",
+  "created_at": "2026-11-18T16:57:44Z",
+  "inputs": {
+    "runs": [
+      "20261118T165736Z-838d",
+      "20261118T165742Z-a070"
+    ]
+  },
+  "settings": {
+    "method": "mcnemar_bh",
+    "method_chosen": "default",
+    "events": [
+      {
+        "name": "violated",
+        "kind": null
+      }
+    ],
+    "q": 0.05,
+    "power": 0.8,
+    "horizon": 20.0,
+    "by": null,
+    "depth": 3,
+    "permutations": 4000,
+    "seed": 0,
+    "max_group_mde": 0.2
+  },
+  "summary": {
+    "verdict": "lower",
+    "sentence": "violated: 2 lower, 0 higher (paired test on shared seeds)",
+    "detail": [
+      [
+        "method",
+        "paired test on shared seeds (McNemar), the default for runs paired at sweep time"
+      ],
+      [
+        "before",
+        "agent before"
+      ],
+      [
+        "before note",
+        "the agent as it was"
+      ],
+      [
+        "after",
+        "agent after"
+      ],
+      [
+        "after note",
+        "retry each tool call once"
+      ],
+      [
+        "verdict rule",
+        "the verdict counts changes at the family-wise level (Holm, q 0.05 over 4 tests); a condition's flag is Benjamini-Hochberg's, at the false discovery rate q 0.05 over 4 tests"
+      ],
+      [
+        "limits",
+        "the smallest change one condition alone would be flagged for, 4 times in 5, if it alone changed, from where the condition was (the paired test (McNemar), q 0.05 over 4 tests)"
+      ],
+      [
+        "intervals",
+        "on each condition's change: Tango at 97.5%, false coverage (Benjamini-Yekutieli) over the 2 flagged; an unflagged row's interval is at the same level with no adjusted promise of its own"
+      ],
+      [
+        "fragility",
+        "7 outcomes would change the word: 7 runs of B in task_id refund, tool_fail_rate 0.0 made to end in violated"
+      ]
+    ]
+  },
+  "files": [
+    {
+      "path": "comparison.json",
+      "role": "result",
+      "media_type": "application/json",
+      "schema": "poisson-prove.comparison/1",
+      "sha256": "f1a9434d03fb11ba7b45e3e3201ada242f6fdbd0b63be2a4219d12fde2f1aff0"
+    },
+    {
+      "path": "conditions.parquet",
+      "role": "table",
+      "media_type": "application/vnd.apache.parquet",
+      "schema": "poisson.table/1",
+      "sha256": "1a5e1cb52449763131f8875a7db89f8ee3ac7b9df27d03e00967c94bc316b996"
+    },
+    {
+      "path": "charts/heatmap-violated.svg",
+      "role": "chart",
+      "media_type": "image/svg+xml",
+      "data": "charts/heatmap-violated.json",
+      "sha256": "bfee0f43d45dd00144cedf86291d3157bbe91c5e666627852d55ba601f61252c"
+    },
+    {
+      "path": "charts/heatmap-violated.json",
+      "role": "table",
+      "media_type": "application/json",
+      "schema": "poisson-prove.chart/1",
+      "sha256": "1cb836aabc7d9b3e8185be79cb80fe6c7d0d89b022f73bbf35094a79fbc03780"
+    },
+    {
+      "path": "charts/differences-violated.svg",
+      "role": "chart",
+      "media_type": "image/svg+xml",
+      "data": "charts/differences-violated.json",
+      "sha256": "0d4f33b84ed125f1769fa75a6daf7f004eddf3d65cb4d8905a2156c12ff7f5b4"
+    },
+    {
+      "path": "charts/differences-violated.json",
+      "role": "table",
+      "media_type": "application/json",
+      "schema": "poisson-prove.chart/1",
+      "sha256": "82d048b6743a087aee0ee7ce1df1659360180752bf5a403786afe03d7a9930d6"
+    },
+    {
+      "path": "charts/limits-violated.svg",
+      "role": "chart",
+      "media_type": "image/svg+xml",
+      "data": "charts/limits-violated.json",
+      "sha256": "d00f33d52effca4039d883213b5b2860624b393f547107fab8db749d4f0ba1d2"
+    },
+    {
+      "path": "charts/limits-violated.json",
+      "role": "table",
+      "media_type": "application/json",
+      "schema": "poisson-prove.chart/1",
+      "sha256": "f2c3b069aa2e71ee12ac442cbc3ba08c3416790341c7d31a1d6b7a8447456d20"
+    },
+    {
+      "path": "charts/7b806df50938571e/incidence-violated.svg",
+      "role": "chart",
+      "media_type": "image/svg+xml",
+      "data": "charts/7b806df50938571e/incidence-violated.json",
+      "sha256": "d651169a3db3201ea0bfef62b07f33c68c7d052799fd6738f90f9f74f5b86b11"
+    },
+    {
+      "path": "charts/7b806df50938571e/incidence-violated.json",
+      "role": "table",
+      "media_type": "application/json",
+      "schema": "poisson-prove.chart/1",
+      "sha256": "655ac3bf348fb03b753fffd9bc8f15e2a05a90385d299ad5e35b3d37a9b38dac"
+    },
+    {
+      "path": "charts/b4a971a744b471f8/incidence-violated.svg",
+      "role": "chart",
+      "media_type": "image/svg+xml",
+      "data": "charts/b4a971a744b471f8/incidence-violated.json",
+      "sha256": "8626958ee8bb43d329c68dde4efdde913e2b5cd14efc5fe146544a572bf12bf4"
+    },
+    {
+      "path": "charts/b4a971a744b471f8/incidence-violated.json",
+      "role": "table",
+      "media_type": "application/json",
+      "schema": "poisson-prove.chart/1",
+      "sha256": "111fb2773dfc11f543f5f90a3dab75601d9554d2fb41ee1e5f745943f370534e"
+    },
+    {
+      "path": "charts/b67467242f0e71da/incidence-violated.svg",
+      "role": "chart",
+      "media_type": "image/svg+xml",
+      "data": "charts/b67467242f0e71da/incidence-violated.json",
+      "sha256": "b1729e8ce3622dce13aa57f93ca73ff47c53bf325de6917b1e520b05e759c668"
+    },
+    {
+      "path": "charts/b67467242f0e71da/incidence-violated.json",
+      "role": "table",
+      "media_type": "application/json",
+      "schema": "poisson-prove.chart/1",
+      "sha256": "8933f457f7b52b4af6597475ec74dbd96d4be254fd47b8e82d0c586ee983bc1e"
+    },
+    {
+      "path": "charts/c9d973c669310f5d/incidence-violated.svg",
+      "role": "chart",
+      "media_type": "image/svg+xml",
+      "data": "charts/c9d973c669310f5d/incidence-violated.json",
+      "sha256": "942a9bd94fe27f69b8ef174975c496fd69854faa605daed77e809cf73e2d98d9"
+    },
+    {
+      "path": "charts/c9d973c669310f5d/incidence-violated.json",
+      "role": "table",
+      "media_type": "application/json",
+      "schema": "poisson-prove.chart/1",
+      "sha256": "d98a84ca550a5ad2e45c4fc4a76fd8db6b52b95ce37885d76e6b86e5a5b93001"
+    }
+  ]
+}

@@ -38,29 +38,34 @@ CHECK_FAILED = 4
 INTERRUPTED = 130
 
 def _declared_prove() -> str:
-    """The version of Prove this package pins: the ``poisson-prove==X`` that ``pyproject.toml``
-    declares, read back from the installed package's own metadata, so it is written in one place
-    and what Trace checks for cannot drift from what it declares."""
+    """The oldest Prove this package reads: the ``poisson-prove>=X`` that ``pyproject.toml``
+    declares, read back from the installed package's own metadata, so the floor is written in one
+    place and what Trace checks for cannot drift from what it declares. A requirement of any
+    other shape (an exact pin, a range with a cap) is not read as a floor, and nothing is guessed
+    in its place."""
     try:
         requires = importlib.metadata.requires("poisson-trace") or []
     except importlib.metadata.PackageNotFoundError:
         requires = []
-    pin = re.compile(r"\s*poisson[-_.]prove\s*==\s*([^\s;,]+)\s*(?:;|$)", re.IGNORECASE)
+    floor = re.compile(r"\s*poisson[-_.]prove\s*>=\s*(\d+(?:\.\d+)*)\s*(?:;|$)", re.IGNORECASE)
     for requirement in requires:
-        pinned = pin.match(requirement)
-        if pinned:
-            return pinned.group(1)
+        declared = floor.match(requirement)
+        if declared:
+            return declared.group(1)
     raise RuntimeError(
-        "the installed poisson-trace does not state which poisson-prove it pins (the metadata "
-        "pip wrote when it installed this package has no poisson-prove==VERSION requirement); "
-        "install it again with pip"
+        "the installed poisson-trace does not state the oldest poisson-prove it reads (the "
+        "metadata pip wrote when it installed this package has no poisson-prove>=VERSION "
+        "requirement); install it again with pip"
     )
 
 
-# The one Prove this package reads: poisson-prove, imported as poisson_prove, at the exact version
-# pyproject.toml declares, from PyPI.
+# The Prove this package reads: poisson-prove, imported as poisson_prove, from PyPI, at the floor
+# pyproject.toml declares or any later version. PROVE_VERSION is that floor.
 PROVE_VERSION = _declared_prove()
-INSTALL_PROVE = f"pip install poisson-prove=={PROVE_VERSION}"
+#: How a sentence names the versions of Prove this package reads.
+PROVE_READ = f"version {PROVE_VERSION} or later"
+# quoted, since a shell reads an unquoted > as "send the output to a file"
+INSTALL_PROVE = f'pip install "poisson-prove>={PROVE_VERSION}"'
 NOTHING_WRITTEN = "stopped  interrupted; nothing was written"
 
 
@@ -285,24 +290,47 @@ def version_line() -> str:
     return f"poisson-trace {poisson_trace.__version__} ({prove}, Python {python})\n"
 
 
+# a version as a package states one: its release's numbers, then whatever follows them
+_VERSION = re.compile(r"(\d+(?:\.\d+)*)(.*)", re.DOTALL)
+# what follows a release's numbers when the version comes before that release: a pre-release
+# (1.2.0rc1, 1.2.0a1, 1.2.0-beta.2) or a development release (1.2.0.dev1)
+_BEFORE_ITS_RELEASE = re.compile(r"[-_.]?(?:a|b|c|rc|alpha|beta|pre|preview|dev)(?![a-z])", re.I)
+
+
+def _at_or_above(found: str, floor: str) -> bool:
+    """Whether the version ``found`` is ``floor`` or a later one, as pip orders versions.
+    ``floor`` is a release's numbers alone (``1.2.0``). The numbers are compared part by part, a
+    missing part counting as zero, so 1.10.0 is above 1.2.0, and 1.2 is 1.2.0. Where they are
+    equal, a pre-release or a development release of the floor is below it, and a post-release
+    is not. A version that does not open with numbers is not at or above any floor."""
+    read = _VERSION.fullmatch(found.strip())
+    if read is None:
+        return False
+    mine = [int(n) for n in read.group(1).split(".")]
+    least = [int(n) for n in floor.split(".")]
+    width = max(len(mine), len(least))
+    mine += [0] * (width - len(mine))
+    least += [0] * (width - len(least))
+    if mine != least:
+        return mine > least
+    return _BEFORE_ITS_RELEASE.match(read.group(2)) is None
+
+
 def prove_refusal(does: str) -> str | None:
-    """The refusal when Prove is not importable at the version this package reads, else None.
-    ``does`` is what the command does through Prove, as the sentence's opening words. The line
-    that installs it is the command to run next, under the sentence, and not in it."""
+    """The refusal when Prove is not importable at a version this package reads (the floor or
+    a later one), else None. ``does`` is what the command does through Prove, as the sentence's
+    opening words. The line that installs it is the command to run next, under the sentence, and
+    not in it."""
+    wanted = f"{does} through Prove (the poisson-prove package, {PROVE_READ})"
     try:
         import poisson_prove
     except ImportError:
-        return (
-            f"{does} through Prove (the poisson-prove package, version {PROVE_VERSION}), which "
-            "is not installed here"
-        )
+        return f"{wanted}, which is not installed here"
     found = _found(poisson_prove)
-    if found != PROVE_VERSION:
-        saw = f"poisson-prove {found}" if found else "a poisson-prove that states no version"
-        return (
-            f"{does} through Prove (the poisson-prove package, version {PROVE_VERSION}) and "
-            f"found {saw}"
-        )
+    if found is None:
+        return f"{wanted} and found a poisson-prove that states no version"
+    if not _at_or_above(found, PROVE_VERSION):
+        return f"{wanted} and found poisson-prove {found}"
     return None
 
 

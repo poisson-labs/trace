@@ -25,8 +25,8 @@ it once in each environment, or that recipe's tests fail at its first command:
 `.venv/bin/poisson-tasks doctor --fix --yes`, and the same with `.venv311`.
 
 The last line prints the version of Trace, of Prove and of Python. Prove is the
-`poisson-prove` package, which Trace reads stored runs through. `pyproject.toml` pins it to
-one exact version, and `pip` brings it.
+`poisson-prove` package, which Trace reads stored runs through. `pyproject.toml` declares the
+oldest version Trace reads, 0.4.0, and sets no upper limit, so `pip` brings the newest.
 
 ## The suite
 

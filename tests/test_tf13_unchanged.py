@@ -666,7 +666,10 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
 
 
 def _digest(text: str, work: Path) -> str:
-    return hashlib.sha256(text.replace(str(work), "<WORK>").encode("utf-8")).hexdigest()
+    from pin_support import as_pinned
+
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    return hashlib.sha256(as_pinned(text.replace(str(work), "<WORK>")).encode("utf-8")).hexdigest()
 
 
 def run_case(tmp: Path, label: str) -> tuple[list[tuple[int, str, str]], Path]:

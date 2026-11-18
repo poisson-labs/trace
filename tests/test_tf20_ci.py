@@ -12,7 +12,7 @@
   byte-for-byte comparison of what ``generate`` writes, comes after the guard (TF5-94).
 - TF20-73: the one pin of Tasks: the development extra holds it, and no other line of the
   repository's packaging names another version; the page, the provenance and the job name the
-  same one; Prove is Trace's pin.
+  same one; Prove is Trace's floor.
 - TF20-74: the recipe's page and its folder are not in the wheel, and the folder is in the
   source archive; the folder holds no machine's path and nothing shaped like a key, by the
   release's own check.
@@ -140,7 +140,8 @@ def test_tf20_73_one_pin_of_tasks() -> None:
         if extra != "dev":
             assert not [d for d in wanted if "poisson-tasks" in d], extra
     assert not [d for d in PROJECT["project"]["dependencies"] if "poisson-tasks" in d], "Trace itself never needs Tasks"
-    assert f"poisson-prove=={PROVE_VERSION}" in [d.replace(" ", "") for d in PROJECT["project"]["dependencies"]]
+    # Prove is Trace's floor, with no cap (ruled 2026-11-17, PV-2 and PV-3)
+    assert f"poisson-prove>={PROVE_VERSION}" in [d.replace(" ", "") for d in PROJECT["project"]["dependencies"]]
     for text in (read(PAGE), PROVENANCE.read_text(encoding="utf-8"), jobs()["clean-install"]):
         assert TASKS_VERSION in text
         for version in re.findall(r"poisson-tasks==(\S+?)[\"'\s]", text + " "):

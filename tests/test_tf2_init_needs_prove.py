@@ -18,7 +18,8 @@ from tf1_support import tau2_copy
 from tf2_support import CONFIG, numbered, refused, run, scratch_home, tree, work  # noqa: F401
 
 
-@pytest.mark.parametrize("prove", ["absent", "9.9.9"])
+# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
+@pytest.mark.parametrize("prove", ["absent", "0.3.0"])
 def test_tf2_17_without_prove_init_refuses_before_it_searches(tmp_path: Path, prove: str) -> None:
     folder = work(tmp_path)
     tau2_copy(folder, "proofload-runs")

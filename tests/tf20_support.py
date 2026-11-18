@@ -65,10 +65,10 @@ SPECS = {"before": EXAMPLE / "prove-before.toml", "after": EXAMPLE / "prove-afte
 TARGETS = {"before": "prove_rollout:before", "after": "prove_rollout:after"}
 RUNS = {"before": "agent before", "after": "agent after"}
 
-#: The versions the recipe uses: Tasks pinned here (the brief: Tasks 0.4.2 from PyPI), Prove as
-#: Trace pins it.
+#: The versions the recipe uses: Tasks pinned here (the brief: Tasks 0.4.2 from PyPI), Prove at
+#: the floor Trace declares or above it (0.1.3, Trace's exact pin, until ruled 2026-11-17, PV-7).
 TASKS_VERSION = "0.4.2"
-PROVE_VERSION = "0.1.3"
+PROVE_VERSION = "0.4.0"
 TASKS_PIN = f"poisson-tasks=={TASKS_VERSION}"
 HORIZON = 32  # the model calls a Tasks run allows: poisson_tasks.taskset.MAX_MODEL_CALLS at the pin
 #: Section 17.6's command, word for word.

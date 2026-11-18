@@ -363,7 +363,8 @@ def test_tf0_10_a_wrong_command_line_without_prove_is_a_usage_error(tmp_path: Pa
         assert INSTALL_PROVE not in result.text
 
 
-@pytest.mark.parametrize("prove", ["absent", "9.9.9"])
+# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
+@pytest.mark.parametrize("prove", ["absent", "0.3.0"])
 @pytest.mark.parametrize("command", ["trace", "import"])
 def test_tf0_10_a_command_that_needs_prove_names_the_install_line(tmp_path: Path, prove: str, command: str) -> None:
     store = tmp_path / "store"

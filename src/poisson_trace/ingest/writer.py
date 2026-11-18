@@ -107,8 +107,6 @@ _COPIED: tuple[str, ...] = (
 EVENT_SCHEMA = "poisson.run-event/1"
 EVENTS = "events.jsonl"
 MANIFEST = "manifest.json"
-#: The kind of store descriptor Trace writes, and the major it reads (the format's section 3).
-STORE_KIND, STORE_MAJOR = saved.STORE_FORMAT.rsplit("/", 1)
 
 
 @dataclass(frozen=True)
@@ -302,26 +300,10 @@ class _Log:
 def _check_descriptor(root: Path) -> None:
     """Refuse a store whose descriptor is in a newer major than Trace writes, or is not a
     descriptor at all (the format's sections 3 and 9), before anything is written."""
-    path = saved.descriptor_path(root)
-    if not path.is_file():
-        return
     try:
-        doc = json.loads(path.read_text(encoding="utf-8"))
-    except ValueError as e:
-        raise Refusal(f"{path} is not a store descriptor ({why(e)}); nothing was written") from e
-    if not isinstance(doc, Mapping):
-        raise Refusal(f"{path} is not a store descriptor (not a JSON object); nothing was written")
-    found = doc.get("format")
-    if isinstance(found, str) and found.rsplit("/", 1)[0] == STORE_KIND:
-        try:
-            major = int(found.rsplit("/", 1)[1])
-        except (IndexError, ValueError):
-            return
-        if major > int(STORE_MAJOR):
-            raise Refusal(
-                f"the store at {root} holds {found}, a newer format than this Trace writes "
-                f"({saved.STORE_FORMAT}); nothing was written"
-            )
+        saved.check_store_descriptor(root)
+    except saved.Unwritable as e:
+        raise Refusal(f"{e}; nothing was written") from e
 
 
 def _produced_by(run: Run, verdicts: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -483,7 +465,11 @@ def write(
     # the descriptor once the run's folder is there, as Prove writes its own
     try:
         saved.write_store_descriptor(Path(root))
-    except (OSError, ValueError) as e:
+    except saved.Unwritable as e:
+        # the descriptor changed under the import, after the check above read it
+        shutil.rmtree(Path(root) / run.name, ignore_errors=True)
+        raise Refusal(f"{e}; nothing was written") from e
+    except OSError as e:
         shutil.rmtree(Path(root) / run.name, ignore_errors=True)
         raise Refusal(
             f"the store at {root} cannot be written to ({why(e)}); nothing was written"

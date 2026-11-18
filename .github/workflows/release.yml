@@ -12,11 +12,11 @@
 # - check: the ref is a tag GitHub verified as signed; the tag, pyproject.toml, __version__ and
 #   the CHANGELOG entry agree; no commit names an assistant.
 # - build: the sdist and the wheel from the tagged tree (`git archive`, never the checkout);
-#   twine's metadata check; every requirement one an index can serve, Prove pinned exactly; the
+#   twine's metadata check; every requirement one an index can serve, Prove as a floor; the
 #   wheel holds the package alone, and neither file an absolute path or a key. Kept as `dist`.
 # - lanes, on Python 3.12 and 3.11: pull-request, slow, math, ruff, mypy --strict.
 # - lane-j, on Python 3.12 and 3.11: the built wheel installed into a clean environment brings
-#   the Prove it pins and reads a store; and lane J's own clean-install test.
+#   a Prove at or above its floor and reads a store; and lane J's own clean-install test.
 # - testpypi: uploads `dist` to TestPyPI by trusted publishing; testpypi-check then checks
 #   TestPyPI serves those files byte for byte and that they install and run.
 # By hand on the tag (workflow_dispatch, version typed in):
@@ -188,7 +188,7 @@ jobs:
           "$RUNNER_TEMP/clean/bin/python" -m pip check
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/clean/bin/poisson-trace" --version | tee -a "$GITHUB_STEP_SUMMARY"
-          "$RUNNER_TEMP/clean/bin/python" -c "import importlib.metadata as m; assert m.version('poisson-prove') == '0.1.3', m.version('poisson-prove')"
+          "$RUNNER_TEMP/clean/bin/python" -c "from poisson_trace import look; assert look.prove_refusal('Trace reads stores') is None, f'poisson-prove {look.prove_found()} is below the floor, {look.PROVE_VERSION}'"
           NO_COLOR=1 "$RUNNER_TEMP/clean/bin/poisson-trace" fix-check "tau2-airline 2026-09-15 a" "tau2-airline 2026-09-15 b" \
             --store "$GITHUB_WORKSPACE/tests/fixtures/tau2" --event unsolved --inputs all --max-mde 0.2 --json > fix-check.json
           python -c "import json; d = json.load(open('fix-check.json')); print(d['verdict'], '|', d['direction'], '| p', d['test']['p'])"

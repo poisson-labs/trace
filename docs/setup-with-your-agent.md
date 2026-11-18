@@ -124,9 +124,9 @@ ok  trace.toml is ready for the person to review
 Under it come two lines that name your Python and where the package is installed, and then
 one line for each thing checked, with one line per pending file:
 
-<!-- excerpt exit=0 -->
+<!-- excerpt exit=0 varies -->
 ```
-  prove     poisson-prove 0.1.3 (the version Trace reads)
+  prove     poisson-prove … (Trace reads version 0.4.0 or later)
   config    trace.toml: store store (2 runs, 2 complete, 0 partial), failures forbidden_action, unresolved, max_turns, app_error
   names     store: no names of yours yet
   readers   deepeval, ragas, table, junit, promptfoo, inspect, openai-evals, langsmith, braintrust, weave

@@ -31,7 +31,10 @@ def test_tf16_13_the_stores_are_listed_with_their_digests_and_their_recipe() -> 
     for line in (STORES / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
         digest, _, name = line.partition("  ")
         sums[name.removeprefix("./")] = digest
-    files = {str(p.relative_to(STORES)): p for root in (OLD, NEW) for p in root.rglob("*") if p.is_file()}
+    # the floor's store beside the two (ruled 2026-11-17, PV-7; test_prove_pin.py, PIN-4, holds what it is)
+    from pin_support import RECORDED
+
+    files = {str(p.relative_to(STORES)): p for root in (OLD, NEW, STORES / f"prove-{RECORDED}") for p in root.rglob("*") if p.is_file()}
     assert set(sums) == set(files)
     assert {name: _sha256(p) for name, p in files.items()} == sums
     provenance = (STORES / "PROVENANCE.md").read_text(encoding="utf-8")
@@ -68,14 +71,14 @@ def test_tf16_13_the_two_stores_hold_the_same_outcomes_row_for_row() -> None:
 # ---------- TF16-14 ----------
 
 FROZEN = {
-    "tf16_support.py": "b9abe79cfe6ca56f41a0300ca2725e25cba71bb9674d3125fcbd7379e735c6e4",
-    "test_tf16_prove_name.py": "8aabcd1b957512d6b35d982675728f4df09d48219c65ecce0760eaf10cfd5b48",
+    "tf16_support.py": "49aad018038df7712c62cd758c4fafbd4b7a71ec90c7549b66690bd1022daedb",
+    "test_tf16_prove_name.py": "1deafa5aae17d3f9db73a9c1d78d73789dc25ae7bd0f21f1c495cef5e5c4ecb9",
     "test_tf16_stores.py": "dc0db3c091b70b797a3786e484e6f84a8a6078847800ac712806324cf6e396da",
     "test_tf16_run_names.py": "509050fb9f722e73e94cf61b7093f58e5decb95f31f32f4b50feab174831709d",
-    "fixtures/prove-stores/make.py": "7bd1bddea06c3f53422cea5bc9d218f27bd4ca436f7a6ed60c922a8d9900968b",
+    "fixtures/prove-stores/make.py": "7c8f464545b4395992167111602305a30affb876285553b41873cce859bbb8bc",
     "fixtures/prove-stores/sweep.toml": "690368203d9ccf5d9542cfb95aec7b454c7a301b0eabee6fe94a06b9af18adff",
-    "fixtures/prove-stores/PROVENANCE.md": "9224415b17a18965b02f635a358a9563c6e4ea9b4156a400ddc708a3fc3f8a58",
-    "fixtures/prove-stores/SHA256SUMS": "ac5fdaad1c8f1b4132a16c4a9cceacf3553445d04a6af43c72223eab65b59d30",
+    "fixtures/prove-stores/PROVENANCE.md": "601c997daf3e64a25ec59f868793cd3ffc762410e04970830f555f660417cdb0",
+    "fixtures/prove-stores/SHA256SUMS": "dce1df89ab3a7e3a0dc38e3972e9a15829f2ed14503c4d7d6dd1685e1e2b2a88",
 }
 
 

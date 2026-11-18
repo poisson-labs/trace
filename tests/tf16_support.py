@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from pin_support import INSTALL, RECORDED
+from pin_support import FORMAT_1_0, INSTALL, RECORDED
 
 TESTS = Path(__file__).resolve().parent
 REPO = TESTS.parent
@@ -34,8 +34,9 @@ STORES = TESTS / "fixtures" / "prove-stores"
 OLD = STORES / "prove-0.0.1"
 OLD_A = "20261028T154158Z-c830"  # the mock agent
 OLD_B = "20261028T154200Z-9ace"  # the patched mock agent, paired with OLD_A
-# written by poisson-prove 0.1.3 from PyPI (the Prove Trace pins), each run named at sweep time
-NEW = STORES / f"prove-{RECORDED}"
+# written by poisson-prove 0.1.3 from PyPI, each run named at sweep time: kept as the fixture of the stored
+# format's 1.0 now that Trace declares a floor above it (ruled 2026-11-17, PV-7)
+NEW = STORES / f"prove-{FORMAT_1_0}"
 NEW_BEFORE = "20261104T162926Z-b4d5"  # sweep --name "agent before", the mock agent
 NEW_AFTER = "20261104T162928Z-1596"  # sweep --name "agent after", the patched mock agent
 SWEEP_NAMES = {NEW_BEFORE: "agent before", NEW_AFTER: "agent after"}
@@ -163,7 +164,7 @@ def copy_store(source: Path, dest: Path, runs: Sequence[str] | None = None) -> P
 def copies(tmp_path: Path) -> tuple[Path, Path]:
     """Copies of the two committed stores, 0.0.1's and 0.1.3's, so no build under test can write
     into the committed ones."""
-    return copy_store(OLD, tmp_path / "prove-0.0.1"), copy_store(NEW, tmp_path / f"prove-{RECORDED}")
+    return copy_store(OLD, tmp_path / "prove-0.0.1"), copy_store(NEW, tmp_path / f"prove-{FORMAT_1_0}")
 
 
 def snapshot(root: Path) -> dict[str, tuple[str, int]]:

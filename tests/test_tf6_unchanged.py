@@ -59,7 +59,10 @@ PINNED: dict[str, tuple[list[str], str, str]] = {
         "5645fa0b5333107cab506c929ba678c404230f5d9ba8ff37edbaaa716af5fb8c"),
 }
 def _digest(text: str) -> str:
-    return hashlib.sha256(text.replace(str(REPO), "<REPO>").encode("utf-8")).hexdigest()
+    from pin_support import as_pinned
+
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    return hashlib.sha256(as_pinned(text.replace(str(REPO), "<REPO>")).encode("utf-8")).hexdigest()
 
 
 # ---------- TF6-1 ----------

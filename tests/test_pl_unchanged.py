@@ -198,17 +198,27 @@ def test_pl_56_every_other_file_is_main_s() -> None:
         # each line of it): tests/conftest.py for trace#50, ruled 2026-11-17 (PV-1)
         if name == "tests/fixtures/tf9/frozen-tests.sha256":
             continue
+        # the Prove floor pair builds the floor in these, and its frozen commits change or add those
+        # (test_pf_unchanged.py, PF-90, holds every other file)
+        from pf_pins import BUILT as FLOOR_BUILT, OURS as FLOOR_OURS
+
+        if name in FLOOR_BUILT or name in FLOOR_OURS:
+            continue
         if name not in BUILT and file_digest(path) != digest:
             moved_files.append(name)
     assert moved_files == [], moved_files
 
 
 def test_pl_56_no_file_is_added_but_the_tests() -> None:
-    added = sorted(set(pinned_paths(tracked())) - set(PINNED["files"]))
+    # the Prove floor pair adds its own pins and the store the floor made (test_pf_unchanged.py, PF-90, holds them)
+    from pf_pins import FLOOR_STORE
+
+    floor = ("tests/fixtures/pf/", FLOOR_STORE)
+    added = sorted(n for n in set(pinned_paths(tracked())) - set(PINNED["files"]) if not n.startswith(floor))
     assert added == [], added
     new = sorted(set(tracked()) - set(PINNED["tracked"]))
     assert all(n.startswith("tests/") for n in new), new
-    assert not any(n.startswith(("tests/fixtures/",)) and not n.startswith("tests/fixtures/pl/") for n in new), new
+    assert not any(n.startswith(("tests/fixtures/",)) and not n.startswith(("tests/fixtures/pl/", *floor)) for n in new), new
 
 
 # ---------- PL-57 ----------

@@ -42,7 +42,7 @@ pip install poisson-trace
 ```
 
 That one line is all Trace needs. It brings Prove, the `poisson-prove` package that Trace
-reads stored runs through, at the one exact version Trace reads. `poisson-trace --version`
+reads stored runs through, at version 0.4.0 or later. `poisson-trace --version`
 prints the versions of Trace, Prove and Python, and `poisson-trace doctor` says whether the
 setup is ready.
 

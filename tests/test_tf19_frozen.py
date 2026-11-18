@@ -21,9 +21,9 @@ FROZEN = {
     "test_tf19_open.py": "b490f779e522877839b626fd6b71a016b2ada290651040e2e4a3754c3b4d9073",
     "test_tf19_saves.py": "8846954f904b7f7cfaa1db06c74189f9df0e9d37a0089f8d46099222054f95eb",
     "test_tf19_screens.py": "93ee57f27d2f5dabdb8e672d5fe921bb10ccd2f263824f1517ba8fb747daa850",
-    "test_tf19_shell.py": "c7bf2b2f43a1482149683c9afec479b302538beb25e7770a55e7f5d9e171e815",
+    "test_tf19_shell.py": "d03ca425f36711e8cdcf1287ffb4cdd61cb63b0a7dad4e854366d46d2639f397",
     "test_tf19_unchanged.py": "ebf19a2046ab83594a3bf93ec8dc2d99c49955a02a333f45bba875dc7e5cd1d7",
-    "tf19_support.py": "0a5cf2144cece8503e2ae0ca102d0632b1a00cd834009fcf2297c5d083d2283a",
+    "tf19_support.py": "2234eab694b7297bf035fdfc72b657e7403eb865f82bbf6fd46b07e955ddc634",
 }
 
 

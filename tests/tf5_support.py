@@ -441,7 +441,10 @@ def run_block(block: Block, root: Path, env: dict[str, str]) -> tuple[int, str]:
     if block.answers is None:
         proc = subprocess.run(["bash", "-c", command], cwd=root, env=env, capture_output=True, text=True, timeout=300, stdin=subprocess.DEVNULL)
         return proc.returncode, (proc.stdout + proc.stderr).rstrip("\n")
-    controller, user = os.openpty()
+    # asked again when macOS fails the open with its own "ask again" (tf9_support.open_terminal; ruled 2026-11-18, MF-2)
+    from tf9_support import open_terminal
+
+    controller, user = open_terminal()
     attrs = termios.tcgetattr(user)
     attrs[3] &= ~termios.ECHO
     termios.tcsetattr(user, termios.TCSANOW, attrs)

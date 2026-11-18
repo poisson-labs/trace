@@ -1,0 +1,25 @@
+{
+  "schema": "poisson-prove.chart/1",
+  "event": "violated",
+  "condition": "b4a971a744b471f8",
+  "kind": "incidence",
+  "title": "Cumulative incidence of violated, each run: task_id refund · tool_fail_rate 0",
+  "caption": "The share of each run's episodes in task_id refund · tool_fail_rate 0 that had ended in violated by each time, before in grey and after in violet, to the horizon (20 tool_calls).",
+  "columns": [
+    "t",
+    "before",
+    "after"
+  ],
+  "rows": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      20.0,
+      0.0,
+      0.0
+    ]
+  ]
+}

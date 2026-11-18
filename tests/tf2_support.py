@@ -34,6 +34,7 @@ from poisson_prove.store import EpisodeRecord, RunManifest, Store, config_hash
 
 from tf0_support import DEEPEVAL, RAGAS, ESCAPED, Ran, chdir, script, trace, trace_import
 from tf1_support import R, make_runs, shell_words, snapshot, stamp, tau2_copy
+from tf9_support import open_terminal
 
 CONFIG = "trace.toml"
 # spec section 4.5: the words that mean success, which the failure question's default leaves out
@@ -153,7 +154,8 @@ def tty(
     typed, one line, once the command waits on the terminal for it, as a user answers a question
     on the screen. ``interrupt`` then sends Ctrl-C (SIGINT) once the command waits for one more
     answer."""
-    master, slave = os.openpty()
+    # asked again when macOS fails the open with its own "ask again" (tf9_support.open_terminal; ruled 2026-11-18, MF-2)
+    master, slave = open_terminal()
     attrs = termios.tcgetattr(slave)
     attrs[3] &= ~termios.ECHO
     termios.tcsetattr(slave, termios.TCSANOW, attrs)

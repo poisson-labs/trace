@@ -164,8 +164,11 @@ def test_tf20_12_the_provenance_names_the_version_the_command_and_the_digests() 
 def test_tf20_13_the_environment_has_the_pinned_versions() -> None:
     from importlib.metadata import version
 
+    from pin_support import RECORDED, at_or_above_the_floor
+
     assert version("poisson-tasks") == TASKS_VERSION
-    assert version("poisson-prove") == PROVE_VERSION
+    # Prove at the floor or above it, not at one exact version (ruled 2026-11-17, PV-7)
+    assert PROVE_VERSION == RECORDED and at_or_above_the_floor(version("poisson-prove")), version("poisson-prove")
 
 
 # ---------- TF20-20 ----------
@@ -415,7 +418,10 @@ def test_tf20_35_the_two_runs_are_complete_and_as_declared(ran: Ran) -> None:
         run = store_of(ran.root, name)
         manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
         assert manifest["status"] == "complete" and manifest["environment"]["import_path"] == TARGETS[version]
-        assert manifest["environment"]["poisson_prove_version"] == PROVE_VERSION
+        # the stamp is the installed Prove's, at the floor or above it (ruled 2026-11-17, PV-5)
+        from pin_support import installed
+
+        assert manifest["environment"]["poisson_prove_version"] == installed()
         assert manifest["declared"]["failures"] == sorted(spec["declare"]["failures"])
         found = rows(run)
         per = Counter(json.loads(c)[axis] for c in found["config"])

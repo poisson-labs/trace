@@ -1,0 +1,50 @@
+{
+  "schema": "poisson-prove.chart/1",
+  "event": "violated",
+  "condition": null,
+  "kind": "limits",
+  "title": "Limits against the threshold: violated, the smallest rise ▲ and fall ▼ one condition alone would be flagged for, 4 times in 5, if it alone changed, from where it was, against the threshold 0.500 (the paired test (McNemar), q 0.05 over 4 tests)",
+  "caption": "Each condition's detection limit in each direction for violated beside the threshold; the unchanged rows, which the verdict asks about, are bold.",
+  "columns": [
+    "condition",
+    "verdict",
+    "rise",
+    "fall",
+    "threshold",
+    "could_tell"
+  ],
+  "rows": [
+    [
+      "task_id refund · tool_fail_rate 0.55",
+      "lower",
+      "none detectable",
+      0.37320000000000003,
+      0.5,
+      "not asked"
+    ],
+    [
+      "task_id refund · tool_fail_rate 0",
+      "unchanged",
+      0.2454,
+      "no room",
+      0.5,
+      "yes"
+    ],
+    [
+      "task_id search · tool_fail_rate 0.55",
+      "lower",
+      "none detectable",
+      0.38580000000000003,
+      0.5,
+      "not asked"
+    ],
+    [
+      "task_id search · tool_fail_rate 0",
+      "unchanged",
+      0.2454,
+      "no room",
+      0.5,
+      "yes"
+    ]
+  ]
+}

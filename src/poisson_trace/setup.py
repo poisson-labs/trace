@@ -1266,6 +1266,17 @@ def _held(path: str) -> list[str]:
         return []
 
 
+def _format_read(path: str) -> None:
+    """Refuse a store whose descriptor says it is in a newer format than Trace knows, before
+    its runs are read for the setup and before anything is written: init sets up no store that
+    no verb would then read."""
+    from poisson_trace import saved
+
+    newer = saved.newer_format(Path(path))
+    if newer is not None:
+        raise Refused(saved.newer_said(f"the store at {look.shown(path)}", newer))
+
+
 def _index(path: str, form: str) -> tuple[Any, Any]:
     """The store at ``path`` and its runs, named. A names file with an entry every verb but
     name refuses is read here as name reads it, since the setup names nothing; one that is not
@@ -1314,7 +1325,7 @@ def _no_hook(line: str) -> None:
 
 
 def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> Done:
-    """The setup, the questions answered on a terminal or from the flags. Prove at the version
+    """The setup, the questions answered on a terminal or from the flags. Prove at a version
     Trace reads is checked before this is called. ``written`` is told, once anything is on
     disk, the line Ctrl-C prints from then on."""
     _ceilings(ns)
@@ -1332,6 +1343,8 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
         )
     held = _existing(ns, path, shown)
     if held is not None:
+        for _, store_path in held.stores():
+            _format_read(store_path)
         if held.imports and imports.pending(held, imports.imports_store(held).path):
             return _hand_over(ns, held, terminal, written)
         return _complete(ns, held, terminal, written)
@@ -1390,6 +1403,8 @@ def init(ns: argparse.Namespace, written: Callable[[str], None] = _no_hook) -> D
     if made:
         events = failures(_imported_outcomes(made), ns.event or (), terminal)
     elif stores:
+        # a store given was checked as it was read; one found here is read for the first time
+        _format_read(stores[0][1])
         store, first_index = _index(stores[0][1], form)
         events = failures(newest_outcomes(store, first_index), ns.event or (), terminal)
     elif ns.event:
@@ -1714,6 +1729,7 @@ def _stores_given(paths: Sequence[str]) -> list[tuple[str | None, str]]:
     """The stores --store names: the first unnamed, each other named by its folder."""
     stores: list[tuple[str | None, str]] = []
     for i, typed in enumerate(paths):
+        _format_read(typed)
         why = _storable(typed)
         if why is not None:
             raise Refused(why, _HELP)
@@ -2048,6 +2064,8 @@ def add_store(
     held = config.load(ns.config)
     assert held is not None
     typed = ns.add_store
+    for store_path in (typed, *(p for _, p in held.stores())):
+        _format_read(store_path)
     why = _storable(typed)
     if why is not None:
         raise Refused(why, _HELP)

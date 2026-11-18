@@ -180,6 +180,7 @@ from typing import Any
 
 from conftest import FIXTURES
 from tf0_support import REPO, Ran, chdir, trace
+from tf9_support import open_terminal
 
 TF19 = FIXTURES / "tf19"
 PINS = TF19 / "main-pins.json"
@@ -999,7 +1000,8 @@ def run_pty(
 
     def terminal(name: str) -> tuple[int, int]:
         if name not in terminals:
-            controller, user = os.openpty()
+            # asked again when macOS fails the open with its own "ask again" (tf9_support.open_terminal; ruled 2026-11-18, MF-2)
+            controller, user = open_terminal()
             _winsize(user, cols, rows)
             terminals[name] = (controller, user)
         return terminals[name]
@@ -1215,9 +1217,12 @@ TIME = re.compile(r"\d{4}-\d\d-\d\d[T ]\d\d:\d\d(?::\d\d(?:\.\d+)?)?(?:Z|\+00:00
 
 
 def normal(text: str, *roots: Path) -> str:
+    from pin_support import as_pinned
+
     for root in roots:
         text = text.replace(str(root.resolve()), "<ROOT>").replace(str(root), "<ROOT>")
-    return text
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    return as_pinned(text)
 
 
 def pages_pins(work: Path) -> dict[str, str]:
@@ -1237,10 +1242,20 @@ def pages_pins(work: Path) -> dict[str, str]:
                  ["ui", "--store", "jstore"]):
         ran = cli(work, argv)
         assert ran.code == 0, (argv, ran.text)
+    from tf18_support import BUNDLE_SHA256, prove_bundle
+
+    bundle = prove_bundle()
     for store in ("store", "tables", "jstore"):
         base = work / store / ".poisson" / "ui" / "trace"
         for p in sorted(base.rglob("*")):
             if p.is_file():
+                name = str(p.relative_to(base))
+                if name in bundle:
+                    # a fixed file is the installed Prove's own, byte for byte, whatever that Prove is; the pins
+                    # hold it as the Prove they were taken with shipped it (ruled 2026-11-17, PV-6)
+                    assert p.read_bytes() == bundle[name], f"{store}/{name} is not the installed Prove's"
+                    out[f"{store}/{name}"] = BUNDLE_SHA256[name]
+                    continue
                 text = p.read_bytes().decode("utf-8", "replace")
-                out[f"{store}/{p.relative_to(base)}"] = digest(TIME.sub("<TIME>", normal(text, work)))
+                out[f"{store}/{name}"] = digest(TIME.sub("<TIME>", normal(text, work)))
     return out

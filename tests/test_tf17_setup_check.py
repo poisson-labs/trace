@@ -45,6 +45,7 @@ import pytest
 
 from tf1_support import shell_words, tau2_copy
 from tf2_support import config_of, doctor, no_network, scratch_home, work, write_config  # noqa: F401
+from pin_support import OR_LATER, installed
 from tf17_support import (
     CS_FAILURES, CS_RECORD, CS_REPLAY, DOCS_URL, NEXT_COMMAND, SETUP_READY, SETUP_SCHEMA,
     config_text, cs_store, detail, expected_toml, import_entry, import_lines, junit_entry,
@@ -283,7 +284,7 @@ def test_tf17_30_plain_doctor_is_unchanged_on_a_ready_config(tmp_path: Path) -> 
     lines = [line for line in r.out.splitlines() if not re.match(r"^  (?:python|package|readers) ", line)]
     assert lines == [
         "ok  this environment is ready",
-        "  prove     poisson-prove 0.1.3 (the version Trace reads)",
+        f"  prove     poisson-prove {installed()} (Trace reads version {OR_LATER})",  # the floor (PV-4)
         "  config    trace.toml: store proofload-runs (3 runs, 3 complete, 0 partial), failures unsolved",
         "  names     proofload-runs: no names of yours yet",
         "next: poisson-trace runs",

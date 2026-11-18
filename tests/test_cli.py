@@ -296,10 +296,11 @@ def test_tr31_refuses_before_the_store_when_prove_is_unimportable(argv) -> None:
 
 
 @pytest.mark.parametrize("argv", CALLS)
+# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
 def test_tr31_refuses_on_the_wrong_prove_version(tmp_path: Path, argv) -> None:  # type: ignore[no-untyped-def]
     fake = tmp_path / "fake" / "poisson_prove"
     fake.mkdir(parents=True)
-    (fake / "__init__.py").write_text('__version__ = "9.9.9"\n')
+    (fake / "__init__.py").write_text('__version__ = "0.3.0"\n')
     env = dict(os.environ)
     env["PYTHONPATH"] = str(tmp_path / "fake") + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     code = f"import sys; from poisson_trace.cli import main; sys.exit(main({argv!r}))"
@@ -307,7 +308,7 @@ def test_tr31_refuses_on_the_wrong_prove_version(tmp_path: Path, argv) -> None: 
     assert proc.returncode == 1, proc.stderr + proc.stdout
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
     assert lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
-    assert "poisson-prove" in lines[0] and RECORDED in lines[0] and "9.9.9" in lines[0] and "pip install" in " ".join(lines)
+    assert "poisson-prove" in lines[0] and RECORDED in lines[0] and "0.3.0" in lines[0] and "pip install" in " ".join(lines)
 
 
 def test_tr31_prints_no_such_line_when_prove_is_present() -> None:

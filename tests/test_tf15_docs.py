@@ -40,8 +40,12 @@ def test_tf15_s40_every_marked_block_of_the_readme_holds(tmp_path: Path) -> None
         assert holds_block(c), f"README.md:{c.block.line}: {c.command} -> exit {c.code}\n--- block\n{c.block.body}\n--- printed\n{c.printed}"
     written = sorted((root / "docs" / "figures").glob("*.svg"))
     assert written, "the README writes no figure"
+    from pin_support import as_pinned
+
     for svg in written:
-        assert svg.read_bytes() == (REPO / "docs" / "figures" / svg.name).read_bytes(), svg.name
+        # a figure's footer names the Prove that drew it: the committed ones were drawn with 0.1.3
+        # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+        assert as_pinned(svg.read_text(encoding="utf-8")).encode("utf-8") == (REPO / "docs" / "figures" / svg.name).read_bytes(), svg.name
 
 
 # compare's 1.457 as the limit and the ceiling it offered; its per-kind column is left to the

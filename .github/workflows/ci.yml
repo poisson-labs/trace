@@ -12,9 +12,16 @@
 #   dependencies, or a numpy, scipy, pandas or lifelines other than the lanes were green with).
 # - full: on main and every night, never on a pull request: the pull-request lane and the slow
 #   lane on Python 3.11, 3.12 and 3.13, with ruff and mypy --strict on each.
+# - newest-prove: on main and every night, never on a pull request: the pull-request lane on
+#   Python 3.12 with the newest poisson-prove the package index serves installed over the one
+#   the lanes were last green with. Trace declares the oldest Prove it reads and no cap, so a
+#   later Prove installs beside it, and this is the lane that says so when one stops reading
+#   as Trace expects. Every other lane installs through .github/release/lanes-*.txt, which
+#   hold the floor. It stays off pull requests, where a new Prove would fail every one open
+#   for something none of them changed.
 # - lane-j: on main and every night, never on a pull request: the one job that reads the
 #   package index for other tools. It installs the real DeepEval and Ragas and runs the tests
-#   that run them, and the test that the built wheel brings the Prove it pins.
+#   that run them, and the tests that the built wheel installs beside a Prove it reads.
 # - clean-install: builds the source archive and the wheel from the commit; installs one of
 #   them with plain pip into a fresh environment (the wheel in one cell, the source archive in
 #   the other); moves to an empty folder with a home of its own; checks that the package
@@ -143,6 +150,33 @@ jobs:
         run: .venv/bin/ruff check src tests
       - name: mypy --strict
         run: .venv/bin/mypy --strict
+
+  newest-prove:
+    if: github.event_name != 'pull_request'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --quiet -c .github/release/lanes-3.12.txt -e ".[dev]"
+          .venv/bin/python --version
+      # The constraints above hold the floor. This puts the newest Prove over it, with no
+      # version named and no constraints, and the version line says which Prove that is.
+      - name: The newest Prove on the package index, over the floor
+        run: |
+          .venv/bin/python -m pip install --quiet --upgrade poisson-prove
+          .venv/bin/poisson-trace --version | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Tasks' tokenizer file, which the three-tools recipe the lanes run needs
+        run: .venv/bin/poisson-tasks doctor --fix --yes
+      - name: Pull-request lane
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m "not math and not lane_j and not slow" tests
 
   lane-j:
     if: github.event_name != 'pull_request'
