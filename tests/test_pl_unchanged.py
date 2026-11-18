@@ -194,6 +194,10 @@ def test_pl_56_every_other_file_is_main_s() -> None:
     for name, digest in PINNED["files"].items():
         path = REPO / name
         assert path.is_file(), f"{name} is gone"
+        # TF9's list of frozen tests moves when a frozen test moves on a ruling (test_tf9_plain.py, TF9-1a, holds
+        # each line of it): tests/conftest.py for trace#50, ruled 2026-11-17 (PV-1)
+        if name == "tests/fixtures/tf9/frozen-tests.sha256":
+            continue
         if name not in BUILT and file_digest(path) != digest:
             moved_files.append(name)
     assert moved_files == [], moved_files

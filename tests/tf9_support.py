@@ -305,6 +305,29 @@ def _winsize(fd: int, cols: int, rows: int) -> None:
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
 
 
+#: The error number macOS gives ``openpty`` when the kernel's own "ask again" for an open leaks out
+#: to the caller (XNU's ``EREDRIVEOPEN``); no terminal was opened and nothing is wrong with it.
+_OPEN_AGAIN = -6
+
+
+def open_terminal(tries: int = 50) -> tuple[int, int]:
+    """A new pseudo-terminal: its controlling end and the end a command is given.
+
+    On macOS, while other processes open and close pseudo-terminals (``-n`` workers, another
+    test run on the machine), ``os.openpty`` now and then fails with ``OSError: [Errno -6]``:
+    sixteen processes that do nothing else see it about once in 2,500 opens, and one or two never
+    do. It says nothing about this terminal, and the next ask opens one, so it is asked again, a
+    moment later each time. Any other error, and this one ``tries`` times running, is raised."""
+    for attempt in range(tries):
+        try:
+            return os.openpty()
+        except OSError as e:
+            if e.errno != _OPEN_AGAIN or attempt == tries - 1:
+                raise
+            time.sleep(0.01 * (attempt + 1))
+    raise AssertionError("unreachable")
+
+
 def run(
     argv: Sequence[str],
     *,
@@ -328,7 +351,7 @@ def run(
 
     def terminal(name: str) -> int:
         if name not in terminals:
-            controller, user = os.openpty()
+            controller, user = open_terminal()
             _winsize(user, cols, rows)
             terminals[name] = (controller, user)
         return terminals[name][1]

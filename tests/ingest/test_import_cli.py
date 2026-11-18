@@ -461,7 +461,7 @@ def test_ic14_changes_reads_the_counts_the_rows_hold(tmp_path: Path) -> None:
 
 
 FROZEN = {
-    "conftest.py": "a4ec16ad291f02ca9a162cd3bc2e805d5187f44918783992b13a093483a2dcaa",
+    "conftest.py": "88bc21fd208111bd673ebadda9d42899ad120b978110aa085821f4e4b495f79c",
     "fixcheck_support.py": "3781fa2e753462c5d168b747f815ec7bdad6797914041bcdbfa76829568114ad",
     "test_changes.py": "b60b8f37a4d67753e9d26b0bea5d70c2950c808cc365372f7bcaadf3350ec99a",
     "test_cli.py": "c774681b114efcc6ebe860a8991992d202c3a5d34c0a859b42a5ad51d7976149",
@@ -479,7 +479,8 @@ def test_ic14_no_frozen_trace_test_is_edited() -> None:
     """Green by construction: the digests of Trace's test files as they stood at main 42456f7, and
     as TF15 Session A moved them under Taylor's rulings of 2026-10-20 (each move commit names its
     ruling and updates the digest of the file it moves). ``test_paired.py`` moved again for
-    trace#31 (2026-11-10): TR49's interval where no run failed."""
+    trace#31 (2026-11-10): TR49's interval where no run failed. ``conftest.py`` moved for trace#50
+    (805ce65): the fixture that keeps a test from opening a real browser tab (ruled 2026-11-17, PV-1)."""
     got = {name: hashlib.sha256((TESTS / name).read_bytes()).hexdigest() for name in FROZEN}
     assert got == FROZEN
 

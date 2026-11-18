@@ -180,6 +180,10 @@ def test_tf20_86_every_other_file_is_main_s() -> None:
 
         if name in BUILT:
             continue
+        # TF9's list of frozen tests moves when a frozen test moves on a ruling (test_tf9_plain.py, TF9-1a, holds
+        # each line of it): tests/conftest.py for trace#50, ruled 2026-11-17 (PV-1)
+        if name == "tests/fixtures/tf9/frozen-tests.sha256":
+            continue
         if file_digest(path) != digest:
             moved.append(name)
     assert moved == [], moved
