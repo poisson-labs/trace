@@ -143,9 +143,9 @@ def test_tr70_inputs_all_compares_every_input_with_an_outcome_in_both(store70: P
 
 
 def test_tr70_inputs_all_counts_an_input_carried_by_one_run_as_left_out(store70: Path) -> None:
-    """Session A ruling 1, ruled yes 2026-09-29: under ``--inputs all`` the selection is every
-    input either run carries, and an input in one run only is left out under the first reason of
-    section 3.3 that applies (in2 is in the new arm only, in4 in the old arm only)."""
+    """Under ``--inputs all`` the selection is every input either run carries, and an input in
+    one run only is left out under the first reason that applies (in2 is in the new arm only,
+    in4 in the old arm only)."""
     d = _json(fix_check(store70, "old", "new", ["fail"], *ALL, *MAX, "--json"))
     assert d["inputs"]["selected"] == 8
     assert d["inputs"]["left_out"] == {
@@ -389,7 +389,7 @@ ALLOWED_PROVE_IMPORTS = {
     "poisson_prove": set(),
     "poisson_prove.store": {"Store", "RunManifest", "RunTally"},
     "poisson_prove.steps": {"declaration_check", "DeclarationCheck"},
-    # TF6: handover --check refuses a bundle holding Prove's content and observation keys (11.2)
+    # TF6: handover --check refuses a bundle holding Prove's content and observation keys
     "poisson_prove.trace": {"KINDS", "CONTENT_KEYS", "OBSERVATION_KEYS"},
 }
 
@@ -400,7 +400,7 @@ def test_tr41_every_read_is_a_prove_call() -> None:
 
     for path in sorted(Path(poisson_trace.__file__).resolve().parent.glob("*.py")):
         text = path.read_text()
-        # TF6: saved.py writes the saved verdict's table.parquet with pyarrow (section 17.3 item 1);
+        # TF6: saved.py writes the saved verdict's table.parquet with pyarrow;
         # writing an artifact is not reading a run
         table = path.name == "saved.py"
         assert (table or "pyarrow" not in text) and "from_dict" not in text, path.name
@@ -421,7 +421,7 @@ def test_tr41_refusals_are_one_sentence_and_exit_one(store70: Path) -> None:
     one_sentence(fix_check(store70, "old", "new", ["fail"], "--failing-from", "nope", *MAX))
     one_sentence(changes(store70, "old", "nope", ["fail"]))
     one_sentence(changes(store70, "old", "new", ["nope"]))
-    no_event = changes(store70, "old", "new", [])  # R17: no --event is a wrong command line, exit 2
+    no_event = changes(store70, "old", "new", [])  # no --event is a wrong command line, exit 2
     no_event_lines = [line for line in no_event.text.splitlines() if line.strip()]
     assert no_event.code == 2 and no_event_lines and all(line.startswith("  next: ") for line in no_event_lines[1:]), no_event.text
 
@@ -447,7 +447,7 @@ def test_tr41_without_prove_both_verbs_refuse_before_the_store(argv) -> None:  #
 
 
 @pytest.mark.parametrize("argv", NEW_CALLS)
-# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
+# a Prove below the floor: 0.3.0 (9.9.9 is above the floor, a version Trace reads)
 def test_tr41_on_the_wrong_prove_both_verbs_refuse(tmp_path: Path, argv) -> None:  # type: ignore[no-untyped-def]
     ok(changes(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS))
     fake = tmp_path / "fake" / "poisson_prove"
@@ -533,7 +533,7 @@ def _verdict_pairs(tmp_path: Path) -> dict[str, tuple[Path, str]]:
 EXPECT = {
     "less": ("different", "failed less in new", "different: the new version failed less on these inputs"),
     "more": ("different", "failed more in new", "different: the new version failed more on these inputs"),
-    # ST2 (ruled 2026-10-20): a reliable range inside plus or minus the size asked decides it
+    # a reliable range inside plus or minus the size asked decides it
     "nsd": ("no significant difference", None, "lies inside ±50"),
     "small": ("too small to tell", None, "too small to tell: could not have detected a drop in failure share below"),
     "nolimit": ("too small to tell", None, "too small to tell:"),
@@ -632,10 +632,10 @@ def test_tr55_the_suggested_ceiling_is_accepted() -> None:
         (TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL),
         (TAU2, TAU2_B, PILOT, TAU2_EVENTS, "--failing-from", TAU2_A),
     ):
-        # ST2 (ruled 2026-10-20): tau2 on all inputs reads no significant difference at 0.1 (its
+        # tau2 on all inputs reads no significant difference at 0.1 (its
         # range lies inside plus or minus 10); at 0.075 it still reads too small to tell
         tight = fix_check(*argv, "--max-mde", "0.075", "--json")
-        assert tight.code == 0, tight.text  # R17: a result exits 0, too small to tell included
+        assert tight.code == 0, tight.text  # a result exits 0, too small to tell included
         assert tight.json()["verdict"] == "too small to tell"
         g = tight.json()["guidance"]
         again = fix_check(*argv, "--max-mde", repr(g["accepts_at"]), "--json")
@@ -648,9 +648,9 @@ def test_tr55_the_suggested_ceiling_is_accepted() -> None:
 
 
 def test_tr56_compare_guidance_and_the_pointer_line(two_run_store) -> None:  # type: ignore[no-untyped-def]
-    """ST5 (ruled 2026-10-20): the guidance is the smallest number of tries per input per version
+    """The guidance is the smallest number of tries per input per version
     whose expected log-rank information, under the per-input model fitted to the two runs, reaches
-    ((z_0.975 + z_0.8) / ln 1.3)^2; Schoenfeld's deaths no longer size it. Checked here with the
+    ((z_0.975 + z_0.8) / ln 1.3)^2; Schoenfeld's deaths do not size it. Checked here with the
     statistics check's model (tf15_support) at 1,000 seeded draws: one try more adds about 0.375 to
     the expected information on this store, and the allowance of 0.6 admits a seeded estimate one
     try either side of the exact answer, about 304, and nothing Schoenfeld's rule gives (about 265,
@@ -661,7 +661,7 @@ def test_tr56_compare_guidance_and_the_pointer_line(two_run_store) -> None:  # t
     root = two_run_store(deaths_rows(list(range(2, 12))) + deaths_rows([12, 13, 14], died=False, start_rep=20),
                          deaths_rows(list(range(3, 11)) + [4, 6]) )
     tight = compare(root, "a", "b", ["fail"], 1.3, "--json")
-    assert tight.code == 0, tight.text  # R17: a result exits 0, too small to tell included
+    assert tight.code == 0, tight.text  # a result exits 0, too small to tell included
     d = tight.json()
     c = d["comparison"]
     g = c["guidance"]
@@ -686,11 +686,11 @@ def test_tr56_compare_guidance_and_the_pointer_line(two_run_store) -> None:  # t
 
 
 def test_tr56_compare_accepts_at_rounds_up(two_run_store) -> None:  # type: ignore[no-untyped-def]
-    # ST5 (ruled 2026-10-20): the limit is exp(2.8016 / sqrt(V)); this store's V is 5.883454, its
-    # limit 3.174071, which rounds down at three decimals (the store of 22 deaths no longer does)
+    # the limit is exp(2.8016 / sqrt(V)); this store's V is 5.883454, its
+    # limit 3.174071, which rounds down at three decimals (a store of 22 deaths does not)
     root = two_run_store(deaths_rows(list(range(2, 16))), deaths_rows(list(range(3, 17))))  # 28 deaths, share 1/2
     d = compare(root, "a", "b", ["fail"], 1.3, "--json")
-    assert d.code == 0, d.text  # R17: a result exits 0, too small to tell included
+    assert d.code == 0, d.text  # a result exits 0, too small to tell included
     c = d.json()["comparison"]
     assert c["variance"] == pytest.approx(5.883454, abs=1e-6)
     assert c["mde_hazard_ratio"] == pytest.approx(3.174071, abs=1e-6)  # rounds down at three decimals
@@ -704,11 +704,11 @@ def test_tr56_compare_guidance_is_null_unless_too_small_to_tell(two_run_store) -
     assert d.code == 0 and d.json()["comparison"]["verdict"] == "different"
     assert "guidance" in d.json()["comparison"] and d.json()["comparison"]["guidance"] is None
     assert POINTER in norm(compare(different, "a", "b", ["fail"], 100.0).out)
-    # ST5 (ruled 2026-10-20): tau2's limit is 1.603, so 1.5 reads too small to tell and 1.604 is accepted
+    # tau2's limit is 1.603, so 1.5 reads too small to tell and 1.604 is accepted
     loose = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.604, "--json")
     assert loose.code == 0 and loose.json()["comparison"]["guidance"] is None
     tight = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.3)
-    assert tight.code == 0 and "--max-mde-hr 1.604" in tight.out  # R17: a result exits 0, too small to tell included
+    assert tight.code == 0 and "--max-mde-hr 1.604" in tight.out  # a result exits 0, too small to tell included
     assert set(compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.3, "--json").json()["comparison"]["guidance"]) == {
         "deaths", "runs", "inputs", "repeats", "accepts_at"}
 
@@ -723,8 +723,8 @@ def test_tr61_the_json_keys_bytes_and_numbers() -> None:
     assert a.out == b.out
     d = a.json()
     assert tuple(d) == FIX_KEYS
-    assert d["schema"] == "poisson-trace.fix-check/2"  # ST9 (ruled 2026-10-20)
-    assert set(d["prove"]) == {"version", "store"} and d["prove"]["version"] == installed()  # the Prove installed, at or above the floor (PV-5)
+    assert d["schema"] == "poisson-trace.fix-check/2"
+    assert set(d["prove"]) == {"version", "store"} and d["prove"]["version"] == installed()  # the Prove installed, at or above the floor
     assert set(d["runs"]) == {"old", "new"} and all(set(h) == HEADER_KEYS for h in d["runs"].values())
     assert set(d["inputs"]) == INPUTS_KEYS
     assert set(d["rows"]) == {"old", "new"} and all(set(r) == ROWS_KEYS for r in d["rows"].values())
@@ -732,14 +732,14 @@ def test_tr61_the_json_keys_bytes_and_numbers() -> None:
                       ("by_input", BY_INPUT_KEYS), ("consistency", CONSISTENCY_KEYS), ("limits", LIMITS_KEYS)):
         assert set(d[key]) == keys, key
     assert d["test"]["name"] == "exact conditional Cochran-Mantel-Haenszel"
-    assert "Miettinen-Nurminen" in d["difference"]["interval"]  # ST3 (ruled 2026-10-20)
+    assert "Miettinen-Nurminen" in d["difference"]["interval"]  # the stratified score interval
     assert d["limits"]["power"] == 0.8 and d["limits"]["max_mde"] == 0.12
     assert d["verdict"] == "no significant difference" and d["guidance"] is None
     assert tuple(d["changes"]) == CHANGES_BLOCK_KEYS
     assert all(set(r) == FLAG_ROW_KEYS for r in d["changes"]["rows"])
     assert d["events"] == ["unsolved"]
     assert "NaN" not in a.out and "Infinity" not in a.out
-    # ST2 (ruled 2026-10-20): at 0.10 the range decides no significant difference; 0.075 is too small to tell
+    # at 0.10 the range decides no significant difference; 0.075 is too small to tell
     tight = fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.075", "--json")
     assert tight.code == 0 and tuple(tight.json()) == FIX_KEYS and set(tight.json()["guidance"]) == GUIDANCE_KEYS
 
@@ -754,7 +754,7 @@ def test_tr61_json_is_one_object_and_nothing_else(store70: Path) -> None:
 # ---------- TR62 ----------
 
 
-# ST3 (ruled 2026-10-20): the range is the stratified Miettinen-Nurminen score interval
+# the range is the stratified Miettinen-Nurminen score interval
 FIX_CAPTION_WORDS = ("Cochran-Mantel-Haenszel", "exact", "stratified by input", "Mantel-Haenszel", "Miettinen-Nurminen",
                      "sign-flip", "Fisher", "Benjamini-Hochberg", "continuity")
 
@@ -786,7 +786,7 @@ def test_tr63_no_banned_word_in_any_output(tmp_path: Path, two_run_store) -> Non
     outputs.append(ok(changes(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS)).out)
     outputs.append(ok(changes(HUMANEVAL, HE_A, HE_B, HE_EVENTS)).out)
     tight = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.3)
-    assert tight.code == 0 and "--max-mde-hr 1.604" in tight.out  # R17; ST5 (ruled 2026-10-20)
+    assert tight.code == 0 and "--max-mde-hr 1.604" in tight.out  # a result exits 0
     outputs.append(tight.out)
     outputs.append(compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.5).out)
     different = two_run_store(deaths_rows(list(range(1, 21))), deaths_rows(list(range(21, 41))))
@@ -829,7 +829,7 @@ def _copies(arm: str) -> str:
     return f"no input gave mixed outcomes across its repeats in the {arm} arm"
 
 
-# ST3 (ruled 2026-10-20): the Miettinen-Nurminen interval on WORKED holds 0 (-50.1 to +0.43), so
+# the Miettinen-Nurminen interval on WORKED holds 0 (-50.1 to +0.43), so
 # it agrees with the test there; this table's range (-54.4 to -1.2) leaves 0 out at exact p 0.0746
 DISAGREEING = [(0, 2, 1, 2), (2, 2, 1, 2), (2, 2, 0, 2), (0, 2, 0, 2), (0, 2, 0, 2), (2, 2, 1, 2), (1, 2, 1, 2),
                (2, 2, 0, 2), (1, 2, 0, 2), (1, 2, 1, 2), (1, 2, 1, 2), (2, 2, 1, 2)]
@@ -856,8 +856,8 @@ NO_INTERVAL = "no range: Sato's formula gives none on these counts (its variance
 
 
 def test_tr49_the_no_interval_sentence_prints_exactly_when_the_variance_is_null(tmp_path: Path) -> None:
-    """Session A ruling 2, ruled yes 2026-09-29: the fixed sentence prints exactly when
-    ``difference.variance`` is null, whatever the test says."""
+    """The fixed sentence prints exactly when ``difference.variance`` is null, whatever the test
+    says."""
     separated = pair_store(tmp_path / "separated", [(4, 4, 0, 4)] * 3)  # Sato's variance 0, exact p tiny
     single = pair_store(tmp_path / "single", [(1, 1, 0, 1)])  # Sato's variance 0, exact p 1
     for root in (separated, single):
@@ -873,8 +873,8 @@ def test_tr49_the_no_interval_sentence_prints_exactly_when_the_variance_is_null(
 
 
 def test_tr65_the_interval_and_test_sentence_needs_an_interval(tmp_path: Path) -> None:
-    """Session A ruling 2, ruled yes 2026-09-29: with no interval printed, the interval-and-test
-    sentence does not print, even where the test calls a difference."""
+    """With no interval printed, the interval-and-test sentence does not print, even where the
+    test calls a difference."""
     separated = pair_store(tmp_path / "separated", [(4, 4, 0, 4)] * 3)
     d = _json(fix_check(separated, "old", "new", ["fail"], *ALL, *MAX, "--json"))
     assert d["test"]["p"] < 0.05 and d["difference"]["variance"] is None

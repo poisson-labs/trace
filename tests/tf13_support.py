@@ -1,25 +1,23 @@
-"""Shared helpers for TF13's tests: the one core and the Python API (spec sections 11.8, 17.2,
-17.3 and 18, the step 17 rows of 18.7.2, and RF2: the API's ``check`` waits for the pull-request
-check, TF7).
+"""Shared helpers for TF13's tests: the one core and the Python API (``docs/python.md``; the
+API's ``check`` waits for the pull-request check).
 
 Not a test module and not collected.
 
-The API as these tests read it. The readings the spec leaves open are put to Taylor in
-``log/trace-tf13-a/rulings.md``, PA1 on; each test file's opening says which it holds.
+The API as these tests read it; each test file's opening says which part it holds.
 
 The modules.
 - ``poisson_trace.api`` is the public surface: ``api.__all__`` names exactly the functions in
   ``FUNCTIONS`` below, the three types ``Refusal``, ``Store`` and ``Config``, and the class of
   every object a public function returns (``RESULT_TYPES`` lists the names the tests expect;
-  each is ``api.<name>``). The work may live in ``poisson_trace/core.py``, the "one core" step 17
-  names, behind ``api``; nothing here reads ``core`` but the rule that follows TR40 (TF13-31).
-- ``poisson_trace.commands`` holds the two verbs that touch the environment rather than a store,
-  ``init`` and ``doctor`` (``report`` and ``upload`` are not on main). It is not public.
+  each is ``api.<name>``). The work may live in ``poisson_trace/core.py``, the one core, behind
+  ``api``; nothing here reads ``core`` but the rule that follows TR40 (TF13-31).
+- ``poisson_trace.commands`` holds the verbs that touch the environment rather than a store,
+  ``init`` and ``doctor`` among them. It is not public.
 - The command lines are ``poisson_trace/cli.py``, ``poisson_trace/ingest/cli.py`` and
   ``poisson_trace/__main__.py``. Each exposes its parsers as ``parsers()``: ``cli.parsers()``
-  gives ``(top, {verb: parser})`` and ``ingest.cli.parsers()`` gives what it gives today.
+  gives ``(top, {verb: parser})`` and ``ingest.cli.parsers()`` gives the import's parsers.
 
-The functions and their signatures (PA1, PA4, PA10).
+The functions and their signatures.
 - ``where(store, run, *, ...)``, ``compare(store, a, b, *, ...)``, ``fix_check(store, old, new,
   *, ...)``, ``changes(store, a, b, *, ...)``, ``runs(store, *, ...)``: the first parameter is
   ``store`` (what ``--store`` takes: a path, a name the config names, an ``api.Store``, or None
@@ -31,15 +29,15 @@ The functions and their signatures (PA1, PA4, PA10).
   delivers a result (``--svg``, ``--save``, ``--out``, ``--force`` on the four counting verbs),
   which are the result's methods and ``api.save``. A keyword passed is a flag given: the saved
   verdict's ``settings.from`` says ``flag`` for it, whatever its value, and ``default`` for one
-  left out, as the command line records a flag typed and one not (SV5); the command line passes
+  left out, as the command line records a flag typed and one not; the command line passes
   only the flags typed. The four counting verbs also take
-  ``**reader_flags``: the reader's flags for runs given as folders (TF22, FI8).
+  ``**reader_flags``: the reader's flags for runs given as folders (TF22).
 - ``config`` (``--config``) takes the path given to ``--config`` or an ``api.Config``; with
   None the API reads no config at all. The command line finds the current folder's
   ``trace.toml`` itself, and passes it in.
 - ``import_run(store, tool, files, *, run=None, started=None, verdicts=None, config=None,
   **reader_flags)``: the import's command line, the reader's flags as keywords named by the
-  same rule; ``tool`` may be None when ``files`` is one folder (FI1).
+  same rule; ``tool`` may be None when ``files`` is one folder.
 - ``name(store, run, new, *, config=None)`` is ``name RUN NEW``; ``forget_name(store, run, *,
   config=None)`` is ``name RUN --forget``; ``list_names(store, *, config=None)`` is
   ``name --list``.
@@ -52,9 +50,9 @@ The functions and their signatures (PA1, PA4, PA10).
   as a keyword (init's ``--import`` and ``--no-import`` set one setting, ``import_``), but the
   printing options. Read from the parser as it is when the test runs, so the setup agent's new
   flags (TF17) join without a change here.
-- Not in 0.1.0's API: ``check`` (TF7, RF2), ``build_pages`` and ``to_html`` (TF18, PA5).
+- Not in 0.1.0's API: ``check`` (the pull-request check), ``build_pages`` and ``to_html`` (TF18).
 
-The values (PA7).
+The values.
 - Each keyword takes the value the verb's parser gives for its flag: numbers as numbers, a
   repeatable flag as a list or tuple, ``--max-change`` as ``(measure, share)`` pairs.
 - A value the parser itself would refuse (not of the option's type, not among its choices) is a
@@ -64,13 +62,13 @@ The values (PA7).
   (``exit_code``: 1, 2 or 3) and the ``note:`` sentences printed before it (``notes``). Its
   constructor is ``Refusal(message, *, next=(), exit_code=1, notes=())``.
 
-The results (PA6, PA8, PA9, PA13).
+The results.
 - Frozen dataclasses. Every key of the verb's ``--json`` document is an attribute, and every key
   of the ``result.json`` its bundle holds (``summary``, ``before_you_act``, ``note`` as a list,
   ``versions``, and on the three verbs of two runs ``failure_taxonomy_diff`` and
   ``continuous_measures``), equal to it once read as JSON (``jsonable`` below); ``saved`` is None
   until saved. The four counting verbs' results also carry ``settings``, the artifact's
-  ``settings`` (SV5) as ``--save`` records them.
+  ``settings`` as ``--save`` records them.
 - ``to_json()`` is the ``--json`` stdout byte for byte, its final newline included;
   ``to_markdown()`` is the plain stdout byte for byte, from the verdict line to the ``next:``
   line. ``exit_code`` is the command's exit code. ``notes`` holds, in order, the sentences the
@@ -83,7 +81,7 @@ The results (PA6, PA8, PA9, PA13).
   the same after the current folder changes as before (a relative path is the one the call
   read; a folder given to ``to_bundle`` or ``write_svg`` is read where the process is then).
 
-What the API never does (section 11.8). It prints nothing, reads no environment variable, reads
+What the API never does. It prints nothing, reads no environment variable, reads
 no file and lists no folder it was not given a path to, and writes only in ``to_bundle``,
 ``save``, ``import_run``, ``name``, ``forget_name`` and ``write_svg``; a folder it makes for its
 own work is under the system's temporary folder and gone when it returns.
@@ -126,7 +124,7 @@ FUNCTIONS = (
     "forget_name", "list_names", "import_run", "save", "load_bundle", "validate_bundle",
 )
 TYPES = ("Refusal", "Store", "Config")
-# the functions that may write, and nothing else (section 11.8 as amended; PA4)
+# the functions that may write, and nothing else
 WRITERS = ("import_run", "name", "forget_name", "save")
 WRITING_METHODS = ("to_bundle", "write_svg")
 # each verb of the main command and the function that is it
@@ -135,7 +133,7 @@ VERB_FUNCTION = {"where": "where", "compare": "compare", "fix-check": "fix_check
 COUNTING = ("where", "compare", "fix-check", "changes")
 # what shapes the printing, never a parameter
 PRINTING = frozenset({"-h", "--help", "--json", "--plain", "--debug", "--version"})
-# what delivers a result: the result's methods and api.save (PA4)
+# what delivers a result: the result's methods and api.save
 DELIVERY = {"where": frozenset({"--svg", "--force", "--save", "--out"}),
             "compare": frozenset({"--save", "--out", "--force"}),
             "fix-check": frozenset({"--save", "--out", "--force"}),
@@ -151,7 +149,7 @@ RESULT_TYPES = {"where": "WhereResult", "compare": "CompareResult", "fix_check":
 SCHEMAS = {"where": "poisson-trace.where/1", "compare": "poisson-trace.compare/1",
            "fix_check": "poisson-trace.fix-check/2", "changes": "poisson-trace.changes/2",
            "runs": "poisson-trace.runs/1", "import_run": "poisson-trace.import/1"}
-# the keys result.json adds to a verb's --json (TF6: SV3, SV4)
+# the keys result.json adds to a verb's --json (TF6)
 RESULT_JSON_ADDS = ("summary", "before_you_act", "note", "versions")
 TWO_RUN_ADDS = ("failure_taxonomy_diff", "continuous_measures")
 
@@ -183,7 +181,7 @@ def import_parsers() -> tuple[Any, dict[str, Any]]:
     return top, dict(subs)
 
 
-# ---------- the naming rule (PA1) ----------
+# ---------- the naming rule ----------
 
 
 def keyword(action: Any) -> str:
@@ -467,7 +465,7 @@ REFUSALS_ARGV: dict[str, tuple[list[str], int]] = {
     "a config that is not there": (["where", "agent after", "--config", "conf/none.toml"], 1),
     "a store name the config lacks": (["where", "agent after", "--config", "conf/trace.toml", "--store", "nameless"], 1),
     "runs on a store that is not there": (["runs", "--store", "no-such-store"], 1),
-    # PA19: the command under this refusal repeats the command with OLDER and NEWER in place of
+    # The command under this refusal repeats the command with OLDER and NEWER in place of
     # previous and latest; through the API it is the call's, its options in the parser's order,
     # which is how these are typed
     "previous and latest that cannot be ordered": (["fix-check", "previous", "latest", "--store", "ties", "--event", "missed", "--inputs", "all", "--max-mde", "0.2"], 1),
@@ -547,7 +545,7 @@ def _typed(words: Sequence[str]) -> set[str]:
 
 
 def call_for(argv: Sequence[str]) -> Call:
-    """The API call a main-command invocation is, by the naming rule (PA1), read with the verb's
+    """The API call a main-command invocation is, by the naming rule, read with the verb's
     own parser: the store first, then the positionals, then each option as its keyword."""
     verb, rest = argv[0], list(argv[1:])
     _top, verbs = cli_parsers()

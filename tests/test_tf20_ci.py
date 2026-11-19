@@ -1,5 +1,5 @@
-"""TF20-70 to TF20-74: the recipe in CI and in the docs check (spec section 17.6, "In CI"; section
-8.4; the brief's rules 1 and 2).
+"""TF20-70 to TF20-75: the recipe ``docs/recipes/with-tasks-and-prove.md`` in CI and in the
+docs check.
 
 - TF20-70: ``tools/docs_check.py`` lays each page's folder out with the committed examples
   beside the fixtures, as the docs runner does, and leaves nothing behind.
@@ -140,7 +140,7 @@ def test_tf20_73_one_pin_of_tasks() -> None:
         if extra != "dev":
             assert not [d for d in wanted if "poisson-tasks" in d], extra
     assert not [d for d in PROJECT["project"]["dependencies"] if "poisson-tasks" in d], "Trace itself never needs Tasks"
-    # Prove is Trace's floor, with no cap (ruled 2026-11-17, PV-2 and PV-3)
+    # Prove is Trace's floor, with no cap
     assert f"poisson-prove>={PROVE_VERSION}" in [d.replace(" ", "") for d in PROJECT["project"]["dependencies"]]
     for text in (read(PAGE), PROVENANCE.read_text(encoding="utf-8"), jobs()["clean-install"]):
         assert TASKS_VERSION in text

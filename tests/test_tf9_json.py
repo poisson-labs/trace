@@ -1,4 +1,4 @@
-"""TF9, invariant 6: ``--json`` output is untouched (spec section 17.1; the look file's rule 16:
+"""TF9, invariant 6: ``--json`` output is untouched (the look file's rule 16:
 "``--json`` must be identical").
 
 - **TF9-6a** Every verb's ``--json``, with stdout and stderr each on a terminal, prints the same

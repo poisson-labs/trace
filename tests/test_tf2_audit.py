@@ -1,9 +1,9 @@
-"""What the independent read of this build found, each held by a test: both tools' files found;
+"""Faults of setup and the config file, each held by a test: both tools' files found;
 Ctrl-C once the config is written; a config whose [events] table is there and empty; a store
 folder named path; digits outside ASCII typed at a question; the stores offered to add; adding
 a store to a config that names none; a config written into a store; line numbers after a
-triple quote; a config that is a pipe; doctor's lines that no command mends; and the wrong
-builds that passed every test before (success words matched exactly, a token variable's name,
+triple quote; a config that is a pipe; doctor's lines that no command mends; and wrong
+builds the other tests let through (success words matched exactly, a token variable's name,
 --force in the command shown, a write that fails, imports counted as named, the day in a
 DeepEval file's name)."""
 
@@ -153,7 +153,7 @@ def test_doctor_names_no_command_where_none_mends_it(tmp_path: Path) -> None:
     assert "--store other" in next(c for c in doc(result)["checks"] if c["name"] == "config")["line"]
 
 
-# ---------- the wrong builds that passed every test before ----------
+# ---------- wrong builds the other tests let through ----------
 
 
 def test_the_words_for_success_are_matched_exactly(tmp_path: Path) -> None:

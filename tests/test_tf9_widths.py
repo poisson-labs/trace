@@ -1,4 +1,4 @@
-"""TF9, invariant 4: widths (spec sections 9.3 and 17.1; the look file's rule 16).
+"""TF9, invariant 4: widths (the look file's rule 16).
 
 - **TF9-4a** The per-input table folds under 100 columns: on a terminal 80 wide, the unit every
   cell of a column repeats (``points``, in ``change``) moves into the header, and the input's key
@@ -8,7 +8,7 @@
   Prove's HumanEval store, whose inputs are keyed by two fields.
 - **TF9-4b** No line of the pretty rendering's stdout is wider than the terminal, at 80 and at 120
   columns, but the first line (the verdict line, kept whole as plain's wrapping rule keeps it, so
-  that TF9-7b reads it byte for byte: LB1, ruled 2026-11-03), a line that holds a command to copy,
+  that TF9-7b reads it byte for byte), a line that holds a command to copy,
   or a word that is itself wider than the terminal. (Stricter than "no table line": the pretty
   rendering wraps stdout's prose to the terminal too.) Stderr is held to the look's rule 4
   instead: each problem is one line, so an ``error:`` or ``note:`` line is never broken (TF9-7b
@@ -20,7 +20,7 @@
   shows nothing the plain stderr does not say, neither terminal shows a bar or a spinner, and
   stdout never redraws a line.
 
-The tables the later pairs add (the failure breakdown, the continuous measures) inherit these
+The tables TF21 and TF23 add (the failure breakdown, the continuous measures) inherit these
 rules through the renderer: ``test_tf9_new_table.py``.
 """
 
@@ -92,7 +92,7 @@ def test_tf9_4a_the_per_input_table_folds_under_100_columns(base: Path, item: It
 def _too_wide(text: str, plain: str, cols: int) -> list[str]:
     copy = commands(plain)
     out = []
-    # the first line is the verdict line, whole whatever its length (LB1)
+    # the first line is the verdict line, whole whatever its length
     for line in strip(text).split("\n")[1:]:
         if len(line) <= cols:
             continue

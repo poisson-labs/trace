@@ -1,6 +1,6 @@
-"""TF1-13: every help example runs as written, and the two new verbs' help is a stranger's (spec
-sections 9.1 rule L2 and 5.3; TF0's examples name runs by ``latest`` and ``previous``, which
-resolve once names are built).
+"""TF1-13: every help example runs as written, and the help of ``runs`` and ``name`` is a
+stranger's (the look's rule 2; TF0's examples name runs by ``latest`` and ``previous``, which
+resolve through names).
 
 Each example is read as a shell reads it, then run in a folder that holds what it names: the
 store an example names is a copy of the tau2 fixture (runs Prove stored, which carry the
@@ -28,7 +28,7 @@ NEW_VERBS = ("runs", "name")
 # the table and JUnit readers' committed files, for examples that name those readers
 TABLE = Path(__file__).resolve().parent / "fixtures" / "ingest" / "table" / "humaneval-a.csv"
 JUNIT = Path(__file__).resolve().parent / "fixtures" / "ingest" / "junit" / "humaneval-a.xml"
-# the promptfoo, Inspect and OpenAI Evals readers' committed files (TF10, its RD3), each copied
+# the promptfoo, Inspect and OpenAI Evals readers' committed files (TF10), each copied
 # under the name an example gives it, the form told by the name's extension
 _TF10 = Path(__file__).resolve().parent / "fixtures" / "ingest"
 TF10_FILES = {
@@ -37,17 +37,17 @@ TF10_FILES = {
                 ".json": _TF10 / "inspect" / "2026-10-07T04-23-51-00-00_trace-fixture_2nSEDuHHzKiTUjJW3kXknY.json"},
     "openai-evals": {".jsonl": _TF10 / "openai-evals" / "old.jsonl"},
     # the LangSmith reader's example, by its file's extension: the API's answer, the command's
-    # export or the page's CSV (the reader pair's TF24)
+    # export or the page's CSV (TF24)
     "langsmith": {".json": _TF10 / "langsmith" / "api" / "baseline.runs-v1.json",
                   ".jsonl": _TF10 / "langsmith" / "cli" / "baseline-runs.jsonl",
                   ".csv": _TF10 / "langsmith" / "ui" / "trace-fixture-baseline-bbb64b8e.csv"},
     # the Braintrust reader's example, by its file's extension: the experiment fetch's answer
-    # or the page's CSV (the reader pair's TF25)
+    # or the page's CSV (TF25)
     "braintrust": {".json": _TF10 / "braintrust" / "api" / "slice-baseline.fetch.json",
                    ".csv": _TF10 / "braintrust" / "ui" / "slice-baseline.csv"},
     # the Weave reader's example: the service's answer for one evaluation, a call a line (the
-    # page's downloads hold every evaluation, so an example on one would have to name one; the
-    # reader pair's TF26)
+    # page's downloads hold every evaluation, so an example on one would have to name one;
+    # TF26)
     "weave": {".jsonl": _TF10 / "weave" / "api" / "trace-fixture-slice-baseline.jsonl"},
 }
 TRACE_HELPS = [[], *[[v] for v in (*VERBS, *NEW_VERBS)]]
@@ -169,7 +169,7 @@ def test_tf1_13_every_help_example_runs_as_written(tmp_path: Path, command: str,
         assert re.match(r"^[a-z][a-z ]*  \S", result.out.splitlines()[0]), (example, result.out[:200])
 
 
-# ---------- help on the two new verbs ----------
+# ---------- help on runs and name ----------
 
 
 @pytest.mark.parametrize("verb", NEW_VERBS)

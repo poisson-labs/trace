@@ -1,5 +1,5 @@
-"""TF5-80 to TF5-88: ``tools/docs_check.py``, the docs checker the clean-install job runs (spec
-section 8.4). Held by what it does, run as a command, never by how it is written.
+"""TF5-80 to TF5-88: ``tools/docs_check.py``, the docs checker the clean-install job runs.
+Held by what it does, run as a command, never by how it is written.
 
     python tools/docs_check.py [--summary FILE] [PAGE ...]
 

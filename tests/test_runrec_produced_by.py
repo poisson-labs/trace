@@ -1,15 +1,15 @@
-"""RUNREC-20 to RUNREC-25: ``produced_by`` in each imported run's manifest (invariant 3; spec
-section 17.3 item 6; the artifact format's section 4.1, format 1.1; RR3, RR4).
+"""RUNREC-20 to RUNREC-25: ``produced_by`` in each imported run's manifest (invariant 3; the
+store format 1.1).
 
-Read as the static pages will read it (section 17.3 item 7: the runs view names the tool an
+Read as the static pages will read it (their runs view names the tool an
 import came from): plain JSON from ``<store>/<run>/manifest.json``, never through Prove's
 ``RunManifest``, which does not carry the key. The format's shared members are ``version`` (the
 writing tool's, Trace's) and ``from`` (``{"name", "sha256"}`` per thing the run was made from,
 named without a folder and digested over its bytes); Trace's own are ``tool``
 (``poisson-trace``), ``reader`` (the tool the results came from, as the import names it) and
 ``options`` (what the import declared, as its ``--json`` prints ``declared``). ``from`` lists
-every file the import read, in its ``--json`` order (RR4: the spec's "one" predates several
-files and folders), then the ``--verdicts`` file when one was joined."""
+every file the import read, in its ``--json`` order, then the ``--verdicts`` file when one was
+joined."""
 
 from __future__ import annotations
 
@@ -97,7 +97,7 @@ def test_runrec_22_no_path_reaches_produced_by(tmp_path_factory: pytest.TempPath
     assert all("/" not in e["name"].rstrip("/") for e in got["from"]), got["from"]
 
 
-# ---------- RUNREC-23: a --verdicts file is what the run was made from too (RR4) ----------
+# ---------- RUNREC-23: a --verdicts file is what the run was made from too ----------
 
 
 def test_runrec_23_the_verdicts_file_follows_the_files(tmp_path: Path) -> None:
@@ -135,7 +135,7 @@ def test_runrec_24_reading_verbs_leave_the_manifest_as_it_is(tmp_path: Path) -> 
 
 
 def test_runrec_24_the_import_block_keeps_its_place(tmp_path_factory: pytest.TempPathFactory) -> None:
-    # produced_by is beside what the import recorded, never in place of it (SA5's block stays)
+    # produced_by is beside what the import recorded, never in place of it (its block stays)
     root, data = imported("junit-a", tmp_path_factory)
     block = manifest_json(root, "r")["environment"]["import"]
     assert block["tool"] == "junit" and block["declared"] == data["declared"]

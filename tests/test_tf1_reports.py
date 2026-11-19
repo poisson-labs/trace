@@ -1,5 +1,5 @@
-"""TF1-8: every output names a run by its name, and its id once for the record (spec section
-5.2; the header line ``name (id)``, ruling R18).
+"""TF1-8: every output names a run by its name, and its id once for the record (the header
+line ``name (id)``).
 
 The report's title names each run by name; the header bullet of each run carries
 ``name (id)``; no other line holds a run id, the selecting run of a fix check included, which

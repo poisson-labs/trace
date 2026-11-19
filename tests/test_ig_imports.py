@@ -1,6 +1,5 @@
 """IG-1 to IG-9: a Prove at or above the floor that lacks a name Trace imports from it is refused
-in one line, by every command that reads through Prove, before anything is written (FL-11,
-ruled 2026-11-18).
+in one line, by every command that reads through Prove, before anything is written.
 
 Trace accepts any ``poisson-prove`` at or above its floor, with no upper cap. A later Prove that
 drops or renames a module or a name Trace imports would otherwise crash every command with exit
@@ -20,8 +19,8 @@ drops or renames a module or a name Trace imports would otherwise crash every co
 3. **doctor.** Its prove check fails, ``poisson-prove 0.9.0 is installed and has no
    poisson_prove.store.RunTally, which Trace imports from it``, with no command of its own;
    ``doctor`` exits 4.
-4. **What does not move.** A Prove below the floor, absent or stating no version is refused as
-   before. ``--help`` and ``--version`` need nothing from Prove.
+4. **The floor's refusals stand.** A Prove below the floor, absent or stating no version is
+   refused as such. ``--help`` and ``--version`` need nothing from Prove.
 
 The stand-in: the installed Prove, loaded whole at the interpreter's start by a
 ``sitecustomize`` module in a scratch folder put on ``PYTHONPATH``, then stripped in memory of

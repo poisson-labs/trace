@@ -1,10 +1,11 @@
 """IG-10 to IG-13: a Prove that is installed without its page bundle is named as that, by every
-command that builds a page, and nothing is written (IG-7 of the audit's list, ruled 2026-11-18).
+command that builds a page, and nothing is written.
 
 Trace builds its pages with two files Prove ships, ``poisson_prove/_ui_bundle/style.css`` and
-``ui.js``. Where they are missing, ``ui`` said ``cannot write the pages into STORE: No such file or
-directory`` and left an empty ``ui`` folder in the store, and ``report`` said it could not write
-``report.html``: both blamed the place written to, which was not at fault. The rule these tests hold:
+``ui.js``. Unchecked, their absence makes ``ui`` say ``cannot write the pages into STORE: No such
+file or directory`` and leave an empty ``ui`` folder in the store, and ``report`` say it cannot
+write ``report.html``: both blame the place written to, which is not at fault. The rule these
+tests hold:
 
 - IG-10: ``ui`` refuses, exit 1, nothing on stdout, in one ``error:`` line that names the Prove
   found and what it lacks, in the words ``doctor`` uses for a Prove that lacks a name: ``poisson-prove

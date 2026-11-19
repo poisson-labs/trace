@@ -1,7 +1,7 @@
-"""TF21-37 to TF21-44: the Prove reader, ``ingest/prove.py`` (spec section 18.1.1 row 1, 18.5.2
-row Prove; SA1, SA6). A run read from a store becomes normalised rows: a run Trace imported comes
-back from its ``meta["trace_signals"]`` exactly as written; a run Prove swept is read from its
-own columns and trace, on the committed Prove stores (tau2, cs, prove-0.1.3)."""
+"""TF21-37 to TF21-44: the Prove reader, ``ingest/prove.py``. A run read from a store becomes
+normalised rows: a run Trace imported comes back from its ``meta["trace_signals"]`` exactly as
+written; a run Prove swept is read from its own columns and trace, on the committed Prove stores
+(tau2, cs, prove-0.1.3)."""
 
 from __future__ import annotations
 
@@ -155,7 +155,7 @@ def test_tf21_40_prove_0_1_2_kinds(run: str) -> None:
         if o == "completed":
             assert row.result == "pass" and row.failure_kind is None
         elif o == "timeout" and t < hz:
-            # SA3 reading 6 as Taylor ruled it (2026-11-03): Prove's own word timeout is read as
+            # Prove's own word timeout is read as
             # step_limit only when the try's steps reached its step cap; short of it, it stays a
             # timeout, the source's own kind, which the built-in rules alone do not see
             assert row.failure_kind == "timeout"
@@ -180,7 +180,7 @@ def test_tf21_40_prove_kinds_counted() -> None:
 
 
 def test_tf21_40_a_timeout_short_of_the_cap_stays_a_timeout(tmp_path: Path) -> None:
-    """SA3 reading 6 as Taylor ruled it (2026-11-03): a Prove run's outcome word ``timeout`` is
+    """A Prove run's outcome word ``timeout`` is
     read as ``step_limit`` only when the try's steps reached its step cap; otherwise it stays
     ``timeout``. The committed prove-0.1.3 store holds no timeout short of the cap, so one is
     written here through Prove's own store, beside one at the cap."""

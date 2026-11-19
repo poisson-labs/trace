@@ -1,20 +1,20 @@
-"""TF17-44 to TF17-46: the scripted run over the sample repository, and what stays as it is
-(spec section 17.4 "How it is tested, with no model"; rule 5 of the session).
+"""TF17-44 and TF17-46: the scripted run over the sample repository, with no model, and what
+stays as it is.
 
 - TF17-44: a test plays the written skill's steps in order as a coding agent would, reading the
-  step list from the skill and failing if the steps differ from section 17.4's seven: it finds
-  the store, the Ragas pair and the JUnit pair, the tools from the dependencies, the failures in
-  ``agent.FAILURES`` and the cut in ``evals/score_rag.py``, which file is old and which new;
-  writes ``trace.toml`` with a path mistyped, runs the check as the skill shows it (exit 1,
-  ``error:`` naming the file, a ``next:``), fixes it, runs the check again (exit 0, the four
-  pending files), and stops with nothing but ``trace.toml`` and the skill's own files written,
-  no store, no byte code and no connection. The person's command then imports the four runs,
-  doctor reads ready, and doctor's ``next:`` is the first fix-check on the named pair.
-- TF17-45: nothing is written outside the repository the person named: held by TF17-1
+  step list from the skill and failing if the steps differ from the seven of ``STEP_TITLES``:
+  it finds the store, the Ragas pair and the JUnit pair, the tools from the dependencies, the
+  failures in ``agent.FAILURES`` and the cut in ``evals/score_rag.py``, which file is old and
+  which new; writes ``trace.toml`` with a path mistyped, runs the check as the skill shows it
+  (exit 1, ``error:`` naming the file, a ``next:``), fixes it, runs the check again (exit 0,
+  the four pending files), and stops with nothing but ``trace.toml`` and the skill's own files
+  written, no store, no byte code and no connection. The person's command then imports the four
+  runs, doctor reads ready, and doctor's ``next:`` is the first fix-check on the named pair.
+- Nothing is written outside the repository the person named: held by TF17-1
   (``init --agent``), TF17-29 (``doctor --setup``) and TF17-41 (the hand-over).
 - TF17-46: no existing verb's output changes: ``init --yes`` on a store, ``runs`` and the
-  import print byte for byte what main prints today (their stdout pinned here, apart from the
-  lines that name this machine).
+  import print byte for byte what is pinned here (their stdout, apart from the lines that
+  name this machine).
 """
 
 from __future__ import annotations

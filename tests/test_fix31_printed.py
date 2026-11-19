@@ -1,9 +1,9 @@
-"""trace#31, FIX31-P: what fix-check prints for the pairs that never failed, byte for byte.
+"""FIX31-P: what fix-check prints for the pairs that never failed, byte for byte.
 
-``tests/fixtures/fix31/printed/`` holds the stdout of nine invocations as the build of trace#31
-printed them (``make_printed.py`` beside it): Break's case on the committed fixture as Break
+``tests/fixtures/fix31/printed/`` holds the stdout of nine invocations as fix-check
+prints them (``make_printed.py`` beside it): Break's case on the committed fixture as Break
 asks it and in plain, the candidate with the planted weakness beside it, a pair too small for
-the size asked (three inputs by four tries), a pair of two inputs, whose range is rough (F31-3),
+the size asked (three inputs by four tries), a pair of two inputs, whose range is rough,
 and the pair whose only failure is on an input not compared. Their numbers are
 checked independently in ``test_fix31_no_failures.py``; this test keeps every other byte, so
 that a change to the wording is made on purpose and seen whole. The files carry the version of

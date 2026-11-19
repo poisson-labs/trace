@@ -1,5 +1,5 @@
-"""PF-30 to PF-59: a store Trace cannot read or write safely is refused in one line (PV-9 to
-PV-13; ``pf_support``'s opening, items 4 to 6).
+"""PF-30 to PF-52: a store Trace cannot read or write safely is refused in one line
+(``pf_support``'s opening, items 4 to 6).
 
 - PF-30: every command that reads a store refuses one marked as a newer format than Trace
   knows: exit 1, nothing on stdout, one ``error:`` line naming the format found and
@@ -23,7 +23,7 @@ PV-13; ``pf_support``'s opening, items 4 to 6).
 - PF-43: a broken descriptor is not healed or replaced by a refused save.
 - PF-44: ``import`` into a store whose ``store.json`` is there and cannot be read refuses in one
   line that names the file and gives the system's own words, exit 1, under both spellings of the
-  command; nothing is written, and no "unexpected failure" (FB-5, ruled 2026-11-18).
+  command; nothing is written, and no "unexpected failure".
 - PF-50: a word that reaches no run, in a store with a run whose manifest cannot be read, is
   refused naming that run by its id and that Prove could not read it, not as an unknown run.
 - PF-51: by its id, that run is refused as one Prove could not read; the readable run still
@@ -277,7 +277,7 @@ def test_pf_40_save_on_a_descriptor_that_is_not_json_refuses_in_one_line(tmp_pat
     store = _broken(tmp_path, NOT_JSON[how])
     before = _files(tmp_path)
     ran = run(argv_of(SAVING[label], store, STORE_1_2), tmp_path)
-    assert ran.code == 1, ran.text  # refused, where main crashed with exit 3
+    assert ran.code == 1, ran.text  # refused, not a crash with exit 3
     refused_one_line(ran, "store.json")
     assert _files(tmp_path) == before
     assert not (store / ".poisson" / "artifacts" / label.split()[0]).exists() and not (store / ".poisson" / "ui").exists()
@@ -358,7 +358,7 @@ def test_pf_44_import_refuses_a_store_json_it_cannot_read_in_one_line(tmp_path: 
         ran = run(words if command == "import" else ["import", *words], tmp_path, command)
     finally:
         file.chmod(mode)
-    assert ran.code == 1, ran.text  # refused, where main crashed with exit 3
+    assert ran.code == 1, ran.text  # refused, not a crash with exit 3
     refused_one_line(ran, "store.json")
     assert ran.lines() == [f"error: cannot read {file} (Permission denied); nothing was written"], ran.err
     assert _files(tmp_path) == before

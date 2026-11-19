@@ -1,6 +1,5 @@
-"""TF9: a table a later pair adds gets the same rules (spec section 17.1, read with sections 18.5 and
-18.6: the failure breakdown and the continuous measures come in their own pairs, TF21 and TF23,
-and inherit TF9's rules through its renderer).
+"""TF9: a table added after TF9 gets the same rules (the failure breakdown, TF21, and the
+continuous measures, TF23, inherit TF9's rules through its renderer).
 
 The renderer has two faces, and every table goes through both:
 

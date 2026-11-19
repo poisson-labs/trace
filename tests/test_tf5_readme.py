@@ -1,8 +1,7 @@
-"""TF5-40 to TF5-47: the README (the brief's rule 4; spec sections 8.1 and 8.3; the launch note
-of 2026-11-12). The facts are frozen, and that each is shown by a command on the page; the
-sentences are Session B's and Taylor's.
+"""TF5-40 to TF5-47: the README. The facts are frozen, and that each is shown by a command on
+the page; the wording of the sentences is not held.
 
-The launch note: Trace says where runs die (which step, which kind of span), which inputs got
+The opening's claim: Trace says where runs die (which step, which kind of span), which inputs got
 worse, which failure kinds grew, and whether it is real or noise, from the results a team
 already has in LangSmith, Braintrust or Weave.
 
@@ -10,8 +9,8 @@ already has in LangSmith, Braintrust or Weave.
   Trace``; the three commands in one block, in order (``pip install poisson-trace``,
   ``poisson-trace init``, ``poisson-trace fix-check previous latest --inputs all --max-mde
   0.2``: a fix check takes the two runs it compares, which inputs to compare and the size
-  asked about, and has no default for any of them, so nothing shorter runs as shown; ruled
-  2026-11-13, B-1); the page runs ``init`` lower down, and that fix check word for word; the
+  asked about, and has no default for any of them, so nothing shorter runs as shown);
+  the page runs ``init`` lower down, and that fix check word for word; the
   bare command, which opens the
   terminal app, and ``poisson-trace init --agent``; the three verdicts; the three services by
   name; and no pull-request check, which is not built.
@@ -29,7 +28,7 @@ already has in LangSmith, Braintrust or Weave.
   names in code is run on the page with what it printed (the install line and the bare
   command aside), and every figure it writes is in a block the page's commands printed, or is
   a version of Python.
-- TF5-44: the rest, in the order section 8.3 gives: what a first run looks like; letting your
+- TF5-44: the rest, in this order: what a first run looks like; letting your
   coding agent set it up; what a fix check says and what it does not; the commands; results
   from other tools; into the product; how it decides; what is built and what is not claimed;
   development, licence, citation. Beside them only the Install section and, while the package
@@ -341,7 +340,7 @@ def test_tf5_47_what_trace_does_not_do_and_where_it_runs() -> None:
 
 
 def test_tf5_47_the_readme_says_where_the_example_files_are() -> None:
-    """Section 8.4: a pip user gets the example files from the repository; the README says so
+    """A pip user gets the example files from the repository; the README says so
     before its first command that reads one."""
     said = " ".join(TEXT.split())
     found = re.search(r"(?i)\bclone of the repository\b|\bclone the repository\b|\bsource archive\b", said)

@@ -1,14 +1,14 @@
-"""TF6-4 to TF6-15: ``--save`` writes the verdict as one artifact of the suite's format (spec
-section 17.3 items 1 to 4, the Artifact Format sections 2, 3 and 5; invariants 1, 4 and 5).
+"""TF6-4 to TF6-15: ``--save`` writes the verdict as one artifact of the suite's format,
+``poisson.artifact/1`` (``docs/handover.md``).
 
-- TF6-4: without ``--save`` (or ``--out``) nothing is written, on any verb (AD8).
+- TF6-4: without ``--save`` (or ``--out``) nothing is written, on any verb.
 - TF6-5: with it, one artifact of the verb's kind; the plain output gains one last detail line,
   ``  saved  <kind> <first 12 hex>``, and ``--json`` gains ``saved`` before ``next``; nothing
   else printed moves.
 - TF6-6: ``artifact.json``: Prove's keys in Prove's order; every file listed with its role, media
   type, schema and digest, and nothing unlisted.
 - TF6-7: the id is the format's formula over the result-changing settings; those settings, per
-  verb, by name (SV5); where each came from and the stores' config names kept beside them, out of
+  verb, by name; where each came from and the stores' config names kept beside them, out of
   the id; one result saved twice is one artifact, written once.
 - TF6-8: the inputs name the runs by id alone, so a run's name does not move the id.
 - TF6-9: saved in the store the runs were read from; the store descriptor written or its
@@ -16,11 +16,11 @@ section 17.3 items 1 to 4, the Artifact Format sections 2, 3 and 5; invariants 1
 - TF6-10: a store that cannot be written: one ``note:`` line, and the command goes on.
 - TF6-11: a save that fails part way leaves no artifact and no temporary folder.
 - TF6-12: ``report.md`` is the plain report; an absolute store path is written as its last folder's
-  name, here and everywhere in the artifact (SV7).
-- TF6-13: ``result.json`` is the printed ``--json`` with section 11.3's keys and TF6's (SV3, SV4).
+  name, here and everywhere in the artifact.
+- TF6-13: ``result.json`` is the printed ``--json`` with the promised keys and TF6's own.
 - TF6-14: a saved verdict reads back the same, and equal inputs give equal bytes.
-- TF6-15: ``table.parquet``: the shared columns, Trace's two, and the metrics each verb writes
-  (section 17.3 item 1: "TF6's Session A freezes the names").
+- TF6-15: ``table.parquet``: the shared columns, Trace's two, and the metrics each verb writes,
+  by the names these tests fix.
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ FILES = {
     "table.parquet": {"role": "table", "media_type": "application/vnd.apache.parquet", "schema": "poisson.table/1"},
     "charts/curve.svg": {"role": "chart", "media_type": "image/svg+xml", "data": "charts/curve.json"},
     "charts/curve.json": {"role": "table", "media_type": "application/json", "schema": "poisson-trace.chart/1"},
-    # SV15: compare's two curves and its hazard ratio, charted with the pages (TF18)
+    # compare's two curves and its hazard ratio, charted as the pages chart them (TF18)
     "charts/curves.svg": {"role": "chart", "media_type": "image/svg+xml", "data": "charts/curves.json"},
     "charts/curves.json": {"role": "table", "media_type": "application/json", "schema": "poisson-trace.chart/1"},
     "charts/hazard-ratio.svg": {"role": "chart", "media_type": "image/svg+xml", "data": "charts/hazard-ratio.json"},
@@ -319,7 +319,7 @@ def test_tf6_9_nothing_else_in_the_store_changes(tmp_path: Path, verb: str) -> N
     prove_own = {k: v for k, v in before.items() if k.startswith(".poisson/artifacts/comparison/")}
     assert prove_own and all(after[k] == v for k, v in prove_own.items())
     new = sorted(set(after) - set(before))
-    # A7: a save also builds Trace's pages, under .poisson/ui/trace/ (TF18)
+    # a save also builds Trace's pages, under .poisson/ui/trace/ (TF18)
     assert all(k.startswith((f".poisson/artifacts/{verb}/", ".poisson/ui/trace/")) for k in new), new
     assert all(k in new or after[k] == before[k] for k in after if k != ".poisson/store.json")
 

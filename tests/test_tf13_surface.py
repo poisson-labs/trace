@@ -1,8 +1,7 @@
-"""TF13-1 to TF13-7: the API's surface (invariant 1, and what section 11.8 adds; PA1, PA4, PA5,
-PA7, PA10, PA16).
+"""TF13-1 to TF13-7: the API's surface.
 
-TF13-1: ``poisson_trace.api.__all__`` is the public surface: the functions section 11.8 names
-for 0.1.0 (R32 as amended, with ``check`` left for TF7 by RF2 and ``build_pages`` for TF18),
+TF13-1: ``poisson_trace.api.__all__`` is the public surface: the functions of 0.1.0's API
+(``check`` waits for the pull-request check, and ``build_pages`` comes with TF18's pages),
 the three types, and the class of every result; ``poisson_trace.commands`` holds ``init`` and
 ``doctor``.
 
@@ -19,7 +18,7 @@ TF13-4: the functions without a verb of their own: ``name``, ``forget_name``, ``
 result's own methods.
 
 TF13-5: ``commands.init`` and ``commands.doctor`` take every option of their verbs' parsers as
-keywords (read live: the setup agent's flags join when TF17 lands).
+keywords (read live, so the setup agent's flags are among them).
 
 TF13-6: ``api.Refusal`` is an exception carrying the message, the next commands, the exit code
 and the notes, built as ``Refusal(message, *, next=(), exit_code=1, notes=())``.
@@ -57,12 +56,12 @@ def test_tf13_1_the_public_surface_is_all() -> None:
         assert hasattr(a, name), name
     functions = {n for n in names if inspect.isfunction(getattr(a, n))}
     classes = {n for n in names if inspect.isclass(getattr(a, n))}
-    # PA5: build_pages came with the pages (TF18), beside the functions TF13 froze
+    # build_pages comes with the pages (TF18), beside the functions TF13 holds
     assert functions == set(FUNCTIONS) | {"build_pages"}, sorted(functions ^ (set(FUNCTIONS) | {"build_pages"}))
     assert set(names) == functions | classes, sorted(set(names) - functions - classes)
     assert set(TYPES) <= classes
     assert set(RESULT_TYPES.values()) <= classes, sorted(set(RESULT_TYPES.values()) - classes)
-    # RF2: the check's function comes with the check (TF7)
+    # the check's function comes with the pull-request check, not yet in the API
     assert "check" not in names
 
 
@@ -95,7 +94,7 @@ def test_tf13_2_each_verb_takes_what_its_command_line_takes(verb: str) -> None:
     for name, default in want.items():
         assert got[name] == default, (verb, name, got[name], default)
     var_keyword = [p for p in params if p.kind is p.VAR_KEYWORD]
-    # the four counting verbs read runs given as folders with the reader's flags (FI8)
+    # the four counting verbs read runs given as folders with the reader's flags
     assert bool(var_keyword) == (verb in COUNTING), verb
 
 

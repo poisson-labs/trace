@@ -1,13 +1,12 @@
-"""TF19-6: keys and exits (spec section 17.2; the look file's terminal-app section; A5, A6, A11 to
-A13, DM9).
+"""TF19-6: keys and exits (the terminal-app section of ``docs/cli-look.md``; ``docs/app.md``).
 
 **TF19-6** The arrows move the focus one row (and no further than the last); Enter opens the
 focused row's screen; Esc goes back with the focus where it was; ``/`` filters the rows and Esc
-clears the filter; ``s`` moves the runs and imports screens to the config's next store (DM9); the
+clears the filter; ``s`` moves the runs and imports screens to the config's next store; the
 picker's ``space`` chooses before then after, ``l`` previous and latest. ``q`` exits 0 on every
 screen and the app leaves nothing to print (during a question it answers no and the app stays:
 held with the name question, TF19-4; ``q`` on a pseudo-terminal: TF19-1).
-Ctrl-C exits 130 and the app leaves one line saying what it kept (A12), on every screen and
+Ctrl-C exits 130 and the app leaves one line saying what it kept, on every screen and
 during work, through the pilot and on a pseudo-terminal. Help lists every key of every screen's
 key bar, and each screen's own letters mean one thing.
 """
@@ -276,7 +275,7 @@ def _listed(help_rows: list[str], keys: set[str]) -> list[str]:
 
 
 def test_tf19_6_help_lists_every_key(work: Path) -> None:
-    """Every shared key and every screen's own letter (A6's table) is on help."""
+    """Every shared key and every screen's own letter (the ``OWN`` table) is on help."""
     s = drive(work, ["?"], size=(120, 80))
     keys = {k for own in OWN.values() for k in own} | {"↑↓", "enter", "esc", "tab", "/", "y", "m", "?", "q", "ctrl-c", "PgUp"}
     assert _listed(s.last.body, keys) == [], s.last.text()
@@ -284,7 +283,7 @@ def test_tf19_6_help_lists_every_key(work: Path) -> None:
 
 @pytest.mark.slow
 def test_tf19_6_help_lists_every_key_of_every_key_bar(work: Path, toured: dict[str, list[Grid]]) -> None:
-    """Every key on every screen's key bar is on help (fast twin: the one above, from A6's table)."""
+    """Every key on every screen's key bar is on help (fast twin: the one above, from the ``OWN`` table)."""
     s = drive(work, ["?"], size=(120, 80))
     seen: set[str] = set()
     for screen in NAV_KEYS:
@@ -309,7 +308,7 @@ def test_tf19_6_a_letter_means_one_thing_on_a_few_screens(work: Path) -> None:
 
 @pytest.mark.slow
 def test_tf19_6_a_letter_means_one_thing(toured_wide: dict[str, list[Grid]]) -> None:
-    """Each letter's word is the same on every key bar that has it (the look file)."""
+    """Each letter's word is the same on every key bar that has it (``docs/cli-look.md``)."""
     assert _one_meaning([toured_wide[screen][0] for screen in NAV_KEYS]) == {}
 
 
@@ -347,7 +346,7 @@ failed = ["violated", "timeout"]
 @pytest.mark.parametrize(("key", "limit", "keyword", "verb"), [("c", "max-mde-hr", "max_mde_hr", "compare"),
                                                               ("f", "max-mde", "max_mde", "fix-check")])
 def test_tf19_6_h_sets_the_limit_when_trace_toml_has_none(work: Path, key: str, limit: str, keyword: str, verb: str) -> None:
-    """The design's ``h``: with no ``[check]`` in ``trace.toml``, ``h`` asks for the limit on the
+    """``h``: with no ``[check]`` in ``trace.toml``, ``h`` asks for the limit on the
     message line, the typed value is the picker's limit line, and the verdict is the plain
     command's with that flag."""
     (work / "trace.toml").write_text(NO_CHECK, encoding="utf-8")
@@ -427,7 +426,7 @@ api.import_run = _held
 def test_tf19_6_ctrl_c_during_an_import_on_a_terminal(work: Path, tmp_path: Path) -> None:
     """On a terminal, the import held back 20 s before it writes (a ``sitecustomize`` the test
     puts first): Ctrl-C exits 130 at once, the line names no import, and the store is as it was.
-    "At once" is held by the hold itself, not by a time bound (S-2): the held import writes
+    "At once" is held by the hold itself, not by a time bound: the held import writes
     ``ran-out`` beside it only if its 20 s sleep runs out, so the process did not wait for it if
     there is none; the terminal driver's own deadline is the guard against a hang."""
     from poisson_trace import core

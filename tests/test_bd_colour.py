@@ -1,6 +1,5 @@
-"""BD-4: a verdict word in a terminal table cell is drawn in its meaning (Taylor's DM15 of
-2026-11-05), under the clean look's rules (spec section 17.1; FD12,
-``log/trace-breakdown-a/rulings.md``).
+"""BD-4: a verdict word in a terminal table cell is drawn in its meaning, under the clean look's
+rules (the Colour part of the terminal app section of ``docs/cli-look.md``).
 
 **BD-4a** In the pretty face of a table, a cell of the column headed ``verdict`` is drawn by its
 verdict word: ``too small to tell``, ``no significant difference`` and ``unconfirmed`` yellow;
@@ -101,7 +100,7 @@ def test_bd_4b_nothing_else_is_coloured(width: int) -> None:
 
 
 def test_bd_4b_only_the_verdict_column() -> None:
-    """The same words under another header are cells like any other (FD12)."""
+    """The same words under another header are cells like any other."""
     from poisson_trace import _pretty
 
     header = ["measure", "old", "new", "change", "note"]

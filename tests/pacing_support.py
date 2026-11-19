@@ -1,16 +1,16 @@
-"""Shared helpers for the pacing pair's tests (B-8, ruled by Taylor on 2026-11-11): a clock the
+"""Shared helpers for the pacing tests: a clock the
 test controls, put in place of every clock the import's writer reads, so that what the run's
 event log says about its progress is held the same however loaded the machine is. Not a test
 module and not collected.
 
-The promise (``log/trace-pacing-a``, P-1): **every progress line but the closing one is written
+The promise: **every progress line but the closing one is written
 at least one second after the progress line before it, by the times written in the log**, to
 the microsecond, without slack, whatever the machine is doing between reading a clock and
-writing a line, and however the wall clock is slewed or set. The run record's RUNREC-11 and
-RUNREC-12 hold the same with a millisecond's slack, on whatever lines a real import happens to
+writing a line, and however the wall clock is slewed or set. The run record's RUNREC-10 and
+RUNREC-11 hold the same with a millisecond's slack, on whatever lines a real import happens to
 write; these hold it exactly, on lines a script of the clock decides.
 
-What Session B builds, in one place:
+What the writer does, in one place:
 
 ``poisson_trace.ingest.writer`` (``_Log`` and ``_now``, nothing else)
     Progress is paced by the clock it is stamped with. One reading of the wall clock both
@@ -19,9 +19,9 @@ What Session B builds, in one place:
     (microseconds, UTC), is at least one second after the time written on the last paced
     progress line. No monotonic clock decides it, and no second reading is taken to stamp it.
     The closing progress, and ``planned``, ``started``, ``finished`` and ``interrupted``, are
-    stamped as today (the wall clock when emitted) and are not paced. Every clock the writer
-    reads is read through the module's own names ``time`` and ``datetime``, as on main, so a
-    test can stand a clock in their place. Nothing else moves: the lines' keys, details and
+    stamped with the wall clock when emitted and are not paced. Every clock the writer
+    reads is read through the module's own names ``time`` and ``datetime``, so a
+    test can stand a clock in their place. Pacing changes nothing else: the lines' keys, details and
     format, the outputs of every verb, the pages and the app.
 
 The clock (``Clock``): one count of nanoseconds that every reading moves on. The writer's module
@@ -197,10 +197,10 @@ SCRIPTS: dict[str, Callable[[], Iterator[int]]] = {
     "a 997 ms stall after every 3rd reading": lambda: stalls_after_every(3, 997 * MS),
     "stopped for 2.5 s once": lambda: frozen_for(2.5, 203),
 }
-# Each loaded script writes, through main 2ff191b's writer, two paced lines less than a second
-# apart: the 7 ms stall as the 0.9977 s gap of the trace#31 session, the 41 ms one as 0.9936 s
-# of TF24 Session B's slow lane and wider, the stop between a reading that decided a line and
-# the reading that stamped it.
+# Each loaded script writes, through the pinned main's writer, two paced lines less than a
+# second apart: the 7 ms stall as a 0.9977 s gap seen on a loaded machine, the 41 ms one as
+# 0.9936 s and wider, the stop between a reading that decided a line and the reading that
+# stamped it.
 
 
 # ---------- an import under the clock ----------

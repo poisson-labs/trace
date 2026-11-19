@@ -1,4 +1,4 @@
-"""What the independent read of this build found, each a test: an XML encoding the parser does not
+"""Edge cases of the import verb and its readers, each a test: an XML encoding the parser does not
 take is a refusal, not a failure; "import" as an option's value before no verb is a wrong command
 line; a CSV header cell with a space around its name is not listed as the column it is not; an
 option nobody knows before the verb leaves the verb to the words after it, an option's value

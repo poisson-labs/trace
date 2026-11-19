@@ -1,8 +1,8 @@
-"""TF19-8: built on Prove's app shell (spec section 17.2, AD5; A1).
+"""TF19-8: built on Prove's app shell.
 
 **TF19-8** Trace's private copy of Prove's shell, ``poisson_trace/_app_shell.py``, names the Prove
-commit it was copied from (``PROVE_COMMIT``, the fixture's ``commit``: Prove's ``main`` at
-``d04e378``, whose two app files are byte for byte those of the 0.1.3 release Trace pins), and
+commit it was copied from (``PROVE_COMMIT``, the fixture's ``commit``: a commit on Prove's
+``main`` whose two app files are byte for byte those of the 0.1.3 release Trace pins), and
 every definition the fixture lists is that commit's, its syntax tree equal to Prove's once the
 fixture's renames are made (``poisson-prove`` to ``poisson-trace``): the bands, the key bar, the
 focus marker, the message line, the width and line-break rules. A method of Prove's ``ProveApp``

@@ -1,9 +1,7 @@
-"""TRIES: the failure breakdown says how many tries had no outcome (FD15, ruled by Taylor on
-2026-11-06, ``log/trace-breakdown-b/rulings.md``; this fix's own readings are
-``log/trace-tries/rulings.md``).
+"""TRIES: the failure breakdown says how many tries had no outcome.
 
 The section ``## Failures by kind`` counts every try the reader gave, while the verdict counts only
-the inputs both runs carry with an outcome (the Ragas page said 150 tries in the section and 141 in
+the inputs both runs carry with an outcome (on the Ragas pair, 150 tries in the section and 141 in
 the summary). So whenever a run has tries with no outcome, the section says how many, per run, and
 how that squares with the verdict's count; when no try lacks an outcome, nothing changes: no new
 line, no new key.
@@ -27,7 +25,7 @@ carry with an outcome), not the verb's.
 ``no_outcome`` and ``verdict_tries``, after ``tries``), the saved verdict (``result.json``'s diff
 and ``report.md``'s section) and the Python API (the result's diff, ``to_markdown()``).
 
-**TRIES-5** Runs classified by different rules print digests and no counts (FD4); the sentence is
+**TRIES-5** Runs classified by different rules print digests and no counts; the sentence is
 not there either, for there is no tries line to square.
 """
 
@@ -194,7 +192,7 @@ def test_tries_1_the_sentence_says_how_many(which: str, verb: str, tmp_path: Pat
     assert got[at + 1] == "" and got[at + 2] == expected_line(verb, counts)
     # a paragraph of its own: the signals' table, where there is one, follows after a blank line
     rest = got[at + 3:]
-    # the Prove label kinds pair names, after it, the labels that have no kind (test_pl_section.py, PL-21, holds that)
+    # after it come the labels that have no kind, if any (test_pl_section.py, PL-21, holds that)
     if len(rest) >= 2 and rest[0] == "" and rest[1].startswith("Trace has no kind for the label"):
         rest = rest[2:]
     assert rest == [] or (rest[0] == "" and rest[1] == SIGNALS_LINE)
@@ -296,7 +294,7 @@ def test_tries_4_json_carries_the_counts_after_the_tries(verb: str, tmp_path: Pa
     store = cs_store(tmp_path)
     counts = read_counts(CS, (CS_A, CS_B))
     diff = ok(cs_argv(verb, store, "--json")).json()["failure_taxonomy_diff"]
-    # the Prove label kinds pair adds, last, the labels that have no kind (test_pl_section.py, PL-23, holds that)
+    # last comes the key for the labels that have no kind (test_pl_section.py, PL-23, holds that)
     assert [k for k in diff if k != "labels_without_kind"] == KEYS and list(diff)[-1] == "labels_without_kind"
     assert _counts_of(diff, verb) == counts
     assert set(diff["no_outcome"]) == set(diff["verdict_tries"]) == set(ARMS[verb])

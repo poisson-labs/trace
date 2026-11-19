@@ -1,12 +1,10 @@
-"""Shared helpers for TF6's tests: verdicts saved in the suite format (spec sections 11.1 to 11.6,
-17.3 items 1 to 5, 18.5, 18.6 and the step 16 rows of 18.7), with what earlier rulings sent to
-TF6: the continuous-measures table wired into ``fix-check`` (CT2), the near-zero old mean (HY1),
-the plain spelling of the plus-minus sign, and ``--verdicts`` on the comparison verbs (FI9).
+"""Shared helpers for TF6's tests: verdicts saved in the suite format (``docs/handover.md``),
+with the continuous-measures table wired into ``fix-check``, the near-zero old mean, the plain
+spelling of the plus-minus sign, and ``--verdicts`` on the comparison verbs.
 
 Not a test module and not collected.
 
-The rules as these tests read them (the readings the spec leaves open are put to Taylor in
-``log/trace-tf6-a/rulings.md``, SV1 on; each test file's opening says which it holds):
+The rules as these tests read them (each test file's opening says which it holds):
 
 - ``--save`` on ``where``, ``compare``, ``fix-check`` and ``changes`` saves the verdict as one
   artifact of the suite's format (``poisson.artifact/1``) into the store the runs were read from,
@@ -16,9 +14,9 @@ The rules as these tests read them (the readings the spec leaves open are put to
   ``result``), ``report.md`` (role ``report``), ``table.parquet`` (role ``table``,
   ``poisson.table/1``) and, for ``where``, ``charts/curve.svg`` with ``charts/curve.json``.
 - ``result.json`` is the verb's ``--json`` document as printed with the same flags, with the
-  keys section 11.3 adds and TF6's own: ``summary`` and ``before_you_act`` (S2), ``note`` as a
+  keys the format adds and TF6's own: ``summary`` and ``before_you_act``, ``note`` as a
   list, ``versions``, and, on the three verbs of two runs, ``failure_taxonomy_diff`` and
-  ``continuous_measures``; every store path written as section 11.2 rules for ``handover.json``.
+  ``continuous_measures``; every store path written as ``handover.json`` writes it.
 - ``report.md`` is the report as the plain command prints it, without the detail lines
   ``--save`` and ``--out`` add, with the same store-path rule.
 - ``--out DIR`` saves as ``--save`` does and writes a copy of the artifact's folder into DIR,
@@ -41,7 +39,7 @@ from tf0_support import Ran, trace, trace_import
 
 PROVE_013 = FIXTURES / "prove-stores" / "prove-0.1.3"
 # the two runs of the committed Prove 0.1.3 store, by the names they were given at sweep time
-# (the store moved from 0.1.2 to 0.1.3 with the Prove pin: SB7, ruled by Taylor 2026-11-04)
+# (the store is at 0.1.3, the Prove version the pins hold)
 BEFORE, AFTER = "agent before", "agent after"
 BEFORE_ID, AFTER_ID = "20261104T162926Z-b4d5", "20261104T162928Z-1596"
 EVENTS_012 = ["--event", "violated", "--event", "timeout"]
@@ -187,8 +185,8 @@ def outside_dot_poisson(snap: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def canonical(value: Any) -> str:
-    """The format's canonical JSON: sorted keys, no spaces, UTF-8 as it is (the Artifact
-    Format, section 5.1)."""
+    """The canonical JSON of the ``poisson.artifact/1`` format: sorted keys, no spaces, UTF-8
+    as it is."""
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
 
 

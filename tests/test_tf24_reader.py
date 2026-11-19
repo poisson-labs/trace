@@ -1,6 +1,5 @@
 """TF24-4 to TF24-15: the reader on every committed LangSmith capture: rows, cases and outcomes
-(spec sections 6.3, 18.1.1 row 9, 18.3.1 and 18.3.2; the INT3 spec's sections 3.1 and 4, IT1, IT2
-and IT5 to IT10, on the real captures; TF22's FI18 and FI19).
+(on the real captures; the input key and the verdicts join TF22 holds for every reader).
 
 - TF24-4: every export of both versions (the v1 and v2 run queries, v2 with subtree usage, the
   command's run export and its trace folder's files, the UI's CSV) reads as ten rows, one a
@@ -142,7 +141,7 @@ def test_tf24_5_input_is_refused_when_no_root_holds_an_input(tmp_path: Path) -> 
 @pytest.mark.parametrize("kind", ["v2", "cli-runs", "ui"])
 def test_tf24_5_a_verdicts_file_joins_by_input(tmp_path: Path, kind: str) -> None:
     """The reader hands the import each case's input key, so a verdict that names an input and
-    no case joins the row of that input (FI19), here filling the outcome the statistics lack."""
+    no case joins the row of that input, here filling the outcome the statistics lack."""
     verdicts = tmp_path / "v.jsonl"
     verdicts.write_text(json.dumps({"input": {"case": "c10", "item": ITEM["c10"]}, "outcome": "fail"}) + "\n", encoding="utf-8")
     argv = ls_argv(export("baseline", kind), tmp_path / "st", "r", "--verdicts", verdicts)
@@ -198,7 +197,7 @@ def test_tf24_6_by_status_the_errored_root_is_the_one_missed(tmp_path_factory: A
 
 
 def test_tf24_6_status_on_an_export_that_says_nothing_of_how_a_run_ended_is_refused(tmp_path: Path) -> None:
-    """The command's export without ``--full`` (ruling 8 of INT3): no status and no error key."""
+    """The command's export without ``--full``: no status and no error key."""
     def bare(rows: list[dict[str, Any]]) -> None:
         for r in rows:
             for key in ("status", "error", "inputs", "outputs", "events"):
@@ -290,7 +289,8 @@ def test_tf24_8_a_root_without_the_key_has_no_outcome(tmp_path: Path) -> None:
 @pytest.mark.parametrize("kind", ["v2", "v2-subtree", "cli-runs", "cli-traces"])
 def test_tf24_9_a_root_with_no_score_has_no_outcome(tmp_path_factory: Any, kind: str) -> None:
     """The baseline's v2 pulls and the command's exports hold ``exact`` on 8 of the 10 roots
-    (TC-11): the two without are rows with no outcome, never read as a pass or a failure."""
+    (their statistics lag behind the feedback records): the two without are rows with no
+    outcome, never read as a pass or a failure."""
     root, data = world(tmp_path_factory, "baseline", kind, "exact")
     assert data["rows"] == 10 and tally(data) == {"met": 6, "missed": 2}
     assert data["no_outcome"] == {"no score": 2}

@@ -1,5 +1,4 @@
-"""TF22-33 to TF22-44: ``--verdicts FILE``, the sidecar join (``ingest/verdicts.py``, spec
-section 18.2 option B and 18.2.1 layers 1 and 2, SG5).
+"""TF22-33 to TF22-44: ``--verdicts FILE``, the sidecar join (``ingest/verdicts.py``).
 
 A verdicts file is a ``.csv`` (columns ``case``, ``input``, ``outcome``, ``score``,
 ``failure_kind``) or a ``.jsonl`` (the same keys, plus ``scores`` and ``feedback`` objects).

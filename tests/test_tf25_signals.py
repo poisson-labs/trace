@@ -1,6 +1,6 @@
-"""TF25-16 to TF25-27: the signals, the failure kinds, scores and feedback, and what is kept (spec
-sections 18.1 and 18.1.1 row 10, 18.4.1 and 18.4.2 as TF21's SA1 reads them, 18.5.2's Braintrust
-row; SG2; IC7; the LangSmith pair's LS-7 to LS-14 in Braintrust's words).
+"""TF25-16 to TF25-27: the signals, the failure kinds, scores and feedback, and what is kept (the
+kinds through TF21's one rule set; no text kept, as IC7 holds for every import; the LangSmith
+reader's TF24-16 to TF24-27 in Braintrust's words).
 
 - TF25-16: time. The wall time is the root's end less its start, from every export, and never
   the summary's ``duration``, which is the task span's; the time to first token is Braintrust's
@@ -25,7 +25,7 @@ row; SG2; IC7; the LangSmith pair's LS-7 to LS-14 in Braintrust's words).
   counts a tool error; the candidate's cut reply is a crash from the spans and the page's rows
   (a function span raised a ``ValueError``) and unclassified from the summary. A passed row has
   no kind. Where no classification names the kind, it is the one TF21's reference gives.
-- TF25-21: the kinds section 18.5.2 names that the captures lack, on a capture edited in one
+- TF25-21: the kinds the reader can give that the captures lack, on a capture edited in one
   place: a last line saying a rate limit, a context overflow or a timeout; the kind of the span
   that failed; a classification or a tag naming a kind, on a failed row alone; three calls in a
   row to one tool under a root that succeeded and failed its score (a loop).

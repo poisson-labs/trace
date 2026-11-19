@@ -1,5 +1,5 @@
 """TF13-34 to TF13-36: ``docs/python.md``, with examples that run in CI and print what the doc
-shows (invariant 5; R33; PA12, PA14).
+shows.
 
 TF13-34: the doc has a section ``## api.<name>`` for every public function and none for anything
 else; each section holds the function's signature as the code has it (in a ``python`` block of
@@ -12,7 +12,7 @@ doc's opening describes, ``tf13_support.workspace``), exits 0, writes nothing to
 exactly the ``text`` block under it.
 
 TF13-36: the doc says the API is for users and Trace's own command line, not a promise to
-Poisson's products (R33, section 11.8), in the sentence ``PRODUCTS`` gives; it is in plain words;
+Poisson's products, in the sentence ``PRODUCTS`` gives; it is in plain words;
 its examples import nothing of the package but ``poisson_trace.api``; and it documents nothing of
 ``poisson_trace.commands``.
 """
@@ -54,7 +54,7 @@ def _example(name: str) -> tuple[str, str]:
 
 def test_tf13_34_a_section_for_every_function_and_nothing_else() -> None:
     sections = doc_sections(_text())
-    # PA5: build_pages came with the pages (TF18), whose own tests hold its section (TF18-22)
+    # build_pages came with the pages (TF18), whose own tests hold its section (TF18-22)
     names = {f"api.{name}" for name in (*FUNCTIONS, "build_pages")}
     assert set(sections) == names, sorted(set(sections) ^ names)
 

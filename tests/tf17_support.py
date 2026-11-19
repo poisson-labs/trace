@@ -1,4 +1,4 @@
-"""Shared helpers for the tests of the setup agent (TF17-1 to TF17-48): ``init --agent``, the
+"""Shared helpers for the tests of the setup agent (TF17-1 to TF17-47): ``init --agent``, the
 skill it writes, ``[[import]]`` in ``trace.toml``, ``doctor --setup`` and ``init``'s hand-over.
 
 Not a test module and not collected. Every command runs in-process through ``tf2_support``'s
@@ -6,11 +6,11 @@ runners (a scratch ``HOME`` for every test, a folder of the test's own to run in
 terminal of its own where a question has to be answered. No test here calls a model, a coding
 agent or any paid service, and none opens a connection.
 
-The skill is read as the shared page reads it (spec section 17.4 and the shared setup-file
-page, format 1): the frontmatter is parsed with a reader of the one shape the Agent Skills
-format allows there (string keys, string values, one ``metadata`` map of strings), the body by
-its headings and fenced blocks, and the shared parts against the fixture that carries the
-page's text with its date.
+The skill is read as the shared setup-file page, format 1, reads it (``FORMAT``; see also
+``docs/setup-with-your-agent.md``): the frontmatter is parsed with a reader of the one shape
+the Agent Skills format allows there (string keys, string values, one ``metadata`` map of
+strings), the body by its headings and fenced blocks, and the shared parts against the fixture
+that carries the page's text with its date.
 """
 
 from __future__ import annotations
@@ -86,7 +86,7 @@ HEADINGS = [
 ]
 OPTIONAL_LAST_HEADING = "## Words Trace uses"
 OWN_RULES = "### Trace's own rules"
-#: The seven steps of section 17.4, by title, in order.
+#: The seven steps of the skill, by title, in order.
 STEP_TITLES = (
     "The results already on disk",
     "The tools that wrote them",
@@ -96,13 +96,12 @@ STEP_TITLES = (
     "Run the check",
     "Stop and hand over",
 )
-#: The tables the setup file lets the agent write (the spec's "if No" to PC3), and the two it may
-#: not name.
+#: The tables the setup file lets the agent write, and the two it may not name.
 AGENT_TABLES = ("[store]", "[events]", "[[import]]", "[names]")
 NOT_FOR_THE_AGENT = ("[signals]", "[[taxonomy.rules]]", "[taxonomy")
 
-#: Where the skill goes and the agents verified to read each (the shared page, section 1, and
-#: Prove's check of each agent's own documentation on 2026-10-24).
+#: Where the skill goes and the agents verified to read each (the shared page, and each
+#: agent's own documentation).
 LOCATIONS: dict[str, tuple[str, ...]] = {
     ".agents/skills/": ("Codex", "Cursor"),
     ".claude/skills/": ("Claude Code", "Cursor"),
@@ -117,10 +116,10 @@ INIT_KEYS = [
     "schema", "verdict", "sentence", "config_path", "stores", "events", "named", "prove",
     "equivalent_command", "next",
 ]
-#: The pullers section 18.3.2 names for addresses; none is in this install.
+#: The pullers an address names by its prefix; all but ``lemma`` are in this install.
 PULLERS = ("langsmith", "braintrust", "weave", "lemma")
-#: The readers whose modules are in this install (spec section 6.1's listing rule); the three
-#: of TF10 join when their branch lands.
+#: Readers in this install that a refusal of an unknown tool must name; the install has more
+#: (promptfoo, Inspect, OpenAI Evals, LangSmith, Braintrust, Weave).
 READERS_HERE = ("deepeval", "ragas", "table", "junit")
 
 
@@ -398,8 +397,8 @@ def commands(body: str, lang: str) -> list[tuple[str, str]]:
 
 
 def import_entry(file: str, tool: str | None, name: str, **options: Any) -> str:
-    """One ``[[import]]`` table as the spec writes it: the file, the tool, the name, then the
-    reader's options by their flags' names."""
+    """One ``[[import]]`` table as ``docs/config.md`` writes it: the file, the tool, the name,
+    then the reader's options by their flags' names."""
     lines = ["[[import]]", f"file = {json.dumps(file)}"]
     if tool is not None:
         lines.append(f"tool = {json.dumps(tool)}")

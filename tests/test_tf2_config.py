@@ -1,5 +1,4 @@
-"""TF2-1 to TF2-3: how every verb reads ``trace.toml`` (spec section 3.2, rule L2; yes/nos 4, 8 and
-10).
+"""TF2-1 to TF2-3: how every verb reads ``trace.toml``.
 
 The config is the file ``trace.toml`` in the current folder, or the file ``--config PATH``
 names, written before or after the verb; never one in a folder above. A store path in it is
@@ -9,7 +8,7 @@ and the import's store. A flag replaces what the config gives (an ``--event`` re
 config's events, it does not add to them); ``--store NAME`` takes the config's store of that
 name before a folder of that name. ``fix-check`` and ``compare`` take their ceilings from
 ``[check]`` when the flag is not given. With neither a config nor a flag giving the store or the
-events, the refusal is today's: a wrong command line, exit 2."""
+events, the refusal is the one with no config: a wrong command line, exit 2."""
 
 from __future__ import annotations
 
@@ -176,7 +175,7 @@ def test_tf2_03_what_neither_gives_is_todays_refusal(folder: Path, text: str, ar
     assert lines[0].startswith("error: ") and lines[1:] == [f"  next: poisson-trace {argv[0]} --help"], result.err
 
 
-# ---------- the import reads the config's store (yes/no 27) ----------
+# ---------- the import reads the config's store ----------
 
 
 def test_tf2_27_an_import_with_no_store_given_writes_into_the_configs_store(tmp_path: Path) -> None:

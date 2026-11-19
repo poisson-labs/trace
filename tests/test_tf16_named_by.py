@@ -1,7 +1,6 @@
-"""TF16-15 (pending yes/no 3 of TF16 Session A): a run named at sweep time is counted as named by
-you, as a run named at import is (spec section 5.3: ``named_by`` is ``you`` or ``manifest``; a
-name typed when the run was made is the user's own), in ``runs --json`` and in the listing's
-first line.
+"""TF16-15: a run named at sweep time is counted as named by you, as a run named at import is
+(``named_by`` is ``you`` or ``manifest``; a name typed when the run was made is the user's own),
+in ``runs --json`` and in the listing's first line.
 """
 
 from __future__ import annotations

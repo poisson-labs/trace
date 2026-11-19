@@ -1,4 +1,4 @@
-"""ID12, lane J: DeepEval itself, at the pinned version, writes what section 3 says.
+"""ID12: DeepEval itself, at the pinned version, writes what docs/integrations/deepeval.md says.
 
 Deselected by default (``pyproject.toml`` adds ``-m "not lane_j"``); run with ``-m lane_j``. It
 installs DeepEval from PyPI into a fresh environment, or uses the interpreter named by

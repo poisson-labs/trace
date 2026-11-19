@@ -1,6 +1,6 @@
 """TF24-16 to TF24-27: the signals, the failure kinds, feedback with its source, and what is kept
-(spec sections 18.1 and 18.1.1 row 9, 18.4.1 and 18.4.2 as TF21's SA1 reads them, 18.5.2's
-LangSmith row; SG2; IC7; the INT3 spec's IT11 to IT14 on the real captures).
+(the kinds through TF21's one rule set; no text kept, as IC7 holds for every import; on the
+real captures).
 
 - TF24-16: time. The wall time is the root's end less its start, to the microsecond the same as
   the latency the UI's CSV prints; the time to first token is the trace's first ``llm`` token
@@ -23,7 +23,7 @@ LangSmith row; SG2; IC7; the INT3 spec's IT11 to IT14 on the real captures).
   cut reply is a format error (the parser raised) from every export with the steps, and a crash
   from the CSV, which has the root alone; a passed row has no kind. Each agrees with TF21's
   reference on what the row records.
-- TF24-21: the kinds section 18.5.2 names that the captures lack, on a capture edited in one
+- TF24-21: the kinds the reader can give that the captures lack, on a capture edited in one
   place: an error saying a rate limit or a context overflow; a failed retriever, llm or chain
   step, a failed tool step; three calls in a row to one tool under a root that succeeded and
   failed its score (a loop).

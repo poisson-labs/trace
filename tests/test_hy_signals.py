@@ -1,18 +1,17 @@
-"""HY12 to HY14: properties of the signals record and the failure taxonomy (spec sections 18.4
-and 18.5.1), added by the Hypothesis follow-up to the test standard pass (yes/no 9, ruled yes
-2026-10-29). TF21's tests hold each of these on worked examples; these hold them on random rows.
+"""HY12 to HY14: properties of the signals record and the failure taxonomy, held with
+Hypothesis. TF21's tests hold each of these on worked examples; these hold them on random rows.
 
 - HY12: classification is deterministic: the same row gives the same kind and signals, a
-  classified row classifies to itself, the kind follows the precedence of section 18.5.1 (the
+  classified row classifies to itself, the kind follows the kinds' order of precedence (the
   support file's reference), and a row has exactly one kind when it failed or was censored.
-- HY13: classification is order-independent where section 18.5.1 makes it so: the order of a
+- HY13: classification is order-independent where the taxonomy makes it so: the order of a
   row's scores, the order rows are classified in, and the order of tool calls wherever the
   retry storm (three calls in a row, by definition ordered) reads the same.
 - HY14: a value the source did not record never becomes a zero: through the signals record,
   the store and back, and into the continuous measures' inputs.
 
 Each property is one body run as a fast test (fixed seed, bounded examples) and a slow wide twin.
-User rules apply in the order written (section 18.5.3), so their order is not permuted here.
+User rules apply in the order written, so their order is not permuted here.
 """
 
 from __future__ import annotations
@@ -105,7 +104,7 @@ budgets_ = st.one_of(st.none(), st.builds(
     st.one_of(st.none(), st.floats(0, 10))))
 
 
-# ---------- HY12: deterministic, by the precedence of section 18.5.1 ----------
+# ---------- HY12: deterministic, by the kinds' order of precedence ----------
 
 
 def _hy12(row, budgets) -> None:  # type: ignore[no-untyped-def]
@@ -125,7 +124,7 @@ def _hy12(row, budgets) -> None:  # type: ignore[no-untyped-def]
 test_hy12_classification_is_deterministic, test_hy12_wide = twin(80, 1_500, rows(), budgets_)(_hy12)
 
 
-# ---------- HY13: order-independent where section 18.5.1 makes it so ----------
+# ---------- HY13: order-independent where the taxonomy makes it so ----------
 
 
 def _hy13(batch, budgets, rnd) -> None:  # type: ignore[no-untyped-def]

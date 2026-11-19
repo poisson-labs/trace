@@ -1,5 +1,4 @@
-"""TF19-4: saves, and writes only through the core (spec section 17.2, AD7; section 17.3 items 3
-and 4; A9, A11, A14).
+"""TF19-4: saves, and writes only through the core (``docs/app.md``, What it never does).
 
 **TF19-4** Every verdict the app shows is saved, as ``api.save`` saves it, into the store the verb
 saves into (B's store): the run screen's where, compare's, fix-check's and changes'. The message

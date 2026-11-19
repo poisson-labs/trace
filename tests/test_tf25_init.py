@@ -1,8 +1,7 @@
-"""TF25-80 to TF25-84: ``init`` and the files it finds, decided for the readers that pull from a
-service's API together: LangSmith, Braintrust, and Weave when its reader lands (the LangSmith
-pair's B-3 and B-4, handed here; the brief's item 5).
+"""TF25-80 to TF25-84: ``init`` and the files it finds, the same for every reader that pulls from
+a service's API: LangSmith, Braintrust and Weave.
 
-The reading frozen: ``init`` does not import such files by itself. An import of them needs two
+The rule: ``init`` does not import such files by itself. An import of them needs two
 answers ``init`` has no question and no flag for (what pairs a case across versions, and what
 says a case failed), so it refuses in one sentence and prints one import line for each run,
 with what it can read from the file filled in and a word in capitals for what is the user's to
@@ -13,9 +12,9 @@ TF24-57 and TF25-57 hold.
 - TF25-80: every reader in the install that pulls is refused the same way: exit 1, nothing
   written, one ``next:`` line an import; ``--import`` is the same refusal; ``--no-import``
   writes the config with no store and prints the same lines. A reader that pulls and has no
-  sample here fails this test, so the next such reader (Weave) is decided with these.
-- TF25-81: LangSmith's files with no feedback list among them print what main prints, byte for
-  byte: held by ``test_tf26_init.py`` (TF26-81) on the same files.
+  sample here fails this test, so every such reader is held to the same rule.
+- TF25-81: LangSmith's files with no feedback list among them: their whole output is held byte
+  for byte by ``test_tf26_init.py`` (TF26-81) on the same files.
 - TF25-82: Braintrust's files are listed as Braintrust's and each has its line: the case is
   ``record`` where every root in the file carries its dataset record's id and ``input`` where
   none can (the page's downloads, an experiment on inline data); the outcome is the user's.

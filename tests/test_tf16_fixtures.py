@@ -29,7 +29,7 @@ def test_tf16_13_the_stores_are_listed_with_their_digests_and_their_recipe() -> 
     for line in (STORES / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
         digest, _, name = line.partition("  ")
         sums[name.removeprefix("./")] = digest
-    # the floor's store beside the two (ruled 2026-11-17, PV-7; test_pf_pages_and_stores.py, PF-14, holds what it is)
+    # the floor's store beside the two (test_pf_pages_and_stores.py, PF-14, holds what it is)
     from pin_support import RECORDED
 
     files = {str(p.relative_to(STORES)): p for root in (OLD, NEW, STORES / f"prove-{RECORDED}") for p in root.rglob("*") if p.is_file()}

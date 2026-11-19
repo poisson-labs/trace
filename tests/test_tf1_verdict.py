@@ -1,10 +1,10 @@
-"""TF1-9, TF1-10 and TF1-12: the result first (spec sections 9.4 and 9.1, rules L3 and L9; TF0's
-handed-on ``wrote`` line).
+"""TF1-9, TF1-10 and TF1-12: the result first (the look's rules 3 and 9; TF0's
+``wrote`` line).
 
 Every verb's first stdout line is its verdict line, ``<word>  <sentence>``, then one blank line,
 then the report as before. The word is from the verb's closed set; for ``compare`` and
 ``fix-check`` the sentence is the report's bold line after its verdict word, and the bold line
-stays in the report; for the others the sentence states the facts the spec's line carries. With
+stays in the report; for the others the sentence states the facts of the result. With
 ``--json`` the document opens ``schema``, ``verdict``, ``sentence``, closes with ``next``, and
 keeps every key it had; its verdict and sentence are the verdict line's, word for word. An SVG
 written is said on the line right under the verdict line. Ctrl-C under ``--json`` leaves stdout
@@ -60,7 +60,7 @@ def compare_cases(two_run_store) -> dict[str, list[str]]:  # type: ignore[no-unt
     different = two_run_store(deaths_rows(list(range(1, 21))), deaths_rows(list(range(21, 41))))
     return {
         "different": ["compare", "a", "b", "--store", str(different), "--event", "fail", "--max-mde-hr", "100"],
-        # ST5 (ruled 2026-10-20): tau2's limit is 1.603, so 1.5 now reads too small to tell
+        # tau2's limit is 1.603, so a ceiling below it reads too small to tell
         "no significant difference": compare_tau2("1.604"),
         "too small to tell": compare_tau2("1.3"),
     }
@@ -72,7 +72,7 @@ FIX_CASES = {
     "too small to tell": fix_check_tau2(),
 }
 
-# S12 (ruled 2026-10-20): the first line's sentence is plain (spec section 9.5.6); the bold line
+# the first line's sentence is plain; the bold line
 # inside the report keeps the technical sentence, and both carry the verdict word
 COMPARE_FIRST = {
     "different": "failures come later after the change",
@@ -121,7 +121,7 @@ def test_tf1_09_fix_check_opens_with_its_verdict_and_keeps_the_bold_line(want: s
 
 
 def test_tf1_09_where_states_the_failures_and_the_kinds_of_their_last_steps() -> None:
-    """S11 (ruled 2026-10-20) and ST8: the first line drops the median; it states the failures
+    """The first line drops the median; it states the failures
     and the kinds of their last steps, not the cause."""
     word, sentence = _opens_with_the_verdict(trace(where_cs()))
     assert word == "ok"

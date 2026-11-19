@@ -1,4 +1,4 @@
-"""Shared helpers for the tests of names and runs (TF1-1 to TF1-17): stores whose runs carry a
+"""Shared helpers for the tests of names and runs (TF1-1 to TF1-18): stores whose runs carry a
 chosen target, start time, status and backend, a copy of a committed fixture store to write a
 names file into, the names file read back, the ``next:`` line read as a shell reads it, and a
 snapshot of every file under a store.
@@ -113,7 +113,7 @@ def resolved(store: Path | str, word: str, event: str = "fail") -> str | None:
 
 
 def write_names(store: Path, names: dict[str, str]) -> None:
-    """A names file in the spec's form, written by hand: for a test whose subject is not
+    """A names file in the form ``name`` writes, written by hand: for a test whose subject is not
     ``name`` itself."""
     lines = ["# Poisson Trace: your names for the runs in this store. Written by `poisson-trace name`.", "version = 1", "", "[names]"]
     lines += [f"{json.dumps(n, ensure_ascii=False)} = {json.dumps(r)}" for n, r in sorted(names.items())]

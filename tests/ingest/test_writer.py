@@ -1,4 +1,4 @@
-"""IC3 to IC8 at the writer: one new run, read back through Prove, the manifest of section 2.5,
+"""IC3 to IC8 at the writer: one new run, read back through Prove, the import manifest,
 repeats by order within the case, no content, and the import boundary."""
 
 from __future__ import annotations
@@ -51,7 +51,7 @@ def test_ic3_write_creates_exactly_one_run_and_changes_no_byte_of_another(tmp_pa
     written = write(make_run(ROWS, name="imported"), root)
     after = tree(root)
     assert isinstance(written, Written) and written.run == "imported"
-    # a format 0 store also gains the store descriptor on Trace's first write (run record, SV1)
+    # a format 0 store also gains the store descriptor on Trace's first write
     assert {k: v for k, v in after.items()
             if k != "imported" and not k.startswith("imported/") and k != ".poisson"
             and k != ".poisson/store.json"} == before
@@ -114,7 +114,7 @@ def test_ic4_t_and_horizon_and_meta_import_are_as_section_2_5_says(tmp_path: Pat
     rows = [Row("c1", "met", None, 0.75, None, detail), Row("c2", None, "no score", None, None, detail)]
     write(make_run(rows), root)
     got = {r["case"]: r for r in read_rows(root, "run")}
-    # one step with no spans, so Prove 0.1.3's pages build over the store (RR5)
+    # one step with no spans, so Prove 0.1.3's pages build over the store
     assert (got["c1"]["t"], got["c1"]["horizon"]) == (1.0, 1.0)
     assert got["c2"]["t"] is None and got["c2"]["horizon"] is None
     assert got["c1"]["import"] == {"score": 0.75, **detail}
@@ -139,9 +139,8 @@ def test_ic5_the_manifest_carries_the_fields_of_section_2_5(tmp_path: Path) -> N
     assert m.created_at == "2026-01-02T03:04:05Z"
     assert m.status == "complete"
     imported = m.environment["import"]
-    # spec section 9.6 item 2 (ruled 2026-10-20, item 5): a start read from a file's name records
-    # the zone it was read in
-    # TF21 (SA5, ruled 2026-11-03): the taxonomy's digest is recorded beside declared
+    # a start read from a file's name records the zone it was read in
+    # TF21: the taxonomy's digest is recorded beside declared
     assert set(imported) == {"tool", "started_from", "declared", "taxonomy_sha256", "files",
                              "poisson_trace", "zone"}
     assert set(imported["zone"]) == {"name", "offset"}
@@ -279,7 +278,7 @@ OTHER_TOOLS = ("deepeval", "ragas", "langsmith", "langfuse", "phoenix", "opentel
 
 
 def test_ic8_no_module_imports_another_tool() -> None:
-    """Green by construction on the skeleton: a static rule over the package."""
+    """Green by construction: a static rule over the package."""
     for path in sorted(INGEST.glob("*.py")):
         tree_ = ast.parse(path.read_text())
         for module in _imports(path):

@@ -1,10 +1,9 @@
-"""TF2-4: a config that is not a version 1 ``trace.toml`` is refused (spec section 3.2, rule L14;
-yes/no 9).
+"""TF2-4: a config that is not a version 1 ``trace.toml`` is refused.
 
 Every way the file can be wrong is refused in one ``error:`` line that names the file as given and
 the line the fault is written on, exit 1, before anything is read or written: a file TOML cannot
 read; a table or a setting version 1 does not have, with the nearest one within two edits; a
-value of the wrong type or out of its range, for every key of the table in section 3.2; a version
+value of the wrong type or out of its range, for every key version 1 has; a version
 other than 1, naming this Trace's version; no version at all. Each case has a control: the same
 file with that one clause put right is read, and the verb runs. Every verb that reads the config
 refuses a wrong one, even when flags give the store and the events."""

@@ -1,10 +1,10 @@
-"""TF17-43: ``init`` imports promptfoo, Inspect and OpenAI Evals files on a yes (RD9, deferred to
-TF17 by TF10 Session A's ruling; RB2, TF10 Session B's refusal that stands until this is built).
+"""TF17-43: ``init`` imports promptfoo, Inspect and OpenAI Evals files on a yes, as it imports
+every other reader's files.
 
 - A yes (``--yes`` with the answers, ``--import``, or ``y`` on a terminal) imports these files
   as it imports DeepEval's, Ragas's, the tables and the JUnit reports: one run per file, named
   after the file, into ``trace-store`` beside ``trace.toml``, the failures from the imported
-  rows (``missed``); the RB2 refusal ("init lists … but does not import them itself") is gone.
+  rows (``missed``); no refusal says "init lists … but does not import them itself".
 - One promptfoo file holds both versions: init imports each prompt as its own run, named by the
   file and the prompt's number counting from 1 (``results-1``, ``results-2``), its line carrying
   ``--prompt N``; the case is the test variable init reads from the file (``--case var:case``),

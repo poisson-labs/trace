@@ -1,5 +1,5 @@
 """TF1-18: the command to run goes on its own ``  next:`` line under an error, where there is one
-(the look's rule 4, spec section 9.1 rule L4; TF0's handed-on yes/no, pending yes/no 4).
+(the look's rule 4).
 
 A refusal or a wrong command line is one ``error:`` line, then, where there is a command that
 moves the user on, one ``  next: <exact command>`` line, indented two spaces, and nothing else:

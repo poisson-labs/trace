@@ -1,5 +1,5 @@
-"""TF10-38 to TF10-41: the three readers say which files are theirs, for init (spec sections 4.3,
-4.4 as amended 2026-10-20, and 6.3: each reader exposes ``looks_like(path) -> str | None``).
+"""TF10-38 to TF10-41: the three readers say which files are theirs, for init (each reader
+exposes ``looks_like(path) -> str | None``).
 
 - TF10-38: each committed export is claimed by its reader with one line; promptfoo's CSV by none.
 - TF10-39: no file is claimed by two readers of the install: not the new exports, and not the

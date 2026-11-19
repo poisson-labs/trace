@@ -1,7 +1,7 @@
-"""TF15-L1 to TF15-L8: the report lines that change with the summary (spec section 9.6, Taylor's
-rulings of 2026-10-20, items 5 and 6): "started 0 s apart" on starts that are file times, where
-each imported start came from (DeepEval's zone recorded), the control said by design, and "the
-run's tally" for an imported run. The lines are pinned as section 9.6 writes them."""
+"""TF15-L1 to TF15-L11: the report lines that change with the summary: no "started 0 s apart"
+on starts that are file times, where each imported start came from (DeepEval's zone recorded),
+the control said by design, and "the run's tally" for an imported run. The lines are pinned
+word for word."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ def _file_time_pair(tmp_path: Path) -> Path:
     return folder
 
 
-# ---------- 9.6 item 1: when the two ran ----------
+# ---------- when the two ran ----------
 
 
 def test_tf15_l1_both_starts_file_times(tmp_path: Path) -> None:
@@ -80,7 +80,7 @@ def test_tf15_l4_runs_marks_a_file_time(tmp_path: Path) -> None:
     assert "(file)" not in tau2
 
 
-# ---------- 9.6 item 2: where each start came from ----------
+# ---------- where each start came from ----------
 
 
 def _started_bullets(out: str) -> list[str]:
@@ -119,7 +119,7 @@ def test_tf15_l5_each_imported_start_says_where_it_came_from(tmp_path: Path) -> 
 
 
 def test_tf15_l6_a_deepeval_run_imported_before_this_pair(tmp_path: Path) -> None:
-    """A run whose manifest records no zone (imported before this pair) says so."""
+    """A run whose manifest records no zone (imported before zones were recorded) says so."""
     folder = work(tmp_path)
     (folder / "results").mkdir()
     name = "test_run_20260905_185407.json"
@@ -154,7 +154,7 @@ def test_tf15_l6_a_deepeval_run_imported_before_this_pair(tmp_path: Path) -> Non
         assert "(the time in the file's name, read in the zone of the machine that imported it)" in bullet, bullet
 
 
-# ---------- 9.6 item 3: the control by design ----------
+# ---------- the control by design ----------
 
 
 def test_tf15_l7_the_control_is_said_by_design() -> None:
@@ -176,7 +176,7 @@ def test_tf15_l7_the_control_is_said_by_design() -> None:
     assert not any("nothing changed" in line or "re-run" in line for line in every[at:every.index("## The comparison")])
 
 
-# ---------- 9.6 item 4: the run's tally ----------
+# ---------- the run's tally ----------
 
 
 def test_tf15_l8_an_imported_runs_tally(tmp_path: Path) -> None:
@@ -198,7 +198,7 @@ def test_tf15_l8_an_imported_runs_tally(tmp_path: Path) -> None:
 
 
 def test_tf15_l9_the_summary_says_the_same_of_file_times(tmp_path: Path) -> None:
-    """9.6 item 1: "The summary's gap clause says the same" (9.5.1's file-time form)."""
+    """The summary's gap clause says the same of file times: it cannot tell when they ran."""
     from tf15_support import caveats
 
     folder = _file_time_pair(tmp_path)
@@ -210,7 +210,7 @@ def test_tf15_l9_the_summary_says_the_same_of_file_times(tmp_path: Path) -> None
 
 
 def test_tf15_l10_suite_timestamps_within_a_minute(tmp_path: Path) -> None:
-    """9.5.1: starts from JUnit suites' timestamps a second apart say they started within a minute
+    """Starts from JUnit suites' timestamps a second apart say they started within a minute
     of each other, and that Trace still cannot confirm a side-by-side run."""
     from tf15_support import caveats
 

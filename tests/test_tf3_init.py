@@ -1,5 +1,4 @@
-"""TF3-23 to TF3-27: the table and JUnit readers join init's search and its import (spec sections
-4.3 and 4.4; TF2 Session B's ruling 1, carried).
+"""TF3-23 to TF3-27: the table and JUnit readers join init's search and its import.
 
 - TF3-23: init lists the JUnit reports and the outcome tables it finds as result files, and no
   other XML or table; the bound of 200 candidate files opened counts ``.xml`` files with the rest.

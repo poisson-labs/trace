@@ -1,6 +1,6 @@
 """TF24-73 to TF24-79: ``[signals]`` stands in for the LangSmith reader's flags, as it does for the
-Ragas, DeepEval and table readers (SA8; spec section 18.5.3; ruled for this reader on 2026-11-10,
-where Session A had recommended leaving it out). Every test reads a committed capture.
+Ragas, DeepEval and table readers (``docs/config.md``, under ``[signals]``). Every test reads a
+committed capture.
 
 - TF24-73: ``case_field`` stands in for ``--case-from`` and ``outcome_field`` for
   ``--outcome-from``, each written as the flag writes it (``"example"``, ``"metadata:KEY"``,

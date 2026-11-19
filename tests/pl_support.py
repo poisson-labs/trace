@@ -1,7 +1,7 @@
-"""Shared helpers for the Prove label kinds pair's tests (PL): Trace reads a failure kind for a
+"""Shared helpers for the Prove label kinds tests (PL): Trace reads a failure kind for a
 try of a run Prove swept from the outcome label the try carries. Not collected.
 
-The problem, as main c981832 has it: a Prove rollout that records only its outcome label
+The problem, as the pinned main has it: a Prove rollout that records only its outcome label
 (``wrong_state``, ``malformed_call``, the labels a team declares as failures) is counted as a
 failure and filed under ``unclassified_error``, because the Prove reader (``ingest/prove.py``)
 turns the label into pass or fail and never into a kind, and the built-in rules give
@@ -9,8 +9,7 @@ turns the label into pass or fail and never into a kind, and the built-in rules 
 three-tools recipe every one of the old version's 1,320 lost-token failures, each labelled
 ``wrong_state`` by the task's checker, reads ``unclassified_error``.
 
-The rule, as this pair's Session A froze it (each reading is a ruling owed, ``rulings.md`` in
-the vault log ``trace-labels-a``):
+The rule:
 
 1. **The order**. A failed or errored try of a run Prove swept gets its kind from the
    first of these that gives one:
@@ -21,10 +20,10 @@ the vault log ``trace-labels-a``):
       one of the 13 kinds. Main does not read it: a rollout's own record of that schema makes
       the reader raise ``KeyError: 'case'``;
    b. Prove's own word ``timeout`` on a try short of its step cap: ``timeout``, as main reads
-      it (SA3 reading 6, ruled 2026-11-03);
+      it;
    c. the team's own ``[[taxonomy.rules]]`` in ``trace.toml``, the first that matches in the
-      order written, as an import tries them before every built-in rule (LK-9, ruled no
-      2026-11-16: section 18.5.3's rules apply to every source). Prove records no named
+      order written, as an import tries them before every built-in rule (a team's rules apply to
+      every source). Prove records no named
       metric, so ``when_metric_below`` matches no such try;
    d. the built-in rules that find a cause on the try's record, in their order, as main has
       them: ``timeout``, ``rate_limit``, ``context_overflow``, ``loop_detected``,
@@ -53,7 +52,7 @@ the vault log ``trace-labels-a``):
    has main's digest. An import's digest never holds the table.
 6. **Where it applies**: runs Prove swept. An import's kinds were decided at the import
    and do not move.
-7. **The budgets** (LK-26, budgets ruled no 2026-11-16): ``[signals.budgets]`` apply to a
+7. **The budgets**: ``[signals.budgets]`` apply to a
    run Prove swept as to an import: a try strictly over one has ``over_budget``, read from its
    wall time (Prove's ``wall_time``, on every try), its total tokens (its steps' tokens in and
    out together, recorded only when both are) and its cost (the rollout's own
@@ -83,12 +82,12 @@ EXAMPLE = REPO / "examples" / "three-tools"
 STARTED = "2026-11-16T09:00:00Z"
 SIGNALS_SCHEMA = "poisson.trace-signals/1"
 
-#: The 13 kinds, in section 18.5.1's order.
+#: The 13 kinds, in the order ``docs/config.md`` lists them.
 KINDS: tuple[str, ...] = (
     "timeout", "rate_limit", "context_overflow", "loop_detected", "step_limit", "guardrail_blocked", "tool_error",
     "retrieval_error", "format_error", "abstained", "crash", "wrong_answer", "unclassified_error",
 )
-#: The kinds the rules that find a cause give (1c), in their order.
+#: The kinds the rules that find a cause give (1d), in their order.
 CAUSES: tuple[str, ...] = KINDS[:11]
 
 #: The labels Poisson Tasks 0.4.2's checker gives a failure, each with the kind it gives by

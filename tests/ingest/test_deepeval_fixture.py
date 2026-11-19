@@ -1,5 +1,5 @@
 """ID10: the HumanEval pair written through DeepEval 4.2.6, imported by Trace
-(lane F, the committed fixtures, no network). Every figure pinned here was recomputed from the
+(the committed fixtures, no network). Every figure pinned here was recomputed from the
 fixtures before it was pinned."""
 
 from __future__ import annotations

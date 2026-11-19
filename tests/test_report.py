@@ -115,7 +115,7 @@ def test_tr26_keys_are_in_the_spec_order_and_nothing_is_nan(synth) -> None:  # t
     assert list(cmp.json()) == list(COMPARE_KEYS)
     assert declared.json()["schema"] == "poisson-trace.where/1"
     assert cmp.json()["schema"] == "poisson-trace.compare/1"
-    assert plain.json()["prove"] == {"version": installed(), "store": str(TAU2)}  # the Prove installed, at or above the floor (PV-5)
+    assert plain.json()["prove"] == {"version": installed(), "store": str(TAU2)}  # the Prove installed, at or above the floor
     assert plain.json()["clock"] == {"unit": "leaf span index", "by": "kind"}
     for row in plain.json()["curve"]:
         assert list(row) == ["step", "at_risk", "died", "survival", "var", "lo", "hi"]
@@ -156,8 +156,8 @@ def test_tr27_svg_parses_with_one_polyline_per_curve_and_the_labels(tmp_path: Pa
     assert tags.count("polygon") == 1
     text = _svg_text(out)
     assert "step" in text.split()
-    # ST8 (ruled 2026-10-20): the curve is the share not yet failed, Aalen-Johansen's, banded by
-    # resampling inputs; Kaplan-Meier and Greenwood are retired
+    # the curve is the share not yet failed, Aalen-Johansen's, banded by resampling inputs;
+    # Kaplan-Meier and Greenwood are named nowhere
     assert "share of runs not yet failed" in text and "share of runs still going" not in text
     assert "Kaplan-Meier" not in text and "Greenwood" not in text
     assert "Aalen-Johansen" in text and "bootstrap" in text
@@ -186,7 +186,7 @@ def test_tr28_every_caption_names_its_test_and_band() -> None:
     c = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.5)
     assert w.code == 0 and c.code == 0, w.text + c.text
     wt, ct = norm(w.out), norm(c.out)
-    # ST8 and ST5 (ruled 2026-10-20): Aalen-Johansen with competing ends, a band resampling inputs;
+    # Aalen-Johansen with competing ends, a band resampling inputs;
     # compare's limit from the log-rank's own information, not Schoenfeld's
     for word in ("Aalen-Johansen", "bootstrap", "resampling inputs"):
         assert word in wt, word

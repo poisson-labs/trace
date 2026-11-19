@@ -1,4 +1,4 @@
-"""ID1 to ID9: DeepEval's files, as DeepEval 4.2.6 writes them, built in the test (lane H)."""
+"""ID1 to ID9: DeepEval's files, as DeepEval 4.2.6 writes them, built in the test."""
 
 from __future__ import annotations
 
@@ -293,7 +293,7 @@ MALFORMED = {
 }
 
 
-# R17: a flag missing, or a value outside its choices, is a wrong command line: exit 2, one line,
+# a flag missing, or a value outside its choices, is a wrong command line: exit 2, one line,
 # nothing on stdout and nothing written
 WRONG_COMMAND_LINE = {"no --metric", "no --cut", "no --case", "a case rule that does not exist"}
 
@@ -406,7 +406,7 @@ time.tzset()
 
 def test_id9_the_first_files_name_gives_the_time_under_a_utc_clock(tmp_path: Path) -> None:
     """Run with the clock's zone set to UTC, where reading the name as UTC and reading it as the
-    machine's own time agree; which of the two holds elsewhere is owed as a ruling."""
+    machine's own time agree; elsewhere the name is the machine's own time (the tests below)."""
     first = save(tmp_path / "test_run_20260905_185407.json", run_doc(scored("x", [0.9])))
     second = save(tmp_path / "test_run_20270101_000000.json", run_doc(scored("x", [0.1])))
     root = tmp_path / "store"
@@ -445,7 +445,7 @@ def test_ic5_the_manifest_files_are_each_input_files_name_and_digest(tmp_path: P
     ]
 
 
-# ---------- ruled 2026-09-29, Session A ruling 1: the name is DeepEval's local clock ----------
+# ---------- the name is DeepEval's local clock ----------
 
 NEW_YORK = "America/New_York"
 
@@ -488,7 +488,7 @@ def test_id9_a_name_with_deepevals_collision_suffix_is_read_the_same(tmp_path: P
     assert (m.created_at, m.environment["import"]["started_from"]) == ("2026-09-05T18:54:07Z", "file name")
 
 
-# ---------- ruled 2026-09-29, Session A ruling 2: --case input is always a digest ----------
+# ---------- --case input is always a digest ----------
 
 
 def test_id6_case_input_is_a_digest_whatever_the_inputs_length(tmp_path: Path) -> None:
@@ -506,7 +506,7 @@ def test_id6_case_input_is_a_digest_whatever_the_inputs_length(tmp_path: Path) -
     assert holds(root, short) == []
 
 
-# ---------- ruled 2026-09-29, Session A ruling 3: the reader's counts reach --json too ----------
+# ---------- the reader's counts reach --json too ----------
 
 
 def _carries(value: Any, label: str, count: int) -> bool:

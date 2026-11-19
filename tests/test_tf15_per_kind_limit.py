@@ -1,9 +1,7 @@
-"""TF15-S43 (PENDING Taylor's yes/no, Session A log rulings.md): compare's per-kind column "could
-not have detected a hazard ratio below" comes from each kind's own log-rank information, as ST5
-makes the overall limit do: exp((z_{1-a/2} + z_{0.8}) / sqrt(V_k)), V_k the cause-specific
+"""TF15-S43: compare's per-kind column "could
+not have detected a hazard ratio below" comes from each kind's own log-rank information, as the
+overall limit does: exp((z_{1-a/2} + z_{0.8}) / sqrt(V_k)), V_k the cause-specific
 stratified log-rank's variance, in place of Schoenfeld's d_k / 4.
-
-Revert this file's commit if the answer is no; the per-kind column then keeps Schoenfeld's number.
 """
 
 from __future__ import annotations

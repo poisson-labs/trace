@@ -336,7 +336,7 @@ def test_tr19_excluded_cells_are_counted_in_the_comparison(two_run_store) -> Non
     comparison = result.json()["comparison"]
     assert comparison["cells"] == 1
     assert comparison["excluded_cells"] == {"a_only": 1, "b_only": 1}
-    # ST5 (ruled 2026-10-20): the minimum detectable hazard ratio is the common cell's log-rank
+    # the minimum detectable hazard ratio is the common cell's log-rank
     # information, exp((z_0.975 + z_0.8) / sqrt(V)), V by the textbook formula over that cell alone
     t_a, o_a = np.array([2, 3, 5, 7]), np.ones(4, dtype=bool)
     t_b, o_b = np.array([3, 4, 6, 9, 11]), np.ones(5, dtype=bool)
@@ -452,10 +452,10 @@ def test_tr25_survival_at_a_step_with_no_death_is_the_last_death_before_it() -> 
 
 
 def test_tr25_compare_diff_rows_are_the_difference_with_a_wald_interval() -> None:
-    """ST8 (ruled 2026-10-20): compare's --at rows give, for each run, the share of tries not yet
-    failed by the step, as where prints it, and their difference; Greenwood's variance, which the
-    Wald interval was built from, belongs to the curve that was retired, so the interval is held
-    only to contain the difference here (spec section 9.7 item 8 names no method for it)."""
+    """Compare's --at rows give, for each run, the share of tries not yet failed by the step, as
+    where prints it, and their difference; Greenwood's variance, which a Wald interval is built
+    from, belongs to the Kaplan-Meier curve Trace does not draw, so the interval is held only to
+    contain the difference here (no method for it is fixed)."""
     a = where(TAU2, TAU2_A, TAU2_EVENTS, "--at", "10", "--at", "20", "--at", "31", "--json")
     b = where(TAU2, TAU2_B, TAU2_EVENTS, "--at", "10", "--at", "20", "--at", "31", "--json")
     c = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.5, "--at", "10", "--at", "20", "--at", "31", "--json")

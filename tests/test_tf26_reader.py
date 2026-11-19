@@ -1,6 +1,4 @@
-"""TF26-4 to TF26-15: the reader on every committed Weave capture: rows, cases and outcomes (spec
-sections 6.3, 18.1 row 11, 18.3.1 and 18.3.2; TF22's FI18 and FI19; the two finished pairs' rules
-in Weave's words).
+"""TF26-4 to TF26-15: the reader on every committed Weave capture: rows, cases and outcomes.
 
 - TF26-4: every export of all four evaluations (the service's answer with costs and feedback,
   the same with the example expanded, the page's JSON, JSON Lines, CSV and TSV) reads as one row
@@ -11,7 +9,7 @@ in Weave's words).
 - TF26-5: the case, four ways: the dataset row by the digest in its reference (the same in both
   versions; refused in one sentence naming another way on the page's table, which leaves the
   reference out); a key of the row (wherever the file holds the row; refused naming ``example``
-  where it holds only the reference); TF22's key of the row's values, ``input:`` and 12 hex
+  where it holds only the reference); the input key of the row's values, ``input:`` and 12 hex
   characters, the same from every export that holds the row and what ``--verdicts`` joins by;
   ``none``, one case for every row, with its sentence among the counts. A row that lacks what
   the others have has no case and is counted.
@@ -230,7 +228,7 @@ def test_tf26_5_input_is_refused_where_the_export_holds_only_the_reference(tmp_p
 @pytest.mark.parametrize("kind", ["expanded", "ui-json", "ui-csv"])
 def test_tf26_5_a_verdicts_file_joins_by_input(tmp_path: Path, kind: str) -> None:
     """The reader hands the import each case's input key, so a verdict that names an input and
-    no case joins the row of that input (FI19). Here it agrees with what the file recorded."""
+    no case joins the row of that input. Here it agrees with what the file recorded."""
     verdicts = tmp_path / "v.jsonl"
     row = {"id": "c10", "case": "c10", "item": ITEM["c10"], "expected": "reorder"}
     verdicts.write_text(json.dumps({"input": row, "outcome": "fail"}) + "\n", encoding="utf-8")
@@ -535,7 +533,7 @@ def test_tf26_9_a_case_that_did_not_error_and_has_no_score_is_unscored(tmp_path:
     assert stored["c10"]["outcome"] is None and stored["c10"]["failure_kind"] is None
     assert stored["c10"]["scores"] == {"gave_answer": 0.0}
     assert stored["c08"]["outcome"] == "censored"
-    # a verdicts file fills the unscored row, and cannot overturn the censored one (TF22)
+    # a verdicts file fills the unscored row, and cannot overturn the censored one (TF22-35)
     verdicts = tmp_path / "v.csv"
     verdicts.write_text(f"case,outcome\n{KEY['c10']},fail\n", encoding="utf-8")
     filled = imported(wv_argv(path, tmp_path / "st", "r2", *extra, "--verdicts", verdicts, case="input"))

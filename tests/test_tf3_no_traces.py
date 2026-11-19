@@ -1,11 +1,11 @@
-"""TF3-29 and TF3-30: the two sentences every import's store gets (spec section 6.4).
+"""TF3-29 and TF3-30: the two sentences every import's store gets.
 
 - TF3-29: ``where`` on a run with no traces prints, under the report's header, one line saying the
   run has no traces and which tool it was imported from, and leaves out the empty curve and the
   causes; exit 0. Its JSON keeps ``curve`` and ``causes`` empty and ``placement.excluded["no trace"]``,
   and ``note`` holds the same line. A run with traces is unchanged.
-- TF3-30: ``compare`` on runs with no traces is refused, measured (the spec left it to this
-  pair): two imported runs share their cells, so the refusal is not the one for runs with no common
+- TF3-30: ``compare`` on runs with no traces is refused, measured: two imported runs share their
+  cells, so the refusal is not the one for runs with no common
   cell, and today's sentence ("no death in either run") is not why. The refusal names the tool the
   run was imported from, writes nothing, and points next at ``fix-check`` on the two runs, which
   reads them.
@@ -70,8 +70,8 @@ def test_tf3_29_where_on_a_run_with_no_traces_says_so_in_one_line(tmp_path: Path
     assert note in lines[h1 + 1 :], text.out
     assert not any(line.startswith(("| step", "| turn", "| kind")) for line in lines), text.out
     # of a traced run's sections, only the first and the last remain: the run, and what it cannot say
-    # (S6, ruled 2026-10-20: both open with the summary, kept out of the comparison; the traced run's
-    # caveats section is the summary's too)
+    # (both open with the summary, kept out of the comparison; the traced run's caveats section is
+    # the summary's too)
     traced = trace(["where", CS_RECORD, "--store", str(CS), *events_args(CS_EVENTS)]).out.splitlines()
     plain = ("## Summary", "## Before you act on this")
     headings = [line for line in traced if line.startswith("## ") and line not in plain]
@@ -97,7 +97,7 @@ def test_tf3_29_a_run_with_traces_keeps_its_curve_and_has_no_note(tmp_path: Path
     assert data.code == 0 and text.code == 0
     doc = json.loads(data.out)
     assert doc.get("note") is None and doc["curve"], doc.get("note")
-    # cs is counted in turns, and where says turn (S15, carried into TF15 on 2026-10-20)
+    # cs is counted in turns, and where says turn
     assert any(line.startswith("| turn") for line in text.out.splitlines())
 
 

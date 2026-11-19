@@ -1,8 +1,8 @@
-"""TF0-2 and TF0-3: the exit codes a result and a wrong command line get (spec section 3.3, the
-Tasks table kept to the letter). A result exits 0 whatever it says, *too small to tell* included;
-a command line that is wrong exits 2 with one ``error:`` line and nothing on stdout, in both
-commands. Refusals (1), unexpected failures (3) and Ctrl-C (130) are in test_tf0_errors.py; the
-table itself, as docs/cli-look.md writes it, is in test_tf0_conformance.py."""
+"""TF0-2 and TF0-3: the exit codes a result and a wrong command line get (the exit-code table of
+``docs/cli-look.md``, kept to the letter). A result exits 0 whatever it says, *too small to tell*
+included; a command line that is wrong exits 2 with one ``error:`` line and nothing on stdout, in
+both commands. Refusals (1), unexpected failures (3) and Ctrl-C (130) are in test_tf0_errors.py;
+the table itself, as docs/cli-look.md writes it, is in test_tf0_conformance.py."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from tf0_support import (
 
 @pytest.mark.parametrize(
     "argv",
-    # ST2 (ruled 2026-10-20): tau2 on all inputs at 0.10 reads no significant difference; 0.075 does not
+    # tau2 on all inputs at 0.10 reads no significant difference; 0.075 does not
     [compare_tau2("1.3"), fix_check_tau2_all("0.075")],
     ids=["compare", "fix-check"],
 )

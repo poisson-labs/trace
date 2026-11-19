@@ -1,4 +1,4 @@
-"""TF1-4 and TF1-5: wherever a verb takes a run, the words it takes (spec section 5.2, ruling R3).
+"""TF1-4 and TF1-5: wherever a verb takes a run, the words it takes.
 
 ``latest`` and ``previous`` are the newest and the next newest complete run by start time, and
 ``latest:TARGET`` and ``previous:TARGET`` the same among one target's runs; ``#N`` is row N of

@@ -1,10 +1,10 @@
-"""Shared helpers for the TF15 tests (spec sections 9.5 to 9.7, the statistics fixes ST1 to ST6
-and ST8 to ST10, and the plain summaries): the parts of a printed report by heading, the
+"""Shared helpers for the TF15 tests (the statistics of fix-check, compare and where, and the
+plain summaries): the parts of a printed report by heading, the
 summary's labelled lines, and a test-local model of a traced run for compare's detection limit.
 
 Not a test module and not collected. Every number a TF15 test pins is named in the test with the
-reference it comes from (the statistics check's scripts and dumps, lifelines, or a published
-worked example); the Session A log lists them.
+reference it comes from (an independent statistics check, lifelines, or a
+published worked example).
 """
 
 from __future__ import annotations
@@ -81,11 +81,11 @@ def has(out: str, phrase: str) -> bool:
 
 # ---------- a test-local model of a traced run, for compare's detection limit ----------
 #
-# The statistics check's model (`simlib.fit_cells` and `draw_episodes`, log/trace-statistics-check/
-# evidence/scripts/simlib.py), copied: each input gets an offset one below its smallest step and
+# The independent statistics check's model of a traced run, copied: each
+# input gets an offset one below its smallest step and
 # two exponential clocks per step after it, failing and finishing, fitted from both runs pooled;
 # the after run's failing clock is multiplied by the hazard ratio. Its information per failure
-# under no change, 0.165 on tau2, matches the fixture's 0.159 (the check's findings, item 3).
+# under no change, 0.165 on tau2, matches the fixture's 0.159.
 
 
 def fit_cells(rows: Sequence[tuple[str, int, bool]]) -> dict[str, tuple[int, float, float]]:

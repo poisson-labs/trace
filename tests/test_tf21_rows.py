@@ -1,4 +1,4 @@
-"""TF21-1 to TF21-11: the normalised shape (spec section 18.4.1, SG1, SG2; SA1, SA2).
+"""TF21-1 to TF21-11: the normalised shape, ``ingest/rows.py``.
 
 Every field of ``Row``, ``SpanRecord`` and ``ToolCallRecord``, its type and unit, and what *not
 recorded* looks like: ``None`` for a number or a word, never ``0``; ``0`` is a recorded zero.
@@ -61,7 +61,7 @@ def test_tf21_1_a_row_built_as_today_records_no_signal() -> None:
     assert dict(row.scores) == {} and dict(row.feedback) == {} and tuple(row.signals) == ()
 
 
-# ---------- TF21-2: None is not recorded, 0 is a recorded zero (IC-SIG1) ----------
+# ---------- TF21-2: None is not recorded, 0 is a recorded zero ----------
 
 
 @pytest.mark.parametrize("name", INT_FIELDS)
@@ -157,7 +157,7 @@ def test_tf21_4_an_error_span_kind_is_a_kind_a_source_names() -> None:
         _row(error_span_kind="judge")
 
 
-# ---------- TF21-5: token consistency (IC-SIG2) ----------
+# ---------- TF21-5: token consistency ----------
 
 
 def test_tf21_5_total_tokens_is_the_sum_when_the_source_left_it_out() -> None:
@@ -226,7 +226,7 @@ def test_tf21_7_a_row_holds_its_tool_calls_in_order() -> None:
         _row(tool_calls=({"name": "a", "status": "ok"},))
 
 
-# ---------- TF21-8: SpanRecord follows Prove 0.1.2's span (SA1) ----------
+# ---------- TF21-8: SpanRecord follows Prove 0.1.2's span ----------
 
 
 SPAN_FIELDS = (
@@ -283,7 +283,7 @@ def test_tf21_9_a_score_that_is_not_a_number_is_refused(bad: dict[Any, Any]) -> 
         _row(scores=bad)
 
 
-# ---------- TF21-10: the record of section 18.4.1 is frozen and hashable as today ----------
+# ---------- TF21-10: the record is frozen and hashable as today ----------
 
 
 def test_tf21_10_rows_are_frozen() -> None:

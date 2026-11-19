@@ -1,4 +1,4 @@
-"""What a first-time reader of the reports misread (the AI-engineer read of TF15 Session B), each
+"""What a first-time reader of the reports could misread, each
 pinned so it stays said: a run that declares no repeats is not "0 inputs short" of them, the
 limits under a range that decided say they are for planning, two runs sharing a run_salt are
 still read unpaired, and too small to tell's next: line points at the two new runs."""

@@ -1,6 +1,5 @@
-"""PF-1 to PF-29: Trace declares the oldest Prove it reads, refuses only what is below it, and
-reads every stored format from 1.0 to 1.2 alike (PV-2 to PV-7; ``pf_support``'s opening, items 1
-to 3).
+"""PF-1 to PF-21: Trace declares the oldest Prove it reads, refuses only what is below it, and
+reads every stored format from 1.0 to 1.2 alike (``pf_support``'s opening, items 1 to 3).
 
 - PF-1: the declaration is a floor with no cap, and the floor Trace checks is read back from it:
   with the installed package declaring another floor, Trace checks for that one and names it.
@@ -22,7 +21,7 @@ to 3).
 - PF-13: the two stores are listed whole in the fixture's digests.
 - PF-20: ``pin_support.as_pinned`` writes Prove's version as the pins hold it in the places
   Trace prints it, and nowhere else.
-- PF-21: with a Prove stating a later version, the earlier pairs' pins of what main prints still
+- PF-21: with a Prove stating a later version, the pins of what main prints still
   hold: a case of each kind, run under a Prove that states 0.4.1.
 """
 
@@ -79,7 +78,6 @@ def test_pf_1_the_declaration_is_a_floor_and_nothing_more() -> None:
     for wanted in project.get("optional-dependencies", {}).values():
         assert not [d for d in wanted if re.match(r"\s*poisson[-_.]prove\b", d, re.IGNORECASE)], wanted
     # the dependencies are written in the file, not worked out by the build, and Prove's old name is never asked for
-    # (PIN-1's two lines, moved here on the ruling of 2026-11-18, AR-6)
     assert "dependencies" not in project.get("dynamic", []), project.get("dynamic")
     asked = [*project["dependencies"], *(d for wanted in project.get("optional-dependencies", {}).values() for d in wanted)]
     assert not [d for d in asked if re.match(r"\s*proofload\b", d, re.IGNORECASE)], asked

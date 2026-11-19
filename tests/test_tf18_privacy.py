@@ -1,4 +1,4 @@
-"""TF18-19: what no page holds (spec section 17.3 item 9): an absolute path, a platform string, a
+"""TF18-19: what no page holds: an absolute path, a platform string, a
 key, or a row's content.
 
 The pages workspace, plus a table store whose rows carry a prompt and a response beside their

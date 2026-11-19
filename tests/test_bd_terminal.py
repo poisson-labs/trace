@@ -1,8 +1,8 @@
 """BD-1f: the failure breakdown on a terminal, at the widths the mockups show (80 and 140
-columns), pretty and ``--plain`` (Taylor's DM1 and DM2; the clean look, spec section 17.1).
+columns), pretty and ``--plain``, under the clean look's rules.
 
 On a pseudo-terminal, ``fix-check`` on the committed Prove 0.1.3 store prints the section the
-design session drew (``log/trace-design/terminal/breakdown-prove-{80,140}-{plain,pretty}``),
+mockups draw (``tests/fixtures/breakdown/mockups/breakdown-prove-{80,140}-{plain,pretty}``),
 every character the terminal received with the escapes removed, from its heading to its last
 row. Pretty: the heading bold, each table's header and rule dim, nothing else styled, no digit
 coloured, only the look's escapes. ``compare`` and ``changes`` hold the same rules with their own

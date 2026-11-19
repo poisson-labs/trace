@@ -6,10 +6,8 @@ Parquet part has the schema of a run the JUnit reader writes; the run record nam
 and the files; and Prove's own ``runs`` and ``ui`` list it and build their pages over it, the
 rows sharing one horizon though they took different numbers of steps.
 
-TF25-66 to TF25-69 and TF25-71 (every command, the pages and the app as an older main gave them,
-what the import's help and one refusal gained with this reader, and the tests of those pins) were
-cut on the rulings of 2026-11-18 (AR-1, AR-3): ``test_pl_unchanged.py`` (PL-51 to PL-55) holds each
-of those commands, the pages and the app at today's bytes.
+Every other command, the pages and the app are held at today's bytes by
+``test_pl_unchanged.py`` (PL-51 to PL-55).
 """
 
 from __future__ import annotations

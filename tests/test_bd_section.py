@@ -1,5 +1,4 @@
-"""BD-1: the failure breakdown, a report section on fix-check, compare and changes (Taylor's DM1
-and DM2 of 2026-11-05; FD1 and FD3 to FD8, ``log/trace-breakdown-a/rulings.md``).
+"""BD-1: the failure breakdown, a report section on fix-check, compare and changes.
 
 **BD-1a** Where it stands. ``fix-check``: right after ``The two versions`` (``The control`` when
 ``--failing-from`` picked the inputs), before ``The comparison``; ``compare``: right after the
@@ -7,19 +6,19 @@ Comparison section's bold verdict line, before ``Guidance`` and the pointer to `
 ``changes``: right after ``Runs``, before ``Inputs that changed``. ``where`` prints none.
 
 **BD-1b** What it says on the committed Prove 0.1.3 store, line for line: the mockup's section
-(``log/trace-design/terminal/breakdown-prove-*``), with ``compare`` and ``changes`` naming their
-runs ``A`` and ``B``.
+(``tests/fixtures/breakdown/mockups/breakdown-prove-*``), with ``compare`` and ``changes``
+naming their runs ``A`` and ``B``.
 
 **BD-1c** The counts are the failure-type diff TF6 saves, read here independently through TF21's
-reader: one row a kind either run has, ordered by its count over both runs and a tie by section
-18.5.1's order, an ``all failures`` row last; shares over each run's tries; the change in points
+reader: one row a kind either run has, ordered by its count over both runs and a tie by the kinds'
+precedence, an ``all failures`` row last; shares over each run's tries; the change in points
 as the report prints points.
 
 **BD-1d** The edges: no failure in either run, no signal, a tie, a thousand tries, a change under
 one point, no change, the user's own rules on both runs, and different rules on the two.
 
 **BD-1e** It follows the rows the verb read: a ``--verdicts`` file's filled failures, each with a
-kind (FD8), and runs read from tool folders.
+kind, and runs read from tool folders.
 """
 
 from __future__ import annotations
@@ -199,7 +198,7 @@ def test_bd_1c_junit_imports(tmp_path: Path, verb: str) -> None:
         argv += ["--inputs", "all", "--max-mde", "0.1"]
     got = section(ok(argv).out)
     assert got == _reference(store, ("ja", "jb"), _ids(store, "ja", "jb"), ["missed"], verb)
-    # JUnit records no signal: the signals' part is left out (FD4)
+    # JUnit records no signal: the signals' part is left out
     assert SIGNALS_LINE not in got
 
 
@@ -248,7 +247,7 @@ def test_bd_1d_a_thousand_tries_and_a_change_under_one_point(tmp_path: Path) -> 
     last = table_rows(got)[-1]
     assert last == ["all failures", "4", share(4, 1200), "7", share(7, 1200), points(4, 1200, 7, 1200)]
     assert last[2] == "0.3%" and last[4] == "0.6%"
-    assert last[-1] in ("+0.2 points", "+0.3 points")  # one decimal under one point too (FD6)
+    assert last[-1] in ("+0.2 points", "+0.3 points")  # one decimal under one point too
 
 
 def _rules_config(path: Path, pattern: str) -> Path:
@@ -270,7 +269,7 @@ def test_bd_1d_the_same_rules_of_the_users_own(tmp_path: Path) -> None:
 
 def test_bd_1d_different_rules(tmp_path: Path) -> None:
     """Runs classified by different rules: no counts, the sentence the saved note holds, and each
-    run's digest (TF6-29's case, SV9)."""
+    run's digest (TF6-29's case)."""
     from poisson_trace.ingest.taxonomy import taxonomy_sha256
 
     rules = _rules_config(tmp_path / "rules.toml", "SqlDeadlockError")

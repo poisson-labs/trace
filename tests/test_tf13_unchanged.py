@@ -1,15 +1,15 @@
-"""TF13-32: the deliveries' output stays byte for byte as main 667e42c prints it, through the
-command line now calling the API (invariant 4).
+"""TF13-32: the deliveries' output stays byte for byte as the pinned main prints it, through
+the command line now calling the API.
 
 TF13-32: each invocation's exit code, stdout and stderr, pinned as digests with the workspace's
 own path written ``<WORK>``: the deliveries (``--save``, ``--out``, ``--svg``, and the files they
 write), their refusals, the three forms of ``name``, and ``handover --check`` on what is not a
 bundle. These are the twelve cases whose steps no later list runs.
 
-The other 85 cases of TF13-32 (the counting verbs on each kind of store with each option,
-``runs``, the import of every reader, the refusals) and the 14 helps of TF13-33 were cut on the
-ruling of 2026-11-18 (AR-2): ``test_pl_unchanged.py`` (PL-51) runs each of those commands whole
-and holds it at today's bytes.
+The other commands (the counting verbs on each kind of store with each option, ``runs``, the
+import of every reader, the refusals, and the helps) are not pinned here:
+``test_pl_unchanged.py`` (PL-51) runs each of those commands whole and holds it at its pinned
+bytes.
 """
 
 from __future__ import annotations
@@ -48,9 +48,9 @@ def _cases() -> dict[str, tuple[str, list[list[str]]]]:
 
 CASES = _cases()
 
-# Each case's steps on main 667e42c: (exit code, stdout's digest, stderr's digest), the
+# Each case's steps on the pinned main: (exit code, stdout's digest, stderr's digest), the
 # workspace's path as <WORK>.
-# TF18 (SB5, SV15): the four out cases' handover --check step prints main's line, a blank line
+# TF18: the four out cases' handover --check step prints main's line, a blank line
 # and next: poisson-trace report bundle; compare's bundle lists its four chart files besides
 PINNED: dict[str, list[tuple[int, str, str]]] = {
     'save: where': [
@@ -177,7 +177,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
 def _digest(text: str, work: Path) -> str:
     from pin_support import as_pinned
 
-    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned)
     return hashlib.sha256(as_pinned(text.replace(str(work), "<WORK>")).encode("utf-8")).hexdigest()
 
 

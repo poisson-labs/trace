@@ -1,6 +1,6 @@
 """TF25-28 to TF25-32: the same experiment read from different exports agrees wherever they hold
-the same facts, and every difference is named here and nowhere else (the brief's rule 2; spec
-sections 18.3.2 and 18.3.4; the captures' gap that the page's files carry no id).
+the same facts, and every difference is named here and nowhere else (on the real captures, whose
+page downloads carry no id).
 
 - TF25-28: the three exports that hold the spans (the fetch, BTQL's ``spans`` and ``traces``)
   give the same record for every case, key for key, the same stored columns and the same spans:

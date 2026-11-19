@@ -1,13 +1,12 @@
-"""TF25-85: the pull follows Braintrust's experiments listing to its end (ruling B-1 of TF25's
-Session B, which follows BT-31's live check; the pull itself is TF25-33 to TF25-46 in
-``test_tf25_pull.py``).
+"""TF25-85: the pull follows Braintrust's experiments listing to its end (the pull itself is
+TF25-33 to TF25-46 in ``test_tf25_pull.py``).
 
-What the check found: ``GET /v1/experiment`` answers at most 1,000 experiments where the request
-names no limit, the newest first, under ``objects`` and with no cursor; the experiments after
-them are asked for with ``starting_after``, the id of the last one returned. So a pull that asks
-once cannot name an experiment older than a project's newest 1,000.
+What a live check of the service shows: ``GET /v1/experiment`` answers at most 1,000
+experiments where the request names no limit, the newest first, under ``objects`` and with no
+cursor; the experiments after them are asked for with ``starting_after``, the id of the last one
+returned. So a pull that asks once cannot name an experiment older than a project's newest 1,000.
 
-The reading frozen here: the first request is the one TF25-33 holds, unchanged. An answer that
+The rule held here: the first request is the one TF25-33 holds, unchanged. An answer that
 holds 1,000 experiments is followed by a request for the ones after its last, until an answer
 holds fewer; the experiment is then looked for by its whole name across every answer. An answer
 that ends where an earlier one ended is a failure after the pull began (exit 3), never a loop.

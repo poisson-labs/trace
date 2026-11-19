@@ -1,5 +1,5 @@
-"""TF22-1 to TF22-14: the folder resolver, ``poisson_trace.ingest.folder.resolve`` (spec section
-18.3.1). It says what a folder holds, in the spec's order, and refuses what it cannot read as
+"""TF22-1 to TF22-14: the folder resolver, ``poisson_trace.ingest.folder.resolve``.
+It says what a folder holds, checking in a fixed order, and refuses what it cannot read as
 one run, without reading a row: a Prove run folder, a store holding one run, a saved pull
 folder, or one tool's result files. Several runs, several tools and nothing to read are refused
 (``Refusal``, exit 1 at the command line), each naming what it found.
@@ -310,12 +310,11 @@ def test_tf22_12_a_path_that_is_not_a_folder_is_refused(tmp_path: Path, what: st
 
 
 def test_tf22_13_an_unpacked_inspect_log_is_one_inspect_run(tmp_path: Path) -> None:
-    """An unpacked Inspect log (``header.json`` and ``samples/*.json``) is one Inspect run
-    (section 18.3.1 3b). The Inspect reader is TF10's (FI3; TF10's RD7 moved this test from
-    the refusal TF22 froze to the reading): the folder resolves to the Inspect reader, with the
-    folder itself as what it reads, and imported, with the tool named or left out, it gives the
-    same records as the ``.eval`` it was unpacked from. Named as another tool's, it is refused,
-    saying it is Inspect's, rather than read as anything else."""
+    """An unpacked Inspect log (``header.json`` and ``samples/*.json``) is one Inspect run.
+    The Inspect reader is the one ``tf10_support`` drives: the folder resolves to the Inspect
+    reader, with the folder itself as what it reads, and imported, with the tool named or left
+    out, it gives the same records as the ``.eval`` it was unpacked from. Named as another
+    tool's, it is refused, saying it is Inspect's, rather than read as anything else."""
     from tf10_support import IN_EVAL, eval_members, imported, in_argv, recs
 
     from poisson_trace.ingest.cli import present

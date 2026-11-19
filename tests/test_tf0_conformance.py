@@ -1,5 +1,5 @@
-"""TF0-1, TF0-19 and TF0-20: the look held over the whole corpus, and the written standard (spec
-sections 9.2 and 3.3).
+"""TF0-1, TF0-19 and TF0-20: the look held over the whole corpus, and the written standard
+(``docs/cli-look.md``).
 
 Every invocation of the corpus (every verb's help, the version, the README's worked examples on
 the fixtures, two imports and their fix check, every refusal of the front-door transcript's
@@ -8,7 +8,7 @@ the exit code is in the table and is the one the invocation calls for; no traceb
 ``error:`` and ``note:`` lines and their two-space continuations; a refusal or a wrong command
 line prints nothing on stdout; nothing a user reads holds a Python representation of a value;
 ``--json`` is one strict document with ``schema`` first; a ``next:`` line closes stdout. And the
-two clauses TF1 builds (spec section 9.2): a result's first stdout line is its verdict line, and
+two clauses TF1 builds: a result's first stdout line is its verdict line, and
 ``--json`` opens ``schema``, ``verdict``, ``sentence``.
 
 ``docs/cli-look.md`` is the written standard: its sixteen rules in order and the exit-code table
@@ -89,8 +89,7 @@ def test_tf0_19_the_corpus_holds_the_look(ran: dict[str, Ran], kind: str) -> Non
 
 def test_tf0_20_the_standard_is_in_the_repository_with_its_sixteen_rules_in_order() -> None:
     text = CLI_LOOK.read_text(encoding="utf-8")
-    # each rule opens a line, numbered "L1." as the Tasks spec writes them or "1." as the lab's
-    # one copy so far (local-stack's) does
+    # each rule opens a line, numbered "L1." or "1."
     first = {}
     for m in re.finditer(r"(?m)^\s*(?:[-*]\s+)?(?:\*\*)?L?(1[0-6]|[1-9])\.\s", text):
         first.setdefault(int(m.group(1)), m.start())

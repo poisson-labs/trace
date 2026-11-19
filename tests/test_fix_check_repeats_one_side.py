@@ -1,13 +1,13 @@
 """TR73 on a design the frozen tests do not reach: a few inputs repeat, and all of their repeats
-sit on one version (written 2026-10-06, Trace pre-tag Session B).
+sit on one version.
 
 The frozen tests pin *an input repeats when either version holds two or more of its runs* on
 designs where every input repeats, and pin the few-repeat block on designs that repeat on the
 old version or on both. A build that counted repeats on the old version alone would print κ for
-a design whose few repeats are all on the new version, and pass every frozen test (mutant F24
-of the mutation table); a build counting the new version alone is the mirror (F25). Here two of
-six inputs repeat, on the new version alone and then on the old alone, and the block is TR73's
-two lines with *2 of 6* either way.
+a design whose few repeats are all on the new version, and pass every frozen test; a build
+counting the new version alone is the mirror. Here two of six inputs repeat, on the new
+version alone and then on the old alone, and the block is TR73's two lines with *2 of 6*
+either way.
 """
 
 from __future__ import annotations

@@ -1,21 +1,20 @@
-"""TF26-80 to TF26-84: ``init`` and the files it finds, as BT-35 ruled it for the readers that pull
-from a service's API (LangSmith, Braintrust and Weave together; the brief's item 5).
+"""TF26-80 to TF26-84: ``init`` and the files it finds, for the readers that pull from a
+service's API (LangSmith, Braintrust and Weave together).
 
-The reading BT-35 froze, kept here: ``init`` does not import such files by itself. An import of
+``init`` does not import such files by itself. An import of
 them needs two answers ``init`` has no question and no flag for (what pairs a case across
 versions, and what says a case failed), so it refuses in one sentence and prints one import line
 for each run, with what it can read from the file filled in and a word in capitals for what is
 the user's to say. Files named under ``[[import]]`` in ``trace.toml`` are imported by ``init``, as
-TF26-57 holds. Weave's sample is added to TF25-80 itself, in the commit that moves the earlier
-frozen tests.
+TF26-57 holds. Weave's sample is part of TF25-80 itself.
 
 - TF26-80: Weave's files are refused as the other two readers' are: exit 1, nothing written,
   one ``next:`` line an import; ``--import`` is the same refusal; ``--no-import`` writes the
   config with no store and prints the same lines. Held by TF25-80 in ``test_tf25_init.py`` on
   Weave's sample.
-- TF26-81: what does not move. LangSmith's and Braintrust's files print what main bfda500
+- TF26-81: what does not move. LangSmith's and Braintrust's files print what the pinned main
   prints, byte for byte (the feedback list on its runs' line among them). Weave's files are
-  found now.
+  found as well.
 - TF26-82: Weave's files are listed as Weave's and each run has its line. The case is
   ``example`` where every row of the file carries the reference to its dataset row (the
   service's answers, the page's JSON and JSON Lines) and ``input`` where none can (the page's

@@ -1,5 +1,5 @@
-"""TF1-11: every verb ends with ``next:``, and a ``next:`` line names runs by their names (spec
-section 9.4, rule L13).
+"""TF1-11: every verb ends with ``next:``, and a ``next:`` line names runs by their names (the
+look's rule 13).
 
 The verb resolves what it was given and prints the name, never an id the user typed, quoted so
 that a shell reads back the name exactly, whatever it holds. ``where`` points ``compare`` at the

@@ -1,5 +1,4 @@
-"""TF2-5: ``[names] from`` names the runs Prove stored (spec sections 3.2 and 5.2; handed on by TF1
-Session A's yes/no 9; yes/no 7).
+"""TF2-5: ``[names] from`` names the runs Prove stored.
 
 ``target`` (the default) gives ``tau2-airline 2026-09-15 a``; ``date`` gives ``2026-09-15 a``;
 ``target-date`` gives the target with the model after it, ``tau2-airline gpt-4.1-mini 2026-09-15

@@ -1,6 +1,6 @@
-"""TR71 and TR72: the two display fixes ruled for the 0.1.0 tag (2026-09-29, Integrations ruling
-16). A p too small for a double prints as a bound, never as 0.00e+00; with one run per input per
-version the consistency block says consistency cannot be measured, and prints no κ."""
+"""TR71 and TR72: two display rules. A p too small for a double prints as a bound, never as
+0.00e+00; with one run per input per version the consistency block says consistency cannot be
+measured, and prints no κ."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ def test_tr72_one_run_per_input_per_version_prints_no_kappa(tmp_path: Path) -> N
         assert "κ" not in block and "times the runs" not in block and "fails again" not in block, block
         text = norm(block).lower()
         assert "cannot" in text and "one run per" in text, block
-        # ruled 2026-09-29 (Session A ruling 5): the JSON says the same, and keeps the p computed
+        # the JSON says the same, and keeps the p computed
         j = fix_check(root, "a", "b", ("fail",), "--inputs", "all", "--max-mde", "0.5", "--json")
         c = j.json()["consistency"]
         assert c["fails_again"] is None and c["kappa"] is None, c

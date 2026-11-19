@@ -1,32 +1,32 @@
-"""TF18-1 to TF18-7: the static pages' views (spec section 17.3 item 7; the design's section 3;
-DM7, DM8, DM10, DM11 and DM14; SV15).
+"""TF18-1 to TF18-7: the static pages' views (``docs/cli-look.md``,
+"The static UI").
 
 The workspace is TF13's with seven verdicts saved (``tf18_support.SAVES``): on the Prove 0.1.3
-store the design session's own (two where, a compare, a fix-check, a changes; the mockups'
-ids), on the table store a fix-check and a changes whose runs hold tries with no outcome. Then
+store two where, a compare, a fix-check and a changes (the ids of ``MOCKUP_IDS``),
+on the table store a fix-check and a changes whose runs hold tries with no outcome. Then
 ``poisson-trace ui --config conf/trace.toml``, from inside it.
 
 **TF18-1** The files: ``<store>/.poisson/ui/trace/`` holds the index, the two fixed files, a page
 and a could-not-say page per saved verdict of Trace's, and nothing else; the config's other
 store gets its own; Prove's saved comparison gets no page of Trace's; ``ui/`` holds nothing of
-Trace's outside ``trace/`` (A1).
+Trace's outside ``trace/``.
 
 **TF18-2** The runs page (``index.html``): the verdict line ``runs`` prints for the store as its
 first heading; a row a run with ``runs``'s facts (number, name, id, target or the tool an import
 came from, rows, failed, traces, started, status); a row a saved verdict, newest first, linking
-to its page; a run's name linking to its newest where page (A8).
+to its page; a run's name linking to its newest where page.
 
 **TF18-3** A verdict page (fix-check, compare, changes and where): its first heading is the
 verdict line, its title the report's title, and it shows every line the plain report prints, in
-order, under the report's own headings in the report's order (DM14), the continuous-measures
-section where ``fix-check --measures`` prints it (A4), "Failures by kind" with its tables and the
+order, under the report's own headings in the report's order, the continuous-measures
+section where ``fix-check --measures`` prints it, "Failures by kind" with its tables and the
 no-outcome sentence; the per-input table sortable with a filter box; what was saved; links to
 its could-not-say page and to the runs page.
 
 **TF18-4** The where page's curve: inline SVG with a hover title on every step, and the data
-under it (A9).
+under it.
 
-**TF18-5** Compare's charts (SV15, DM7, DM8): the artifact carries ``charts/curves`` and
+**TF18-5** Compare's charts: the artifact carries ``charts/curves`` and
 ``charts/hazard-ratio`` (the SVG role ``chart``, its JSON beside it, as TF6 lists where's
 curve); the curves are each run's ``where``
 curve under compare's failures; the hazard ratio's data is the verdict's; on the page each is a
@@ -36,7 +36,7 @@ its band, no colour of the four meanings.
 **TF18-6** The could-not-say page of every verdict: the verdict line, everything the verdict
 cannot say, what it could not have detected, a link back.
 
-**TF18-7** The links between stores' pages (DM10) and to Prove's dashboard (DM11, A13).
+**TF18-7** The links between stores' pages and to Prove's dashboard.
 """
 
 from __future__ import annotations

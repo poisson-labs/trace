@@ -1,10 +1,9 @@
-"""TF26-86: the terminal app's list of found files follows ``init``'s lines (B-4, ruled yes by
-Taylor on 2026-11-12).
+"""TF26-86: the terminal app's list of found files follows ``init``'s lines.
 
 The app's imports screen lists the files ``init`` finds and has not imported, each with the
-import line ``init`` prints for it (``core.found_results``, TF19-A7). The list was built by
-pairing every found file with one line, which fails where a file has no line of its own or more
-than one. Held here on three folders:
+import line ``init`` prints for it (``core.found_results``). Pairing every found file with
+one line would fail where a file has no line of its own or more than one. Held here on three
+folders:
 
 - a Weave file that holds no case (the Traces page with no filter) beside an evaluation: ``init``
   lists it and prints no line for it (TF26-82), so it is not in the app's list;

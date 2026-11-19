@@ -1,4 +1,4 @@
-"""TF19-5: charts as links (spec section 17.2, Charts; section 17.3 item 7; A10).
+"""TF19-5: charts as links (``docs/app.md``).
 
 **TF19-5** The app draws no chart. Where a page has one the screen shows its link, a detail line
 ``label  trace/<address>``; the pages are rebuilt before a link shows, so every link on screen

@@ -4,10 +4,6 @@
 - PF-96: the setup page shows ``doctor``'s Prove line with the version written ``…``; the checker
   holds that line on any Prove at or above the floor and on no other wording; and no page holds
   one Prove's version in that line, or the exact pin.
-
-PF-90 to PF-95, PF-97, PF-98 and PF-96's test that the setup page moved in that one line alone
-were cut on the ruling of 2026-11-18 (AR-4): they held the Prove floor pair's build to its brief
-(every other file byte for byte main 4bb4b95's), and the pair is merged.
 """
 
 from __future__ import annotations

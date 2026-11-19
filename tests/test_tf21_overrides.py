@@ -1,9 +1,9 @@
 """TF21-56 to TF21-63: ``trace.toml`` ``[signals]``, ``[signals.budgets]`` and
-``[[taxonomy.rules]]`` (spec section 18.5.3, SG12; SA5, SA8, SA9). Read and checked by
+``[[taxonomy.rules]]`` (``docs/config.md``). Read and checked by
 ``config.parse``; at the import, ``cost_field``, the budgets and the rules apply and the
-taxonomy's digest is recorded so a verdict can say which rules made it. ``case_field``,
-``outcome_field``, ``score_field`` and ``cut`` are read and checked but do not stand in for the
-import's flags in TF21 (SA8)."""
+taxonomy's digest is recorded so a verdict can say which rules made it. ``outcome_field``,
+``score_field`` and ``cut`` are read and checked but do not stand in for the import's flags;
+``case_field`` stands in for ``--case-column`` when the flag is not given (TF21-61)."""
 
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def parse(text: str, tmp_path: Path) -> Any:
     return config.parse(text, path, "trace.toml", given=False)
 
 
-# ---------- TF21-56: the example of section 18.5.3 reads whole ----------
+# ---------- TF21-56: a config using every key of the three tables reads whole ----------
 
 
 def test_tf21_56_the_spec_example_reads(tmp_path: Path) -> None:
@@ -227,12 +227,11 @@ def test_tf21_60_an_import_without_a_config_records_the_built_in_digest(tmp_path
     assert m["taxonomy_sha256"] == taxonomy.taxonomy_sha256((), None)
 
 
-# ---------- TF21-61: [signals] case_field stands in for --case-column (SA8, built by TF17) ----------
+# ---------- TF21-61: [signals] case_field stands in for --case-column ----------
 
 
 def test_tf21_61_case_field_stands_in_for_case_column(tmp_path: Path) -> None:
-    """Changed in TF17 Session A's commit (the SA8 ruling sent the stand-in to TF17): the
-    import takes the case column from ``[signals]`` when the flag is not given."""
+    """The import takes the case column from ``[signals]`` when the flag is not given."""
     _tau2_table(tmp_path / "tau2.csv")
     (tmp_path / "trace.toml").write_text('version = 1\n[signals]\ncase_field = "case"\n',
                                          encoding="utf-8")

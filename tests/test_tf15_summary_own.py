@@ -1,5 +1,5 @@
-"""Tests of this build's own: what the plain parts at the head of a report say where the frozen
-tests leave it open and a wrong build would still pass them.
+"""What the plain parts at the head of a report say where the frozen tests leave it open and
+a wrong build would still pass them.
 
 - At another --alpha the range's caveat names the range's own level, as the bold line does.
 - A design that can see the size asked is not called one that "sees only very large changes",

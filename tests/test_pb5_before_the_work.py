@@ -1,21 +1,21 @@
 """PB5-1 to PB5-6: what a command would refuse about where it writes is refused before it does its
-work (PB5, with the reach of AR-30, ruled 2026-11-18).
+work.
 
-A counting verb read the store, counted and ran its bootstrap, and only then looked at the path
-``--out`` or ``--svg`` named; with both given, the picture was written before ``--out`` was looked
-at. An import read every file, or pulled a whole experiment from its service, and only then
-found that the store already held a run of that name or that ``store.json`` was not a
-descriptor. The rule these tests hold:
+Checked late, a counting verb reads the store, counts and runs its bootstrap, and only then
+looks at the path ``--out`` or ``--svg`` names; with both given, the picture is written before
+``--out`` is looked at. An import reads every file, or pulls a whole experiment from its
+service, and only then finds that the store already holds a run of that name or that
+``store.json`` is not a descriptor. The rule these tests hold:
 
 1. **The counting verbs.** ``--out DIR`` and ``--svg FILE`` are checked before any run is read.
-   Each refusal is the sentence the command already gave, word for word.
+   Each refusal is the sentence the command gives for that fault, word for word.
 2. **The import.** The run's name, against the names the store's runs answer to, and the
    store's ``store.json``, are checked before any file is read and before any pull. Each refusal
-   is the sentence the import already gave. A name the store itself holds is among them (B1-1,
-   ruled 2026-11-18): an import of files refuses it before a file is read, and a pull refuses it
+   is the sentence the import gives for that fault. A name the store itself holds is among them:
+   an import of files refuses it before a file is read, and a pull refuses it
    before it asks its service anything, in the pull's own words.
-3. **Not ``ui`` and ``report``.** They stay as they are: their work is quick, and nothing is lost
-   when they refuse (AR-30).
+3. **Not ``ui`` and ``report``.** They are not held to this: their work is quick, and nothing is
+   lost when they refuse.
 
 How a test tells an early check from a late one: beside the fault in the path, the name or the
 store, each command is given something its work would stumble on first, a run word that reaches
@@ -30,7 +30,7 @@ store's. For a pull, the stand-in for the service counts the requests made: none
 - PB5-5: an import into a store whose ``store.json`` is not a descriptor, or cannot be read, is
   refused before its files are read, and before a pull makes a request.
 - PB5-6: what the early checks must not do: a store that is not there yet is not made by a refused
-  import, and paths that are sound are written as before.
+  import, and paths that are sound are written as usual.
 """
 
 from __future__ import annotations
@@ -199,9 +199,9 @@ def test_pb5_4_a_name_a_run_answers_to_is_refused_before_a_file_is_read(tmp_path
 
 
 def test_pb5_4_a_name_a_run_answers_to_is_refused_before_a_pull_makes_a_request(tmp_path: Path) -> None:
-    """A pull already refuses a name the store holds before it asks its service anything, in words of its own
-    (``... so pull under another name. Nothing was asked of LangSmith``), and goes on doing so. A name another run
-    answers to was found only once the experiment was pulled and read."""
+    """A pull refuses a name the store holds before it asks its service anything, in words of its own
+    (``... so pull under another name. Nothing was asked of LangSmith``). A name another run answers to is
+    refused before the pull too, not once the experiment is pulled and read."""
     from tf21_support import run_import
     from tf24_support import address, by_status, export, imported, ls_argv, pulling, refused
 

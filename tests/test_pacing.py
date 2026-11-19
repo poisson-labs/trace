@@ -1,16 +1,15 @@
-"""PACE-1 to PACE-9: an import's progress is paced by the clock it is stamped with (B-8, ruled by
-Taylor on 2026-11-11; the promise is P-1 of ``log/trace-pacing-a``). Every progress line but the
-closing one is written at least one second after the progress line before it, by the times
-written in the log, to the microsecond and with no slack, however loaded the machine is, and
-however the wall clock is slewed or set.
+"""PACE-1 to PACE-9: an import's progress is paced by the clock it is stamped with. Every
+progress line but the closing one is written at least one second after the progress line before
+it, by the times written in the log, to the microsecond and with no slack, however loaded the
+machine is, and however the wall clock is slewed or set.
 
 Each test runs the import's writer under a clock the test controls (``pacing_support.Clock``),
 standing for every clock the writer reads, so nothing here waits on or depends on the real one:
-a test that passed only because the machine was quick would be the bug B-8 found. On main
-2ff191b the writer decides by the monotonic clock and stamps the wall clock a moment later, so
-a stall between the two readings, or a wall clock running slower than the monotonic one,
-writes two paced lines less than a second apart; RUNREC-11 and RUNREC-12 failed that way on a
-loaded machine (0.9977 s and 0.9936 s against their 0.999 s floor).
+a test that passed only because the machine was quick would hide the bug these guard against.
+A writer that decides by the monotonic clock and stamps the wall clock a moment later, as the
+pinned main's does, writes two paced lines less than a second apart when a stall falls between
+the two readings, or the wall clock runs slower than the monotonic one; on a loaded machine the
+run record's check fails that way (0.9977 s and 0.9936 s against its 0.999 s floor).
 
 **PACE-1** Under each script of the clock (an unloaded machine, two loaded ones, stalls of 7 ms,
 41 ms and a second at regular places, the machine stopped for 2.5 s), every paced progress line
@@ -32,7 +31,7 @@ row; a one-row import writes the first-row progress and the closing one.
 **PACE-8** An import stopped by Ctrl-C after its run folder exists: the paced lines before it
 are a second apart by the times written, then the closing progress and ``interrupted``.
 **PACE-9** The run record's own check of the log (``runrec_support.check_finished``, which
-RUNREC-10 to RUNREC-12 apply) holds on RUNREC-11's import, the rows with no outcome first, under
+RUNREC-10 and RUNREC-11 apply) holds on RUNREC-11's import, the rows with no outcome first, under
 each loaded script: the frozen tests' floor is met whatever the load.
 """
 

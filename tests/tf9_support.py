@@ -47,18 +47,18 @@ from tf0_support import DEEPEVAL, HE_A, HE_B, HE_EVENTS, HUMANEVAL, PILOT, scrip
 REPO = Path(__file__).resolve().parent.parent
 SRC = REPO / "src"
 
-#: The one module that may import Rich (spec section 17.1: "Rich as a core dependency imported
-#: only by a private rendering module").
+#: The one module that may import Rich, a core dependency imported only by a private rendering
+#: module.
 PRETTY_MODULE = "poisson_trace._pretty"
 PRETTY_FILE = SRC / "poisson_trace" / "_pretty.py"
 
-# ---------- the look's colours, mapped to Trace's words (spec section 17.1, AD2) ----------
+# ---------- the look's colours, mapped to Trace's words ----------
 
 GREEN = ("ok", "done")
 YELLOW = ("stopped", "refused", "too small to tell", "no significant difference", "no control")
 RED = ("not ready", "not whole")
 BOLD = ("different", "plan")
-#: Every verdict word Trace has or has ruled, and the role its word takes: G green, Y yellow, R
+#: Every verdict word Trace has, and the role its word takes: G green, Y yellow, R
 #: red, B bold with no colour.
 ROLE = {**{w: "G" for w in GREEN}, **{w: "Y" for w in YELLOW}, **{w: "R" for w in RED}, **{w: "B" for w in BOLD}}
 #: The text a colour may be drawn on, and nothing else: the verdict words, the two problem
@@ -547,7 +547,7 @@ FIX_CHECK_HE = _t("fix-check, every input", ["fix-check", HE_A, HE_B, "--store",
 CHANGES_HE = _t("changes", ["changes", HE_A, HE_B, "--store", HUMANEVAL, *events_args(HE_EVENTS), "--top", "4"])
 COMPARE_SMALL = _t("compare, too small to tell", ["compare", TAU2_A, TAU2_B, "--store", TAU2, "--event", "unsolved", "--max-mde-hr", "1.3"])
 
-#: One of each verb, each verdict word a verb on main reaches without timing, both problem
+#: One of each verb, each verdict word a verb reaches without timing, both problem
 #: prefixes, help and the version: the fast lane's corpus (the slow lane runs the whole of
 #: ``tf0_support.corpus`` the same way).
 CORPUS: tuple[Item, ...] = (

@@ -3,9 +3,9 @@ the patterns a user must never read, runners for both commands in-process and in
 (with Prove present, absent, or at another version), and the corpus of invocations the
 conformance and plain-words tests run.
 
-Not a test module and not collected. The corpus is the spec's: every verb's help and the
-version, the README's worked examples on the committed fixtures, every refusal the front-door
-transcript's mistakes section made, and the new refusals this pair adds.
+Not a test module and not collected. The corpus: every verb's help and the version, the
+README's worked examples on the committed fixtures, every refusal the front-door transcript's
+mistakes section made, and the refusals the look's tests add.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ RAGAS = FIXTURES / "ingest" / "ragas"
 VERBS = ("where", "compare", "fix-check", "changes")
 TOOLS = ("deepeval", "ragas")
 
-# spec section 3.3, the Tasks table kept to the letter
+# the exit-code table of docs/cli-look.md, kept to the letter
 EXIT_CODES = frozenset({0, 1, 2, 3, 4, 130})
 INSTALL_PROVE = INSTALL  # the one command that installs the Prove Trace reads (pin_support.py)
 PLACEHOLDER_INSTALL = "/path/to/prove"
@@ -56,9 +56,9 @@ REPR = re.compile(
     r"|\b\w+(?:Error|Exception|Interrupt|Exit):"
 )
 
-# Plain words (spec section 7.2): the Tasks pattern, copied, with Trace's own identifiers: spec,
-# invariant and test-group numbers, decision numbers, session names and the words that only mean
-# something inside the lab.
+# Plain words (rule 11 of docs/cli-look.md): the Tasks pattern, copied, with Trace's own
+# identifiers: spec, invariant and test-group numbers, decision numbers, session names and the
+# words that only mean something inside the lab.
 INTERNAL = re.compile(
     r"\b(?:TR|IT|IL|IC|ID|IR|FD|LST|TF|CAL|MP|R|[XNGAE])\d+\b"
     r"|\b2\.\d defines\b|§|\bTG-(?:ADR|M)\d*"

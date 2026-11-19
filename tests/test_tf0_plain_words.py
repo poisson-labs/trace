@@ -1,4 +1,4 @@
-"""TF0-21: plain words in everything a user reads (spec section 7.2 and rule L11).
+"""TF0-21: plain words in everything a user reads (rule 11 of ``docs/cli-look.md``).
 
 No spec, invariant or test-group number (TR, IT, IL, IC, ID, IR, FD, LST, TF and the rest), no
 decision number, no session name, and none of the words that only mean something inside the lab,

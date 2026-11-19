@@ -1,28 +1,28 @@
-"""TF6-30 to TF6-35: ``--verdicts FILE`` on the comparison verbs, one file joined onto both runs
-(FI9, Taylor 2026-11-04, following TF22's import-side rules FI10, FI11, FI17, FI18 and FI20).
+"""TF6-30 to TF6-35: ``--verdicts FILE`` on the comparison verbs, one file joined onto both runs,
+by the rules TF22's import side follows.
 
-The file is TF22's (FI17): ``.csv`` (``case``, ``input``, ``outcome``, ``score``,
+The file is TF22's: ``.csv`` (``case``, ``input``, ``outcome``, ``score``,
 ``failure_kind``) or ``.jsonl`` (those, plus ``scores`` and ``feedback``). On a verb it is read
-over both runs at once, in memory; nothing is written, to the store or anywhere (SV10). A stored
+over both runs at once, in memory; nothing is written, to the store or anywhere. A stored
 run's cases are those TF21's ``read_rows`` gives it: the case of an import, the input's hash of a
 run Prove swept.
 
 - TF6-30: a row joins every try of its case in each run that holds the case. A try with no
-  outcome takes the verdict's (FI11): ``fail`` counts as failed, ``pass`` as not. A try with an
-  outcome must agree, failed meaning an outcome among the verb's ``--event`` names (FI10).
+  outcome takes the verdict's: ``fail`` counts as failed, ``pass`` as not. A try with an
+  outcome must agree, failed meaning an outcome among the verb's ``--event`` names.
 - TF6-31: matched by case. On stored runs no input is kept, so an ``input`` column alone matches
-  nothing (FI18, FI19; SV10). A row joins whichever runs hold its case.
+  nothing. A row joins whichever runs hold its case.
 - TF6-32: refused, exit 1, nothing on stdout, nothing written: a verdict disagreeing with a try
   (naming the case), a file none of whose rows matches a case in either run (naming the file), two
   rows for one case, a failure kind on a pass, an unknown column or outcome, a missing file.
-- TF6-33: the verb says what was joined (FI20): ``--json`` gains ``verdicts`` (TF22's block:
+- TF6-33: the verb says what was joined: ``--json`` gains ``verdicts`` (TF22's block:
   name, sha256, rows, by_case, by_input, unmatched) before ``saved`` and ``next``; the plain
   output gains one detail line right under the verdict line. Without ``--verdicts``, nothing
   changes.
 - TF6-34: a saved verdict records the file's digest among its result-changing settings, never its
   name or path; the same bytes under another name are the same artifact. A verdict's failure kind
   reaches the saved verdict's failure-type counts; its scores and feedback reach nothing.
-- TF6-35: ``where`` does not take it (TF22-42 stands): exit 2.
+- TF6-35: ``where`` does not take it: exit 2.
 """
 
 from __future__ import annotations
@@ -96,7 +96,7 @@ def test_tf6_30_a_verdict_that_agrees_changes_nothing(tmp_path: Path) -> None:
 
 
 def test_tf6_30_a_prove_runs_failures_are_its_event_words(tmp_path: Path) -> None:
-    """On a run Prove swept the failures are the --event words. Every try of the 0.1.2 store has
+    """On a run Prove swept the failures are the --event words. Every try of the 0.1.3 store has
     an outcome, so a verdict there can only agree, or be refused: here on the input none of whose
     tries failed in either run."""
     store = store012(tmp_path)

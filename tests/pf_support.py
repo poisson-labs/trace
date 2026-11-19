@@ -1,13 +1,12 @@
-"""Shared helpers for the tests of the Prove floor (PF-1 to PF-99): Trace declares the oldest
+"""Shared helpers for the tests of the Prove floor (PF-1 to PF-96): Trace declares the oldest
 Prove it reads and no upper cap, and refuses a store it cannot read or write safely. Not a test
 module and not collected.
 
-The rule these tests hold, as Taylor ruled it on 2026-11-17 and 2026-11-18 (PV-2 to PV-13, PV-15;
-the exact pin of ``poisson-prove==0.1.3`` before it):
+The rule these tests hold (the floor takes the place of an exact pin, ``poisson-prove==0.1.3``):
 
-1. **The floor.** ``pyproject.toml`` declares ``poisson-prove>=0.4.0`` with no upper cap (PV-2,
-   PV-3). ``pin_support`` holds it for every test (``RECORDED``, ``REQUIREMENT``, ``INSTALL``).
-2. **What Trace refuses** (PV-4). The floor is read back from the installed package's own
+1. **The floor.** ``pyproject.toml`` declares ``poisson-prove>=0.4.0`` with no upper cap.
+   ``pin_support`` holds it for every test (``RECORDED``, ``REQUIREMENT``, ``INSTALL``).
+2. **What Trace refuses**. The floor is read back from the installed package's own
    metadata (``look.PROVE_VERSION``). Trace reads any Prove at or above it and refuses three
    things, each in one ``error:`` line with the one command that fixes it under it:
 
@@ -22,14 +21,14 @@ the exact pin of ``poisson-prove==0.1.3`` before it):
    ready, and ``poisson-prove X is installed, and Trace reads version 0.4.0 or later`` when not.
    A pre-release of the floor itself (``0.4.0rc1``) is below it, as pip orders versions, and a
    version Trace cannot read as numbers is refused as found.
-3. **What does not move** (PV-5, PV-6, PV-7). Trace goes on printing the Prove it finds
+3. **What does not move**. Trace goes on printing the Prove it finds
    (``--version``, ``doctor``, ``"prove": {"version"}`` in ``--json``, ``versions.prove`` in a
    saved result), and copying that Prove's ``style.css`` and ``ui.js`` into its pages. The tests
    that hold what main prints write that version as their pins hold it
    (``pin_support.as_pinned``), and check each copied file against the installed Prove's. The
    store Prove 0.1.3 made is kept as the fixture of the stored format's 1.0; the floor's own
    store, ``prove-0.4.0``, is the fixture of 1.2, and Trace reads both alike.
-4. **A store in a newer format** (PV-9, PV-10). "Newer than Trace knows" is the store format's
+4. **A store in a newer format**. "Newer than Trace knows" is the store format's
    own rule (Prove 0.4.0's ``docs/artifact-format.md``): the store descriptor,
    ``.poisson/store.json``, says ``"format": "poisson.store/N"``, and a reader refuses a major
    ``N`` above the one it knows, which is 1. The minor versions (1.0, 1.1, 1.2) are written
@@ -40,16 +39,16 @@ the exact pin of ``poisson-prove==0.1.3`` before it):
    ``--json``, ``--save`` or ``--out`` where it has them), ``ui`` and ``init``, exit 1;
    ``doctor``, whose config names the store, exit 4; ``api.open_store``; and the terminal app,
    which shows the refusal on its screen and lists none of the store's runs.
-5. **A store whose descriptor is broken** (PV-11, PV-12). ``--save`` on a store whose
+5. **A store whose descriptor is broken**. ``--save`` on a store whose
    ``store.json`` is not JSON, or is JSON and not an object, refuses in one line that names the
    file, exit 1, as ``import`` does, and writes nothing. No output says ``the verdict was not
    saved: OSError``; where a verdict is printed and not saved, the note gives the system's own
    words for why (``Permission denied``).
-6. **A run whose manifest cannot be read** (PV-13). A word that reaches no run, in a store with a
+6. **A run whose manifest cannot be read**. A word that reaches no run, in a store with a
    run Prove could not read, is refused naming that run by its id and saying Prove could not
    read it; it is no longer called an unknown run. By its id the run is refused as one Prove
    could not read, as before.
-7. **CI and the release** (PV-8, PV-15). ``ci.yml`` has a lane that installs the newest Prove
+7. **CI and the release**. ``ci.yml`` has a lane that installs the newest Prove
    over the floor and runs the pull-request lane; the lanes' constraints hold the floor; the
    release check holds the floor's shape; the wheel installs beside the floor and not beside a
    Prove below it (lane J).

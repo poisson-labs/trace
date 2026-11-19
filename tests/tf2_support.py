@@ -37,12 +37,12 @@ from tf1_support import R, make_runs, shell_words, snapshot, stamp, tau2_copy
 from tf9_support import open_terminal
 
 CONFIG = "trace.toml"
-# spec section 4.5: the words that mean success, which the failure question's default leaves out
+# the words that mean success, which the failure question's default leaves out
 SUCCESS_WORDS = (
     "solved", "resolved", "passed", "met", "ok", "success", "fixed", "planned", "cited", "survived",
     "correct", "fresh", "fast",
 )
-# spec section 3.2: the keys of version 1, by table
+# the keys of version 1, by table
 KEYS = {
     "": ("version", "store", "events", "check", "names", "upload"),
     "store": ("path",),
@@ -154,7 +154,7 @@ def tty(
     typed, one line, once the command waits on the terminal for it, as a user answers a question
     on the screen. ``interrupt`` then sends Ctrl-C (SIGINT) once the command waits for one more
     answer."""
-    # asked again when macOS fails the open with its own "ask again" (tf9_support.open_terminal; ruled 2026-11-18, MF-2)
+    # asked again when macOS fails the open with its own "ask again" (as tf9_support.open_terminal is)
     master, slave = open_terminal()
     attrs = termios.tcgetattr(slave)
     attrs[3] &= ~termios.ECHO
@@ -226,7 +226,7 @@ def config(folder: Path, name: str = CONFIG) -> dict[str, Any]:
 
 
 def config_of(store: str, events: Sequence[str] = ("unsolved",), extra: str = "") -> str:
-    """A version 1 config naming one store and its failures, in the spec's form."""
+    """A version 1 config naming one store and its failures, in its documented form."""
     failed = ", ".join(json.dumps(e) for e in events)
     return f'version = 1\n\n[store]\npath = {json.dumps(store)}\n\n[events]\nfailed = [{failed}]\n{extra}'
 

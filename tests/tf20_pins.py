@@ -1,15 +1,15 @@
-"""What main prints, builds and holds, pinned for TF20 (the brief's rule 8): main 901e845 is the
-docs pair's release candidate, and the three-tools recipe moves none of it. Not collected.
+"""What main prints, builds and holds, pinned for TF20: the pinned main (``MAIN``) is the
+release candidate of the TF5 docs work, and the three-tools recipe moves none of it. Not collected.
 ``fixtures/tf20/make_main_pins.py`` takes the pins with this module alone.
 
-What is pinned, each as main 901e845 gives it:
+What is pinned, each as the pinned main gives it:
 
 ``piped``
-    The docs pair's whole corpus (``tf5_pins.pin_corpus()``, every earlier pair's inside it:
+    TF5's whole corpus (``tf5_pins.pin_corpus()``, every earlier corpus inside it:
     every verb's plain and ``--json`` output on each kind of store, each option, the refusals,
     every reader's help under both spellings, every import, a pull of each service, the names,
-    the saves, ``ui`` and ``report``), with the eight helps and the readers' facts the docs
-    pair changed or read (``tf5_pins.CHANGED``, ``tf5_pins.READERS_SAID``) now pinned as main
+    the saves, ``ui`` and ``report``), with the eight helps and the readers' facts the TF5
+    docs changed or read (``tf5_pins.CHANGED``, ``tf5_pins.READERS_SAID``) now pinned as main
     prints them: each step's exit code and the digests of its stdout and stderr.
 ``init``
     ``init`` on the files it finds (``tf5_pins.INIT``) and on a folder of every tool, digests.
@@ -20,7 +20,7 @@ What is pinned, each as main 901e845 gives it:
     Every file ``ui`` writes over TF19's workspace (digests, save times set aside), and every
     screen of the terminal app over it (text).
 ``texts``, ``tracked``
-    The six files this pair changes (``TEXTS``) as text, and the path of every file main
+    The six files the recipe changes (``TEXTS``) as text, and the path of every file main
     tracks.
 ``files``
     The digest of every file of the repository a user is given or reads, as main holds it: the
@@ -47,17 +47,17 @@ TF20 = TESTS / "fixtures" / "tf20"
 PINS = TF20 / "main-pins.json"
 MAIN = "901e845"
 
-#: The files this pair changes, pinned as text as well, so that a test can say what moved in
+#: The files the recipe changes, pinned as text as well, so that a test can say what moved in
 #: them without the repository's history (a shallow clone has none).
 TEXTS = ("README.md", "CHANGELOG.md", "CONTRIBUTING.md", "pyproject.toml", ".github/workflows/ci.yml", ".github/workflows/release.yml")
 #: The files of the repository pinned whole: these paths, and every tracked file under these
-#: folders. ``tests/fixtures/tf20/`` (this pair's own pins) is not among them.
+#: folders. ``tests/fixtures/tf20/`` (TF20's own pins) is not among them.
 PINNED_FILES = ("README.md", "CHANGELOG.md", "CONTRIBUTING.md", "pyproject.toml", "hatch_build.py", "LICENSE", "NOTICE")
 PINNED_FOLDERS = ("src/", "docs/", "tools/", ".github/", "tests/fixtures/")
 
 
 def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
-    """Every invocation pinned under ``piped``: the docs pair's corpus, and the helps and
+    """Every invocation pinned under ``piped``: TF5's corpus, and the helps and
     readers' facts it held as text, now as main prints them."""
     out = dict(tf5_corpus())
     for label, case in {**CHANGED, **READERS_SAID}.items():

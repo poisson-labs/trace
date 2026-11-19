@@ -1,27 +1,25 @@
-"""TF23-23 to TF23-27: tries that ended early, timeouts, and the number of tries per case (spec
-section 18.6.1 items 1 and 4 as ruled on 2026-11-03, CS7, CS8, CS9 and CS14; vault
-log/trace-continuous-statistics-check/rulings.md). Fast, hand-built cases; the check's scenarios
-at its seeds are in test_tf23_scenarios.py.
+"""TF23-23 to TF23-27: tries that ended early, timeouts, and the number of tries per case. Fast,
+hand-built cases; the check's scenarios at its seeds are in test_tf23_scenarios.py.
 
-**TF23-23** CS7: a case leaves the time (``wall_time_s``, ``working_time_s``) and output-length
+**TF23-23** A case leaves the time (``wall_time_s``, ``working_time_s``) and output-length
 comparison when any try of it in either version ended early: ``crash``, ``rate_limit``,
 ``abstained``, ``guardrail_blocked``, or the ``gave_up`` signal; it is counted unfinished, by
 kind, for the version that ended early. A ``timeout`` or a ``wrong_answer`` does not take a case
 out. Tokens, input length and cost keep every case with a value.
 
-**TF23-24** CS7: when both versions' timeout caps are known and differ, every time in both is cut
+**TF23-24** When both versions' timeout caps are known and differ, every time in both is cut
 at the lower cap, and a try cut there counts as timed out; output length is not cut.
 
-**TF23-25** CS8: with cases left out, the line reads "on the K of N cases both versions finished"
+**TF23-25** With cases left out, the line reads "on the K of N cases both versions finished"
 and names each version's unfinished cases by kind; a faster (or slower, shorter, longer) call is
 *unconfirmed* when the version it favours left more cases unfinished, or timed out on more; the
-10th/90th-percentile guard is gone.
+10th/90th-percentile guard plays no part.
 
-**TF23-26** CS9: on tokens and cost a call on every case stands, and when the version it
+**TF23-26** On tokens and cost a call on every case stands, and when the version it
 favours stopped early on more cases it reads "partly because {version} stopped early on {n}
 cases (on the {K} cases both finished: {range})".
 
-**TF23-27** CS14: each case is compared on the first ``min(r_old, r_new)`` tries of each version
+**TF23-27** Each case is compared on the first ``min(r_old, r_new)`` tries of each version
 in the order recorded, and the line says so when the counts differed ("old had 1 try per case,
 new had 5; compared on 1 each").
 """

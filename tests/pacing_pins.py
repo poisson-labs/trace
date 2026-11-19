@@ -1,13 +1,12 @@
-"""What main prints, pinned for the pacing pair (B-8; the brief's rule 6): the corpus of
-invocations whose output the pacing fix leaves byte for byte as main 2ff191b prints it, and how
-each is run. Not collected. ``fixtures/pacing/make_main_pins.py`` takes the pins with this
-module.
+"""What main prints, pinned for the pacing tests: the corpus of invocations whose output the
+pacing fix leaves byte for byte as the pinned main prints it, and how each is run. Not
+collected. ``fixtures/pacing/make_main_pins.py`` takes the pins with this module.
 
 The corpus is TF26's whole (TF25's, TF24's, TF19's and TF18's inside it: every verb's plain and
 ``--json`` output on each kind of store, each option, the refusals, the earlier imports and
 LangSmith's and Braintrust's, the names, the saves, ``ui`` and ``report``, the top help and the
-bare options), TF26's three changed invocations and its ``init`` cases (all of them as main now
-prints them, so no longer apart), and beside them what main gained with the Weave reader: its
+bare options), TF26's three changed invocations and its ``init`` cases (all of them as main
+prints them), and beside them what main gained with the Weave reader: its
 help under both spellings, its imports of each kind of export in text and ``--json``, the verbs
 over two imported versions, its refusals, and a pull through TF26's transport.
 

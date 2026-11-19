@@ -1,4 +1,4 @@
-"""TF9, invariant 3: colour by meaning (spec section 17.1, AD2; the look file's rule 16).
+"""TF9, invariant 3: colour by meaning (the look file's rule 16).
 
 Green ``ok`` and ``done``; yellow ``stopped``, ``refused``, ``too small to tell``, ``no significant
 difference``, ``no control`` and ``note:``; red ``error:``, ``not ready`` and ``not whole``; dim for
@@ -7,7 +7,7 @@ the 16 named colours, bold and dim.
 
 - **TF9-3a** Each of Trace's verdict words, drawn by the renderer as a verdict line, takes its
   meaning, and its sentence carries no colour on any digit; with escapes removed the line is the
-  plain line. This covers the words no verb on main reaches without timing (``done``,
+  plain line. This covers the words no verb reaches without timing (``done``,
   ``refused``, ``no control``, ``not whole``, ``plan``, and ``stopped``, which needs a Ctrl-C) as
   well as the rest. The renderer is ``poisson_trace._pretty.verdict(word, sentence)``, which
   returns the line drawn with escapes and no newline.
@@ -20,7 +20,7 @@ the 16 named colours, bold and dim.
   256 or true colour, italic, underline, reverse, blink, a hyperlink, a cursor movement on
   stdout); stderr may carry only the controls a live display needs to remove itself.
 
-Which text is secondary, and so dim, is left to the build (the rendering's design); dim is held
+Which text is secondary, and so dim, is left to the rendering's design; dim is held
 only to what these tests hold every style to.
 """
 

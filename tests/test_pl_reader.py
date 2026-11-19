@@ -1,5 +1,5 @@
 """PL-1 to PL-9: the Prove reader reads a failure kind from a try's outcome label
-(``pl_support``'s opening: readings 1, 2, 3 and 6).
+(``pl_support``'s opening: items 1, 2, 3 and 6).
 
 - PL-1: the defaults: each kind's own name and Poisson Tasks' nine failure labels, every one,
   and nothing else; a label is matched letter for letter.
@@ -15,10 +15,10 @@
 - PL-6: only runs Prove swept: an import's kinds and digest do not move under a table.
 - PL-7: the kinds of every try of the committed Prove stores are main's.
 - PL-8: ``taxonomy_sha256`` is main's without a table and holds the table under one.
-- PL-9: ``[[taxonomy.rules]]`` apply to a run Prove swept (LK-9, ruled 2026-11-16): after the
+- PL-9: ``[[taxonomy.rules]]`` apply to a run Prove swept: after the
   rollout's own kind and Prove's ``timeout``, before every built-in rule and the label, in the
   order written; the digest holds them; the verbs print what they give; the note counts a try
-  they classified as classified. ``[signals.budgets]`` apply too (LK-26, ruled 2026-11-16):
+  they classified as classified. ``[signals.budgets]`` apply too:
   ``over_budget`` from the try's wall time, its steps' tokens in and out together, and the
   rollout's own ``cost_usd``, a signal not recorded never over; the digest holds them; an
   import and a swept run under one config read as the same rules.
@@ -41,7 +41,7 @@ from pl_support import (
 
 from poisson_trace.ingest.prove import read_rows
 
-#: The digest of the built-in rules with no rule and no budget, as main c981832 computes it.
+#: The digest of the built-in rules with no rule and no budget, as the pinned main computes it.
 BUILT_IN_DIGEST = "0c4fdf47aa7f7f88f5f1c3712bd2f662d8aafac08e6dfa50a84107c2c75706ba"
 
 
@@ -304,7 +304,7 @@ def test_pl_6_an_imports_kinds_do_not_move_under_a_table(tmp_path: Path) -> None
 # ---------- PL-7: the committed stores read as main reads them ----------
 
 #: Each committed run read with every label but its successes as a failure: each label's kinds
-#: and their counts on main c981832.
+#: and their counts on the pinned main.
 MAIN_KINDS: dict[tuple[str, str], dict[tuple[str | None, str | None], int]] = {
     ("cs", "20260925T234602Z-3ea0"): {("forbidden_action", "unclassified_error"): 2, ("app_error", "crash"): 2,
                                       ("unresolved", "unclassified_error"): 2, ("max_turns", "step_limit"): 1},
@@ -372,7 +372,7 @@ def test_pl_8_a_table_is_in_the_digest() -> None:
     assert taxonomy_sha256((rule,), budgets) != with_rules
 
 
-# ---------- PL-9: the team's rules on a run Prove swept (LK-9, ruled 2026-11-16) ----------
+# ---------- PL-9: the team's rules on a run Prove swept ----------
 
 
 def _rules_read(tmp: Path, t: Try, rules: Any, labels: Mapping[str, str] | None = None,
@@ -622,7 +622,7 @@ def test_pl_9_an_imports_kinds_do_not_move_with_the_rules_read_beside_it(tmp_pat
     assert read_rows(root, run_id, ["wrong_state"], None, (), _budgets(max_wall_time_s=0.0, max_total_tokens=0)) == before
 
 
-# ---------- PL-9: the team's budgets on a run Prove swept (LK-26, budgets ruled no 2026-11-16) ----------
+# ---------- PL-9: the team's budgets on a run Prove swept ----------
 
 
 def _budgets(**limits: Any) -> Any:

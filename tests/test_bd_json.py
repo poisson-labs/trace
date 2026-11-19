@@ -1,6 +1,5 @@
 """BD-2: the breakdown in ``--json``, in the saved verdict and in the API's typed results, the same
-counts as the failure-type diff TF6 saves (rule 2 of the pair's brief; FD2,
-``log/trace-breakdown-a/rulings.md``).
+counts as the failure-type diff TF6 saves.
 
 **BD-2a** ``--json`` of ``fix-check``, ``compare`` and ``changes`` carries ``failure_taxonomy_diff``,
 before ``continuous_measures`` (when ``--measures`` prints it), ``verdicts`` (when a file was
@@ -129,7 +128,7 @@ def test_bd_2b_the_api_result_carries_the_same(verb: str, tmp_path: Path) -> Non
 
 
 def test_bd_2c_the_diff_lists_kinds_in_precedence_and_the_section_by_count(tmp_path: Path) -> None:
-    """The JSON keeps section 18.5.1's order (TF6's); the table orders by count (DM2)."""
+    """The JSON keeps the kinds' precedence order (TF6's); the table orders by count."""
     doc = ok(argv_of("fix-check", prove_store(tmp_path), "--json")).json()
     listed = [k["failure_kind"] for k in doc["failure_taxonomy_diff"]["kinds"]]
     assert listed == sorted(listed, key=KINDS.index) == ["loop_detected", "step_limit", "tool_error"]

@@ -1,5 +1,5 @@
 """TF6-22 to TF6-24: ``poisson-trace handover --check DIR``, the contract test both sides share
-(spec section 11.2's validator, 11.5, 17.3 item 5).
+(``docs/handover.md``).
 
 - TF6-22: exit 0 on every bundle each verb writes; the verdict line is ``ok``.
 - TF6-23: exit 4 with the first failing line, each break made alone (the bundle resealed so that
@@ -8,7 +8,7 @@
   verbs', a promised key missing or of the wrong type, its verdict outside the verb's closed set;
   ``report.md``'s first line not ``<verdict>␣␣<sentence>``; a Prove content or observation key
   anywhere in ``result.json``; a string in it longer than 400 characters. The verdict word is
-  ``not valid`` and the sentence names the file at fault (SV8).
+  ``not valid`` and the sentence names the file at fault.
 - TF6-24: exit 1, a refusal: DIR missing, not a folder, or holding no ``handover.json``.
 """
 

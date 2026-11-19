@@ -1,6 +1,6 @@
 """TF24-28 to TF24-32: the same run read from different exports agrees wherever the exports hold
-the same facts, and where they differ the difference is the exports' own, named here (the brief's
-rule 2; the INT3 spec's IT1 and IT18 on the real captures; the captures' gap 3 and TC-11).
+the same facts, and where they differ the difference is the exports' own, named here (on the real
+captures, whose run statistics lag behind the feedback records on two baseline roots).
 
 - TF24-28: with the feedback records beside them, the five exports that carry the steps (the v1
   and v2 run queries, v2 with subtree usage, the command's run export and its trace files) give

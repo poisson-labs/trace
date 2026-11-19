@@ -1,5 +1,4 @@
-"""TF1-15: names change no stored run (spec sections 5.2 and 5.3, principle P-3; TR9 as R18
-rewrites it).
+"""TF1-15: names change no stored run (as TR9 holds for every verb).
 
 ``runs``, ``name --list``, every verb given a run by any word, and every refusal leave every
 file under the store as it was, bytes and modification time, and make no file there: a name

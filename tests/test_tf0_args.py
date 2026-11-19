@@ -1,10 +1,10 @@
 """TF0-14 and TF0-15: options may come before or after the verb, and abbreviated options are
-refused (spec section 9.1, rule L15), in both commands.
+refused (rule 15 of ``docs/cli-look.md``), in both commands.
 
 Moving every option in front of the verb changes nothing a user can see: the same bytes on
 stdout and stderr and the same exit code. An option's value is never taken for the verb, even
 when it is spelt like one. An abbreviation (``--ev`` for ``--event``) is a wrong command line,
-exit 2, where the main command took it today."""
+exit 2."""
 
 from __future__ import annotations
 

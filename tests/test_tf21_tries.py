@@ -1,6 +1,7 @@
 """TF21-45 to TF21-49: TF21's per-try records convert without loss into the plain per-case inputs
-``stats/continuous.py`` takes (TF23, CT2): each try's values, how it ended, its signals and its
-repeat number. A conversion test only: no verb prints the continuous table yet (CT2)."""
+``stats/continuous.py`` takes: each try's values, how it ended, its signals and its repeat
+number. A conversion test only: the continuous-measures table those inputs make, as
+``fix-check --measures`` prints it, is held in ``test_bd_table.py`` and ``test_tf6_measures.py``."""
 
 from __future__ import annotations
 

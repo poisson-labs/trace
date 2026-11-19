@@ -1,18 +1,16 @@
-"""TF15-H1 to TF15-H14: the hands-on fixes of 2026-10-20 (spec sections 4.4, 5.2 and 12 as amended;
-Taylor's rulings of that day, items 2, 3 and 6, and S3 and S4).
+"""TF15-H1 to TF15-H15: what a first hands-on setup needs from init, doctor, latest and previous.
 
 - A folder of several tools' result files leads somewhere: one import line per file init does not
   import, every answer init can read filled in and each it cannot a word in capitals; the
   several-tools refusal carries the lines; --no-import lists them and drops the private Prove
-  link, which stays only where init found nothing at all (S4); a store found beside other tools'
+  link, which stays only where init found nothing at all; a store found beside other tools'
   files says what it left out.
 - The listing names a store by what wrote it, and "Prove store" leaves init's output.
 - doctor notices a store beside a config that names none.
 - latest and previous refuse in a form that cannot be copied backwards: the runs listed by name,
-  OLDER and NEWER in place of the words (S3).
+  OLDER and NEWER in place of the words.
 
-The sentences are pinned as section 4.4, 5.2 and 12 write them, and the import lines as the
-spec's own example (log/trace-report-summary-spec/evidence/mockups-setup.md, S1) prints them.
+The sentences and the import lines are pinned word for word.
 """
 
 from __future__ import annotations
@@ -47,7 +45,7 @@ PROVE_STORE = re.compile(r"\bProve stores?\b")
 
 
 def _four_tools(folder: Path) -> Path:
-    """The partner files' first results laid out together, as at the 2026-10-19 hands-on: two
+    """The partner files' first results laid out together, as a first hands-on finds them: two
     DeepEval saved test runs in results/, the two tables, the two JUnit reports and the two Ragas
     tables."""
     (folder / "results").mkdir(parents=True)
@@ -74,7 +72,7 @@ def _next_lines(err: str) -> list[str]:
     return [line[len("  next: "):] for line in err.splitlines() if line.startswith("  next: ")]
 
 
-# ---------- the several-tools refusal (4.4) ----------
+# ---------- the several-tools refusal ----------
 
 
 def test_tf15_h1_several_tools_and_no_store_refuse_with_a_line_per_file(tmp_path: Path) -> None:
@@ -119,7 +117,7 @@ def test_tf15_h3_at_most_twelve_lines(tmp_path: Path) -> None:
     assert "and 3 more files: poisson-trace import --help" in result.err, result.err
 
 
-# ---------- --no-import (4.4, S4) ----------
+# ---------- --no-import ----------
 
 
 def test_tf15_h4_no_import_lists_the_lines_and_drops_the_private_link(tmp_path: Path) -> None:
@@ -146,7 +144,7 @@ def test_tf15_h5_the_private_link_stays_where_nothing_was_found(tmp_path: Path) 
     assert not PROVE_STORE.search(result.text)
 
 
-# ---------- a store found beside other tools' files (4.4) ----------
+# ---------- a store found beside other tools' files ----------
 
 
 def test_tf15_h6_a_store_beside_other_tools_files_says_what_it_left_out(tmp_path: Path) -> None:
@@ -187,7 +185,7 @@ def test_tf15_h7_files_beside_trace_store_join_it(tmp_path: Path) -> None:
     assert "found 1 store:" in result.err and not PROVE_STORE.search(result.text)
 
 
-# ---------- the import question names no Prove store (4.4, item 6) ----------
+# ---------- the import question names no Prove store ----------
 
 
 def test_tf15_h8_the_import_question(tmp_path: Path) -> None:
@@ -201,7 +199,7 @@ def test_tf15_h8_the_import_question(tmp_path: Path) -> None:
     assert not PROVE_STORE.search(result.text)
 
 
-# ---------- doctor with a store beside the config (12) ----------
+# ---------- doctor with a store beside the config ----------
 
 
 def test_tf15_h9_doctor_sees_trace_store_beside_a_config_that_names_none(tmp_path: Path) -> None:
@@ -236,7 +234,7 @@ def test_tf15_h10_doctor_names_at_most_three_runs(tmp_path: Path) -> None:
     assert "holds 5 runs imported from table (" in first and "and 2 more)" in first, first
 
 
-# ---------- latest and previous, refused so they cannot be copied backwards (5.2, S3) ----------
+# ---------- latest and previous, refused so they cannot be copied backwards ----------
 
 
 def test_tf15_h11_the_tie_is_listed_by_name_with_placeholders(tmp_path: Path) -> None:
@@ -307,7 +305,7 @@ def test_tf15_h14_a_verb_of_one_run(tmp_path: Path) -> None:
 
 def test_tf15_h12_file_times_that_tie_name_the_file_time_cause(tmp_path: Path) -> None:
     """Where both causes hold (two files init imported together, copied in one second), the
-    file-time sentence is the one printed, since it names the cause (5.2)."""
+    file-time sentence is the one printed, since it names the cause."""
     folder = work(tmp_path)
     shutil.copy(TABLE_A, folder / "before.csv")
     shutil.copy(TABLE_B, folder / "after.csv")

@@ -1,4 +1,4 @@
-"""TF9, invariant 2: the switch (spec section 17.1; the look file's rule 16).
+"""TF9, invariant 2: the switch (the look file's rule 16).
 
 Pretty runs only when stdout and stderr are both terminals, ``NO_COLOR`` is unset or empty, ``CI``
 is unset, ``TERM`` is not ``dumb``, stdout is UTF-8, and neither ``--json`` nor ``--plain`` was

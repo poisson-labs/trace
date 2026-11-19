@@ -1,37 +1,37 @@
-"""TF23-1 to TF23-8: the continuous measures' estimators, each against an outside reference (spec
-section 18.6.1 as ruled on 2026-11-03; vault log/trace-continuous-statistics-check/rulings.md).
+"""TF23-1 to TF23-8: the continuous measures' estimators, each against an outside reference (the
+continuous statistics check's methods and data, copied into ``tf23_support``).
 
-**TF23-1** The sign-flip p (item 5, CS3 keeps it as the test) is exact over the non-zero case
+**TF23-1** The sign-flip p (the test) is exact over the non-zero case
 differences: it equals scipy's paired ``permutation_test`` where that is exact, the check's own
-p on its validation data (``sims/00-validate.txt``), and brute force; it ignores zero
-differences; the "studentized" statistic of item 5 gives the same p as the sum (Efron 1969).
+p on its six validation data sets, and brute force; it ignores zero
+differences; the "studentized" statistic gives the same p as the sum (Efron 1969).
 
-**TF23-2** The floor (item 2, CS1): with ``n`` non-zero differences all one way the p is
+**TF23-2** The floor: with ``n`` non-zero differences all one way the p is
 ``2^(1 - n)`` whatever their sizes, and with ``j`` of the smallest the other way it is
-``2^(1 + j - n)`` (``sims/06-floors.txt``); ``p_floor(n)`` is ``2^(1 - n)``, and 1 at no change.
+``2^(1 + j - n)`` (the check's floor table); ``p_floor(n)`` is ``2^(1 - n)``, and 1 at no change.
 
 **TF23-3** Exact enumeration runs to 20 non-zero differences; above 20 the p is
 ``(1 + count) / (1 + 100,000)`` over 100,000 random sign vectors, never 0, at least
-``1 / 100,001``, a whole number of 100,001ths (CS12). The draws are seeded from
+``1 / 100,001``, a whole number of 100,001ths. The draws are seeded from
 ``sha256(run_a + ":" + run_b + ":" + measure)`` (IC5): the same key gives the same p, and the
 seed is that hash read as a whole number.
 
 **TF23-4** The 95% range for the mean change is the Student t interval on the per-case
-differences (CS3), equal to scipy's ``ttest_1samp(...).confidence_interval``; nothing called BCa
+differences, equal to scipy's ``ttest_1samp(...).confidence_interval``; nothing called BCa
 is printed or saved (TF23-14).
 
-**TF23-5** The typical case's change (item 6, CS11) is the Hodges-Lehmann estimate, the median of
+**TF23-5** The typical case's change is the Hodges-Lehmann estimate, the median of
 the Walsh averages; its 95% range is the exact Walsh-average interval, equal to the check's
-``hl_interval`` and to the inversion of scipy's exact Wilcoxon test.
+own implementation of it and to the inversion of scipy's exact Wilcoxon test.
 
-**TF23-6** The smallest catchable change (item 3, CS5) is ``(t_{K-1, 1 - a/2} + t_{K-1, 0.80})
+**TF23-6** The smallest catchable change is ``(t_{K-1, 1 - a/2} + t_{K-1, 0.80})
 s_d / sqrt(K)`` at the level ``a`` it is asked for, and ``K_needed`` is
 ``ceil(K (MDE / delta)^2)``.
 
-**TF23-7** Holm's procedure over the measures that can be called (CS5) steps down: the i-th
+**TF23-7** Holm's procedure over the measures that can be called steps down: the i-th
 smallest p is held to ``alpha / (m - i + 1)``, and the first that misses stops it.
 
-**TF23-8** The ceiling flag (CS10) reads ``measure=N%`` into the measure and a fraction, and
+**TF23-8** The ceiling flag reads ``measure=N%`` into the measure and a fraction, and
 refuses anything else.
 """
 
@@ -50,7 +50,7 @@ from tf23_support import (
 
 KEY = 12345
 
-# sims/00-validate.txt, item 1: the check's exact p on its six data sets (the K=15 and K=30 rows
+# the check's validation, item 1: its exact p on the six data sets (the K=15 and K=30 rows
 # there were drawn, 10,000 flips; they are exact here, from brute force)
 VALIDATE_EXACT = {0: 0.003906, 1: 0.311035, 3: 0.115234, 4: 0.541992}
 
@@ -71,7 +71,7 @@ def test_tf23_1_signflip_p_is_the_checks_exact_p_and_scipys(i: int) -> None:
 
 
 def test_tf23_1_fifteen_differences_are_exact_now() -> None:
-    d = validate_data()[2]  # K = 15, every difference non-zero: drawn in the check, exact under CS12
+    d = validate_data()[2]  # K = 15, every difference non-zero: drawn in the check, exact here
     assert cm().signflip_p(d, seed=KEY) == pytest.approx(ref_exact_signflip_p(d), rel=1e-12)
 
 
@@ -83,8 +83,8 @@ def test_tf23_1_zero_differences_do_not_count() -> None:
 
 
 def test_tf23_1_the_studentized_statistic_gives_the_sums_p() -> None:
-    """Item 5 writes the test with the studentized T; on every sign vector |T| rises with |sum|,
-    so the p is the sum's (the check's validate.py item 1)."""
+    """The test can be written with the studentized T; on every sign vector |T| rises with |sum|,
+    so the p is the sum's (the check's validation, item 1)."""
     rng = np.random.default_rng(7)
     d = rng.lognormal(0, 1, 11) - 1.0
     k = len(d)
@@ -112,8 +112,8 @@ def test_tf23_2_all_one_way_is_the_floor_whatever_the_sizes(n: int) -> None:
 
 @pytest.mark.parametrize("n,j", [(8, 1), (10, 1), (12, 1), (10, 2)])
 def test_tf23_2_the_smallest_going_the_other_way(n: int, j: int) -> None:
-    """sims/06-floors.txt: one case the other way, the smallest, gives exactly 2^(2 - n); two give at
-    least 2^(3 - n)."""
+    """The check's floor table: one case the other way, the smallest, gives exactly 2^(2 - n);
+    two give at least 2^(3 - n)."""
     d = np.sort(ref_seed_for(6, n, j).lognormal(0, 1, n))
     d[:j] *= -1
     p = cm().signflip_p(d, seed=KEY)
@@ -184,8 +184,8 @@ def test_tf23_3_slow_the_drawn_p_agrees_with_the_exact_p(n: int) -> None:
 
 @pytest.mark.slow
 def test_tf23_3_slow_the_check_drawn_validation_rows_are_close() -> None:
-    """sims/00-validate.txt drew the K=30 row (0.607100, 10,000 flips); the module's 100,000 draws
-    land within the check's own Monte Carlo error of it."""
+    """The check's validation drew the K=30 row (0.607100, 10,000 flips); the module's 100,000
+    draws land within the check's own Monte Carlo error of it."""
     d = validate_data()[5]
     p = cm().signflip_p(d, seed=KEY)
     assert abs(p - 0.607100) <= 4 * np.sqrt(0.6071 * 0.3929 / 10_000)
@@ -205,7 +205,7 @@ def test_tf23_4_the_range_is_the_student_t_interval(i: int) -> None:
 
 
 def test_tf23_4_the_checks_t_rows() -> None:
-    """sims/00-validate.txt item 4 (statsmodels tconfint_mean), the first data set."""
+    """The check's validation, item 4 (statsmodels tconfint_mean), the first data set."""
     assert cm().t_range(validate_data()[0]) == pytest.approx((0.862132, 2.237868), abs=5e-7)
 
 
@@ -220,8 +220,8 @@ def test_tf23_5_hodges_lehmann_and_its_range(i: int) -> None:
 
 
 def test_tf23_5_the_checks_worked_numbers() -> None:
-    """sims/00-validate.txt item 8: HL +1.6200, Walsh (+0.7400, +2.1800), the inversion of scipy's
-    exact Wilcoxon on a grid (+0.7401, +2.1794)."""
+    """The check's validation, item 8: HL +1.6200, Walsh (+0.7400, +2.1800), the inversion of
+    scipy's exact Wilcoxon on a grid (+0.7401, +2.1794)."""
     d = validate_data()[0]
     assert cm().hodges_lehmann(d) == pytest.approx(1.62, abs=5e-5)
     lo, hi = cm().hl_range(d)
@@ -249,7 +249,7 @@ def test_tf23_6_the_smallest_catchable_change(k: int, alpha: float) -> None:
 
 
 def test_tf23_6_the_checks_factor() -> None:
-    """sims/00-validate.txt item 9: at K = 10, t_.975 + t_.80 = 3.1456."""
+    """The check's validation, item 9: at K = 10, t_.975 + t_.80 = 3.1456."""
     d = np.array([1.0, -1.0] * 5)
     assert cm().mde(d, 0.05) * np.sqrt(10) / d.std(ddof=1) == pytest.approx(3.1456, abs=5e-5)
 

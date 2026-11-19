@@ -1,5 +1,4 @@
-"""TF2-10, TF2-11, TF2-13 and TF2-15 on a terminal: ``init``'s questions as a user answers them
-(spec sections 4.4 to 4.6, rulings R2 and R4; yes/nos 16 and 21).
+"""TF2-10, TF2-11, TF2-13 and TF2-15 on a terminal: ``init``'s questions as a user answers them.
 
 Stdin is a terminal and every answer is typed ahead, one line each; stdout and stderr are read
 apart. The questions go to stderr, each with its default in brackets; stdout holds the summary

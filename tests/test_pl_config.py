@@ -1,13 +1,13 @@
 """PL-10 to PL-14: a team names its labels' kinds in ``trace.toml``, and ``doctor`` checks it
-(``pl_support``'s opening, readings 3 and 5).
+(``pl_support``'s opening, items 3 and 5).
 
 - PL-10: ``[taxonomy.labels]`` is read into ``Config.labels``, sorted by label; none, or an
   empty table, is an empty mapping; it may be written inline, and beside ``[[taxonomy.rules]]``.
 - PL-11: a fault in it is refused in one sentence naming the file and the line, before anything
   else is read, by every verb and by ``doctor``: a kind that is not one of the 13 (with the one
   nearest, when one is two edits away or less, else the 13 listed), a value that is not text, an
-  empty label, a ``labels`` that is not a table. An unknown key of ``[taxonomy]`` now lists both
-  of its settings.
+  empty label, a ``labels`` that is not a table. An unknown key of ``[taxonomy]`` is refused
+  listing both of its settings.
 - PL-12: ``doctor``'s config line, when the table names a kind, ends with the kinds it names, in
   the plain report and ``--json`` alike; with no table, or an empty one, it is as main prints
   it. ``doctor --setup`` prints the same with a table as without.

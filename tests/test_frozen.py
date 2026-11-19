@@ -11,9 +11,8 @@ The one test here fails when a listed file is edited or gone, and when a Python 
 ``tests/`` is not on the list, so no test file is unheld and a new one joins the list in the commit
 that adds it. This file and the list are the two that no line holds.
 
-A frozen file changes only when its owner rules that it should: the change goes in a commit of
-its own, with the file's line in the list moved in that commit, and the commit says which
-ruling it carries out. The failure below prints the line to write.
+A frozen file changes only in a commit of its own that says why, with the file's line in the
+list moved in that commit. The failure below prints the line to write.
 """
 
 from __future__ import annotations

@@ -1,14 +1,14 @@
-"""TF18-14 to TF18-16: ``poisson-trace report DIR``, the HTML report (spec section 17.3 item 8;
-section 11.7 as amended; SB5).
+"""TF18-14 to TF18-16: ``poisson-trace report DIR``, the HTML report (``docs/handover.md``,
+"The page, and the pages").
 
 **TF18-14** ``report DIR`` on a bundle ``--out`` wrote: writes ``report.html`` into it, then
 rewrites ``handover.json`` with the new file's name, digest and size added to ``files`` and
 everything else as it was; touches no other file of the bundle and no store. It prints its
-verdict line, ``  wrote  DIR/report.html`` and a ``next:`` line (A14). A ``report.html`` that
+verdict line, ``  wrote  DIR/report.html`` and a ``next:`` line. A ``report.html`` that
 is there is refused without ``--force`` and replaced with it; a bundle that fails the validator
 is refused before anything is written, with the validator's words; a folder that is not a
-bundle is the refusal ``handover --check`` gives; there is no ``--json`` (A14). ``--open`` opens
-the page; ``handover --check`` then names ``report DIR --open`` as its next command (A12).
+bundle is the refusal ``handover --check`` gives; there is no ``--json``. ``--open`` opens
+the page; ``handover --check`` then names ``report DIR --open`` as its next command.
 
 On a terminal, pretty and ``--plain`` at 80 columns, it prints the same words, ``ok`` green when
 pretty, the written path whole on its line (TF18-23).
@@ -16,7 +16,7 @@ pretty, the written path whole on its line (TF18-23).
 **TF18-15** The page is self-contained: one ``<style>`` holding Prove's ``style.css`` whole, the
 charts inline, no ``<script>``, ``<link>``, ``<iframe>``, ``<object>`` or ``<embed>``, no ``src``,
 no ``href`` but an anchor of the page, no attribute holding a scheme, the narrower policy
-(A6), and its first ``<h1>`` the verdict line: section 11.7's checks. ``handover --check``
+(``REPORT_POLICY``), and its first ``<h1>`` the verdict line: its checks. ``handover --check``
 applies them: a bundle whose ``report.html`` breaks any one of them, re-listed with its new
 digest, is ``not valid`` (exit 4), and the same bundle re-listed with no change is ``ok``.
 

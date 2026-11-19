@@ -1,4 +1,4 @@
-"""TR1 to TR8: the clock and the placement (Trace — Spec First Slice, section 6).
+"""TR1 to TR8: the clock and the placement.
 
 Every store here is written through Prove's ``Store`` and read back through it; ``place`` is
 called on exactly the frame ``Store.read(run, meta=False, trace="envelope")`` returns.

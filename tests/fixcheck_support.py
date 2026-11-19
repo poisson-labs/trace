@@ -1,5 +1,5 @@
 """Shared helpers for the fix-check tests (TR37 to TR70): the committed fixtures the new verbs
-read, the spec's fixed texts, a CLI runner per verb, a builder for synthetic stores written
+read, the reports' fixed texts, a CLI runner per verb, a builder for synthetic stores written
 through Prove's own ``Store.create_run`` / ``Store.append``, a rebuilder that copies a stored run
 through Prove with its replicate indices or seeds changed, and the in-test oracles (full
 enumeration, exact fractions) the property tests compare against.
@@ -30,7 +30,7 @@ HE_B = "20260905T195009Z-18ac"
 HE_EVENTS = ("failed_assertion", "crashed")
 TAU2_EVENTS = ("unsolved",)
 
-# spec section 3.3, in order
+# the reasons an input is left out, in the order the report gives them
 SPEC_LEFT_OUT = (
     "not re-run on the old version",
     "not re-run on the new version",
@@ -38,7 +38,7 @@ SPEC_LEFT_OUT = (
     "no outcome on the new version",
 )
 
-# spec section 4.4, verbatim, one line each
+# fix-check's cannot-say block, verbatim, one line each
 SPEC_CANNOT_SAY = (
     "A difference between two stored runs is a difference between the runs. The version, the "
     "provider and the hour changed together unless the two were run side by side, and this "
@@ -57,9 +57,9 @@ SPEC_CANNOT_SAY = (
     "which are estimates. They are a guide to the next design, not a promise about it.",
 )
 
-# spec section 4.3, top level in order; nested objects as key sets
-# the verdict and its sentence after the schema, next last; run_name beside run_id (spec
-# sections 9.4 and 5.2, rule L9)
+# fix-check's JSON keys, top level in order; nested objects as key sets
+# the verdict and its sentence after the schema, next last (docs/cli-look.md, rule 9);
+# run_name beside run_id
 FIX_KEYS = (
     "schema", "verdict", "sentence", "prove", "runs", "gap_seconds", "events", "inputs", "rows",
     "control", "test", "difference", "by_input", "consistency", "limits", "direction", "guidance",
@@ -81,7 +81,7 @@ BY_INPUT_KEYS = {"moved", "p", "method", "draws", "seed"}
 CONSISTENCY_KEYS = {"failure_share", "fails_again", "kappa", "within", "pooled"}
 LIMITS_KEYS = {"drop", "rise", "power", "max_mde"}
 GUIDANCE_KEYS = {"repeats", "inputs", "accepts_at"}
-# ST9 (ruled 2026-10-20): the per-input "could not have detected a rise below" and its key went
+# a row carries no per-input "could not have detected a rise below", and no key for it
 FLAG_ROW_KEYS = {
     "config_hash", "config", "failed_a", "runs_a", "failed_b", "runs_b", "change", "p", "q",
     "flag",
@@ -110,7 +110,7 @@ def changes(store: Path | str, a: str, b: str, events: Sequence[str], *extra: st
 def one_sentence(result: CliResult) -> None:
     lines = [line for line in result.text.splitlines() if line.strip()]
     assert result.code == 1, result.text
-    # one sentence, and the command to run under it on its own next: lines (rule 4)
+    # one sentence, then the commands to run on their own next: lines (docs/cli-look.md rule 4)
     assert lines and all(line.startswith("  next: ") for line in lines[1:]), result.text
 
 

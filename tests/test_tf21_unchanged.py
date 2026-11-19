@@ -1,12 +1,11 @@
-"""TF21-64 and TF21-65: what TF21 leaves as it is (spec section 18.4.2, SG3; SA1, SA10).
+"""TF21-64 and TF21-65: what TF21 leaves as it is.
 
 For every committed import, everything a Trace verb reads of the stored run (the outcome,
 error, config and config_hash columns, seed and replicate, the trace envelope, the tally, and the
 manifest apart from the taxonomy digest TF21 adds) and the import's own ``--json`` output are
-byte for byte what Trace main ``d7e19c7`` wrote, so no verb prints anything different on an
-imported run. Green on main by construction; a ruled change moves its digest here. Taylor's ruling
-of 2026-11-04 moved the verb views' digests for the manifest's Prove version, 0.1.2 to 0.1.3, alone. Taylor's ruling
-of 2026-11-04 moved the verb views' digests for the manifest's Prove version, 0.1.2 to 0.1.3, alone."""
+byte for byte what the pinned main wrote, so no verb prints anything different on an imported
+run. Green on main by construction; a deliberate change moves its digest here, as the
+manifest's Prove version (0.1.2 to 0.1.3) moved the verb views' digests and nothing else."""
 
 from __future__ import annotations
 
@@ -16,8 +15,8 @@ from pathlib import Path
 import pytest
 from tf21_support import IMPORTS, do_import, json_without_store, verb_view
 
-# (verb view, import --json) per import, as main d7e19c7 wrote them; the verb views re-pinned at
-# 0.1.0a1 (ruled 2026-11-11, the pre-release cut): the version the import records is their one change
+# (verb view, import --json) per import, as the pinned main wrote them; the verb views pinned at
+# 0.1.0a1, the pre-release: the version the import records is their one change
 MAIN = {
     "deepeval-a": ("944bc4c98a409ad780570e94898e13118c0b21066b165e42148f130f7e522936",
                    "6be6a1b07a7ef172808e2f6336abf5e7d8586799dd90955c3590021b70cb34c4"),
@@ -55,7 +54,7 @@ def test_tf21_64_what_a_verb_reads_is_unchanged(tmp_path: Path, key: str) -> Non
     from pin_support import as_pinned
     from tf21_support import canonical
 
-    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned)
     assert hashlib.sha256(as_pinned(canonical(verb_view(root, key)).decode("utf-8")).encode("utf-8")).hexdigest() == MAIN[key][0]
     out = as_pinned(json_without_store(result, root))
     assert hashlib.sha256(out.encode("utf-8")).hexdigest() == MAIN[key][1]

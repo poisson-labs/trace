@@ -100,8 +100,8 @@ def test_tr57_each_row_is_fisher_on_its_counts_and_flagged_by_its_q(tmp_path: Pa
 
 
 def test_tr58_no_row_carries_a_per_input_limit() -> None:
-    """ST9 (ruled 2026-10-20): the per-input limit is dropped, from the table and the JSON, at any
-    alpha; no row carries it (no printed value was reached 4 times in 5 by the flag Trace raises)."""
+    """No row carries a per-input limit, in the table or the JSON, at any alpha (no value it
+    could print is reached 4 times in 5 by the flag Trace raises)."""
     for root, a, b, events in ((TAU2, TAU2_A, TAU2_B, TAU2_EVENTS), (TAU2, TAU2_B, PILOT, TAU2_EVENTS)):
         for alpha in ("0.05", "0.1"):
             d = _json(changes(root, a, b, events, "--alpha", alpha, "--json"))
@@ -224,7 +224,7 @@ def test_tr61_changes_json_keys_and_bytes() -> None:
     d = _json(a)
     assert a.out == b.out
     assert tuple(d) == CHANGES_KEYS
-    assert d["schema"] == "poisson-trace.changes/2"  # ST9 (ruled 2026-10-20)
+    assert d["schema"] == "poisson-trace.changes/2"  # no per-input limit
     assert set(d["runs"]) == {"a", "b"} and all(set(h) == HEADER_KEYS for h in d["runs"].values())
     assert d["events"] == ["unsolved"] and d["alpha"] == 0.05
     assert (d["tested"], d["flagged"]) == (50, 0)

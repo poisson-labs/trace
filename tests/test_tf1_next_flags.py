@@ -1,7 +1,7 @@
-"""TF1-17: a ``next:`` command runs as written (spec section 9.4 and the look's rule 13: ``next:
-<exact command>``; pending yes/no 3).
+"""TF1-17: a ``next:`` command runs as written (the look's rule 13: ``next:
+<exact command>``).
 
-Until a config gives the store and the events (``trace.toml``, a later pair), the command
+Where no config gives the store and the events (``trace.toml``), the command
 carries the ``--store`` and the ``--event`` names given, so that copied into a shell in the same
 folder it is never a wrong command line. The one thing it may lack is the ceiling a comparison
 asks for, which has no default and is the user's to choose."""

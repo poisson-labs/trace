@@ -1,5 +1,5 @@
 """TF2-18 to TF2-20: ``doctor`` says whether this environment is ready, and what to run when it is
-not (spec section 12; yes/no 26).
+not.
 
 Six lines in this order: python, package, prove, config, names, readers. ``ok  …`` and exit 0
 when every line holds; ``not ready  …`` and exit 4 when one fails, each failing line ending with
@@ -189,7 +189,7 @@ def test_tf2_19_the_config_line_names_the_line_of_the_fault(ready: Path) -> None
     assert "line 10" in check(data, "config")["line"], data
 
 
-# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
+# a Prove below the floor (0.3.0); one above it, such as 9.9.9, is one Trace reads
 @pytest.mark.parametrize("prove", ["absent", "0.3.0"])
 def test_tf2_19_the_prove_line_fails_without_the_prove_trace_reads(ready: Path, prove: str) -> None:
     result = run(["doctor", "--json"], cwd=ready, prove=prove)

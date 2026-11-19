@@ -1,42 +1,43 @@
-"""TF17-13 to TF17-21 and TF17-23: ``[[import]]`` in ``trace.toml`` (spec section 17.4, AD14, and
-section 3.2's strict rules; folders through TF22's resolver; addresses as section 18.3.2 places
-them).
+"""TF17-13 to TF17-21 and TF17-23: ``[[import]]`` in ``trace.toml`` (``docs/config.md``, by the
+config's strict rules; folders through TF22's resolver; addresses to pull from by the prefix
+of the puller).
 
-- TF17-13: the spec's example entry reads; ``config.load`` gives the entries in the file's
-  order as ``Config.imports``, each with its ``file`` as written, its ``tool``, its ``name`` and
-  its reader's ``options`` by the keys as written; a config with no ``[[import]]`` has none.
-  ``file``, ``tool`` and ``name`` are each required and each a non-empty string.
+- TF17-13: an example entry (a Ragas file with its metric and cut) reads; ``config.load`` gives
+  the entries in the file's order as ``Config.imports``, each with its ``file`` as written, its
+  ``tool``, its ``name`` and its reader's ``options`` by the keys as written; a config with no
+  ``[[import]]`` has none. ``file``, ``tool`` and ``name`` are each required and each a
+  non-empty string.
 - TF17-14: an unknown key is refused naming the line and the nearest known key or the reader's
   options; ``[import]`` written as one table is refused saying it is written ``[[import]]``;
   ``[[imprt]]`` says "did you mean [[import]]?".
 - TF17-15: a ``tool`` not in the install is refused by every verb that reads the config, naming
-  the tool and the readers the install has; a reader section 6.1 names but whose module is not
-  present (``langsmith``) is "not in this install".
+  the tool and the readers the install has; a tool no reader here answers to (``otel``,
+  ``lemma``) is "not in this install".
 - TF17-16: the reader's options are checked as its flags are: a key is one of the reader's own
   flags without ``--`` (``case_column`` for ``--case-column``), never the import's own (``run``,
   ``store``, ``started``, ``verdicts``); a flag that takes no value is ``true`` or ``false``;
   ``below`` and ``above`` are not both true; a flag with choices takes one of them (DeepEval's
   ``case``, JUnit's ``case``); ``cut`` is a number, or ``"recorded"`` for DeepEval; ``failed``
   is a list of strings; a flag the reader requires is present.
-- TF17-17: ``name`` is a name the import accepts (section 5.2; ``names.import_name_refusal``)
-  and is used once: two entries of one name are refused naming both lines.
+- TF17-17: ``name`` is a name the import accepts (``names.import_name_refusal``) and is used
+  once: two entries of one name are refused naming both lines.
 - TF17-18: ``file`` is a relative path inside the repository: an absolute path, or one that
   leaves the config's folder (``..``), is refused; it is kept as written, read from the config's
   folder; two entries may name one file (one promptfoo file holds both versions).
 - TF17-19: ``file`` may name a folder: the entry is read through the folder resolver with its
-  ``tool``, so a folder of that tool's files is one run and a folder of another tool's, of two
-  tools', or a Prove store is refused by ``doctor --setup`` naming what it holds (the config
+  ``tool``, so a folder of that tool's files is one run, and a folder with none of that tool's
+  files or a Prove store is refused by ``doctor --setup`` naming what it holds (the config
   itself reads: nothing opens the folder but ``doctor`` and ``init``).
 - TF17-20: a ``file`` that is an address to pull from (``langsmith:…``, ``braintrust:…``,
-  ``weave:…``, ``lemma:…``, section 18.3.2) is refused plainly by every verb, naming the puller
-  this install does not have and saying to save the export as a file first.
+  ``weave:…``, ``lemma:…``) whose puller is not in this install (``lemma``) is refused plainly
+  by every verb, naming the puller and saying to save the export as a file first.
 - TF17-21: every verb reads the config and checks ``[[import]]``'s keys and types, and no verb
   but ``doctor`` and ``init`` opens the files: ``runs`` with an entry whose file is missing
   still lists the store's runs, and with an entry whose tool is unknown is refused.
-- TF17-23: the one sentence of section 3.2 that changes: an unknown table is refused with
+- TF17-23: an unknown table is refused with
   "a config has version, the tables [store], [events], [check], [names], [upload], [signals] and
-  [taxonomy], and [[import]] tables" (TF21-63 moves to it in this commit, its guard line with
-  it).
+  [taxonomy], and [[import]] tables" (TF21-63 holds the did-you-mean for a table named nearly
+  as one of them).
 """
 
 from __future__ import annotations

@@ -1,10 +1,8 @@
-"""Shared helpers for TF25's tests: the Braintrust reader and its raw-saving API pull (spec
-sections 6.3, 6.4a, 18.1.1 row 10, 18.3.1 to 18.3.4, 18.4 and 18.5.2; rulings SG2, SG9, SG10 and
-SG18; the captures' rulings TC-1 to TC-11; TF21's and TF22's rulings, which this reader follows
-as the others do; and the LangSmith pair's, LS-1 to LS-47 and B-1 to B-8, whose shape this pair
-keeps wherever Braintrust's files allow). Not collected.
+"""Shared helpers for TF25's tests: the Braintrust reader and its raw-saving API pull (it follows
+TF21's and TF22's rules as the other readers do, and keeps the LangSmith reader's shape wherever
+Braintrust's files allow). Not collected.
 
-What Session B builds, in one place (each test file's docstring says which invariant it holds):
+What these tests hold, in one place (each test file's docstring says which invariant it holds):
 
 ``poisson_trace.ingest.braintrust``
     A reader module of the shape ``ingest/cli.py`` documents (``add_arguments``, ``read``,
@@ -21,7 +19,7 @@ What Session B builds, in one place (each test file's docstring says which invar
 ``docs/integrations/braintrust.md`` and ``docs/recipes/from-braintrust.md``
     The page and the recipe, of the other readers' shape.
 
-The readings these tests hold (each is a yes/no in the session's rulings, BT-1 on):
+The rules these tests hold:
 
 the command
     ``poisson-trace import braintrust FILE [FILE ...] --store ROOT --run NAME --case-from (record

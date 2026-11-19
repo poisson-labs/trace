@@ -1,5 +1,5 @@
-"""TF3-21 and TF3-22: the table and JUnit readers say which files look like theirs (spec sections
-4.3 and 6.3: each reader exposes ``looks_like(path) -> str | None`` for init).
+"""TF3-21 and TF3-22: the table and JUnit readers say which files look like theirs (each reader
+exposes ``looks_like(path) -> str | None`` for init).
 
 - TF3-21: ``table.looks_like`` names a ``.csv``, ``.jsonl`` or ``.json`` table (a ``.json`` file being
   a list of rows) with a column named exactly one of ``table.OUTCOME_COLUMNS`` within its first 4 KB,

@@ -1,22 +1,21 @@
 """Shared helpers for TF21's tests: normalised signals, the failure taxonomy and the five
-existing readers (spec section 18.1, 18.4 and 18.5, rulings SG1 to SG20, and this pair's own
-SA rulings). Not collected.
+existing readers. Not collected.
 
-What Session B builds, in one place (each test file's docstring says which invariant it holds):
+What these tests exercise, in one place (each test file's docstring says which part it holds):
 
 ``poisson_trace.ingest.rows``
     ``RESULTS``, ``UNITS``, ``ToolCallRecord``, ``SpanRecord``, and ``Row`` widened by keyword-only fields
     after today's six positional ones (``case, outcome, error, score, spans, detail``), which
     keep their order and meaning so every reader and every frozen test built on them stands.
     ``Row.outcome`` stays the word written to Prove's outcome column; the normalised verdict
-    is ``Row.result``: ``"pass"``, ``"fail"``, ``"censored"`` or ``None`` (SA2).
+    is ``Row.result``: ``"pass"``, ``"fail"``, ``"censored"`` or ``None``.
 ``poisson_trace.ingest.taxonomy``
     ``FAILURE_KINDS`` (the 13, in precedence order), ``SIGNALS`` (the 3), ``Rule``,
     ``Budgets``, ``kind_of(row, rules=())``, ``signals_of(row, budgets=None)``,
     ``classify(row, rules=(), budgets=None) -> Row`` and ``taxonomy_sha256(rules, budgets)``.
 ``poisson_trace.ingest.writer``
     ``trace_signals(row, repeat) -> dict`` (the ``poisson.trace-signals/1`` record) and the
-    store mapping of section 18.4.2 as SA1 reads it on Prove 0.1.2.
+    mapping of a row onto Prove 0.1.2's store.
 ``poisson_trace.ingest.prove``
     ``read_rows(root, run_id, failed) -> tuple[Row, ...]``: a stored run as normalised rows,
     from ``meta["trace_signals"]`` for a run Trace imported, from Prove's own columns and trace
@@ -29,7 +28,7 @@ What Session B builds, in one place (each test file's docstring says which invar
     ``cost_field``), ``Config.budgets`` and ``Config.rules``, read from ``[signals]``,
     ``[signals.budgets]`` and ``[[taxonomy.rules]]``.
 
-The built-in rules, in precedence order, as these tests read section 18.5 (``ref_kind`` below
+The built-in rules, in precedence order, as these tests read them (``ref_kind`` below
 is the reference the reader tests check against). Only a row whose result is ``"fail"`` or
 ``"censored"`` gets a kind. ``text`` is the row's ``error_type`` and ``error``, joined.
 
@@ -84,7 +83,7 @@ CS = FIXTURES / "cs"
 PROVE_013 = FIXTURES / "prove-stores" / "prove-0.1.3"
 STARTED = "2026-09-05T18:54:07Z"
 
-# ---------- the shape (section 18.4.1) ----------
+# ---------- the shape ----------
 
 RESULTS = ("pass", "fail", "censored")
 FAILURE_KINDS = (
@@ -94,11 +93,11 @@ FAILURE_KINDS = (
 )
 SIGNALS = ("gave_up", "retry_storm", "over_budget")
 # Prove 0.1.2's span kinds (poisson_prove.trace.KINDS), and the kinds a source names that are
-# not spans of Prove's (section 18.1 item 10, SA1)
+# not spans of Prove's
 PROVE_KINDS = ("llm", "tool", "retrieval", "db", "http", "agent", "other")
 ERROR_SPAN_KINDS = (*PROVE_KINDS, "retriever", "parser", "grader", "gate", "step", "lifecycle")
 
-# every signal field Row adds, its kind, and its unit (SA2 lists them)
+# every signal field Row adds, its kind, and its unit
 INT_FIELDS = (
     "input_chars", "output_chars", "input_tokens", "output_tokens", "cached_tokens",
     "reasoning_tokens", "total_tokens", "steps", "horizon", "llm_calls", "retries",
@@ -120,7 +119,7 @@ NEW_FIELDS = (
 )
 OLD_FIELDS = ("case", "outcome", "error", "score", "spans", "detail")
 
-# the poisson.trace-signals/1 record, its keys in this order (section 18.4.2, plus horizon)
+# the poisson.trace-signals/1 record, its keys in this order
 RECORD_SCHEMA = "poisson.trace-signals/1"
 RECORD_KEYS = (
     "schema", "case", "repeat", "outcome", "failure_kind", "error_type", "error_span_kind",
@@ -132,7 +131,7 @@ RECORD_KEYS = (
 TOOL_CALL_KEYS = ("name", "status", "duration_s", "error_type", "attempt")
 ERROR_MAX = 240
 
-# ---------- the built-in rules' patterns (section 18.5.2, read as one set for every source) ----
+# ---------- the built-in rules' patterns (one set for every source) ----
 
 TIMEOUT = re.compile(r"(?i)time[ _-]?out|timed[ _-]?out|ETIMEDOUT")
 RATE_LIMIT = re.compile(r"(?i)\b429\b|rate[ _-]?limit")

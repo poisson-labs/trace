@@ -1,5 +1,5 @@
 """TF13-28 to TF13-31: the command line is a caller of the API only; no verb computes anything
-outside it (invariant 3; PA2, PA3, PA15, PA18).
+outside it.
 
 TF13-28: the command lines (``cli.py``, ``ingest/cli.py``, ``__main__.py``) import, of the
 package, only ``api``, ``commands``, ``look`` and each other; none of Prove, numpy, scipy,

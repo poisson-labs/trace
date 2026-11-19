@@ -1,5 +1,4 @@
-"""TF16-1 to TF16-3: Trace reads Prove under its new name (spec section 16.1 step 1, section 8.2
-as amended 2026-10-28, section 17.3).
+"""TF16-1 to TF16-3: Trace reads Prove under its new name.
 
 - TF16-1: no module of the package imports ``proofload``, and every name it imports from
   ``poisson_prove`` is one Prove documents as public (Prove's ``docs/python.md`` in poisson-prove 0.1.2);
@@ -84,7 +83,7 @@ def test_tf16_1_trace_imports_prove_as_poisson_prove_and_only_its_public_names()
                 continue  # from poisson_prove import store: a public module, by its name
             assert module in PUBLIC, f"{where}:{line} imports the private module {module}"
             assert name in PUBLIC[module], f"{where}:{line} imports {module}.{name}, which Prove does not make public"
-    # the package reads runs through Prove's store: a build that stopped importing it is no move
+    # the package reads runs through Prove's store: a build that imports nothing from it fails
     assert "poisson_prove.store" in seen, seen
 
 
@@ -104,7 +103,7 @@ COMMANDS = {
     "import": ["import", "junit", REPO / "tests" / "fixtures" / "ingest" / "junit" / "trace-suite-1.xml",
                "--store", "STORE", "--run", "suite"],
 }
-# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
+# a Prove below the floor (0.3.0); one above it, such as 9.9.9, is one Trace reads
 STATES = {"absent": "absent", "proofload 0.0.1 alone": "old", "poisson_prove 0.3.0": "0.3.0"}
 
 

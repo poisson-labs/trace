@@ -1,8 +1,7 @@
-"""TF26-85: a row whose answer is a reference reads from a pull as it reads from the file (B-3,
-ruled yes by Taylor on 2026-11-12, added to WV-31's list of what the default raw copy stamps).
+"""TF26-85: a row whose answer is a reference reads from a pull as it reads from the file.
 
 The default raw copy leaves a row's answer out and keeps its length, and a reference has no
-length (WV-12). Without a stamp of its own such a row would be a row with no answer, and that
+length. Without a stamp of its own such a row would be a row with no answer, and that
 decides one reading: a row Weave marks ``descendant_error`` that holds no score is errored when
 it holds no answer and is not when it holds one. So the pull stamps ``_poisson_output_ref`` true
 on a row whose answer is a reference, and on no other call; the reference itself stays out, as

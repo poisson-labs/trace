@@ -1,5 +1,4 @@
-"""TF5-37 and TF5-38: every number the docs set shows in prose carries its unit (spec section
-7.2; ruled 2026-11-13, DOC-26).
+"""TF5-37 and TF5-38: every number the docs set shows in prose carries its unit.
 
 **The unit rule.** Prose is a page's text outside its fenced blocks. A number in prose is read
 with the words beside it, and it carries its unit when one of these holds:
@@ -32,8 +31,8 @@ with the words beside it, and it carries its unit when one of these holds:
 - whatever is written in code or quoted in double quotes: a literal value is written as code;
 - a table's cells, which its column headings name;
 - an indented block: a passage whose every line is indented four spaces or a tab, which
-  Markdown renders as code, as the README's first screen writes its three commands (ruled
-  2026-11-13, B-10); a line indented so inside a paragraph is still read;
+  Markdown renders as code, as the README's first screen writes its three commands; a line
+  indented so inside a paragraph is still read;
 - every fenced block: what a command printed is held by the blocks' own tests (TF5-14), and
   the blocks shown and not run are data.
 

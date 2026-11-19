@@ -1,40 +1,38 @@
-"""Shared helpers for TF10's tests: the promptfoo, Inspect and OpenAI Evals readers (spec sections
-6.2, 6.3, 6.4a, 7.1, 7.2, 18.1.1 rows 6 to 8, 18.4 and 18.5.2; rulings R5, R24 to R26; TF21's SA
-rulings, which these readers follow as the five existing ones do). Not collected.
+"""Shared helpers for TF10's tests: the promptfoo, Inspect and OpenAI Evals readers. Not collected.
 
-What Session B builds, in one place (each test file's docstring says which invariant it holds):
+What the build provides, in one place (each test file's docstring says which invariant it holds):
 
 ``poisson_trace.ingest.promptfoo``, ``poisson_trace.ingest.inspect``, ``poisson_trace.ingest.openai_evals``
     Three reader modules of the shape ``ingest/cli.py`` documents (``add_arguments``, ``read``,
     ``DESCRIPTION``, ``EXAMPLE``, ``usage``), each with ``looks_like(path) -> str | None``. The
     tools are named ``promptfoo``, ``inspect`` and ``openai-evals`` on the command line; the
     third's module is ``openai_evals`` (a module name cannot hold a hyphen), so the import maps
-    the tool's name to its module by turning ``-`` into ``_`` (RD3). They import nothing from
+    the tool's name to its module by turning ``-`` into ``_``. They import nothing from
     the tools themselves, and nothing from ``poisson_prove`` (the writer is the one module under
     ``ingest/`` that does, IC8).
 ``pyproject.toml``
     The optional extra ``inspect`` holding ``zstandard``, and ``zstandard`` among the ``dev``
     extra's packages so the suite reads the ``.eval`` fixture.
 ``docs/integrations/{promptfoo,inspect,openai-evals}.md`` and ``docs/recipes/from-{promptfoo,inspect,openai-evals}.md``
-    The three pages and the three recipes (section 7.1, 7.2; RD5).
+    The three pages and the three recipes.
 
-The readings these tests hold, beyond section 6.3's text (RD4 lists them for Taylor):
+The readings these tests hold:
 
 promptfoo
     The ``.json`` file (``results.results`` a list) and the ``.jsonl`` file (one result per line)
     are this reader's, told by the extension. The ``.csv`` is refused, naming the JSON export
     (``promptfoo eval -o results.json``): the table reader refuses it too, since it repeats its
-    column names (RD1). One import is one prompt and one provider: ``--prompt`` names the prompt
+    column names. One import is one prompt and one provider: ``--prompt`` names the prompt
     by its label or by its number counting from 1 (``promptIdx`` + 1), ``--provider`` by its id;
     neither is needed when the file holds one; several and none named is refused with the labels
     (or ids) listed; a label or number the file does not hold is refused the same way. The
     label is printed and recorded in ``declared`` even when promptfoo made it from the prompt's
-    own text (RD2). ``--case var:NAME`` takes the test variable ``NAME`` (text as written,
+    own text. ``--case var:NAME`` takes the test variable ``NAME`` (text as written,
     through ``case_id``); ``--case test`` takes ``test:<testIdx>``. ``--outcome success`` (the
     default): ``success`` true met, false missed; ``--outcome score --cut X --below|--above``:
     the row's ``score`` at the cut, a score equal to the cut meeting it. A row whose
     ``failureReason`` is 2 has no outcome (its reason word ``error``) and is censored; its error
-    text is stored and printed nowhere, but its kind comes from it by section 18.5.2: timed out
+    text is stored and printed nowhere, but its kind comes from it: timed out
     or ETIMEDOUT a timeout, 429 or rate limit a rate limit, context_length or max_tokens a
     context overflow, else a crash. A row whose ``failureReason`` is 1 takes its kind from the
     first failed ``gradingResult.componentResults[].assertion.type``: ``is-json``, ``is-xml``,
@@ -51,7 +49,7 @@ promptfoo
     scores. ``numRequests`` is not read (it mixes turns and retries). Nothing else is recorded.
 inspect
     A ``.json`` log is read with the standard library; a ``.eval`` log with ``zipfile`` and the
-    ``zstandard`` package, without which it is refused in the spec's one line. A log over 200 MB
+    ``zstandard`` package, without which it is refused in one line. A log over 200 MB
     is refused naming its size, before it is read. A sample is a row; its case is its ``id`` as
     text; its epochs are its repeats in epoch order. ``--outcome correct`` (the default) reads
     the scorer's letters, ``C`` met and ``I``, ``P`` and ``N`` missed, any other value refused
@@ -91,7 +89,7 @@ openai-evals
 Every row of the three is classified by TF21's one rule set: the kind each test expects is the
 one ``ref_kind`` (``tf21_support``) gives the row as the reader records it, or, where a reading
 above names a kind the row's fields do not lead the rules to, that kind as the source's own
-(SA3 reading 8). No prompt, answer, expected or sampled text, no variable but the case, no error
+No prompt, answer, expected or sampled text, no variable but the case, no error
 text and no grader's reason is written or printed.
 """
 
@@ -123,7 +121,7 @@ OE_NEW = OPENAI / "new.jsonl"
 
 # the tools as the command line names them, and the module each reader is
 TOOLS: dict[str, str] = {"promptfoo": "promptfoo", "inspect": "inspect", "openai-evals": "openai_evals"}
-# every reader present once TF10 lands, in the order the import's READERS names them today
+# every reader, in the order the import's READERS names them
 PRESENT = ("deepeval", "ragas", "table", "junit", "promptfoo", "inspect", "openai-evals")
 STARTED = "2026-10-07T04:00:00Z"
 PF_LABELS = ("old: {{text}}", "new: {{text}} with the word banana")

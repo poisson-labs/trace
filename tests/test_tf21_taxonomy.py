@@ -1,7 +1,7 @@
-"""TF21-13 to TF21-22: the taxonomy engine, ``ingest/taxonomy.py`` (spec section 18.5.1 and
-18.5.2, SG11; SA3 and SA9). The 13 terminal failure kinds in precedence order, the 3 behavioural
-signals, the built-in rules and the order they apply in. ``tf21_support``'s docstring lists the
-rules as these tests read them, and ``ref_kind`` is the reference."""
+"""TF21-13 to TF21-22: the taxonomy engine, ``ingest/taxonomy.py``. The 13 terminal failure
+kinds in precedence order, the 3 behavioural signals, the built-in rules and the order they apply
+in. ``tf21_support``'s docstring lists the rules as these tests read them, and ``ref_kind`` is the
+reference."""
 
 from __future__ import annotations
 
@@ -286,7 +286,7 @@ def test_tf21_18_classify_is_deterministic() -> None:
     assert classify(row) == classify(row) == classify(classify(row))
 
 
-# ---------- TF21-19: user rules first, in the order written (SG12) ----------
+# ---------- TF21-19: user rules first, in the order written ----------
 
 
 def test_tf21_19_a_user_rule_wins_over_a_built_in() -> None:
@@ -337,7 +337,7 @@ def test_tf21_19_a_rule_that_cannot_be_is_refused(kw: dict[str, Any]) -> None:
         Rule(**kw)
 
 
-# ---------- TF21-20: the taxonomy's digest (SA9) ----------
+# ---------- TF21-20: the taxonomy's digest ----------
 
 
 def _expected_sha(rules: list[dict[str, Any]], budgets: dict[str, Any]) -> str:
@@ -363,7 +363,7 @@ def test_tf21_20_the_digest_reads_rules_in_order_and_budgets_set() -> None:
     assert len(taxonomy.taxonomy_sha256((a,), None)) == 64
 
 
-# ---------- TF21-21: the alignment with Break and Monte (section 18.5.4) ----------
+# ---------- TF21-21: the alignment with Break and Monte ----------
 
 
 @pytest.mark.parametrize(

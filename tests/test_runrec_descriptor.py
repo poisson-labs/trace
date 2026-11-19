@@ -1,6 +1,5 @@
 """RUNREC-1 to RUNREC-8: the store descriptor an import writes, and Prove 0.1.3 reading every
-store Trace writes (invariant 1; spec section 17.3 item 6 and the reuse list above item 1; the
-artifact format's sections 2, 3, 8 and 9; RR5).
+store Trace writes (``runrec_support``'s opening, invariant 1).
 
 The descriptor is written as Prove 0.1.3 writes its own (``poisson_prove.core._artifacts.
 ensure_descriptor``, the committed ``prove-0.1.3`` store): on the first write into a store,
@@ -8,8 +7,8 @@ ensure_descriptor``, the committed ``prove-0.1.3`` store): on the first write in
 with one newline, times to the second; into a store that has one, Trace and its major.minor
 version appended to ``writers`` once, every other byte left alone. A refused import writes
 none; a descriptor in a newer major, or one that is not a descriptor, is refused before
-anything is written (format sections 3 and 9). A store written before the format (Prove 0.0.1,
-format 0) gains ``.poisson/store.json`` and nothing else changes (format section 2)."""
+anything is written. A store written before the format (Prove 0.0.1,
+format 0) gains ``.poisson/store.json`` and nothing else changes."""
 
 from __future__ import annotations
 

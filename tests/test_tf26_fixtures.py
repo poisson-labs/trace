@@ -1,6 +1,6 @@
-"""TF26-1 to TF26-3: the committed Weave captures, and the facts the reader's shapes rest on (spec
-section 18.3.4; ``tests/fixtures/PROVENANCE.md``, "Added for the Weave captures"; the captures'
-log and its gaps). These pass on main: they hold the files, not the reader.
+"""TF26-1 to TF26-3: the committed Weave captures, and the facts the reader's shapes rest on
+(``tests/fixtures/PROVENANCE.md``, "Added for the Weave captures"). They hold the files, not
+the reader.
 
 - TF26-1: every capture the provenance lists is there and reads: the four evaluations' answers
   (20, 20, 78 and 81 calls), each again with its example expanded, the candidate's with neither
@@ -18,8 +18,8 @@ log and its gaps). These pass on main: they hold the files, not the reader.
   page's JSON and JSON Lines hold the same calls, and its CSV and TSV the same cells. The
   transport's one rule that is not a capture is checked against the one request the captures
   hold both ways: the lines of the whole answer are the pages Weave answered with.
-- TF26-3: the facts the spec states that the captures correct or sharpen: costs are at
-  ``summary.weave.costs.<model>`` and feedback at ``summary.weave.feedback`` (not
+- TF26-3: the facts a reader of the format could guess wrong, as the captures settle them:
+  costs are at ``summary.weave.costs.<model>`` and feedback at ``summary.weave.feedback`` (not
   ``summary.costs`` and ``summary.feedback``); the page offers no Parquet; the page's table
   holds a model's total tokens and no prompt or completion count; a scorer's output is true or
   false, under the scorer's name twice; the lookup fixture's output is a reference, not text;

@@ -1,22 +1,22 @@
-"""TF15-S20 to TF15-S39: compare's and where's statistics as ruled on 2026-10-20 (spec section
-9.7, ST5, ST6 and ST8).
+"""TF15-S20 to TF15-S34: compare's and where's statistics (docs/how-it-decides.md says them in
+plain words).
 
-- ST5: compare's detection limit is exp((z_{1-a/2} + z_{0.8}) / sqrt(V)), V the stratified
+- compare's detection limit is exp((z_{1-a/2} + z_{0.8}) / sqrt(V)), V the stratified
   log-rank's own variance, in place of Schoenfeld's d/4; its "run each version N times" is the
   smallest number of tries per input per version whose expected V, under a per-input model fitted
   to the two runs (seeded), reaches ((z_{1-a/2} + z_{0.8}) / ln H)^2.
-- ST6: compare prints the after-against-before hazard ratio from the log-rank's own numbers (the
+- compare prints the after-against-before hazard ratio from the log-rank's own numbers (the
   Peto one-step estimate) with its 95% range.
-- ST8: where's curve is the share of tries not yet failed by each step, from the Aalen-Johansen
+- where's curve is the share of tries not yet failed by each step, from the Aalen-Johansen
   estimator with "finished without failing" and "timed out" as ends of their own and only capped
   tries censored; the table by kind gives each kind's share failed by the last step; the band
   resamples inputs; the median is that of the failed tries' steps, and the step by which half of
   all tries had failed is printed when reached; compare's --at rows give the same share.
 
-References: the statistics check's own scripts and dumps (sim_compare.py's V and limits, its
-fixture_fixes.py Peto estimates, its episode dumps), lifelines' AalenJohansenFitter (0.30.3, the
-dev extra) called here as the oracle, and counts over tries where nothing is censored (the
-estimator then equals them). log/trace-tf15-a/evidence/references/ prints each number.
+References: an independent statistics check (its V, limits and Peto estimates on these fixtures,
+and its per-try counts), lifelines' AalenJohansenFitter (0.30.3,
+the dev extra) called here as the oracle, and counts over tries where nothing is censored (the
+estimator then equals them).
 """
 
 from __future__ import annotations
@@ -40,12 +40,12 @@ def _json(result):  # type: ignore[no-untyped-def]
     return result.json()
 
 
-# ---------- ST5: compare's limit and guidance from the test's own information ----------
+# ---------- compare's limit and guidance from the test's own information ----------
 
-# the statistics check's sim_compare.py (trace_numbers: V, and exp(2.8016 / sqrt(V))) and its
-# fixture_fixes.py; the guidance by its search, settled with 2,000 draws per R in the Session A
-# log (guidance_ev.md: expected V at 11 tries 114.437 against the target 114.025, se 0.06; at 10,
-# 103.165; cs at 17 tries 16.658 against 16.336, se 0.02; at 16, 15.676)
+# an independent check's V on these fixtures, and exp(2.8016 / sqrt(V)) from it; the
+# guidance by its search, settled with 2,000 draws per R (expected V at
+# 11 tries 114.437 against the target 114.025, se 0.06; at 10, 103.165; cs at 17 tries 16.658
+# against 16.336, se 0.02; at 16, 15.676)
 TAU2_LIMIT, CS_LIMIT = 1.6032831137037962, 7.772177845064068
 
 
@@ -119,9 +119,9 @@ def test_tf15_s24_a_change_at_the_printed_limit_is_caught_about_four_times_in_fi
     assert caught / reps >= 0.76, (limit, caught / reps)
 
 
-# ---------- ST6: the estimate ----------
+# ---------- the estimate ----------
 
-# the statistics check's fixture_fixes.py: exp(-(O_A - E_A) / V) and exp(that +- 1.96 / sqrt(V))
+# an independent check's Peto estimate: exp(-(O_A - E_A) / V) and exp(that +- 1.96 / sqrt(V))
 PETO = {"tau2": (1.114069, 0.800735, 1.550014), "cs": (1.0, 0.238223, 4.197742)}
 
 
@@ -151,11 +151,11 @@ def test_tf15_s26_the_estimate_is_the_peto_one_step_from_the_printed_numbers(two
     assert c["hazard_ratio"] > 1.0  # b fails earlier: after against before is above 1
 
 
-# ---------- ST8: where, finishing a competing end ----------
+# ---------- where, finishing a competing end ----------
 
-# counts over the tries in the statistics check's episode dumps (nothing is censored in these
+# counts over the tries of these fixtures, by an independent check (nothing is censored in these
 # runs, so the Aalen-Johansen estimator equals them), cross-checked with lifelines 0.30.3 read
-# between whole steps (log/trace-tf15-a/evidence/references/references.md)
+# between whole steps
 WHERE = {
     TAU2_A: {"failed": 0.55, "median": 20, "half": 30, "at": {10: 0.965, 20: 0.695, 30: 0.490}, "last": 44},
     TAU2_B: {"failed": 0.56, "median": 19, "half": 30, "at": {10: 0.970, 20: 0.655, 30: 0.500}, "last": 40},
@@ -192,7 +192,7 @@ def test_tf15_s28_cs_where_shares_by_kind_and_no_half_line() -> None:
     assert data["curve"][-1]["survival"] == pytest.approx(17 / 24, abs=1e-12)
     assert data["median_step"] == 35
     text = norm(where(CS, CS_RECORD, CS_EVENTS).out)
-    # cs is counted in turns, and where says turn (S15, carried into this pair)
+    # cs is counted in turns, and where says turn
     assert "median turn of the failed tries: 35" in text
     assert "half of all tries had failed" not in text
 
@@ -298,7 +298,7 @@ def test_tf15_s32_where_names_its_estimator_and_not_the_old_ones() -> None:
     assert re.search(r"resampl\w* inputs", text), text
 
 
-# ---------- ST8: compare's --at rows ----------
+# ---------- compare's --at rows ----------
 
 
 def test_tf15_s33_compare_at_rows_are_the_share_not_yet_failed() -> None:

@@ -1,4 +1,4 @@
-"""Shared helpers for the tests of trace#31: ``fix-check`` on runs that hold no failed run.
+"""Shared helpers for the FIX31 tests: ``fix-check`` on runs that hold no failed run.
 
 Not a test module and not collected.
 
@@ -7,9 +7,9 @@ Three things live here.
 - **The stores.** Synthetic pairs written through Prove (``fixcheck_support.pair_store``), a
   pair of JUnit folders in which every case passed, and the committed fixture of Break's case
   (``tests/fixtures/fix31/break-case.json``: a control arm and two candidate arms, 6 cases by 5
-  repeats, shaped as the issue's run of Break's confirm stage). The fixture is the description
+  repeats, shaped as a run of Break's confirm stage). The fixture is the description
   of the arms; :func:`break_case` writes it into a store through Prove's own ``Store`` each
-  time, so the suite holds no Prove-written file of its own for it (PIN-4 lists every one that
+  time, so the suite holds no Prove-written file of its own for it (PF-14 lists every one that
   is committed, in a frozen file).
 - **The corpus of every other fix-check output** (:func:`corpus`): each invocation's exit code
   and the digests of its two streams are pinned in ``tests/fixtures/fix31/main-pins.json`` as
@@ -20,7 +20,7 @@ Three things live here.
   Miettinen-Nurminen range from a score written here on its own, with each input's constrained
   rates found by scipy's bounded maximiser of the likelihood and never by the package's closed
   form; the range's closed form at zero failures; the exact chance of a clean run; the limits
-  from the spec's power formula written here on its own; and the exact test's power by full
+  from fix-check's power formula written here on its own; and the exact test's power by full
   enumeration.
 """
 
@@ -167,7 +167,7 @@ def normal(text: str, *roots: Path) -> str:
     for root in roots:
         for shown in {str(root), str(root.resolve())}:
             text = text.replace(shown, "<ROOT>")
-    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned)
     return as_pinned(text)
 
 
@@ -313,7 +313,7 @@ def run_corpus(tmp: Path) -> dict[str, list[Any]]:
     for label, argv in fixture_argv().items():
         with chdir(REPO):
             ran = trace(argv)
-        # the Prove label kinds pair names, on tau2 and HumanEval, the labels that have no kind (test_pl_unchanged.py,
+        # the Prove label kinds rule names, on tau2 and HumanEval, the labels that have no kind (test_pl_unchanged.py,
         # PL-52, holds that); this goes on holding every other byte of them
         from pl_pins import unmoved_text
 
@@ -440,7 +440,7 @@ def clean_chance(tries: int, share: float) -> float:
 
 def _power(tab: Table, r: float, direction: str, alpha: float, runs: tuple[int, int] | None = None,
            scale: float = 1.0) -> tuple[float, float]:
-    """Spec Fix Check section 2.5, written out input by input: ``(power, shift in share)``."""
+    """fix-check's power, written out input by input: ``(power, shift in share)``."""
     from scipy import stats
 
     delta = v_ref = v_one = weight = 0.0
@@ -476,7 +476,7 @@ def _power(tab: Table, r: float, direction: str, alpha: float, runs: tuple[int, 
 
 
 def limit(tab: Table, direction: str, alpha: float = 0.05, power: float = 0.8) -> float | None:
-    """The detection limit of section 2.5: the shift at the smallest proportional change that
+    """fix-check's detection limit: the shift at the smallest proportional change that
     reaches ``power``, by scipy's root finder; ``None`` when the whole change falls short."""
     from scipy import optimize
 
@@ -566,7 +566,7 @@ def worst_clean_chance(design: Sequence[tuple[int, int]], share: float) -> float
     return math.exp(sum(ni * math.log1p(-r) for ni, r in zip(n, rates, strict=True)))
 
 
-# ---------- what the build prints for the pairs that never failed ----------
+# ---------- what fix-check prints for the pairs that never failed ----------
 
 PRINTED = FIX31 / "printed"
 
@@ -575,7 +575,7 @@ def printed(tmp: Path) -> dict[str, str]:
     """``file name -> stdout`` of fix-check on the pairs that never failed, each run from inside
     a folder of the test's own so that no path of this machine is printed: Break's case as Break
     asks it (``--json``) and in plain, a pair too small for the size asked in both, a pair of two
-    inputs (rough, F31-3) in both, and the pair whose only failure is on an input not compared."""
+    inputs (rough) in both, and the pair whose only failure is on an input not compared."""
     from tf13_support import cli
 
     break_case(tmp)
@@ -598,14 +598,14 @@ def printed(tmp: Path) -> dict[str, str]:
         assert str(tmp) not in ran.out, name
         from pin_support import as_pinned
 
-        # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+        # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned)
         out[name] = as_pinned(ran.out)
     return out
 
 
-# ---------- F31-3 and F31-4: where the range at zero is rough ----------
+# ---------- where the range at zero is rough ----------
 
-# the one-sided miss above which a range at zero failures is labelled rough (ruled F31-4)
+# the one-sided miss above which a range at zero failures is labelled rough
 MISS_BAR = 0.05
 
 

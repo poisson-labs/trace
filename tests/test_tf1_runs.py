@@ -1,4 +1,4 @@
-"""TF1-7: ``poisson-trace runs`` (spec section 5.3).
+"""TF1-7: ``poisson-trace runs`` (``docs/commands.md``).
 
 The runs of a store, newest first by start time: each complete run's number, its name, Prove's
 row count, how many rows failed for the events given, whether any row carries a trace, when it
@@ -45,7 +45,7 @@ def test_tf1_07_the_listing_newest_first_with_what_each_run_can_do(tmp_path: Pat
         line = _line_of(text, T_NAMES[run])
         words = line.replace(T_NAMES[run], " ").split()
         assert words[0] == number, line
-        # the columns in the spec's order: rows, failed, traces, started, status
+        # the columns in their order: rows, failed, traces, started, status
         at = [words.index(w) for w in (count, failed, traces, started.split()[0], "complete")]
         assert at == sorted(at), line
         assert started in line, line

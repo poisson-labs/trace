@@ -1,5 +1,4 @@
-"""TF2-10 to TF2-16: what ``init`` asks, what it writes and what it prints, without a terminal
-(spec sections 4.2 and 4.4 to 4.7, rulings R2 and R4; yes/nos 16 to 24).
+"""TF2-10 to TF2-16: what ``init`` asks, what it writes and what it prints, without a terminal.
 
 ``--yes`` asks nothing and takes every answer from a flag or its default: the first store listed,
 every outcome of the newest 20 runs that is not a word for success, and with no store, the
@@ -8,7 +7,7 @@ import of the result files found when the reader's answers are given as the impo
 run id; one that is there already is refused without ``--force`` and left as it was, but for a
 config with a store and no failures, which ``init`` completes; ``--add-store`` adds one named
 store to a config and changes nothing else in it. Stdin not a terminal and no ``--yes`` is
-refused before the search. ``--json`` is one document, its keys in the spec's order. The
+refused before the search. ``--json`` is one document, its keys in a fixed order. The
 summary ends with ``next: poisson-trace runs``, which runs as written, and shows the same setup
 as one command, which, run in a copy of the folder as it was, writes the same file."""
 

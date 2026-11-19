@@ -1,7 +1,8 @@
-"""TF24-33 to TF24-46: the raw-saving pull (spec section 18.3.2, SG9 and SG2; the folder a pull
-saves is the one TF22's resolver reads). No test here reaches the network: ``pulling.send`` is
-replaced by a transport that answers each request with the response LangSmith gave to that
-request (``api/requests.json``), and every socket connection is refused while it runs.
+"""TF24-33 to TF24-46: the raw-saving pull (the raw copy saved before anything is read, its text
+left out by default; the folder a pull saves is the one TF22's resolver reads). No test here
+reaches the network: ``pulling.send`` is replaced by a transport that answers each request with
+the response LangSmith gave to that request (``api/requests.json``), and every socket connection
+is refused while it runs.
 
 - TF24-33: what is asked. ``langsmith:NAME`` in the files' place asks for the project or
   experiment by name (``GET /api/v1/sessions``), its runs (``POST /api/v2/runs/query`` with the
@@ -93,7 +94,7 @@ def test_tf24_33_the_pull_asks_for_the_session_its_runs_and_its_feedback(tmp_pat
     committed = next(e["body"] for e in json.loads((API / "requests.json").read_text()) if e["file"] == f"{version}.runs-v2.json")
     assert body["project_ids"] == [SESSION[version]] and body["page_size"] == 100
     # the committed request, and a lower bound on the runs' start: with none, LangSmith answers
-    # with the runs of the last day alone (found by the live pull; ruled 2026-11-11). The bound
+    # with the runs of the last day alone, as a live pull shows. The bound
     # is at or before the project's own start, which the sessions answer gives.
     assert sorted(body["selects"]) == sorted(committed["selects"]) and set(body) == {*committed, "min_start_time"}
     began = json.loads((API / f"{version}.session.json").read_text())[0]["start_time"]
@@ -140,7 +141,7 @@ def test_tf24_34_the_raw_copy_and_its_record(tmp_path: Path, version: str) -> No
 
 # ---------- TF24-35 ----------
 
-# the manifest is left out too (B-5, ruled 2026-11-11): empty in the captures, it is the serialised
+# the manifest is left out too: empty in the captures, it is the serialised
 # component, which in a LangChain app can hold a prompt template
 STRIPPED = ("inputs", "outputs", "inputs_preview", "outputs_preview", "error_preview", "manifest")
 #: The kind each captured error's words say, by its class: a timeout, a 429, and a parser's complaint.
@@ -543,8 +544,8 @@ SDKS: dict[str, tuple[str, ...]] = {
 
 
 def test_tf24_45_one_function_reaches_the_network(tmp_path: Path) -> None:
-    """The package is scanned once for the three readers that pull (TF25-45's and TF26-45's
-    copies of this test are here)."""
+    """The package is scanned once for the three readers that pull (TF25-45 and TF26-45
+    leave the scan to this test)."""
     import sys
     from importlib import import_module
 

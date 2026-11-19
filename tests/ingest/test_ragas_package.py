@@ -1,4 +1,4 @@
-"""IR10, lane J: Ragas itself, at the pinned version, gives what section 3 says.
+"""IR10: Ragas itself, at the pinned version, gives what docs/integrations/ragas.md says.
 
 Deselected by default (``pyproject.toml`` adds ``-m "not lane_j"``); run with ``-m lane_j``. It
 installs Ragas 0.4.3 from PyPI into a fresh environment with ``langchain-community`` 0.3.31

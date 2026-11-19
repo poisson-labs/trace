@@ -1,18 +1,18 @@
-"""TF23-33 and TF23-34: the continuous-measures table (spec sections 17.1 and 18.6, SG14; TF9-8 holds
-any new table to the clean look, and this is that table).
+"""TF23-33 and TF23-34: the continuous-measures table (TF9-8 holds any new table to the clean look,
+and this is that table).
 
 **TF23-33** ``continuous.table(comparison)`` gives a header and rows: the header opens with
 ``measure`` and ends with ``verdict``; one row a measure shown, in the order of ``MEASURES``, its
 first cell the measure and its last the verdict word (``identical`` for a measure that did not
 change on any case), followed by the direction after a comma when there is one (``different,
-slower``: Taylor's DM3, 2026-11-05); a measure no case recorded is left out, and shown as
+slower``); a measure no case recorded is left out, and shown as
 ``not recorded`` with ``technical=True``.
 
 **TF23-34** The table renders through ``look.table`` (plain: the markdown table, no escape) and
 ``_pretty.table`` under the clean look's rules: at every width from 60 to 160 no line is wider
 than the width, no digit is coloured, only escapes the look allows are drawn, and the pretty face
 holds every word and number of the plain one, rows in the same order; the one word it may
-leave out is the key column's header, ``measure``, where it folds to one record per row (CT1).
+leave out is the key column's header, ``measure``, where it folds to one record per row.
 """
 
 from __future__ import annotations
@@ -93,7 +93,7 @@ def test_tf23_34_the_clean_looks_rules(width: int) -> None:
     assert not any(ch.char.isdigit() and ch.fg is not None for line in cells(drawn) for ch in line), "a coloured digit"
     # every word and number of plain, but one: folded to one record per row (here at 60 columns)
     # TF9's renderer prints each record under its key and leaves out the key column's header word,
-    # "measure" (ruling CT1, log/trace-tf23-a/rulings.md)
+    # "measure"
     assert tokens(drawn) <= tokens(plain)
     assert tokens(plain) - tokens(drawn) <= {header[0]}
     order = [next(i for i, line in enumerate(lines) if r[0] in line) for r in rows]

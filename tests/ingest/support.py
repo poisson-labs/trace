@@ -36,7 +36,7 @@ PACKAGE = Path(poisson_trace.__file__).resolve().parent
 INGEST = PACKAGE / "ingest"
 
 IMPORT_SCHEMA = "poisson-trace.import/1"
-# the ten words none of Trace's outputs uses (spec section 2.6)
+# the ten words none of Trace's outputs uses
 BANNED = (
     "unchanged", "verified", "guaranteed", "pass", "sure", "better", "worse", "fixed",
     "validated", "confirmed",
@@ -116,7 +116,7 @@ def deepeval_argv(files: Sequence[Path] | Path, store: Path, run: str, *, metric
 
 def refused(result: Result) -> None:
     """Exit 1, nothing on stdout, one line on stderr and the command to run under it on its own
-    next: lines (rule 4). No message words are matched."""
+    next: lines. No message words are matched."""
     assert result.code == 1, result.text
     assert result.out.strip() == "", result.out
     lines = [line for line in result.err.splitlines() if line.strip()]

@@ -1,30 +1,30 @@
-"""What the independent read of the names build found, each held where the build before its
-fixes went wrong (that build is the wrong build every test here fails on):
+"""Faults in the names code, each held where the wrong build goes wrong (the code without the
+fix, which every test here fails on):
 
-- a name with a byte the command line could not read as UTF-8 is refused, where it ended in a
-  traceback the errors log could not hold;
-- ``#`` and a number too long to read as one is past the last row, where it was an
-  unexpected failure;
-- the import refuses the names file's own name as a run name, where a run of that name made
-  the store unreadable to every verb;
+- a name with a byte the command line could not read as UTF-8 is refused, where the wrong build
+  ends in a traceback the errors log cannot hold;
+- ``#`` and a number too long to read as one is past the last row, where the wrong build fails
+  unexpectedly;
+- the import refuses the names file's own name as a run name, where in the wrong build a run of
+  that name makes the store unreadable to every verb;
 - a run whose start, read as UTC, falls outside the years 1 to 9999 is set aside like one with
-  no start, where it was an unexpected failure on every verb;
-- a names file nested too deep for a reader is refused as not a names file, where it was an
-  unexpected failure;
-- a ``next:`` command gives a run by a word that reaches it alone, where it gave a name two runs
-  answer to, so the command was refused;
-- ``runs`` lists every run it can read when the rows of one cannot be read, where the listing
-  was refused whole;
-- a run whose target would give a name no verb could take back goes by its id, where it was
-  listed under a name that reached no run;
-- a control character in a name is refused, and shown escaped in the refusal, where it was
-  taken and printed raw to the terminal;
+  no start, where the wrong build fails unexpectedly on every verb;
+- a names file nested too deep for a reader is refused as not a names file, where the wrong
+  build fails unexpectedly;
+- a ``next:`` command gives a run by a word that reaches it alone, where the wrong build gives a
+  name two runs answer to, so the command is refused;
+- ``runs`` lists every run it can read when the rows of one cannot be read, where the wrong
+  build refuses the listing whole;
+- a run whose target would give a name no verb could take back goes by its id, where the wrong
+  build lists it under a name that reaches no run;
+- a control character in a name is refused, and shown escaped in the refusal, where the wrong
+  build takes it and prints it raw to the terminal;
 - a ``next:`` command keeps a store that begins with a dash as the store's value, where the
-  command read it as an option;
+  wrong build reads it as an option;
 - an entry of the names file that cannot be a name is taken back by the command its refusal
-  gives, where no command could remove it;
-- the fix check reads a start with no zone as UTC beside one with a zone, where it was an
-  unexpected failure.
+  gives, where in the wrong build no command can remove it;
+- the fix check reads a start with no zone as UTC beside one with a zone, where the wrong build
+  fails unexpectedly.
 """
 
 from __future__ import annotations

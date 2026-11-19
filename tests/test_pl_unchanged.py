@@ -1,6 +1,6 @@
-"""PL-50 to PL-57: nothing else moves (the brief's item 5). The pins are main c981832's, taken by
-``fixtures/pl/make_main_pins.py`` before anything of the rule was built (see ``pl_pins``'s
-opening for what each section holds).
+"""PL-50 to PL-57: nothing else moves. The pins are main's (``pl_pins.MAIN``), taken by
+``fixtures/pl/make_main_pins.py`` on main without the rule (see ``pl_pins``'s opening for
+what each section holds).
 
 - PL-50: the pins are whole, and none holds a path of the machine that took it.
 - PL-51: every invocation of the corpus that the rule does not move prints, piped, what main
@@ -13,9 +13,7 @@ opening for what each section holds).
 - PL-54: ``doctor`` and ``init`` on a store (the machine's own words written out), and the setup
   skill, as main prints them.
 - PL-55: the pages ``ui`` writes, and the terminal app's screens, as main gives them.
-- PL-56 (every other file of the repository is main's) was cut on the ruling of 2026-11-18
-  (AR-4): it held this pair's build to its brief, and the pair is merged.
-- PL-57: ``unmoved``, which the earlier pairs' amended tests use, takes out what the rule adds
+- PL-57: ``unmoved``, which other families' unchanged tests use, takes out what the rule adds
   and nothing else.
 """
 

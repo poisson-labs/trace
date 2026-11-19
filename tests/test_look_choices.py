@@ -1,4 +1,4 @@
-"""Choices the look leaves to the build, pinned where a plausible wrong build would harm a user.
+"""Choices ``docs/cli-look.md`` leaves open, pinned where a plausible wrong build would harm a user.
 
 - An import under a run name the store already holds is refused before its reader runs, so
   Ctrl-C never stops it there. The wrong build reads every file first and refuses the name after.

@@ -1,5 +1,5 @@
-"""TF0-16 to TF0-18: how output reads and where it can go (spec section 9.1, rules L10, L16
-and L4).
+"""TF0-16 to TF0-18: how output reads and where it can go (rules 10, 16 and 4 of
+``docs/cli-look.md``).
 
 Counts carry thousands separators in every report a user reads, and stay plain numbers in the
 JSON. A stdout that cannot encode the report's glyphs (``·``, ``–``, ``×``) gets the same report

@@ -1,4 +1,4 @@
-"""TF3-8 to TF3-14: the ``table`` reader (spec section 6.3, the shared core of INT1 to INT4).
+"""TF3-8 to TF3-14: the ``table`` reader.
 
 - TF3-8: ``.csv``, ``.jsonl``, ``.json`` (a list of objects), each also ``.gz``, and ``.parquet``,
   told by the extension; the same table in each gives the same run. Any other name is refused.
@@ -306,8 +306,8 @@ def test_tf3_13_no_value_of_another_column_is_kept(tmp_path: Path, form: str) ->
         result = verb(argv)
     assert result.code == 0, result.text
     assert holds(tmp_path / "st", secret) == [] and holds(tmp_path / "st", said) == []
-    # PENDING (TF15 Session A yes/no, with S15): the outcome column's own values are listed with
-    # their rows in the import's report; no other column's value is printed or kept
+    # the outcome column's own values are listed with their rows under the import's "What was
+    # written"; no other column's value is printed or kept
     assert secret not in result.text
     assert said not in result.err
     assert said not in result.out if form == "score" else said not in result.out.split("## What was written")[0]
@@ -359,4 +359,4 @@ def test_tf3_14_the_store_is_prove_s_and_missed_is_its_event(tmp_path: Path) -> 
         checked = trace(["fix-check", "old", "new", "--store", "st", "--event", "missed", "--inputs", "all", "--max-mde", "0.9", "--json"])
     assert checked.code == 0, checked.text
     data = json.loads(checked.out)
-    assert data["schema"] == "poisson-trace.fix-check/2"  # ST9 (ruled 2026-10-20)
+    assert data["schema"] == "poisson-trace.fix-check/2"  # the fix-check JSON's own schema

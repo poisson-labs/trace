@@ -1,7 +1,7 @@
-"""TF9, invariant 1: plain stays the contract (spec sections 9.3 and 17.1; the look file's rule 16).
+"""TF9, invariant 1: plain stays the contract (the look file's rule 16).
 
-- **TF9-1a** Every test that existed when TF9 was frozen is unchanged, byte for byte: the plain
-  output those tests pin is pinned still, and the clean look is built without moving one of them.
+- Every frozen test is unchanged, byte for byte: the plain output those tests pin is pinned
+  still, and the clean look moves none of them.
   ``test_frozen.py`` holds it, with the one list of every frozen file.
 - **TF9-1b** Piped, the build with the pretty rendering prints the plain rendering byte for byte:
   every invocation of the conformance corpus (``tf0_support.corpus``), run in a process of its

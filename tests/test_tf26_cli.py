@@ -1,7 +1,5 @@
 """TF26-47 to TF26-60: the reader in the import's command line, its refusals, its detector, folders
-of its files, and its place in the config, ``init`` and ``doctor`` (spec sections 3.3, 4.3, 4.4,
-6.1, 6.3, 12, 17.4, 18.3.1; the shared core of INT1 to INT4; TF22's FI1 to FI7; TF17's entries;
-the two finished pairs' rules for the same).
+of its files, and its place in the config, ``init`` and ``doctor``.
 
 - TF26-47: the import's help lists ``weave``; the reader's help is the verb's under both
   spellings, with its flags, each saying what it is and its default; the module has the readers'
@@ -251,7 +249,7 @@ def test_tf26_49_a_file_not_the_reader_s_is_refused_in_one_line_naming_it(tmp_pa
     path = MALFORMED[label](tmp_path)
     result = run_import(by_status(path, tmp_path / "st", "v"))
     if label == "a folder named as a file":
-        # a folder is the folder resolver's to refuse (TF22)
+        # a folder is the folder resolver's to refuse (test_tf22_folder.py)
         assert result.code == 1 and result.out == "" and path.name in result.err, result.err
     else:
         line = refused(result)
@@ -490,7 +488,7 @@ def _folders(tmp: Path, kind: str) -> tuple[Path, Path]:
 
 
 def _scrub(doc: Any) -> Any:
-    """A verb's JSON with its store and its commands set aside (FI13)."""
+    """A verb's JSON with its store and its commands set aside."""
     if isinstance(doc, dict):
         return {k: (None if k in ("store", "next", "created_at") else _scrub(v)) for k, v in doc.items() if k != "commands"}
     if isinstance(doc, list):
@@ -534,7 +532,7 @@ def test_tf26_54_a_verb_on_folders_without_the_reader_s_flags_exits_2(tmp_path: 
 def test_tf26_55_a_verdicts_file_joins_by_case_and_cannot_overturn_the_file(tmp_path: Path, kind: str) -> None:
     verdicts = tmp_path / "v.csv"
     # the errored case has no score and is censored, which is the file's own word: a verdict
-    # fills what a file left out and never overturns what it recorded (TF22)
+    # fills what a file left out and never overturns what it recorded (TF22-35)
     verdicts.write_text("case,outcome\nc08,fail\n", encoding="utf-8")
     line = refused(run_import(of("baseline", kind, tmp_path / "st", "r", "--verdicts", verdicts, case="example:case")))
     assert "c08" in line and "censored" in line, line

@@ -1,6 +1,6 @@
 """TF26-28 to TF26-32: the same evaluation read from different exports agrees wherever they hold
-the same facts, every difference is named, and both versions pair (the brief's rule 2; spec
-section 18.3.2's "two entry points that converge on one reader"; SG9).
+the same facts, every difference is named, and both versions pair: the exports are two
+ways into one reader.
 
 - TF26-28: the exports that are one export give the same record, key for key: the candidate's
   answer whole and in pages; the page's JSON and its JSON Lines; the page's CSV and its TSV.

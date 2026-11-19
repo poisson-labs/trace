@@ -1,8 +1,6 @@
-"""TF23-9 to TF23-22: what ``continuous.compare`` decides and says for each measure (spec section
-18.6.1 as ruled on 2026-11-03, CS1 to CS6, CS10, CS11 and CS13; vault
-log/trace-continuous-statistics-check/rulings.md).
+"""TF23-9 to TF23-22: what ``continuous.compare`` decides and says for each measure.
 
-**TF23-9** Pairing (item 1): only cases both versions ran are shared (``k_total``); a case is
+**TF23-9** Pairing: only cases both versions ran are shared (``k_total``); a case is
 paired when both versions recorded the measure on it (``k_paired``); within a case the tries
 are averaged and ``d_i`` is new minus old; ``k_nonzero`` counts the cases that changed; the
 means, P50s and the change are over the paired cases' per-case means.
@@ -13,46 +11,46 @@ null, ``k_paired`` 0 in JSON.
 **TF23-11** Fewer than 10 paired cases: status ``under_floor``, *too small to tell*, the
 descriptive summary, ``p_value`` null and ``p_floor`` ``2^(1 - k_nonzero)``; the sentence names
 both counts, the floor p, and that a call needs 9 changed and 10 paired cases, at 9 every changed
-case the same way, at 10 at most one the other way (CS1).
+case the same way, at 10 at most one the other way.
 
-**TF23-12** CS1: a *different* call needs 9 changed cases. With 10 paired cases and 8 changed,
+**TF23-12** A *different* call needs 9 changed cases. With 10 paired cases and 8 changed,
 all one way, no test runs (no p) and nothing is called, even with seven measures; with 9, all one
 way, every one of seven measures is called (``2^-8 < 0.05/7``).
 
-**TF23-13** CS2: from 10 paired cases, every difference zero reads "identical on all K cases"
+**TF23-13** From 10 paired cases, every difference zero reads "identical on all K cases"
 with the rule-of-three bound, no verdict and no range; 1 to 8 changed cases read "changed on n
 of K cases", each change and their sum, *too small to tell*, never *no significant difference*
 however wide the ceiling, and no smallest catchable change.
 
-**TF23-14** CS3: a tested measure's range is the t range of its differences; it is rough when it
+**TF23-14** A tested measure's range is the t range of its differences; it is rough when it
 and the test read at 0.05 disagree, and a rough range never reads *no significant difference*;
 nothing printed or saved names BCa.
 
-**TF23-15** CS4: every *no significant difference* carries "If a few cases took far longer (cost
+**TF23-15** Every *no significant difference* carries "If a few cases took far longer (cost
 far more) than the rest, this range can miss a rise.", at 10 cases and at 100.
 
-**TF23-16** CS5: the family is the measures that can be called on this pair (10 paired, 9
+**TF23-16** The family is the measures that can be called on this pair (10 paired, 9
 changed), ``total_tokens`` never among them, never tested and never called; the smallest
 catchable change and ``K_needed`` are at Holm's first threshold ``alpha / m``; Holm steps down
 across the family.
 
-**TF23-17** CS6: the *too small to tell* line reads "changes smaller than about ±X (Y%) could
+**TF23-17** The *too small to tell* line reads "changes smaller than about ±X (Y%) could
 easily go unseen in a run like this", printed from 15 paired cases and not below; with a ceiling,
 "about N cases would be needed" from 10, with the caveat that such runs often end up a little
 too small; no line anywhere says "4 times in 5".
 
-**TF23-18** CS10: the ceiling is a percentage of the old version's mean over the paired cases;
+**TF23-18** The ceiling is a percentage of the old version's mean over the paired cases;
 *no significant difference* exactly when the test is quiet, the range is not rough and lies
 inside plus or minus that much; without a ceiling a quiet result is *too small to tell*, gives
 the range in words ("these results fit anything from X faster to Y slower") and names the
 setting.
 
-**TF23-19** CS11: the Hodges-Lehmann line speaks of "the typical case", never of a median shift;
+**TF23-19** The Hodges-Lehmann line speaks of "the typical case", never of a median shift;
 the tail-spike label needs a *different* call and the typical case's 95% range inside plus or
 minus 5% of the old P50; P50 and P90 are over per-case means, P90 and P95 only from 20 paired
 cases.
 
-**TF23-20** CS13: a direction word stands alone only when the t range for the mean excludes 0 on
+**TF23-20** A direction word stands alone only when the t range for the mean excludes 0 on
 its side; otherwise the call reads "different: {word} on most cases (n of K); the mean did not
 clearly move".
 

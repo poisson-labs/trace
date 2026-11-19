@@ -480,18 +480,17 @@ def _shared_caveats(p: _Pair) -> list[str]:
         f"Tries of the same input are counted as separate chances{here}, and if they are near "
         "copies the answer is more confident than it should be."
     )
-    if d.get("_none_failed"):
-        pass
-    elif d["rows"]["old"]["failed"] == 0:
-        said.append(
-            "The old version did not fail on these inputs, so there is no drop to look for: this "
-            "check can only show whether the new version fails more."
-        )
-    elif p.ceiling >= 0.8 * p.old_share:
-        said.append(
-            f"The {p.asked} points you asked about is close to the most these inputs could drop "
-            f"(the old version failed {percent(p.old_share)} of tries)."
-        )
+    if not d.get("_none_failed"):
+        if d["rows"]["old"]["failed"] == 0:
+            said.append(
+                "The old version did not fail on these inputs, so there is no drop to look for: "
+                "this check can only show whether the new version fails more."
+            )
+        elif p.ceiling >= 0.8 * p.old_share:
+            said.append(
+                f"The {p.asked} points you asked about is close to the most these inputs could "
+                f"drop (the old version failed {percent(p.old_share)} of tries)."
+            )
     return said
 
 

@@ -1,4 +1,4 @@
-"""TF19-3: the facts rule (spec section 17.2; A8, DM13).
+"""TF19-3: the facts rule: each screen carries what its plain command prints.
 
 **TF19-3** Each screen carries every fact its plain command prints for the same runs and settings
 (the command run in the same folder, so with the same ``trace.toml``): every number as the command
@@ -8,9 +8,9 @@ could not say screen (``d``) count as the screen's; the screens are read at 120 
 enough to show their tables whole. (The verdict line being the command's, word and sentence, is
 held with each screen's frame, TF19-2.) The summary's lines and every line of "Before you act on this" are on the verdict screen whole, never
 shortened, at 120 × 40 and at 80 × 24; at 80 × 24 the lines with no room are behind one key,
-``m``, the screen says how many, and the links block stays on screen (DM13). Could not say carries
+``m``, the screen says how many, and the links block stays on screen. Could not say carries
 each sentence of the report's "What this cannot say" whole; for a verdict on an imported store,
-section 6.4's sentences too.
+the sentence a run with no traces adds ("This run has no traces ...") too.
 """
 
 from __future__ import annotations
@@ -55,13 +55,13 @@ SCREENS: dict[str, tuple[list[str], list[str], list[str]]] = {
 }
 
 
-#: How far the lines behind ``m`` are read: a page down at a time (A8).
+#: How far the lines behind ``m`` are read: a page down at a time.
 PAGES_DOWN = 6
 
 
 def _behind_m(work: Path, reach: list[str], size: tuple[int, int]) -> list[Grid]:
     """The screen, and when it says lines are behind ``m``, those lines a page at a time: ``m``,
-    then ``pagedown`` until they end. Every line is whole on one of the reads (A8, A16)."""
+    then ``pagedown`` until they end. Every line is whole on one of the reads."""
     s = drive(work, [*reach, "<snap>", "m", "<snap>", *[x for _ in range(PAGES_DOWN) for x in ("pagedown", "<snap>")]], size=size)
     first = s.grids[0]
     if not any("more lines above the table: m shows them" in r for r in first.body):
@@ -70,7 +70,7 @@ def _behind_m(work: Path, reach: list[str], size: tuple[int, int]) -> list[Grid]
 
 
 def _read(work: Path, reach: list[str], behind: list[str], size: tuple[int, int] = TALL, with_d: bool = True) -> str:
-    """The screen's body text, each view behind its keys (a key pressed again goes back, A6),
+    """The screen's body text, each view behind its keys (a key pressed again goes back),
     and its could not say screen, read in one session."""
     steps: list[object] = [*reach, "<snap>"]
     for key in behind:
@@ -151,7 +151,7 @@ def test_tf19_3_at_80x24_the_overflow_is_behind_one_key(work: Path, screen: str)
     n = int(hint[0].split()[0].replace(",", ""))
     assert n > 0
     assert "m" in first.keys()
-    # the links block stays on screen (DM13)
+    # the links block stays on screen
     assert first.line_starting("page"), first.text()
     # the verdict line stays first, with the command's word
     word = str(json.loads(cli(work, [*argv, "--json"]).out)["verdict"])
@@ -198,7 +198,7 @@ max_mde = 0.5
 def test_tf19_3_could_not_say_on_an_imported_store_carries_section_6_4(work: Path) -> None:
     """The app opened on a config naming the table store: the run screen of an imported run, and
     its could not say screen (``d``), which carries the report's "What this cannot say" whole and
-    section 6.4's sentence for a run with no traces; a fix-check of the two imports, whose could
+    the sentence the report adds for a run with no traces; a fix-check of the two imports, whose could
     not say carries its report's lines whole."""
     (work / "imp").mkdir()
     (work / "imp" / "trace.toml").write_text(IMPORTED_CONFIG, encoding="utf-8")

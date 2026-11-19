@@ -1,4 +1,4 @@
-"""TF1-14: the import's name holes (spec section 5.4, ruling R19), and the names a run can be
+"""TF1-14: the import's name holes, and the names a run can be
 imported under.
 
 ``--run`` is a folder's name: an empty name, ``.``, ``..``, a name holding a slash, a backslash
@@ -6,7 +6,7 @@ or a NUL, and one over 80 characters are refused in Trace's own sentence, one li
 before Prove is asked anything and with nothing written, not even the store's folder. A name of
 80 characters is taken. Since an imported run is named by its import name, the import refuses
 too what ``name`` refuses: a reserved form, a name another run of the store already answers
-to, and a name a command could not give back (a space at either end, a newline, a dash first). A name the store holds as a run keeps today's refusal."""
+to, and a name a command could not give back (a space at either end, a newline, a dash first). A name the store holds as a run keeps its own refusal."""
 
 from __future__ import annotations
 

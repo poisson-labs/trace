@@ -1,11 +1,9 @@
-"""TF3-38: a JUnit report's start is its suites' timestamp (spec section 6.3) — pending: this file
-and the rewrite of IC12's vocabulary (``tests/ingest/test_import_cli.py``) are one commit, dropped
-together on a no.
+"""TF3-38: a JUnit report's start is its suites' timestamp, recorded with ``started_from``
+``file`` (the vocabulary IC12 holds, in ``tests/ingest/test_import_cli.py``).
 
-The start-time vocabulary every import records (``started_from``, Integrations — Spec INT1
-section 2.6) has no word for a time the tool wrote inside the file: ``file name`` is a time in the
-file's name and ``file time`` its modification time. The spec's promptfoo reader names the word
-``file``; the JUnit reader is the first to need it.
+In the start-time vocabulary every import records (``started_from``), ``file`` is a time the
+tool wrote inside the file; ``file name`` is a time in the file's name and ``file time`` its
+modification time.
 
 - The start is the earliest ``timestamp`` of any suite of the files read, as UTC; ``started_from``
   is ``file``.

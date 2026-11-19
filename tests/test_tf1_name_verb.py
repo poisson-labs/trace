@@ -1,4 +1,4 @@
-"""TF1-6: ``poisson-trace name`` (spec section 5.3).
+"""TF1-6: ``poisson-trace name`` (``docs/commands.md``).
 
 ``name RUN NAME`` gives the run the name, wherever RUN is given by any word a verb takes;
 naming it again replaces its name; ``name RUN --forget`` takes the name back, a stale entry

@@ -1,11 +1,10 @@
-"""latest and previous never order runs the wrong way (Taylor's ruling on the partner wheel's
-yes/no 7, 2026-10-19).
+"""latest and previous never order runs the wrong way.
 
 They go by when each run started. Where the start times cannot order the runs a word ranks, the
 word is refused and the runs to name are named: two runs that started at the same moment (two
 files init imported together), or a run whose start is its file's modification time, which says
 when the file was written or copied, not when the run ran. Runs whose starts are run times (a
-start given with ``--started``, a JUnit suite's timestamp, Prove's own) are ordered as before.
+start given with ``--started``, a JUnit suite's timestamp, Prove's own) are ordered by them.
 """
 
 from __future__ import annotations
@@ -63,7 +62,7 @@ def test_two_runs_given_the_same_start_are_not_ordered_by_their_names(tmp_path: 
 
 
 def test_runs_with_run_times_are_ordered_by_them(tmp_path: Path) -> None:
-    """Starts given with --started, and JUnit suites' timestamps, order the runs as before."""
+    """Starts given with --started, and JUnit suites' timestamps, order the runs by them."""
     folder = work(tmp_path)
     for name, table, started in (("old", TABLE_A, "2026-09-05T18:54:07Z"), ("new", TABLE_B, "2026-09-05T19:50:09Z")):
         argv = ["table", str(table), "--store", "st", "--run", name, *COLUMNS, "--started", started]

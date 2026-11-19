@@ -1,7 +1,7 @@
-"""TF9, invariant 7: what else the look file requires (spec sections 9.2 and 17.1; the look file's
+"""TF9, invariant 7: what else the look file requires (the look file's
 rules 15 and 16).
 
-- **TF9-7a** ``docs/cli-look.md`` is Prove's look file byte for byte, as poisson-prove 0.1.2
+- ``docs/cli-look.md`` is Prove's look file byte for byte, as poisson-prove 0.1.2
   publishes it (tag ``v0.1.2``): its digest is held by TF5-69 (``test_tf5_docs.py``).
 - **TF9-7b** In a pseudo-terminal, with escapes removed, the first line carries the same verdict
   word and sentence as plain's, and the exit code is plain's.

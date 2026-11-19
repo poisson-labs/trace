@@ -1,6 +1,5 @@
-"""TF26-61 to TF26-65: the reader's page and recipe (spec sections 6.1, the listing rule; 6.3, the
-DeepEval page's shape; 6.4a, the four sentences; 7.1, the recipes; 7.2, plain words; and the facts
-the captures correct, which the page must not repeat).
+"""TF26-61 to TF26-65: the reader's page and recipe, of the shape every reader's page has,
+in plain words, and not repeating the facts the captures correct.
 
 - TF26-61: ``docs/integrations/weave.md`` exists, of the other pages' shape: the one install
   line, the version that wrote the captures, and a command that imports a committed capture

@@ -1,6 +1,6 @@
 """TF17-33 to TF17-41: ``init`` on a ``trace.toml`` with pending ``[[import]]`` entries, the
-hand-over from the agent's file (spec section 17.4, AD16; section 4.6 and 4.7 as it amends
-them).
+hand-over from the agent's file (``docs/setup-with-your-agent.md``, "The hand-over, and what
+you do next").
 
 - TF17-33: on a terminal, init shows the stores, the failures and the pending files, then asks
   ``Import these N files as the runs named here? [y/N]``; Enter or ``n`` writes nothing and
@@ -12,10 +12,10 @@ them).
   = "trace-store"`` when ``[store]`` is a Prove store, nothing when the config names the imports'
   store already. It ends with ``next: poisson-trace doctor``, and doctor then reads ready.
 - TF17-35: ``--no-import`` leaves the entries pending and writes nothing.
-- TF17-36: stdin not a terminal without ``--yes`` is refused before the question (section 4.6),
+- TF17-36: stdin not a terminal without ``--yes`` is refused before the question,
   and nothing is written.
-- TF17-37: a ``trace.toml`` with nothing pending is refused without ``--force`` as today; with
-  ``--force`` init sets up again as today.
+- TF17-37: a ``trace.toml`` with nothing pending is refused without ``--force``, as any config is;
+  with ``--force`` init sets up again.
 - TF17-38: a refusal on any entry (a file that reads but whose metric is not in it; a file
   missing) writes no run and leaves the config as it was.
 - TF17-39: entries already imported are left as they are: a second init imports the pending

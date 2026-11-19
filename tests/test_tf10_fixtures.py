@@ -1,16 +1,17 @@
-"""TF10-1 to TF10-3: the three tools' committed exports (spec sections 6.1 and 6.2: a reader is
-listed only on a real file the tool wrote, committed with its provenance and its checksum).
+"""TF10-1 to TF10-3: the three tools' committed exports (a reader is listed only on a real file
+the tool wrote, committed with its provenance and its checksum).
 
 - TF10-1: every data file of ``tests/fixtures/ingest/promptfoo``, ``…/inspect`` and
-  ``…/openai-evals`` is listed in ``SHA256SUMS`` with its digest, the digest as this freeze
-  committed it; ``PROVENANCE.md`` has a section for each naming the tool's version and its
-  recipe, which is committed beside the files.
+  ``…/openai-evals`` is listed in ``SHA256SUMS`` with the digest pinned here; ``PROVENANCE.md``
+  has a section for each naming the tool's version and its recipe, which is committed beside the
+  files.
 - TF10-2: the files are what the provenance says: promptfoo's JSON is ``results.version`` 3 by
   promptfoo 0.120.19, two prompts by four tests, and its JSON Lines file the same eight results;
-  Inspect's ``.eval`` is a zip whose every member is Zstandard-compressed (compress type 93),
-  which ``zipfile`` alone cannot read, and its ``.json`` is ``version`` 2 by inspect_ai 0.3.277,
-  three samples by two epochs, each; OpenAI Evals' two records are a ``spec`` line, a
-  ``final_report`` line and three ``match`` events each, all of them not correct.
+  Inspect's ``.eval`` is a zip whose every member is Zstandard-compressed (compress type 93):
+  ``zipfile`` lists the members and ``zstandard`` decompresses each to read its JSON. Its ``.json``
+  is ``version`` 2 by inspect_ai 0.3.277, three samples by two epochs, each; OpenAI Evals' two
+  records are a ``spec`` line, a ``final_report`` line and three ``match`` events each, all of
+  them not correct.
 - TF10-3: no fixture names a home folder or the machine's owner, and the one edit the OpenAI
   Evals provenance records is in place: ``/opt/venv`` once in each file, as the opening of the
   ``spec`` line's ``registry_path``, with the digests of the files the tool wrote recorded in

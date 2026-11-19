@@ -1,8 +1,7 @@
-"""TF15-P25 (PENDING Taylor's yes/no, Session A log rulings.md): the table import lists every value
-its outcome column holds, with its rows, so a value counted as a pass is seen (S15, carried into
-this pair). It meets test_tf3_table.py::test_tf3_13_no_value_of_another_column_is_kept[outcome],
-which keeps every outcome value but the failure values out of the output; the commit that adds
-this file moves that case, and reverting it restores both.
+"""TF15-P25: the table import lists every value
+its outcome column holds, with its rows, so a value counted as a pass is seen. It meets
+test_tf3_table.py::test_tf3_13_no_value_of_another_column_is_kept[outcome], which keeps every
+outcome value but the failure values out of the output before the listing this test holds.
 """
 
 from __future__ import annotations

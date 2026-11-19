@@ -1,6 +1,5 @@
 """TF10-47 to TF10-50: nothing written that Prove 0.1.2 cannot read, and no verb's existing output
-changed (spec sections 6.3, 6.4, 18.4.2 as SA1 reads it; TF21-64 and TF21-65 keep pinning the
-eleven earlier imports byte for byte, and stay frozen).
+changed (TF21-64 and TF21-65 keep pinning the eleven earlier imports byte for byte).
 
 - TF10-47: each new import is a run Prove 0.1.2 reads: its manifest, its tally, its rows with
   their meta, its ``events.jsonl`` in Prove's shape; the Parquet part has the schema of a run the
@@ -33,7 +32,7 @@ PAIRS = {
 }
 # what each pair's fix check counts, read from the files: (old missed, old rows, new missed, new rows)
 COUNTS = {"promptfoo": (2, 4, 0, 4), "inspect": (3, 6, 1, 6), "openai-evals": (3, 3, 3, 3)}
-# each earlier reader's help on main 680a1e3, as SHA-256 of its bytes (moved from 73b45ef's by RB1)
+# each earlier reader's help on the pinned main, as SHA-256 of its bytes
 EARLIER_HELP_SHA = {
     "deepeval": "fa997eb02bd609e9e62e14a7ab4c9ca960e33b3534cefe5a259631424ab1390d",
     "ragas": "2fd4273275204f7ff58bcd03e1acb7a66b8861b22fe08d2b9ea6149893dbadd9",
@@ -80,7 +79,7 @@ def test_tf10_47_prove_reads_each_new_run(tmp_path: Path, tool: str) -> None:
         part = next((tmp_path / "st" / run).rglob("*.parquet"))
         assert pq.read_schema(part).remove_metadata() == want_schema.remove_metadata()
         events = [json.loads(line) for line in (tmp_path / "st" / run / "events.jsonl").read_text().splitlines()]
-        # the run record's full log (section 17.3 item 6, SV1), where SA4 had two events
+        # the run record's full log: planned, started, progress, finished
         kinds = [e["kind"] for e in events]
         assert kinds[:2] == ["planned", "started"] and kinds[-1] == "finished"
         assert set(kinds[2:-1]) == {"progress"}

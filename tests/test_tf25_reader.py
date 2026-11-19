@@ -1,6 +1,6 @@
 """TF25-4 to TF25-15: the reader on every committed Braintrust capture: rows, cases and outcomes
-(spec sections 6.3, 18.1.1 row 10, 18.3.1 and 18.3.2; TF22's FI18 and FI19; the LangSmith pair's
-LS-1 to LS-5 and LS-15, in Braintrust's words).
+(the input key and the verdicts join TF22 holds for every reader; the LangSmith reader's TF24-4
+to TF24-15, in Braintrust's words).
 
 - TF25-4: every export of all four experiments (the fetch, BTQL's spans, traces and summary
   shapes, the page's JSON and its CSV) reads as one row a trace: ten rows on ten cases for the
@@ -192,7 +192,7 @@ def test_tf25_5_input_is_refused_when_no_root_holds_an_input(tmp_path: Path, kin
 @pytest.mark.parametrize("kind", ["fetch", "summary", "ui-json", "ui-csv"])
 def test_tf25_5_a_verdicts_file_joins_by_input(tmp_path: Path, kind: str) -> None:
     """The reader hands the import each case's input key, so a verdict that names an input and
-    no case joins the row of that input (FI19). Here it agrees with what the file recorded."""
+    no case joins the row of that input. Here it agrees with what the file recorded."""
     verdicts = tmp_path / "v.jsonl"
     verdicts.write_text(json.dumps({"input": {"case": "c10", "item": ITEM["c10"]}, "outcome": "fail"}) + "\n", encoding="utf-8")
     data = imported(bt_argv(export("baseline", kind), tmp_path / "st", "r", "--verdicts", verdicts, case="record" if kind in WITH_RECORD else "input"))
@@ -512,7 +512,7 @@ def test_tf25_12_a_span_s_parent_is_the_first_of_its_parents(tmp_path: Path, kin
         steps = work_spans(rows, "c03")
         llm = next(r for r in steps if span_type(r) == "llm")
         # two parents named, the model call first: the captures name one each, so which of
-        # several is the parent is frozen here
+        # several is the parent is held here
         steps[-1]["span_parents"] = [llm["span_id"], steps[-1]["span_parents"][0]]
 
     path = edited(tmp_path, "candidate", kind, nest)

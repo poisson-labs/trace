@@ -6,17 +6,16 @@ Not a test module and not collected.
 
 **The reference.** Every function under "the check's methods" and "the check's generators" is
 copied, unchanged but for names and the removal of what these tests do not use, from the
-continuous statistics check (vault ``poisson labs/projects/trace/log/trace-continuous-statistics-check/``,
-on vault main at 1569790d): ``evidence/scripts/cslib.py``, ``evidence/scripts/sim_crash.py`` and
-``evidence/review/scripts/r1_shape_null.py`` and ``r3_tip_stress.py``. They are the code that
+continuous statistics check's own code: its methods, its crash-run simulation, and its two
+scenario sets r1 (run shapes, nothing changed) and r3 (stress at the tips). They are the code that
 produced the check's tables, at the check's seeds, so a test that rebuilds a table's row from
 them and gets the row the check printed shows the data here are the check's data. Nothing in
 this file is Trace code, and nothing in it reads ``poisson_trace``.
 
-**The contract under test** is ``poisson_trace.stats.continuous`` (spec section 18.6 as ruled on
-2026-11-03, CS1 to CS14). Its inputs are plain: a :class:`Version` of a run holds, per case, the
+**The contract under test** is ``poisson_trace.stats.continuous``. Its inputs are plain: a
+:class:`Version` of a run holds, per case, the
 tries of that case, and each try holds its value per measure (``None`` where the source did not
-record it), how it ended (a failure kind of section 18.5, or ``None``), its behavioural signals,
+record it), how it ended (a failure kind, or ``None``), its behavioural signals,
 and its repeat index. The readers that fill these from a store are TF21's; these tests build
 them by hand.
 """
@@ -34,9 +33,9 @@ MEASURES = (
     "wall_time_s", "working_time_s", "input_chars", "output_chars",
     "input_tokens", "output_tokens", "total_tokens", "cost_usd",
 )
-# compared only on cases both versions finished (CS7)
+# compared only on cases both versions finished
 FINISHED_ONLY = ("wall_time_s", "working_time_s", "output_chars")
-# compared on every shared case with a value (section 18.6.1 item 4, CS9)
+# compared on every shared case with a value
 ALL_PAIRS = ("input_chars", "input_tokens", "output_tokens", "total_tokens", "cost_usd")
 EARLY_KINDS = ("crash", "rate_limit", "abstained", "guardrail_blocked")
 # each measure's two direction words, the lower first
@@ -123,7 +122,7 @@ def run(a: Any, b: Any, **kw: Any) -> Any:
     return cm().compare(a, b, **kw)
 
 
-# ---------- the check's methods (cslib.py) ----------
+# ---------- the check's methods ----------
 
 
 @cache
@@ -135,7 +134,7 @@ def ref_all_flips(k: int) -> np.ndarray:
 
 def ref_signflip_p(d: np.ndarray, rng: np.random.Generator, plus_one: bool = False,
                    exact_max: int = 14, flips: int = 10_000) -> float:
-    """cslib.signflip_p: the sign-flip p through the sum, exact over the non-zero differences up
+    """The sign-flip p through the sum, exact over the non-zero differences up
     to ``exact_max`` of them, else ``flips`` random sign vectors from ``rng``."""
     nz = d[d != 0]
     k = len(nz)
@@ -185,8 +184,9 @@ def ref_signed_rank_cdf(n: int) -> np.ndarray:
 
 
 def ref_hl_interval(d: np.ndarray, alpha: float = 0.05) -> tuple[float, float]:
-    """cslib.hl_interval: order statistics C and M + 1 - C of the M Walsh averages, C - 1 the
-    largest w with P(W+ <= w) <= alpha / 2 (Hollander, Wolfe & Chicken 2014, section 3.3)."""
+    """The Hodges-Lehmann interval: order statistics C and M + 1 - C of the M Walsh averages,
+    C - 1 the largest w with P(W+ <= w) <= alpha / 2 (Hollander, Wolfe & Chicken 2014,
+    section 3.3)."""
     w = ref_walsh(d)
     cdf = ref_signed_rank_cdf(len(d))
     below = np.nonzero(cdf <= alpha / 2)[0]
@@ -197,7 +197,7 @@ def ref_hl_interval(d: np.ndarray, alpha: float = 0.05) -> tuple[float, float]:
 
 
 def ref_draw(shape: str, rng: np.random.Generator, size: int) -> np.ndarray:
-    """cslib.draw, the shapes the validation data sets use."""
+    """One draw of a named shape, the shapes the validation data sets use."""
     if shape == "normal":
         return rng.standard_normal(size)
     if shape == "t3":
@@ -219,7 +219,7 @@ def ref_seed_for(*parts: int) -> np.random.Generator:
 
 
 def validate_data() -> list[np.ndarray]:
-    """The six data sets of the check's validate.py, item 1 (sims/00-validate.txt)."""
+    """The six validation data sets of the check (its validation, item 1)."""
     rng = ref_seed_for(0)
     return [
         np.array([1.83, 0.50, 1.62, 2.48, 1.68, 1.88, 1.55, 3.06, 1.30, -0.4]),
@@ -238,7 +238,7 @@ STORM_P, STORM_X = 0.03, 6.0
 
 def r1_lat(rng: np.random.Generator, base: float, reps: int, sd: float = 0.4, storms: bool = True,
            mult: float = 1.0, all_tries: bool = False) -> Any:
-    """r1_shape_null.lat: one case's tries on one version, run-shaped latency; their mean, or the
+    """One case's tries on one version, run-shaped latency; their mean, or the
     tries themselves with ``all_tries``."""
     y = base * mult * np.exp(rng.normal(0, sd, reps))
     if storms:
@@ -247,7 +247,7 @@ def r1_lat(rng: np.random.Generator, base: float, reps: int, sd: float = 0.4, st
 
 
 def r1_reps(scenario: str, k: int, reps: int):  # type: ignore[no-untyped-def]
-    """r1_shape_null.cell's draws for ``scenario`` at ``k`` cases, rep by rep, the generator moved
+    """r1's draws for ``scenario`` at ``k`` cases, rep by rep, the generator moved
     on exactly as r1 moves it (its sign-flip p draws from the same stream). Yields, per rep, the
     tries per case of each version and r1's own reading of that rep: its sign-flip p (10,000 flips,
     plus one) and whether its t-test called it at 0.05."""
@@ -271,13 +271,13 @@ def r1_reps(scenario: str, k: int, reps: int):  # type: ignore[no-untyped-def]
         yield ta, tb, p, stats.ttest_1samp(d, 0).pvalue < 0.05
 
 
-# sim_crash.py's kinds
+# the crash-run simulation's kinds
 SIM_EARLY = {"crash", "rate_limit", "abstained", "guardrail_blocked"}
 SIM_SPEC_DROP = {"crash", "rate_limit", "timeout"}
 
 
 def sim_call(d: np.ndarray, rng: np.random.Generator) -> str:
-    """sim_crash.call: the check's call at 0.05 on one measure, floor 8 (before CS1)."""
+    """The check's call at 0.05 on one measure, floor 8 (the check's own floor)."""
     if len(d) < 10 or (d != 0).sum() < 8:
         return "too small"
     p = ref_signflip_p(d, rng)
@@ -287,7 +287,7 @@ def sim_call(d: np.ndarray, rng: np.random.Generator) -> str:
 
 
 def sim_count_rule(v: str, ka: np.ndarray, kb: np.ndarray, keep: np.ndarray) -> str:
-    """sim_crash.count_rule with timeouts counted: CS8's rule as the check simulated it."""
+    """The count rule with timeouts counted, as the check simulated it."""
     early_a = sum(1 for a in ka if a in SIM_EARLY)
     early_b = sum(1 for b in kb if b in SIM_EARLY)
     to_a = sum(1 for a, kp in zip(ka, keep) if kp and a == "timeout")
@@ -300,7 +300,7 @@ def sim_count_rule(v: str, ka: np.ndarray, kb: np.ndarray, keep: np.ndarray) -> 
 
 
 def sim_spec_guard(d: np.ndarray, m: int, verdict: str) -> str:
-    """sim_crash.spec_guard: the 10th/90th-percentile guard CS8 replaces."""
+    """The 10th/90th-percentile guard Trace does not use."""
     if verdict not in ("B lower", "B higher") or m == 0:
         return verdict
     p10, p90 = np.quantile(d, [0.1, 0.9])
@@ -311,15 +311,15 @@ def sim_spec_guard(d: np.ndarray, m: int, verdict: str) -> str:
     return verdict
 
 
-R3_SCENARIOS = {  # r3_tip_stress.SCN, by index: (noise sd, hidden factor or None)
-    1: (0.15, 1.6),  # "hidden h1.6 s0.15": the low-noise hidden slowdown (fresh read A3)
+R3_SCENARIOS = {  # r3's scenarios, by index: (noise sd, hidden factor or None)
+    1: (0.15, 1.6),  # "hidden h1.6 s0.15": the low-noise hidden slowdown
 }
 
 
 def r3_reps(index: int, k: int, reps: int):  # type: ignore[no-untyped-def]
-    """r3_tip_stress.cell's draws for scenario ``index`` at ``k`` cases, the generator moved on as
+    """r3's draws for scenario ``index`` at ``k`` cases, the generator moved on as
     r3 moves it. Yields, per rep, one try per case of each version (latency, the ending kind of
-    each) and r3's spec and count readings of that rep."""
+    each) and r3's percentile-guard and count-rule readings of that rep."""
     s, h = R3_SCENARIOS[index]
     rng = np.random.default_rng(np.random.SeedSequence([20261103, 903, index, k]))
     for _ in range(reps):
@@ -343,9 +343,9 @@ def r3_reps(index: int, k: int, reps: int):  # type: ignore[no-untyped-def]
 
 
 def crash_reps(scenario: str, r: float, k: int, reps: int):  # type: ignore[no-untyped-def]
-    """sim_crash.draw for ``scenario`` at ratio ``r`` and ``k`` cases, from the check's seed for
-    that cell. Only the draws are reproduced (the cell's other readings are not replayed, so
-    from the second rep on the stream is this file's own, at the check's seed)."""
+    """The crash-run simulation's draws for ``scenario`` at ratio ``r`` and ``k`` cases, from the
+    check's seed for that cell. Only the draws are reproduced (the cell's other readings are not
+    replayed, so from the second rep on the stream is this file's own, at the check's seed)."""
     scenarios = ("random_crash", "hard_crash", "hard_giveup", "timeout", "hidden_slow")
     rng = ref_seed_for(4, scenarios.index(scenario), int(r * 100), k)
     for _ in range(reps):

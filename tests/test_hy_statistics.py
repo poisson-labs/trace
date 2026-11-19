@@ -1,6 +1,5 @@
-"""HY1 to HY11: the properties of spec section 17.5 that no test held as a property before
-(test standard pass, yes/no 9, ruled yes 2026-10-29), for the statistics compare, where,
-fix-check and the continuous measures use.
+"""HY1 to HY11: properties of the statistics compare, where, fix-check and the continuous
+measures use, held as properties with Hypothesis.
 
 Each property is one body run twice: a fast test in the pull-request lane (a fixed seed through
 ``derandomize`` and a bounded example count) and a wide twin of the same body in the math lane.
@@ -308,7 +307,7 @@ test_hy10_the_continuous_ranges_hold_their_estimate, test_hy10_wide = twin(diffe
 
 ENDINGS = [None, None, None, "timeout", "crash", "wrong_answer"]
 # Positive amounts start at a nanosecond (or a billionth of a dollar): below that the relative
-# change can overflow and compare raises, which is finding HY1, held by TF6-27 in ``test_tf6_measures.py``.
+# change can overflow and compare raises, which TF6-27 in ``test_tf6_measures.py`` holds.
 seconds = st.one_of(st.just(0.0), st.floats(1e-9, 600))
 dollars = st.one_of(st.just(0.0), st.floats(1e-9, 2))
 

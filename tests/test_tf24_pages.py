@@ -1,6 +1,6 @@
-"""TF24-61 to TF24-65: the reader's page and recipe (spec sections 6.1, the listing rule; 6.3, the
-DeepEval page's shape; 6.4a, the four sentences; 7.1, the recipes; 7.2, plain words; and the three
-facts the captures correct, which the page must not repeat).
+"""TF24-61 to TF24-65: the reader's page and recipe (the shape of the other integration pages, as
+``docs/integrations/deepeval.md`` has it; the four sentences of what it does not do; the recipe;
+plain words; and the three facts the captures correct, which the page must not repeat).
 
 - TF24-61: ``docs/integrations/langsmith.md`` exists, of the other pages' shape: the one install
   line, the versions that wrote the captures (the SDK's and the command's), and a command that

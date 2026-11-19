@@ -1,6 +1,6 @@
 """TR43 to TR53, and the function-level halves of TR55 to TR57: the statistics in
 ``poisson_trace.paired`` (and ``survival.deaths_needed``) against oracles written here from the
-spec's section 2: full enumeration in exact fractions, the section's own formulas restated, and
+statistics' definitions: full enumeration in exact fractions, the formulas restated, and
 Prove's public statistics and scipy imported inside the tests as dev oracles."""
 
 from __future__ import annotations
@@ -224,10 +224,9 @@ def _mn_oracle(tab, alpha):  # type: ignore[no-untyped-def]
 @SETTINGS
 @given(tables(max_inputs=8, max_runs=8), st.sampled_from([0.05, 0.1, 0.01]))
 def test_tr49_the_difference_is_mantel_haenszel_with_sato_variance(tab, alpha) -> None:  # type: ignore[no-untyped-def]
-    """ST3 (ruled 2026-10-20): the estimate is still Mantel-Haenszel's and the JSON's variance
-    still Sato's; the interval is the stratified Miettinen-Nurminen score interval, printed where
-    Sato's variance is positive, as the interval was before. trace#31 (2026-11-10): and where no
-    run failed in either version, at a variance of 0."""
+    """The estimate is Mantel-Haenszel's and the JSON's variance Sato's; the interval is the
+    stratified Miettinen-Nurminen score interval, printed where Sato's variance is positive, and
+    where no run failed in either version, at a variance of 0."""
     points, var, lo, hi = difference(counts_of(tab), alpha=alpha)
     t = paired_test(counts_of(tab))
     assert points == pytest.approx((t.observed_new - t.expected_new) / t.weight, abs=1e-12)
@@ -242,7 +241,7 @@ def test_tr49_the_difference_is_mantel_haenszel_with_sato_variance(tab, alpha) -
     elif any(xa or xb for xa, _, xb, _ in tab):
         assert var is None and lo is None and hi is None
     else:
-        # trace#31: where no run failed in either version Sato's variance is 0 and the score
+        # where no run failed in either version Sato's variance is 0 and the score
         # interval is printed all the same; it is this file's own oracle there too
         assert points == 0.0 and var == 0.0
         want_lo, want_hi = _mn_oracle(tab, alpha)
@@ -275,7 +274,7 @@ def test_tr49_the_worked_example_and_a_variance_that_is_not_positive() -> None:
     points, var, lo, hi = difference(counts_of(WORKED))
     assert points == pytest.approx(-0.25, abs=1e-4)
     assert var == pytest.approx(0.015625, abs=1e-4)
-    # ST3 (ruled 2026-10-20): the statistics check's simlib.mn_stratified on WORKED
+    # the stratified Miettinen-Nurminen interval on WORKED, from an independent implementation
     assert lo == pytest.approx(-0.501442, abs=1e-4)
     assert hi == pytest.approx(0.004307, abs=1e-4)
     points, var, lo, hi = difference(counts_of([(4, 4, 0, 4)] * 3))
@@ -359,7 +358,7 @@ def test_tr51_the_worked_example() -> None:
 
 
 def _power_oracle(tab, r, direction, alpha):  # type: ignore[no-untyped-def]
-    """Section 2.5 restated: the moments from both arms together, the reference variance and the
+    """The power formula restated: the moments from both arms together, the reference variance and the
     spread under a proportional change, the continuity correction, one direction only."""
     z = float(stats.norm.isf(alpha / 2))
     delta = v_ref = v_one = 0.0

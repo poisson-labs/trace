@@ -1,12 +1,11 @@
-"""TF2-22: the look held over TF2's own invocations, and plain words in all they print (spec
-sections 9.2 and 7.2).
+"""TF2-22: the look held over TF2's own invocations, and plain words in all they print.
 
 ``init`` and ``doctor`` in their forms, the verbs reading the config, and every refusal and wrong
 command line TF2 adds, run in order in one folder and each held to the rules of TF0's corpus
 (``test_tf0_conformance``): the exit code the invocation calls for; no traceback; nothing on stdout
 for a refusal; one strict JSON document opening ``schema``, ``verdict``, ``sentence``; a result's
 first stdout line a verdict line and ``next:`` closing it. ``init``'s questions and its listing are
-progress on stderr (section 9.2), so stderr is held to the error and note shape only where
+progress on stderr, so stderr is held to the error and note shape only where
 ``init`` is not running. A not-ready ``doctor`` exits 4 and its ``--json`` is the same strict
 document. Nothing any of them prints holds an internal id or a word only the lab uses."""
 

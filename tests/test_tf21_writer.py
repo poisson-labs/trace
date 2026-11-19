@@ -1,4 +1,4 @@
-"""TF21-25 to TF21-33: the writer (spec section 18.4.2, SG3, SG4; SA1, SA4, SA5).
+"""TF21-25 to TF21-33: the writer, ``ingest/writer.py``.
 
 A Row becomes one of Prove 0.1.2's episode records with no change to Prove: ``wall_time``,
 ``t``, ``horizon`` and ``confidence`` from the signals where recorded, the
@@ -158,10 +158,10 @@ def test_tf21_27_t_and_horizon_are_the_recorded_steps_else_as_today(tmp_path: Pa
     by = {m["trace_signals"]["case"]: (t, h) for m, t, h in
           zip(df["meta"], df["t"], df["horizon"], strict=True)}
     assert by["case_042"] == (3.0, 8.0)
-    # no steps and no spans: one step, so Prove 0.1.3's pages build over the store (RR5); the
+    # no steps and no spans: one step, so Prove 0.1.3's pages build over the store; the
     # rows whose source recorded no horizon share one, the most steps any of them took, since
-    # Prove's pages refuse a run of mixed horizons (found by the LangSmith reader's tests, the
-    # first reader whose rows record different numbers of steps)
+    # Prove's pages refuse a run of mixed horizons (a LangSmith run's rows, for one, record
+    # different numbers of steps)
     assert by["case_007"] == (1.0, 4.0)
     assert by["s"] == (4.0, 4.0)
 
@@ -211,7 +211,7 @@ def test_tf21_28_the_record_carries_no_error_text() -> None:
     assert "secret" not in json.dumps(record)
 
 
-# ---------- TF21-29: Prove 0.1.2 reads the run as it reads any (SA1) ----------
+# ---------- TF21-29: Prove 0.1.2 reads the run as it reads any ----------
 
 
 def test_tf21_29_prove_reads_tallies_and_lists_the_run(tmp_path: Path) -> None:
@@ -230,15 +230,15 @@ def test_tf21_29_the_case_id_column_stays_empty(tmp_path: Path) -> None:
     assert all(c is None for c in df["case_id"])
 
 
-# ---------- TF21-30: events.jsonl in Prove's own event shape (SA4; widened by SV1's run record) ----------
+# ---------- TF21-30: events.jsonl in Prove's own event shape, the full log ----------
 
 
 AT = re.compile(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z")
 
 
 def test_tf21_30_the_import_writes_the_full_event_log(tmp_path: Path) -> None:
-    # the run record (section 17.3 item 6, SV1) widens SA4's two events to Prove's full log;
-    # a row with no outcome counts as errored, as Prove counts its own (RR1)
+    # the import writes Prove's full log: planned, started, progress and finished;
+    # a row with no outcome counts as errored, as Prove counts its own
     root, _ = _stored(tmp_path, [FULL, BARE, Row("e", None, "timeout", result="censored")])
     lines = (root / "run" / "events.jsonl").read_text(encoding="utf-8").splitlines()
     events = [json.loads(line) for line in lines]
@@ -272,7 +272,7 @@ def test_tf21_30_a_refused_import_leaves_no_events_file(tmp_path: Path) -> None:
     assert not (root / "run").exists()
 
 
-# ---------- TF21-31: the taxonomy's digest is in the manifest, beside declared (SA5) ----------
+# ---------- TF21-31: the taxonomy's digest is in the manifest, beside declared ----------
 
 
 def test_tf21_31_the_manifest_records_which_rules_classified(tmp_path: Path) -> None:

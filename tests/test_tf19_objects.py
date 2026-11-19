@@ -1,12 +1,12 @@
-"""TF19-9: the objects only the app needs, frozen as core functions (PA11; A15).
+"""TF19-9: the objects only the app needs, frozen as core functions.
 
-**TF19-9** The design's gaps, each from a core function in ``poisson_trace.core`` (the module's
-opening, A15): ``saved_verdicts`` (the saved verdicts as a list), ``run_sources`` (a run's target
-or tool, and an imported run's tool and files) and ``found_results`` (the result files ``init``
-finds, each with its import line, and whether it is imported). Their signatures and their
-frozen dataclasses' fields, in order; what each returns on the workspace, held to what the
-store, the verbs and ``init`` say themselves; each prints nothing, reads no environment
-variable and writes nothing. That no existing verb's output changes is TF19-10.
+**TF19-9** What the app needs and no verb gives, each from a core function in
+``poisson_trace.core``: ``saved_verdicts`` (the saved verdicts as a list), ``run_sources`` (a
+run's target or tool, and an imported run's tool and files) and ``found_results`` (the result
+files ``init`` finds, each with its import line, and whether it is imported). Their signatures
+and their frozen dataclasses' fields, in order; what each returns on the workspace, held to what
+the store, the verbs and ``init`` say themselves; each prints nothing, reads no environment
+variable and writes nothing.
 """
 
 from __future__ import annotations
@@ -279,7 +279,7 @@ def test_tf19_9_each_is_pure(world: Path, tmp_path: Path, call: str) -> None:
 
 def test_tf19_9_the_verbs_still_print_what_they_did(world: Path) -> None:
     """The objects add nothing to a verb: ``runs --json`` keeps ``target_id`` and ``backend``
-    and gains no key (the whole of each verb's output is TF19-10's)."""
+    and gains no key (this holds the keys, not the whole of each verb's output)."""
     ran = cli(world, ["runs", "--store", "store", *EV, "--json"])
     doc = json.loads(ran.out)
     assert set(doc["runs"][0]) == {"number", "name", "run_id", "named_by", "rows", "failed", "traced", "created_at",

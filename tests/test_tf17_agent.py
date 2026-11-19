@@ -1,6 +1,6 @@
 """TF17-1 to TF17-4: ``poisson-trace init --agent`` writes the setup a person's own coding agent
-follows (spec section 17.4, the shared setup-file page section 1, and Prove's section 20.1 with
-its readings (a) to (e) and (z), (dd), carried over with Trace's names).
+follows (``docs/setup-with-your-agent.md``, and the shared setup-file page that
+``tests/fixtures/setup-agent/setup-file-format-1.txt`` carries, with Trace's names).
 
 - TF17-1: in the repository (the folder it runs in, or ``--repo DIR``; no root is looked for) it
   writes exactly four files, ``.agents/skills/poisson-trace-setup/SKILL.md`` and ``prompt.txt``
@@ -90,7 +90,7 @@ def test_tf17_1_init_agent_writes_the_four_files_from_the_template_and_nothing_e
     for f in FOUR:
         if f.endswith("prompt.txt"):
             assert (repo / f).read_text(encoding="utf-8") == PROMPT + "\n"
-    # the packaged template with only the version filled (Prove's reading a)
+    # the packaged template with only the version filled
     assert TEMPLATE.is_file(), TEMPLATE
     written = skills[0].decode("utf-8").splitlines()
     template = TEMPLATE.read_text(encoding="utf-8").splitlines()

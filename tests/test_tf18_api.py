@@ -1,10 +1,10 @@
-"""TF18-17 and TF18-18: the Python API's ``to_html`` and ``build_pages`` (spec section 11.8 as
-amended on 2026-10-28; PA5 sent both to TF18), and ``commands.report``.
+"""TF18-17 and TF18-18: the Python API's ``to_html`` and ``build_pages`` (``docs/python.md``),
+and ``commands.report``.
 
 **TF18-17** Each counting verb's result (``where``, ``compare``, ``fix_check``, ``changes``) has
 ``to_html()``: the HTML report's text, the same text ``report DIR`` writes for the bundle the
-result's ``to_bundle`` wrote, whether the result was saved or not (section 11.7: "the same bytes
-for the same bundle"; A15). It writes nothing and prints nothing.
+result's ``to_bundle`` wrote, whether the result was saved or not (the same bytes
+for the same bundle). It writes nothing and prints nothing.
 
 **TF18-22** ``docs/python.md`` documents ``build_pages`` as TF13-34 and TF13-35 hold every
 function's section (its signature as the code has it, ``api.Refusal``, one example that prints
@@ -17,7 +17,7 @@ with ``verdict``, ``sentence``, ``location``, ``next``, ``exit_code`` and ``note
 cannot read is the ``Refusal`` the command prints; it writes nothing outside the stores' pages
 (or a folder of its own under the system's temporary folder), prints nothing and reads no
 environment variable, as TF13's purity tests watch them. ``poisson_trace.commands.report`` is
-``report DIR``: one positional, ``open`` and ``force`` keyword-only and false by default (A16).
+``report DIR``: one positional, ``open`` and ``force`` keyword-only and false by default.
 """
 
 from __future__ import annotations

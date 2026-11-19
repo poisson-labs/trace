@@ -1,14 +1,14 @@
 """TF18-8 to TF18-12: what every page is made of, what it may load, what it never touches, and
-when it is built (spec section 17.3 item 7; the look file's "The static UI").
+when it is built (``docs/cli-look.md``, "The static UI").
 
 **TF18-8** The fixed files are the installed Prove's UI bundle byte for byte: ``style.css`` and
 ``ui.js`` (the colour tokens are in ``style.css``; Prove's bundle has no third file), copied from
-the installed ``poisson_prove``, whichever Prove at or above Trace's floor that is (A1; PV-6).
+the installed ``poisson_prove``, whichever Prove at or above Trace's floor that is.
 
 **TF18-9** Every page is Prove's skeleton: the doctype, ``lang="en"``, the charset first, Prove's
 Content-Security-Policy meta, the viewport, the generator ``poisson-trace <version>``, the header
 (``poisson-trace``, the store's folder name), and Prove's footer with Trace's name and the
-page's own address inside the UI (A2). The parser reports no error.
+page's own address inside the UI. The parser reports no error.
 
 **TF18-10** Nothing from the network: every ``href`` and ``src`` is a relative path to a file that
 is there (a page, the fixed files, Prove's index, another store's pages) or an anchor of the page;
@@ -22,9 +22,9 @@ Trace makes no page outside ``ui/trace/``. With ``ui/trace/`` gone after Prove's
 ``ui`` puts it back and leaves Prove's files as they were.
 
 **TF18-12** When the pages are built: by ``ui``; by every command that saves (``--save`` on each
-counting verb, ``--out``, ``api.save``, ``to_bundle``), a store with no pages included (A7);
+counting verb, ``--out``, ``api.save``, ``to_bundle``), a store with no pages included;
 not by a verb that saves nothing. A save whose pages cannot be written prints one ``note:`` and
-keeps its exit code and stdout (A7).
+keeps its exit code and stdout.
 """
 
 from __future__ import annotations

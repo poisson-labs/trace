@@ -1,13 +1,11 @@
 """ID13: a DeepEval file that is gzip and cannot be read is refused in one line, with no traceback
-and no text of the library that failed (ruled 2026-09-30, Integrations Ragas Session B ruling 13;
-written 2026-10-05, Trace pre-tag Session A).
+and no text of the library that failed.
 
 Three ways a gzip file is damaged, each raising its own error in Python's gzip module: a
-compressed stream that cannot be inflated (``zlib.error``, the case ruling 13 names), a checksum
+compressed stream that cannot be inflated (``zlib.error``), a checksum
 that does not match (``gzip.BadGzipFile``) and a file cut short (``EOFError``). The damaged file
 is the second of two, so that the refusal has to name it and the first file's rows are not
-written. The reader knows gzip by a file's first two bytes, not by its name, and the fix leaves
-that as it is.
+written. The reader knows gzip by a file's first two bytes, not by its name.
 """
 
 from __future__ import annotations
@@ -100,8 +98,8 @@ def test_id13_the_refusal_carries_no_traceback_and_no_text_of_the_library(
 
 
 def test_id13_gzip_is_known_by_its_first_bytes_not_by_its_name(tmp_path: Path) -> None:
-    """Unchanged by the fix: plain JSON named .json.gz and gzip named .json both import, to the
-    rows of the same file saved as it is named."""
+    """Plain JSON named .json.gz and gzip named .json both import, to the rows of the same
+    file saved as it is named."""
     doc = run_doc(scored("x", [0.9, 0.1, 0.6]))
     named = {
         "plain": save(tmp_path / "plain.json", doc),

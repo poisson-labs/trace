@@ -1,5 +1,5 @@
-"""TF5-70 to TF5-76: the recipes (spec section 7.1; the brief's rules 1 and 7). That each
-recipe's blocks hold when run is TF5-14; that each source has its first result, TF5-18.
+"""TF5-70 to TF5-76: the recipes. That each recipe's blocks hold when run is TF5-14; that each
+source has its first result, TF5-18.
 
 - TF5-70: every recipe is one page under 150 lines, written for a reader who has the data it
   names and nothing else: it opens by saying what the reader has and what it ends with, and

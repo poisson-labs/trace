@@ -1,4 +1,4 @@
-"""TF3-15 to TF3-20: the ``junit`` reader (spec section 6.3, the shared core of INT1 to INT4).
+"""TF3-15 to TF3-20: the ``junit`` reader.
 
 - TF3-15: a test case with a ``<failure>`` or an ``<error>`` is ``missed``, one with neither
   ``met``, one ``<skipped>`` a row with no outcome; every test case of the report is a row, under a

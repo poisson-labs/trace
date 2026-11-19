@@ -1,5 +1,4 @@
-"""TR73: the consistency block where only a few inputs repeat (ruled 2026-09-30, Integrations
-Ragas Session A ruling 8; written 2026-10-05, Trace pre-tag Session A).
+"""TR73: the consistency block where only a few inputs repeat.
 
 TR72 covers one run per input per version. TR73 extends it: an input repeats when one version
 holds two or more of its runs with an outcome, and κ, *fails again* and the 1/(1 − κ) sentence
@@ -22,7 +21,7 @@ import pytest
 from conftest import FIXTURES, Row, build_store, norm
 from fixcheck_support import CONSISTENCY_KEYS, FIX_KEYS, INPUTS_KEYS, PILOT, SPEC_CANNOT_SAY, fix_check
 
-# spec section 4.2, as amended for TR73; {k} and {m} print as the header prints its counts
+# the few-repeat sentence; {k} and {m} print as the header prints its counts
 FEW = (
     "consistency cannot be measured with {k} of {m} inputs run more than once on a version: it "
     "takes at least half the inputs run two or more times on a version to see whether a failure "
@@ -90,12 +89,12 @@ def _check(root: Path, *, full: bool = False) -> Any:
 
 def _suppressed(block: list[str], d: dict[str, Any], k: int, m: int) -> None:
     c = d["consistency"]
-    assert block == [f"failure share {c['failure_share']:.3f}", FEW.format(k=f"{k:,}", m=f"{m:,}")], block  # R18: counts with separators
+    assert block == [f"failure share {c['failure_share']:.3f}", FEW.format(k=f"{k:,}", m=f"{m:,}")], block  # counts with separators
     assert c["fails_again"] is None and c["kappa"] is None, c
 
 
 def _printed(block: list[str], d: dict[str, Any]) -> None:
-    """The block as it printed before TR73: TR51's figures, and the 1/(1 − κ) sentence."""
+    """The block where enough inputs repeat: TR51's figures, and the 1/(1 − κ) sentence."""
     c = d["consistency"]
     assert c["kappa"] is not None and c["fails_again"] is not None, c
     assert c["kappa"] < 1.0, c
@@ -213,7 +212,7 @@ def test_tr73_inputs_left_out_count_neither_way(tmp_path: Path) -> None:
 def test_tr73_few_repeats_with_no_failure_or_every_run_failing_still_names_the_design(
     tmp_path: Path, outcome: str, share: str
 ) -> None:
-    """κ is undefined here whatever the design (Session A ruling 3 of 2026-09-29); the design's
+    """κ is undefined here whatever the design; the design's
     sentence prints, and not the dash line. "No failure" is among the compared inputs: the event
     has to be one a run carries, so one input the new version does not carry fails, and is left
     out."""
@@ -240,15 +239,16 @@ def _import(root: Path, name: str) -> None:
 
 
 def test_tr73_the_public_ragas_pair_on_faithfulness_prints_no_kappa(tmp_path: Path) -> None:
-    """The case that exposed it (Ragas Session A ruling 8): 3 of the 137 compared questions
-    were asked more than once, and the block printed κ −0.080 and 0.93 times the runs."""
+    """The public Ragas pair this guards: 3 of the 137 compared questions were asked more than
+    once. Read as a design that repeats, its block would print κ −0.080 and 0.93 times the
+    runs."""
     root = tmp_path / "store"
     _import(root, "rag-base")
     _import(root, "rag-raft")
     argv = ("--inputs", "all", "--max-mde", "0.10")
     r = fix_check(root, "rag-base", "rag-raft", ("missed",), *argv)
     d = fix_check(root, "rag-base", "rag-raft", ("missed",), *argv, "--json").json()
-    assert r.code == 0, r.text  # R17: a result exits 0, too small to tell included
+    assert r.code == 0, r.text  # a result exits 0, too small to tell included
     assert d["inputs"]["compared"] == 137
     _suppressed(_block(r.out), d, 3, 137)
     c = d["consistency"]

@@ -1,4 +1,4 @@
-"""TF19-7: what the app never does (spec section 17.2, What it never does; A14).
+"""TF19-7: what the app never does (``docs/app.md``, What it never does).
 
 **TF19-7** No network call: while the app opens every screen, opens a link, copies one, saves,
 names and imports, no socket connects and no name is looked up; the app's modules import no
@@ -123,7 +123,7 @@ def test_tf19_7_no_write_in_the_app_s_own_code(path: str) -> None:
 
 @pytest.mark.parametrize("path", [p.name for p in app_files()] or ["_app.py"])
 def test_tf19_7_no_environment_read_in_the_app_s_own_code_but_its_switches(path: str) -> None:
-    """The app's modules read only ``NO_COLOR`` of the environment (the switch the look file
+    """The app's modules read only ``NO_COLOR`` of the environment (the switch ``docs/cli-look.md``
     names); ``CI`` and ``TERM`` are the command line's, which decides whether the app opens."""
     from tf19_support import PACKAGE
 

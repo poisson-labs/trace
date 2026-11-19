@@ -1,4 +1,4 @@
-"""PL-20 to PL-31: the labels with no kind are named once (``pl_support``'s opening, reading 4).
+"""PL-20 to PL-31: the labels with no kind are named once (``pl_support``'s opening, item 4).
 
 - PL-20: the note's words: one paragraph, the labels sorted, ``the label X``/``its`` for one and
   ``the labels X, Y and Z``/``their`` for several, the first label as ``trace.toml`` writes it
@@ -157,14 +157,14 @@ def test_pl_23_the_json_names_each_label_and_its_counts(ran_once: Callable[[str]
     assert kinds == {"unclassified_error": (3, 1), "wrong_answer": (1, 0), "timeout": (1, 0)}
 
 
-#: Eight labels with no kind, written out of order (LK-38): left unsorted, they come out sorted
+#: Eight labels with no kind, written out of order: left unsorted, they come out sorted
 #: on at most one hash seed in 40,320.
 EIGHT = ["zeta", "alpha", "mu", "delta", "omega", "beta", "kappa", "gamma"]
 
 
 @pytest.mark.parametrize("verb", VERBS)
 def test_pl_23_eight_labels_are_named_in_sorted_order(tmp_path: Path, verb: str) -> None:
-    """LK-38 (ruled yes 2026-11-16): the note and ``labels_without_kind`` name eight labels sorted,
+    """The note and ``labels_without_kind`` name eight labels sorted,
     so a note left unsorted is caught on every hash seed, not only on most."""
     ordered = ["alpha", "beta", "delta", "gamma", "kappa", "mu", "omega", "zeta"]
     assert sorted(EIGHT) == ordered

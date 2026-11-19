@@ -1,4 +1,4 @@
-"""IR7 to IR9: two real pairs of Ragas score tables, imported and read by Trace (lane F, the
+"""IR7 to IR9: two real pairs of Ragas score tables, imported and read by Trace (the
 committed fixtures, no network). Every figure pinned here was recomputed from the fixtures before
 it was pinned.
 
@@ -161,8 +161,8 @@ def test_ir7_fix_check_on_recall_reads_different_the_new_version_failed_less(
     assert t["expected_new"] == pytest.approx(570.0, abs=1e-9)
     assert t["variance"] == pytest.approx(285.0, abs=1e-9)
     assert d["difference"]["points"] == pytest.approx(-0.633333, abs=1e-6)
-    # ST3 (ruled 2026-10-20): the stratified Miettinen-Nurminen interval (the statistics check's
-    # simlib.mn_stratified on these per-input counts; Session A log, ragas_mn.md)
+    # the stratified Miettinen-Nurminen interval, computed outside Trace on these per-input
+    # counts
     assert d["difference"]["lo"] == pytest.approx(-0.666486, abs=1e-4)
     assert d["difference"]["hi"] == pytest.approx(-0.598057, abs=1e-4)
     assert d["limits"]["drop"] == pytest.approx(0.0509, abs=1e-4)
@@ -222,7 +222,7 @@ def test_ir8_fix_check_on_precision_reads_no_significant_difference_on_670_cases
     assert d["limits"]["drop"] == pytest.approx(0.017, abs=1e-3)
     assert d["verdict"] == "no significant difference"
     # the header says how many cases were left out, and why, before the line that states the result
-    left = re.search(r"left out 1,130 \(no outcome on the old version 1,130", text)  # R18: counts with separators
+    left = re.search(r"left out 1,130 \(no outcome on the old version 1,130", text)  # counts with separators
     line = text.find("**no significant difference")  # the result line inside the report; the verdict line opens stdout
     assert left is not None and 0 <= left.start() < line, text
 
@@ -266,7 +266,7 @@ def test_ir9_fix_check_on_faithfulness_is_too_small_to_tell(
 ) -> None:
     root, _ = public
     code, d, text = _fix_check(root, "rag-base-faithfulness", "rag-raft-faithfulness", "0.10")
-    assert code == 0, text  # R17: a result exits 0, too small to tell included
+    assert code == 0, text  # a result exits 0, too small to tell included
     assert (d["inputs"]["selected"], d["inputs"]["compared"]) == (146, 137)
     assert {k: v for k, v in d["inputs"]["left_out"].items() if v} == {
         "no outcome on the old version": 3,
@@ -286,7 +286,7 @@ def test_ir9_fix_check_on_faithfulness_is_too_small_to_tell(
 @pytest.mark.parametrize(
     "metric,old,new,expected,variance,p,points,lo,hi",
     [
-        # ST3 (ruled 2026-10-20): the Miettinen-Nurminen ranges (simlib; Session A log, ragas_mn.md)
+        # the Miettinen-Nurminen ranges, computed outside Trace
         ("answer_correctness", 107, 87, 97.0, 14.3333, 0.011, -0.133333, -0.255, -0.030),
         ("answer_relevancy", 49, 32, 40.5, 9.75, 0.009, -0.113333, -0.226, -0.026),
     ],

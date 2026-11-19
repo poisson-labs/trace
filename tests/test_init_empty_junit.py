@@ -1,4 +1,4 @@
-"""init leaves out a JUnit report that holds no test case (TF3 Session B's ruling 1, a no).
+"""init leaves out a JUnit report that holds no test case.
 
 A runner that collected no test still writes a report: pytest's ``--junitxml`` writes one suite with
 ``tests="0"`` and no ``<testcase>``. init lists it with the other reports it finds, then leaves it
@@ -100,7 +100,7 @@ def test_with_only_empty_reports_nothing_is_imported_or_asked(tmp_path: Path) ->
 
 def test_a_damaged_report_still_stops_the_import_naming_it(tmp_path: Path) -> None:
     """Only a report read whole with no test case in it is left out; one that cannot be read is
-    refused as before, and nothing is written."""
+    refused, and nothing is written."""
     folder = work(tmp_path)
     _reports(folder)
     (folder / "reports" / "suite-3.xml").write_text(SUITE_1.read_text(encoding="utf-8")[:-40], encoding="utf-8")

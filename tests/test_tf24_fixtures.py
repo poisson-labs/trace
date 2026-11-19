@@ -1,8 +1,8 @@
-"""TF24-1 to TF24-3: the committed LangSmith captures, and the facts the spec had wrong about them
-(spec section 18.3.4; the captures' rulings CP7, TC-9 and TC-11; the INT3 spec's section 3.1).
+"""TF24-1 to TF24-3: the committed LangSmith captures, and the facts about LangSmith's exports
+that only the captures show.
 
 - TF24-1: every data file under ``tests/fixtures/ingest/langsmith`` is listed in ``SHA256SUMS``
-  with its digest, the set of them as this freeze found it; ``PROVENANCE.md`` has the section
+  with its digest, the set of them as committed; ``PROVENANCE.md`` has the section
   naming the tools' versions; the two scripts are committed beside the files.
 - TF24-2: the three facts the captures correct. LangSmith's UI offers no JSON: ``ui/`` holds the
   two CSVs and nothing else. The command's trace export writes ``<trace_id>.jsonl``, one a trace,
@@ -32,7 +32,7 @@ from tf24_support import (
     children, example_ids, export, feedback_file, feedback_pages, parent_of, roots, rows_of, run_id,
 )
 
-#: SHA-256 of the sorted ``SHA256SUMS`` lines of the LangSmith capture, as main a4bc065 holds them.
+#: SHA-256 of the sorted ``SHA256SUMS`` lines of the LangSmith capture, as committed.
 SUMS_DIGEST = "2ae17b26d92edc1f96858cfd5b6b768c5ae89e3561ccfbe83dbf28fdb77e33c3"
 DATA_FILES = 46
 

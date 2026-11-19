@@ -1,12 +1,9 @@
-"""Shared helpers for TF19's tests: the terminal app (spec section 17.2, with section 17.3 for the
-pages it links to; the design's terminal-app section and its rulings DM5, DM6, DM9, DM12 and
-DM13, all ruled yes on 2026-11-05; PA11 of TF13, which sent the objects only the app needs
-here). This pair's own readings are TF19-A1 on, ``log/trace-tf19-a/rulings.md``; each is frozen
-at its recommended answer.
+"""Shared helpers for TF19's tests: the terminal app, as ``docs/app.md`` and the terminal-app
+section of ``docs/cli-look.md`` describe it, and the pages it links to.
 
 Not a test module and not collected.
 
-**How the app is reached.** Two ways, as a user reaches it, as Prove's PF6 reaches its own.
+**How the app is reached.** Two ways, as a user reaches it, as Prove's tests reach Prove's app.
 
 - Textual's test pilot runs the app in this process (:func:`drive`), presses keys and reads the
   screen cell by cell with each cell's colour role (:func:`grid_of`, Prove's own reader). What
@@ -16,9 +13,9 @@ Not a test module and not collected.
 - A pseudo-terminal runs ``python -m poisson_trace`` as a shell does (:func:`run_pty`), for what
   happens before the app opens and after it leaves.
 
-**The app as these tests read it** (A1 to A14).
+**The app as these tests read it.**
 
-- **A1 The entry point.** ``poisson_trace._app.TraceApp``, a Textual ``App[int]`` built as
+- **The entry point.** ``poisson_trace._app.TraceApp``, a Textual ``App[int]`` built as
   ``TraceApp(config=None, store=None)``: ``config`` is the ``--config`` value as typed, ``store``
   the ``--store`` value as typed, each None when not given; with neither, the app reads the
   current folder's ``trace.toml`` as every verb does, and with no ``trace.toml`` there it opens
@@ -27,27 +24,27 @@ Not a test module and not collected.
   ``stopped`` line prints. Textual is imported by the app's modules alone: the modules of
   ``poisson_trace`` whose name begins ``_app`` (``_app.py``, the screens; ``_app_shell.py``, the
   copy of Prove's shell; any further ``_app_*.py``).
-- **A2 How it opens.** ``poisson-trace`` with no verb opens the app when stdin and stdout are
-  terminals (stderr may be piped; the app draws on stdout's terminal, as Prove's A21), ``CI`` is
+- **How it opens.** ``poisson-trace`` with no verb opens the app when stdin and stdout are
+  terminals (stderr may be piped; the app draws on stdout's terminal, as Prove's does), ``CI`` is
   unset (any value, the empty one included, is set) and ``TERM`` is not ``dumb``. ``--config
   PATH`` and ``--store PATH`` with no verb open it on that config or store; both may be given,
   and the store then wins, as on every verb. ``--plain`` with no verb is never the app.
-  Otherwise the bare command prints what main prints today: ``error: no verb was given; the
+  Otherwise the bare command prints the refusal it prints without the app: ``error: no verb was given; the
   verbs are …`` and ``  next: poisson-trace --help``, exit 2. On a pipe, ``--config PATH`` or
-  ``--store PATH`` with no verb is that same refusal (today it is ``unrecognized arguments``),
-  since both are now options of the bare command (A3). ``NO_COLOR`` set and not empty keeps the
+  ``--store PATH`` with no verb is that same refusal,
+  since both are options of the bare command. ``NO_COLOR`` set and not empty keeps the
   app and draws no green, yellow or red; set but empty, it changes nothing. A Textual that
   cannot be imported: ``error: the terminal app cannot start: Textual cannot be imported``,
-  ``  next: poisson-trace --help``, nothing on stdout, exit 1 (Prove's A16). Below 80 × 24 the
+  ``  next: poisson-trace --help``, nothing on stdout, exit 1. Below 80 × 24 the
   one line is ``the window is W × H; the app needs at least 80 × 24``, with ``q quit``.
-- **A3 The top options.** The top ``--help`` gains two rows in its options, ``--store PATH`` and
+- **The top options.** The top ``--help`` gains two rows in its options, ``--store PATH`` and
   ``--config PATH``, and nothing else moves: every verb keeps its own ``--store`` and
-  ``--config``, and ``--store``/``--config`` before a verb are read as today.
-- **A4 The header.** ``poisson-trace · <title>``, then two spaces and the subject when there is
-  one, and at the right edge the store slot (DM6): ``trace.toml`` when the app reads the
+  ``--config``, and ``--store``/``--config`` before a verb are read as without the app.
+- **The header.** ``poisson-trace · <title>``, then two spaces and the subject when there is
+  one, and at the right edge the store slot: ``trace.toml`` when the app reads the
   folder's config, the ``--config`` value as typed when one was given, the ``--store`` value as
   typed when one was given, ``no config`` on the empty state.
-- **A5 The screens and their titles.** ``home``, ``runs``, ``run``, ``imports``, ``compare``,
+- **The screens and their titles.** ``home``, ``runs``, ``run``, ``imports``, ``compare``,
   ``fix-check`` (the two pickers; subject ``pick two runs``), the verdict screen titled
   ``compare`` or ``fix-check`` (subject ``<before> → <after>``), ``changes``, ``could not say``
   and ``help``. From home: ``r`` runs, ``i`` imports, ``c`` compare's picker, ``f`` fix-check's
@@ -55,45 +52,45 @@ Not a test module and not collected.
   verdict screen (a saved where opens the run screen). From runs: Enter on a run its run screen.
   From a picker: Enter compares the two chosen runs. From a verdict screen and the run screen: ``d`` its
   could not say screen; from the fix-check verdict ``g`` the changes screen of the same two runs.
-- **A6 The screen's own letters** (the look file: a letter means the same on every screen that
+- **The screen's own letters** (``docs/cli-look.md``: a letter means the same on every screen that
   has it). ``c`` compare, ``f`` fix-check, ``r`` runs, ``i`` imports, ``n`` name the focused run,
-  ``s`` the next store the config names (DM9), ``k`` the failures by kind (the per-kind table
+  ``s`` the next store the config names, ``k`` the failures by kind (the per-kind table
   and the failures-by-kind section), ``t`` the screen's second table (the run's long table of
   the share not yet failed, step by step; the fix-check verdict's per-input table), ``d`` what
   this cannot say, ``g`` the changes screen, ``l`` previous and latest, ``h`` set the limit
   asked for, ``m`` the lines the window has no room for, ``space`` choose. ``m``, ``k`` and ``t``
-  show what they show in place of the table, and the same key pressed again goes back to it. The design's ``c``
-  for could not say and ``s`` for the run's steps would give one letter two meanings; they are
-  ``d`` and ``t`` here (A6, put to Taylor).
-- **A7 What each screen renders** (the facts rule). Home: ``commands.doctor`` (its verdict line
-  first and its ``next`` as the ``next`` detail line, DM5), ``core.saved_verdicts`` and
+  show what they show in place of the table, and the same key pressed again goes back to it. Could not say
+  is ``d`` and the run's steps ``t``: ``c`` and ``s`` already mean compare and the next store, and
+  a letter means one thing.
+- **What each screen renders** (the facts rule). Home: ``commands.doctor`` (its verdict line
+  first and its ``next`` as the ``next`` detail line), ``core.saved_verdicts`` and
   ``api.runs`` of the config's main store, newest first together; with no ``trace.toml``, the
   empty state, no refusal. Runs: ``api.runs`` of the store, ``core.run_sources`` for the
   ``target or tool`` column, ``core.saved_verdicts`` below. Run: ``api.where``. Imports: the
   config's store that Trace's import wrote (``imported`` in the workspace), ``api.runs`` of it
   (uncounted when it does not carry the config's failures, with ``runs``'s note on the message
-  line, DM9), ``core.run_sources`` for each run's tool and file, listed above the screen's table;
+  line), ``core.run_sources`` for each run's tool and file, listed above the screen's table;
   the table's rows are ``core.found_results`` for the files ``init`` finds under the current
   folder and nothing imported (columns ``file`` and ``what it is``), since Enter acts on them. The verdict screens:
   ``api.compare``, ``api.fix_check`` and ``api.changes`` with the config's failures and
   ceilings (``--max-mde-hr``, ``--max-mde`` from ``[check]``), fix-check with ``--inputs all``.
   The app calls these as module attributes (``api.where(...)``, ``core.saved_verdicts(...)``,
   ``commands.doctor(...)``), so the spy sees each call.
-- **A8 Every fact.** Each screen, with what its keys show (``m``, ``k``, ``t``) and its could not
+- **Every fact.** Each screen, with what its keys show (``m``, ``k``, ``t``) and its could not
   say screen, carries every fact the plain command prints for the same runs and settings: each
   number as it prints it, each run's name and id, each command it names; the summary's lines
   (Compared or Read, Question, Answer, Next) and every line of "Before you act on this" whole,
   on the verdict screen itself, never shortened (at 80 × 24 the lines that do not fit are
-  behind ``m``, DM13, and the links block stays on screen). Behind ``m``, the lines the body has
+  behind ``m``, and the links block stays on screen). Behind ``m``, the lines the body has
   no room for scroll a page at a time with PgDn and ↓ (and back with PgUp and ↑), so each is
-  whole on one read; ``m`` again returns to the table (A16: Prove's shell cuts them to the
+  whole on one read; ``m`` again returns to the table (Prove's shell alone would cut them to the
   window). Could not say carries each sentence of the report's "What this cannot say" whole.
-- **A9 Saves (AD7).** Every verdict the app shows (where on the run screen, compare, fix-check,
+- **Saves.** Every verdict the app shows (where on the run screen, compare, fix-check,
   changes) is saved as ``api.save`` saves it, into the store the verb saves into, and the
   message line is ``saved  <kind> <first 12 hex>``. A store that cannot be written: the screen
   shows the verdict and the message line is ``note: the verdict was not saved: <the system's
   words>``.
-- **A10 Links (section 17.2, Charts).** A link is a detail line ``label  trace/<address>``:
+- **Links.** A link is a detail line ``label  trace/<address>``:
   ``pages  trace/index.html`` on home; ``curve  trace/where/<id>.html#curve`` and ``page
   trace/where/<id>.html`` on the run screen; ``curves  trace/compare/<id>.html#curves``,
   ``hazard ratio  trace/compare/<id>.html#hazard-ratio`` and ``page  trace/compare/<id>.html``
@@ -103,28 +100,28 @@ Not a test module and not collected.
   ``webbrowser.open`` once with ``file://<the store, absolute>/.poisson/ui/trace/<address>``;
   ``y`` copies that same address with Textual's ``copy_to_clipboard`` and the message line is
   ``note: copied the link``.
-- **A11 Questions.** Naming a run (``n``) and importing a found file (Enter) ask on the message
+- **Questions.** Naming a run (``n``) and importing a found file (Enter) ask on the message
   line, ending ``[y/N]``; only ``y`` answers yes; ``n``, Esc, Enter and ``q`` answer no, and
   ``q`` does not quit then. A yes runs the core's ``api.name`` or ``api.import_run`` and the
   message line is its verdict line (word and sentence). A found file whose import line holds a
   word in capitals (promptfoo's ``PROMPT``) is never run: Enter shows the line and a ``note:``
-  naming the word to fill (DM12).
-- **A12 Exits.** ``q`` exits 0 and the app leaves nothing to print. Ctrl-C exits 130; the app
+  naming the word to fill.
+- **Exits.** ``q`` exits 0 and the app leaves nothing to print. Ctrl-C exits 130; the app
   leaves one line, ``stopped  interrupted; nothing was saved, named or imported`` when it wrote
   none of those, and otherwise ``stopped  interrupted; kept `` followed by what it wrote, each
   saved verdict as ``<kind> <first 12 hex>``, each import and each name by the run's name.
   Work (a comparison, a where, an import) runs beside the screen, which says so in one body line,
   one word ending ``…`` (``comparing…``, ``importing…``); Ctrl-C during it exits 130 at once, and
-  work let go saves and keeps nothing (an import the app's exit ends; the import cannot be
-  stopped part way through the core today, TF19-A21).
-- **A13 Help** lists every key of every screen's key bar, and names every screen.
-- **A14 Never.** No network call; no environment variable read whose name holds ``KEY``,
+  work let go saves and keeps nothing (an import the app's exit ends; the core cannot stop an
+  import part way through).
+- **Help** lists every key of every screen's key bar, and names every screen.
+- **Never.** No network call; no environment variable read whose name holds ``KEY``,
   ``TOKEN``, ``SECRET`` or ``PASSWORD``; no file written but through the core (a saved verdict
   and its pages, an import, a name): no write in the app's modules' own code, and nothing
   changed outside the stores' ``.poisson/`` but an import's run folder and the names file the
   core writes.
 
-**The PA11 objects** (A15), core functions in ``poisson_trace.core``, each reading only the
+**The app's objects**, core functions in ``poisson_trace.core``, each reading only the
 paths it is given, printing nothing, reading no environment variable and writing nothing:
 
 - ``core.saved_verdicts(store) -> list[SavedVerdict]``: Trace's saved verdicts in a store,
@@ -218,14 +215,13 @@ RESULT_FILES = (
     ("junit", "trace-suite-2.xml"),
 )
 
-# the verbs in the top help's order, as the docs pair (TF5) leaves the refusal (ruled 2026-11-13, DOC-33; TF5-3 holds it);
-# main 2ff191b listed them "…, changes, handover, import, doctor, ui and report"
+# the verbs in the top help's order, as TF5-3 holds the refusal
 NO_VERB = "error: no verb was given; the verbs are init, runs, name, where, compare, fix-check, changes, import, doctor, handover, ui and report"
 NO_TEXTUAL = "error: the terminal app cannot start: Textual cannot be imported"
 KEPT_NONE = "stopped  interrupted; nothing was saved, named or imported"
 KEPT = "stopped  interrupted; kept "
 SMALL = re.compile(r"^the window is (\d+) × (\d+); the app needs at least 80 × 24$")
-#: Keys planted in the environment while the app runs: Trace reads no key (A14).
+#: Keys planted in the environment while the app runs: Trace reads no key.
 PLANTED_KEYS = {
     "OPENAI_API_KEY": "sk-tf19-planted-openai-0000000000000000",
     "ANTHROPIC_API_KEY": "sk-ant-tf19-planted-anthropic-000000000",
@@ -293,7 +289,7 @@ def changed(before: Mapping[str, str], after: Mapping[str, str]) -> set[str]:
     return {k for k in set(before) | set(after) if before.get(k) != after.get(k)}
 
 
-# ---------- the screen, cell by cell (Prove's PF6 reader, as its A22 has it) ----------
+# ---------- the screen, cell by cell (Prove's own reader) ----------
 
 
 @dataclass
@@ -437,8 +433,7 @@ def name_shown(name: str, shown: str) -> bool:
 
 def found_steps(work: Path, i: int) -> list[str]:
     """The keys from home to the ``i``-th file the imports screen lists as found, not imported,
-    and Enter on it: the imports screen's rows are those files, in ``core.found_results``'s order
-    (A7)."""
+    and Enter on it: the imports screen's rows are those files, in ``core.found_results``'s order."""
     return ["i", *["down"] * i, "enter"]
 
 
@@ -504,7 +499,7 @@ def grid_of(app: Any) -> Grid:
 # ---------- what the core returned to the app ----------
 
 
-#: The core's functions the app reads through (A7, A9, A11), by module.
+#: The core's functions the app reads through, by module.
 SPIED = {
     "poisson_trace.api": ("open_store", "load_config", "where", "compare", "fix_check", "changes", "runs", "name",
                           "forget_name", "list_names", "import_run", "save", "build_pages"),
@@ -829,7 +824,7 @@ def drive(
 
 # ---------- a screen's keys and the facts it carries ----------
 
-#: How each screen is reached from home, by keys alone (A5).
+#: How each screen is reached from home, by keys alone.
 NAV_KEYS: dict[str, list[str]] = {
     "home": [],
     "runs": ["r"],
@@ -844,9 +839,9 @@ NAV_KEYS: dict[str, list[str]] = {
     "help": ["?"],
 }
 
-#: The keys every screen shares, as the key bar writes them (the look file's table).
+#: The keys every screen shares, as the key bar writes them (``docs/cli-look.md``'s table).
 SHARED = ("↑↓", "enter", "esc", "tab", "/", "y", "m", "?", "q")
-#: Each screen's own letters (A6), as the key bar writes them.
+#: Each screen's own letters, as the key bar writes them.
 OWN = {
     "home": ("c", "f", "r", "i"),
     "runs": ("n", "c", "f", "s"),
@@ -883,7 +878,7 @@ def plain_lines(text: str) -> list[str]:
 
 
 def facts_of(text: str) -> set[str]:
-    """The facts of a plain command's output (A8): every number as it prints it, every run id,
+    """The facts of a plain command's output: every number as it prints it, every run id,
     every 12- or 16-hex id at 12, and every command it names in backticks or after ``next:``."""
     facts: set[str] = set()
     for line in plain_lines(text):
@@ -1000,7 +995,7 @@ def run_pty(
 
     def terminal(name: str) -> tuple[int, int]:
         if name not in terminals:
-            # asked again when macOS fails the open with its own "ask again" (tf9_support.open_terminal; ruled 2026-11-18, MF-2)
+            # asked again when macOS fails the open with its own "ask again" (tf9_support.open_terminal)
             controller, user = open_terminal()
             _winsize(user, cols, rows)
             terminals[name] = (controller, user)
@@ -1129,7 +1124,7 @@ def blocker(folder: Path, *modules: str) -> Path:
 
 
 def app_files() -> list[Path]:
-    """The app's modules (A1): ``poisson_trace/_app*.py``."""
+    """The app's modules: ``poisson_trace/_app*.py``."""
     return sorted(p for p in PACKAGE.glob("_app*.py"))
 
 
@@ -1150,18 +1145,18 @@ def imports_of(path: Path) -> set[str]:
     return out
 
 
-# ---------- what must not move: the pins of main ----------
+# ---------- what must not move: main as the pins hold it ----------
 
 
 def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
     """Every invocation whose plain and ``--json`` output TF19 leaves as main prints it, piped:
-    TF18's corpus whole (the failure breakdown pair's, every verb's help, the four verbs with
+    TF18's corpus whole (the failure breakdown's, every verb's help, the four verbs with
     ``--save``, ``--out``, ``--svg``, ``handover``), the three TF18 changed and main now prints
     (the refusals naming the verbs, ``handover --check``'s ``ok``), and beside them the pages'
     verbs as TF18 built them: ``ui`` and ``report`` and their helps and refusals, and the bare
     command on a pipe with no argument, ``--plain``, ``--json`` and ``--debug``. Left out, as
-    another session (Trace Report Open Fix, branch ``trace-report-open``) changes them: ``report
-    --help``, and ``report DIR`` on a bundle that already has its page."""
+    ``report``'s own fix changes them: ``report --help``, and ``report DIR`` on a bundle that
+    already has its page."""
     from tf18_support import CHANGED, SAVES, pin_corpus as tf18_corpus
 
     out = dict(tf18_corpus())
@@ -1187,7 +1182,7 @@ def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
     return out
 
 
-#: The invocations whose output TF19 changes, pinned from main to say exactly how (A2, A3).
+#: The invocations whose output TF19 changes, pinned from main to say exactly how.
 CHANGED: dict[str, tuple[str, str, list[list[str]]]] = {
     "help: top": ("work", "trace", [["--help"]]),
     "bare: config": ("work", "trace", [["--config", "conf/trace.toml"]]),
@@ -1221,7 +1216,7 @@ def normal(text: str, *roots: Path) -> str:
 
     for root in roots:
         text = text.replace(str(root.resolve()), "<ROOT>").replace(str(root), "<ROOT>")
-    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned)
     return as_pinned(text)
 
 
@@ -1252,7 +1247,7 @@ def pages_pins(work: Path) -> dict[str, str]:
                 name = str(p.relative_to(base))
                 if name in bundle:
                     # a fixed file is the installed Prove's own, byte for byte, whatever that Prove is; the pins
-                    # hold it as the Prove they were taken with shipped it (ruled 2026-11-17, PV-6)
+                    # hold it as the Prove they were taken with shipped it
                     assert p.read_bytes() == bundle[name], f"{store}/{name} is not the installed Prove's"
                     out[f"{store}/{name}"] = BUNDLE_SHA256[name]
                     continue

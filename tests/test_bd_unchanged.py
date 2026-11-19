@@ -1,11 +1,8 @@
-"""BD-5: every other output stays byte for byte as main prints it (rule 5 of the pair's brief).
+"""BD-5: every other output stays byte for byte as main, before the breakdown, prints it.
 
-Pinned on main 7e6fef6 by ``fixtures/breakdown/make_main_pins.py`` (``main-pins.json``), each
-path written ``<ROOT>``:
-
-**BD-5a** was cut on the ruling of 2026-11-18 (AR-2): it held the piped corpus with the parts the
-breakdown pair changed taken out, and ``test_pl_unchanged.py`` (PL-51) runs each of those commands
-and holds its output whole. Its pins stay in ``main-pins.json`` under ``piped``.
+Pinned on that main by ``fixtures/breakdown/make_main_pins.py`` (``main-pins.json``), each path
+written ``<ROOT>``. The piped outputs are held whole by ``test_pl_unchanged.py`` (PL-51), which
+runs each of those commands; their pins stay in ``main-pins.json`` under ``piped``.
 
 **BD-5b** On a terminal: ``where`` and ``runs`` in TF13's workspace, pretty and ``--plain``, at
 60, 80, 100, 120, 140 and 160 columns: every byte both terminals received, escapes and all.

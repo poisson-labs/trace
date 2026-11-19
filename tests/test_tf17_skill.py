@@ -1,9 +1,9 @@
 """TF17-5 to TF17-12 and TF17-47: the skill ``init --agent`` writes passes the shared setup-file
-check (the shared page, section 7), says what section 17.4 says, and keeps to the "if No" of
-PC3; and the docs name it.
+check (the shared page's own check), says what ``docs/setup-with-your-agent.md`` says, and
+keeps to the four tables the agent may write; and the docs name it.
 
 - TF17-5: the frontmatter holds exactly ``name``, ``description`` and ``metadata``; ``name`` is
-  ``poisson-trace-setup`` and equals its folder; ``description`` is section 17.4's; the five
+  ``poisson-trace-setup`` and equals its folder; ``description`` is ``DESCRIPTION``; the five
   metadata keys are present, every value a string: ``poisson-setup-format`` ``"1"``,
   ``poisson-tool`` ``poisson-trace``, ``poisson-tool-version`` the version ``--version`` prints,
   ``poisson-writes`` ``trace.toml``, ``poisson-check`` ``poisson-trace doctor --setup``.
@@ -17,7 +17,7 @@ PC3; and the docs name it.
   ``poisson-trace`` verb but ``doctor --setup`` and ``--help``; never write into a store or
   ``.poisson/``; never run the person's evaluations, tests or agent; open a result file only as
   far as its tool, its outcome values and its run names need.
-- TF17-9: the seven steps of section 17.4, numbered, each opening with its title in bold, the
+- TF17-9: the seven steps of ``STEP_TITLES``, numbered, each opening with its title in bold, the
   last two "Run the check" and "Stop and hand over"; step 1 names Prove stores and every reader
   of this install and says "run nothing"; step 3 says the agent never chooses a cut and a file
   with no cut is left out; step 4 names old and new; step 5 names ``trace.toml``, ``[store]``,
@@ -31,10 +31,9 @@ PC3; and the docs name it.
   command is the one ``text`` block under "Hand over", ``poisson-trace init``; every block has a
   language tag and a ``poisson-trace`` line sits in no other block.
 - TF17-11: the skill and the prompt are in plain words (the TF0-21 pattern).
-- TF17-12 (PC3, the spec's "if No"): the skill names ``[signals]``, ``[[taxonomy.rules]]`` and
+- TF17-12: the skill names ``[signals]``, ``[[taxonomy.rules]]`` and
   ``[taxonomy]`` nowhere; the tables it tells the agent to write are ``[store]``, ``[events]``,
-  ``[[import]]`` and ``[names]``, "nothing else". On a Yes from the Prove chat, this test is the
-  one that moves (log/trace-tf17-a/rulings.md).
+  ``[[import]]`` and ``[names]``, "nothing else".
 - TF17-47: ``docs/setup-with-your-agent.md`` holds a table of the two locations with the agents
   verified to read each, the prompt and the check; the README's section "Let your coding agent
   set it up" names ``poisson-trace init --agent``, the prompt and ``poisson-trace init``.

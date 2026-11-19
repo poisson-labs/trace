@@ -1,7 +1,6 @@
 """TF26-73 to TF26-79: ``[signals]`` stands in for the Weave reader's flags, as it does for the
-LangSmith and Braintrust readers' (ruled for LangSmith on 2026-11-10 and kept for Braintrust; the
-brief asks the same of this one) and for the Ragas, DeepEval and table readers' (SA8; spec section
-18.5.3). Every test reads a committed capture.
+LangSmith and Braintrust readers' and for the Ragas, DeepEval and table readers'. Every test
+reads a committed capture.
 
 - TF26-73: ``case_field`` stands in for ``--case-from`` and ``outcome_field`` for
   ``--outcome-from``, each written as the flag writes it (``"example"``, ``"example:KEY"``,
@@ -9,7 +8,7 @@ brief asks the same of this one) and for the Ragas, DeepEval and table readers' 
   given the config and no reader flag writes the run the flags write, from the service's
   answer, the page's JSON and the page's table, and records what it used.
 - TF26-74: ``score_field`` names the scorer whose output is read, as ``KEY``, as ``score:KEY``,
-  as ``scores.KEY`` (the spec's own example's form) or as ``output.scores.KEY`` (the path in a
+  as ``scores.KEY`` (a scorer under ``scores``) or as ``output.scores.KEY`` (the path in a
   Weave call, and the page's table's column); an ``outcome_field`` beside it wins.
 - TF26-75: a cut from the config with no side on the line reads below, and a side given is
   kept; the cut is filled only where a score is read (not with ``status``), so a config that

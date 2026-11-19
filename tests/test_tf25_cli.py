@@ -1,7 +1,7 @@
 """TF25-47 to TF25-60: the reader in the import's command line, its refusals, its detector, folders
-of its files, and its place in the config, ``init`` and ``doctor`` (spec sections 3.3, 4.3, 4.4,
-6.1, 6.3, 12, 17.4, 18.3.1; the shared core of INT1 to INT4; TF22's FI1 to FI7; TF17's entries;
-the LangSmith pair's LS-24 and LS-28 to LS-30).
+of its files, and its place in the config, ``init`` and ``doctor`` (the folder rules TF22 holds and
+the ``[[import]]`` entries TF17 holds, as every reader has them; the LangSmith reader's TF24-47 to
+TF24-60 in Braintrust's words).
 
 - TF25-47: the import's help lists ``braintrust``; the reader's help is the verb's under both
   spellings, with its flags, each saying what it is and its default; the module has the readers'
@@ -94,7 +94,7 @@ def test_tf25_47_the_module_has_the_readers_shape() -> None:
     from poisson_trace.ingest import braintrust
     from poisson_trace.ingest.importing import READERS, present, pulls, reader_options
 
-    # the readers through this one, in the import's order; a reader after it is its own pair's
+    # the readers through this one, in the import's order; a reader after it has its own tests
     assert "braintrust" in READERS and present()[:len(PRESENT)] == PRESENT
     assert READERS.index("langsmith") < READERS.index("braintrust") < READERS.index("otel")
     for attr in ("add_arguments", "read", "usage", "looks_like", "DESCRIPTION", "EXAMPLE", "SHAPES", "ADDRESS"):
@@ -466,7 +466,7 @@ def _folders(tmp: Path, kind: str) -> tuple[Path, Path]:
 
 
 def _scrub(doc: Any) -> Any:
-    """A verb's JSON with its store and its commands set aside (FI13)."""
+    """A verb's JSON with its store and its commands set aside."""
     if isinstance(doc, dict):
         return {k: (None if k in ("store", "next", "created_at") else _scrub(v)) for k, v in doc.items() if k != "commands"}
     if isinstance(doc, list):

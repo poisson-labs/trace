@@ -1,4 +1,4 @@
-"""Shared by TF16's tests (spec section 16.1, step 1): Trace reads Prove under its new name,
+"""Shared by TF16's tests: Trace reads Prove under its new name,
 ``poisson_prove``, in stores Prove 0.0.1 wrote and stores the published Prove writes, and takes a
 run's name given at sweep time.
 
@@ -35,13 +35,13 @@ OLD = STORES / "prove-0.0.1"
 OLD_A = "20261028T154158Z-c830"  # the mock agent
 OLD_B = "20261028T154200Z-9ace"  # the patched mock agent, paired with OLD_A
 # written by poisson-prove 0.1.3 from PyPI, each run named at sweep time: kept as the fixture of the stored
-# format's 1.0 now that Trace declares a floor above it (ruled 2026-11-17, PV-7)
+# format's 1.0 now that Trace declares a floor above it
 NEW = STORES / f"prove-{FORMAT_1_0}"
 NEW_BEFORE = "20261104T162926Z-b4d5"  # sweep --name "agent before", the mock agent
 NEW_AFTER = "20261104T162928Z-1596"  # sweep --name "agent after", the patched mock agent
 SWEEP_NAMES = {NEW_BEFORE: "agent before", NEW_AFTER: "agent after"}
-# the names Trace computes for runs of the target mock-agent on the day of each store (spec
-# section 5.2): the old store's runs, and the new store's
+# the names Trace computes for runs of the target mock-agent on the day of each store: the
+# old store's runs, and the new store's
 COMPUTED = ("mock-agent 2026-10-28 a", "mock-agent 2026-10-28 b")
 NEW_COMPUTED = ("mock-agent 2026-11-04 a", "mock-agent 2026-11-04 b")
 EVENT = "violated"
@@ -114,7 +114,7 @@ def _in(folder: Path | None) -> Iterator[None]:
 def fresh(argv: Sequence[Any], *, prove: str, cwd: Path | None = None) -> Ran:
     """``poisson-trace`` in a fresh interpreter, with Prove as ``prove`` says: ``absent`` (no
     ``poisson_prove``), ``old`` (no ``poisson_prove``, and ``proofload`` 0.0.1 importable, as
-    the pin Trace had before this step), or a version string (a ``poisson_prove`` stating it)."""
+    the pin Trace had before), or a version string (a ``poisson_prove`` stating it)."""
     head = "import sys, types\n"
     if prove in ("absent", "old"):
         head += "sys.modules['poisson_prove'] = None\n"

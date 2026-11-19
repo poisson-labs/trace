@@ -30,7 +30,7 @@ def top_level_modules() -> list[Path]:
 
 def _one_sentence(result) -> None:  # type: ignore[no-untyped-def]
     lines = [line for line in result.text.splitlines() if line.strip()]
-    # one sentence, and the command to run under it on its own next: lines (rule 4)
+    # one sentence, then the commands to run on their own next: lines (docs/cli-look.md rule 4)
     assert lines and all(line.startswith("  next: ") for line in lines[1:]), result.text
     assert result.code == 1
 
@@ -94,17 +94,17 @@ def test_tr9_the_top_level_modules_write_nothing_but_the_svg_and_the_json() -> N
             fns = inside.get(call.lineno, [])
             # the svg writer: a function named for it, or the one line that writes the file
             in_svg = any("svg" in f for f in fns) or "svg" in lines[call.lineno - 1].lower()
-            # the errors log's appender (the shared look's rule 4): a function named for it,
+            # the errors log's appender (docs/cli-look.md, rule 4): a function named for it,
             # which opens its file to append (mode "a" or "at") and nothing else
             in_log = any("errors_log" in f for f in fns)
-            # R18: the names file's writer, a function named for it (name writes trace-names.toml)
+            # the names file's writer, a function named for it (name writes trace-names.toml)
             in_names = any("names_file" in f for f in fns)
-            # R18: the config file's writer, a function named for it (init writes trace.toml)
+            # the config file's writer, a function named for it (init writes trace.toml)
             in_config = any("config_file" in f for f in fns)
-            # TF6 (P-3, R18, AD8, AD11): --save and --out write the saved verdict, in functions
+            # TF6: --save and --out write the saved verdict, in functions
             # named for the artifact, the bundle or the store descriptor they write
             in_saved = any(w in f for f in fns for w in ("artifact", "bundle", "descriptor"))
-            # TF18 (section 17.3 items 7 and 8): the static pages and the HTML report, written in
+            # TF18: the static pages and the HTML report, written in
             # functions named for the page or pages they write
             in_saved = in_saved or any("page" in f for f in fns)
             if name.endswith("to_parquet"):
@@ -135,12 +135,12 @@ ALLOWED_PROVE_IMPORTS = {
     "poisson_prove": set(),
     "poisson_prove.store": {"Store", "RunManifest", "RunTally"},
     "poisson_prove.steps": {"declaration_check", "DeclarationCheck"},
-    # TF6: handover --check refuses a bundle holding Prove's content and observation keys (11.2)
+    # TF6: handover --check refuses a bundle holding Prove's content and observation keys
     "poisson_prove.trace": {"KINDS", "CONTENT_KEYS", "OBSERVATION_KEYS"},
 }
 
 
-# TF6 (section 17.3 item 1): the saved verdict's long-form table is table.parquet, written with
+# TF6: the saved verdict's long-form table is table.parquet, written with
 # pyarrow by saved.py alone; writing an artifact is not reading a run, which goes through Prove
 WRITES_THE_TABLE = "saved.py"
 
@@ -241,7 +241,7 @@ def test_tr23_the_three_verdict_rows(two_run_store) -> None:  # type: ignore[no-
     nj = compare(same, "a", "b", ["fail"], 100.0, "--json").json()["comparison"]
     assert nj["verdict"] == "no significant difference" and nj["p"] >= 0.05 and nj["mde_hazard_ratio"] <= 100.0
     t = compare(same, "a", "b", ["fail"], 1.3)
-    assert t.code == 0, t.text  # R17: a result exits 0, too small to tell included
+    assert t.code == 0, t.text  # a result exits 0, too small to tell included
     assert "too small to tell" in t.out and "could not have detected a hazard ratio below" in t.out and "1.3" in t.out
     tj = compare(same, "a", "b", ["fail"], 1.3, "--json").json()["comparison"]
     assert tj["verdict"] == "too small to tell" and tj["mde_hazard_ratio"] > 1.3 and tj["max_mde_hr"] == 1.3
@@ -281,7 +281,7 @@ def test_tr31_refuses_before_the_store_when_prove_is_unimportable(argv) -> None:
 
 
 @pytest.mark.parametrize("argv", CALLS)
-# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
+# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace reads
 def test_tr31_refuses_on_the_wrong_prove_version(tmp_path: Path, argv) -> None:  # type: ignore[no-untyped-def]
     fake = tmp_path / "fake" / "poisson_prove"
     fake.mkdir(parents=True)

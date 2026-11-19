@@ -1,14 +1,14 @@
-"""TF6-1 to TF6-3: what TF6 must not change (invariant 5), and the one spelling it does.
+"""TF6-1 to TF6-3: what TF6 must not change, and the one spelling it does.
 
-TF6-1: every verb's plain output and ``--json`` stay byte for byte as on main 1de6936, on the
+TF6-1: every verb's plain output and ``--json`` stay byte for byte as on the pinned main, on the
 committed fixtures, without the new options: pinned as digests of the output with the
 repository's own path written ``<REPO>``. A ``[check] max_change`` in ``trace.toml`` changes
-nothing printed either: the continuous table prints only when asked (SV2).
+nothing printed either: the continuous table prints only when asked.
 
 TF6-2: the one line TF6 changes in an existing output is the plus-minus sign on a stream that
 cannot write it. Today ``fix-check``'s *no significant difference* and *too small to tell* lines
 read ``lies inside ±20``; on such a stream the sign comes out as the escape ``\\xb1``, against
-TF0-17's rule. It is spelt ``+/-`` there (Taylor, 2026-11-04). A stream that can write it, UTF-8
+TF0-17's rule. It is spelt ``+/-`` there. A stream that can write it, UTF-8
 or Latin-1, keeps it.
 
 TF6-3: each new option is on the help of the verbs it belongs to and on no other.
@@ -25,10 +25,10 @@ from tf0_support import (
 )
 from tf6_support import PROVE_013, argv012, env_ascii, write
 
-# Each invocation's digests on main 1de6936: (plain, --json), the repository's path as <REPO>.
-# The Prove pin moved to 0.1.3 on main (SB7, ruled by Taylor 2026-11-04): the JSON digests moved
-# for Prove's version string alone, the plain ones not at all, and the four pins on the committed
-# Prove store were taken again on the 0.1.3 store that replaced the 0.1.2 one.
+# Each invocation's digests on the pinned main: (plain, --json), the repository's path as <REPO>.
+# With Prove pinned at 0.1.3 the JSON digests differ from 0.1.2's by Prove's version string alone,
+# the plain ones not at all; the four pins on the committed Prove store are taken on its 0.1.3
+# store.
 PINNED: dict[str, tuple[list[str], str, str]] = {
     "where cs": (where_cs("--at", "20"),
         "bfb5db225986b5eef9fb5346c318a60a854b38d8ea7d678971733ac7e0154dd9",
@@ -61,7 +61,7 @@ PINNED: dict[str, tuple[list[str], str, str]] = {
 def _digest(text: str) -> str:
     from pin_support import as_pinned
 
-    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned)
     return hashlib.sha256(as_pinned(text.replace(str(REPO), "<REPO>")).encode("utf-8")).hexdigest()
 
 
@@ -71,7 +71,7 @@ def _digest(text: str) -> str:
 # the pins on the larger fixtures run in the slow lane; the Prove 0.1.3 store's four and tau2's
 # fix-check are their fast twins
 SLOW_PINS = ("where cs", "compare tau2", "fix-check tau2 all", "changes humaneval")
-#: The four the Prove label kinds pair moves.
+#: The four outputs that naming Prove's label kinds moves.
 LABELS_MOVED = ("fix-check tau2", "fix-check tau2 all", "compare tau2", "changes humaneval")
 
 
@@ -80,8 +80,8 @@ def test_tf6_1_every_verb_prints_what_it_printed_before(name: str) -> None:
     argv, plain_digest, json_digest = PINNED[name]
     plain, as_json = trace(argv), trace([*argv, "--json"])
     assert plain.code == 0 and as_json.code == 0, plain.text + as_json.text
-    # the Prove label kinds pair names, on tau2 and HumanEval, the labels that have no kind (test_pl_unchanged.py,
-    # PL-52, holds that); this goes on holding every other byte of them
+    # on tau2 and HumanEval the labels that have no kind are named (test_pl_unchanged.py, PL-52,
+    # holds that); this goes on holding every other byte of them
     from pl_pins import unmoved_text
 
     out, out_json = (unmoved_text(plain.out), unmoved_text(as_json.out)) if name in LABELS_MOVED else (plain.out, as_json.out)
@@ -103,7 +103,7 @@ def test_tf6_1_a_max_change_in_the_config_prints_nothing_new(tmp_path: Path, nam
         assert plain.code == 0 and as_json.code == 0, plain.text + as_json.text
         # the next commands carry --config, as they do for any config named by flag; nothing else moves
         flag = f" --config {config}"
-        # the Prove label kinds pair names, on tau2, the labels that have no kind (test_pl_unchanged.py, PL-52, holds
+        # on tau2 the labels that have no kind are named (test_pl_unchanged.py, PL-52, holds
         # that); this goes on holding every other byte of them
         from pl_pins import unmoved_text
 

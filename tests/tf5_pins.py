@@ -1,6 +1,6 @@
-"""What main prints, pinned for TF5 (the brief's rule 8): the corpus of invocations whose output
-the docs pair leaves byte for byte as main 2ff191b prints it, the few it changes, and how each
-is run. Not collected. ``fixtures/tf5/make_main_pins.py`` takes the pins with this module alone.
+"""What main prints, pinned for TF5: the corpus of invocations whose output TF5 leaves byte
+for byte as the pinned main (``MAIN``) prints it, the few it changes, and how each is run. Not
+collected. ``fixtures/tf5/make_main_pins.py`` takes the pins with this module alone.
 
 The corpus is TF26's whole (TF25's, TF24's, TF19's and TF18's inside it: every verb's plain and
 ``--json`` output on each kind of store, each option, the refusals, the earlier imports,
@@ -10,22 +10,21 @@ beside it what main gained with the Weave reader: its help under both spellings,
 each kind of export in text and ``--json``, the verbs over two imported versions, its refusals,
 a pull through TF26's transport, and ``init`` on the files it finds.
 
-The docs pair changes four things a command prints: three in a help, one in a refusal. The store folder the help
-examples name: ``proofload-runs`` was Prove's default store before it was published; the
-published Prove's is ``prove-runs`` (ruled 2026-10-28, TF16 item 4). ``CHANGED`` holds the eight
-helps that carry such an example, pinned as text: each must be main's with that one word
-replaced and nothing else. And, in the top help alone, the one sentence that lists the tools
-whose files the import reads: main's names four of the ten (``TOP_LIST``), and help must agree
-with the pages (the brief's rule 2), so that sentence names all ten in the one order, and the
-paragraph it stands in is wrapped again. In the top help's first sentence (ruled 2026-11-13,
-DOC-33): main's says Trace reads the runs Prove has stored and no more (``TOP_SENTENCE``); it
-says Trace reads Prove's runs and the results the other ten tools wrote, the rest of that
-paragraph is main's, wrapped again, and every other paragraph of the top help is main's. And
-the refusal of the bare command (the same ruling): main's lists the verbs in an order of its
-own (``NO_VERB_MAIN``); it lists them in the top help's (``NO_VERB``), in each of the nine
+TF5 changes four things a command prints: three in a help, one in a refusal. The store folder
+the help examples name: ``proofload-runs`` was Prove's default store before it was published;
+the published Prove's is ``prove-runs``. ``CHANGED`` holds the eight helps that carry such an
+example, pinned as text: each must be main's with that one word replaced and nothing else. And,
+in the top help alone, the one sentence that lists the tools whose files the import reads:
+main's names four of the ten (``TOP_LIST``), and help must agree with the pages, so that
+sentence names all ten in the one order, and the paragraph it stands in is wrapped again. In
+the top help's first sentence: main's says Trace reads the runs Prove has stored and no more
+(``TOP_SENTENCE``); it says Trace reads Prove's runs and the results the other ten tools
+wrote, the rest of that paragraph is main's, wrapped again, and every other paragraph of the
+top help is main's. And the refusal of the bare command: main's lists the verbs in an order of
+its own (``NO_VERB_MAIN``); it lists them in the top help's (``NO_VERB``), in each of the nine
 invocations that print it (``NO_VERB_CASES``). The refusal of a word that is no verb lists
-them from the same list, so it moves the same way (ruled 2026-11-13, DOC-35; ``NOT_A_VERB``,
-the one case ``verb: unknown``): the build keeps one list.
+them from the same list, so it moves the same way (``NOT_A_VERB``, the one case ``verb:
+unknown``): the build keeps one list.
 """
 
 from __future__ import annotations
@@ -158,7 +157,7 @@ READERS_SAID: dict[str, tuple[str, str, list[list[str]]]] = {
 
 
 _INIT_STORE = ["init", "--yes", "--store", "store", "--event", "violated"]
-#: The two verbs no earlier pair pinned whole, because what they print names the machine:
+#: The two verbs no earlier series pinned whole, because what they print names the machine:
 #: ``doctor`` (its Python and where the package was imported from) and ``init`` on a store.
 #: Pinned as text, the machine's own words written ``<PYTHON>`` and ``<PACKAGE>`` (``machine``).
 SETUP: dict[str, tuple[str, str, list[list[str]]]] = {
@@ -169,8 +168,8 @@ SETUP: dict[str, tuple[str, str, list[list[str]]]] = {
     "init: a store, json first": ("work", "trace", [[*_INIT_STORE, "--json"], ["doctor", "--json"]]),
     "init: the agent's files": ("work", "trace", [["init", "--agent"], ["init", "--agent"], ["init", "--agent", "--force"]]),
 }
-#: ``init --agent --print`` prints the setup skill, whose list of the readers is the docs
-#: pair's to make whole (B-6): pinned as text, every other line main's.
+#: ``init --agent --print`` prints the setup skill, whose list of the readers TF5 makes
+#: whole: pinned as text, every other line main's.
 SKILL: tuple[str, str, list[list[str]]] = ("work", "trace", [["init", "--agent", "--print"]])
 SKILL_STEP = "1. **The results already on disk.**"
 
@@ -189,7 +188,7 @@ def machine(text: str) -> str:
 
 
 def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
-    """Every invocation whose plain and ``--json`` output this pair leaves as main prints it,
+    """Every invocation whose plain and ``--json`` output TF5 leaves as main prints it,
     piped (see the module's opening)."""
     from tf26_pins import pin_corpus as tf26_corpus
 
@@ -310,7 +309,7 @@ VERBS_SAID = "init, runs, name, where, compare, fix-check, changes, import, doct
 NO_VERB_MAIN = _NO_VERB + VERBS_MAIN
 NO_VERB = _NO_VERB + VERBS_SAID
 #: The refusal of a word that is no verb, which names the word and lists the verbs the same
-#: way (DOC-35), and the one invocation of the corpus that prints it.
+#: way, and the one invocation of the corpus that prints it.
 NOT_A_VERB = " is not a verb; the verbs are "
 NOT_A_VERB_CASES = ("verb: unknown",)
 NO_VERB_NEXT = "  next: poisson-trace --help"
@@ -319,11 +318,11 @@ NO_VERB_CASES = ("verb: none", "bare: plain", "bare: json", "bare: debug", "bare
 
 
 def as_main_printed(label: str, text: str) -> str:
-    """What this pair leaves changed, written back as main 2ff191b printed it: in a help the
+    """What TF5 leaves changed, written back as the pinned main printed it: in a help the
     examples' store folder, and in the top help the paragraph that lists the tools and the
     first paragraph; in the nine invocations of the bare command and the one of a word that
     is no verb, the refusal's list of verbs.
-    For the earlier pairs' pins, which go on holding every other byte through this; TF5-3
+    For the earlier series' pins, which go on holding every other byte through this; TF5-3
     holds the changes themselves. Any other invocation's text is returned as it is."""
     if label in NO_VERB_CASES:
         return text.replace(NO_VERB, NO_VERB_MAIN)

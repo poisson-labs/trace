@@ -1,4 +1,4 @@
-"""IR1 to IR6: Ragas's score tables, as a team saves ``to_pandas()``, built in the test (lane H).
+"""IR1 to IR6: Ragas's score tables, as a team saves ``to_pandas()``, built in the test.
 
 The reader takes a table, not a Ragas format: CSV, JSON Lines, JSON (a list of objects) or
 Parquet, by the file's extension, ``.gz`` on the first three. It reads two columns, the score
@@ -487,7 +487,7 @@ MISSING = {
 @pytest.mark.parametrize("fmt", list(MISSING))
 def test_ir3_an_empty_nan_null_or_non_numeric_cell_has_no_score(tmp_path: Path, fmt: str) -> None:
     """A reader that reads a missing score as 0 fails here: at a cut of 0.5 below, 0 would be
-    missed. The rows keep no score (INT1 Session B ruling 4), and the summary counts them."""
+    missed. The rows keep no score, and the summary counts them."""
     f, n = MISSING[fmt](tmp_path / f"scores.{fmt}")
     root = tmp_path / "store"
     r = _ok(ragas_argv(f, root, extra=("--json",)))
@@ -576,7 +576,7 @@ MALFORMED = {
 }
 
 
-# R17: a flag missing, or a value outside its choices, is a wrong command line: exit 2, one line,
+# a flag missing, or a value outside its choices, is a wrong command line: exit 2, one line,
 # nothing on stdout and nothing written
 WRONG_COMMAND_LINE = {"no --metric", "no --cut", "no --case-column", "a side with no number"}
 
@@ -713,7 +713,7 @@ def test_ir6_no_other_column_reaches_the_store_or_the_summary(tmp_path: Path, na
     js = _ok(ragas_argv(f, root, "v2", extra=("--json",)))
     assert len(read_rows(root, "v1")) == 4
     assert holds(root, SENTINEL) == []
-    # TF21 (SA7, ruled 2026-11-03): every numeric column but the case column is a score in the
+    # TF21: every numeric column but the case column is a score in the
     # signals record, so the number reaches the store there, as the answer_relevancy score
     from poisson_prove.store import Store
 

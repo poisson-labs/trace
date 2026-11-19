@@ -1,6 +1,5 @@
-"""TF5-50 to TF5-54: the CHANGELOG (the brief's rule 5; SB6, SG7, RB3, SC1, the 2026-11-06
-rulings on the failure breakdown and the tries with no outcome, and the three readers merged
-after 0.1.0a1's entry was written).
+"""TF5-50 to TF5-54: the CHANGELOG, including the failure breakdown, the tries with no outcome
+and the three readers merged after 0.1.0a1's entry was written.
 
 The shape frozen for 0.1.0: one entry for 0.1.0 at the top, written for a reader who saw no
 pre-release, holding a line for every build of the release; under it the three pre-release
@@ -36,7 +35,7 @@ PRE_RELEASES = "## 0.1.0a1 — pre-release"
 PRE_RELEASES_SHA256 = "a442e6bb2e3006fc4add5e6b2cd36e7c6b29c76bce5387614af490c367e21fcf"
 
 #: Every build of 0.1.0 that must have a line: what it is, and the patterns one list item must
-#: all hold. The first seven are the ones held back for this pass or merged since 0.1.0a1.
+#: all hold. The first seven are the builds that came after 0.1.0a1.
 BUILDS: dict[str, tuple[str, ...]] = {
     "the handover (SB6)": (r"--out\b", r"handover --check"),
     "the setup agent (SG7)": (r"init --agent", r"doctor --setup"),

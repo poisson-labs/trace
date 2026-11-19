@@ -1,6 +1,5 @@
-"""What the continuous measures' build added where the tests of TF23 are silent (Session B). These
-are not among the frozen files of TF23-35: each pins one choice the build made, so that a later
-change to it is a change to a test.
+"""Choices the continuous measures make where the other tests of TF23 are silent. Each test pins
+one choice, so that a later change to it is a change to a test.
 
 - a ceiling is refused for ``total_tokens`` (shown, not tested), for a name that is not a
   measure and for a share that is not above zero; two versions must have different labels

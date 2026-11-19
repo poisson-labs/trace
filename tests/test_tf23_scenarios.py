@@ -1,32 +1,30 @@
-"""TF23-28 to TF23-32: the continuous statistics check's scenarios at its own seeds (vault
-log/trace-continuous-statistics-check/, rulings.md "The order and the counts": TF23's tests gain
-the steadier version (CS13), the low-noise hidden slowdown (CS8) and unequal tries (CS14); and
-the give-up and spending scenarios of findings item 6 for CS7 and CS9).
+"""TF23-28 to TF23-32: the continuous statistics check's scenarios at its own seeds: the steadier
+version, the low-noise hidden slowdown, unequal tries, and the give-up and spending scenarios.
 
 All of these are in the slow lane; each has a fast twin on hand-built data in
 test_tf23_endings.py or test_tf23_verdicts.py, named beside it.
 
 **TF23-28** The data are the check's: rebuilt from its generators and seeds
 (tf23_support), the check's own readings of them are the rows it printed, to the repetition
-(``review/scripts/r1_shape_null.out``, ``r3_tip_stress.out``).
+(the check's tables for its r1 and r3 scenario sets).
 
-**TF23-29** CS13, the steadier version (r1 ``steadier_B``, 50 cases): every mean unchanged, new
+**TF23-29** The steadier version (r1 ``steadier_B``, 50 cases): every mean unchanged, new
 steadier. Whenever Trace calls *different* on time and the t range for the mean holds 0, the call
 reads "on most cases ... the mean did not clearly move", never a bare *slower*; and Trace calls
 *different* as often as the check's test does on the same repetitions. Fast twin: TF23-20.
 
-**TF23-30** CS8, the low-noise hidden slowdown (r3 "hidden h1.6 s0.15", 20 cases): new is
-faster where it finished and slower overall. The guard CS8 replaced let a wrong *faster* stand
+**TF23-30** The low-noise hidden slowdown (r3 "hidden h1.6 s0.15", 20 cases): new is
+faster where it finished and slower overall. A percentile guard lets a wrong *faster* stand
 69.7% of the time; Trace lets none stand. Fast twin: TF23-25.
 
-**TF23-31** CS14, unequal tries (r1 ``unequal_1v5``, 50 cases, nothing changed, old run once and
+**TF23-31** Unequal tries (r1 ``unequal_1v5``, 50 cases, nothing changed, old run once and
 new five times): compared on one try each, Trace calls *different* no more often than its level
 allows (the check, on every try, 8.6%); the line says it compared on 1 each. Fast twin: TF23-27.
 
-**TF23-32** CS7 and CS9 on findings item 6's runs (``sim_crash.py``, 50 cases, no real change):
-new gives up early on its hardest cases, and Trace never lets *faster* stand (the spec as written
-said *faster* 95.3%); new crashes early on its hardest cases, and when Trace says *fewer tokens* it
-names the early stops. Fast twins: TF23-23, TF23-26.
+**TF23-32** Tries that end early on the check's simulated crash runs (50 cases, no real
+change): new gives up early on its hardest cases, and Trace never lets *faster* stand (the
+percentile guard says *faster* 95.3%); new crashes early on its hardest cases, and when Trace
+says *fewer tokens* it names the early stops. Fast twins: TF23-23, TF23-26.
 """
 
 from __future__ import annotations
@@ -59,8 +57,8 @@ def test_tf23_28_r1_rows_are_rebuilt(scenario: str, k: int, want_05: int, want_t
 
 def test_tf23_28_r3_row_is_rebuilt() -> None:
     got = list(r3_reps(1, 20, 2000))
-    assert sum(spec == "B lower" for *_, spec, _ in got) == 1394  # r3: spec 69.7%
-    assert sum(count == "B lower" for *_, count in got) == 0  # r3: count 0.0%
+    assert sum(spec == "B lower" for *_, spec, _ in got) == 1394  # r3: percentile guard 69.7%
+    assert sum(count == "B lower" for *_, count in got) == 0  # r3: count rule 0.0%
 
 
 # ---------- TF23-29 ----------

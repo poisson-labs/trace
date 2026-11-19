@@ -1,5 +1,4 @@
-"""TF22-24 to TF22-32: ``compare``, ``fix-check``, ``changes`` and ``where`` given folders (spec
-section 18.3.1, SG8).
+"""TF22-24 to TF22-32: ``compare``, ``fix-check``, ``changes`` and ``where`` given folders.
 
 A run word that reaches no stored run and names a folder is that folder. A tool folder is read
 through its reader, with the reader's own flags on the verb's command line, into a store that
@@ -403,7 +402,7 @@ def test_tf22_31_a_folder_missing_its_readers_flags_is_a_wrong_command_line(tmp_
 
 
 def test_tf22_32_a_word_that_is_neither_still_reads_as_before(tmp_path: Path) -> None:
-    """A word that reaches no stored run and names no folder is refused as it was before TF22."""
+    """A word that reaches no stored run and names no folder is refused as an unknown run."""
     here = tmp_path / "here"
     here.mkdir()
     with chdir(here):

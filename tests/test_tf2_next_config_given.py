@@ -1,6 +1,5 @@
 """TF2-26: with a config, a ``next:`` command leaves out what the config gave and carries what
-was typed (spec section 9.4's bare commands; handed on by TF1 Session A's yes/no 3; yes/no 6,
-pending: dropped on a no).
+was typed.
 
 What came from ``trace.toml`` (the store, the failures) is not written into the next command,
 which reads the same config when run in the same folder; what the user typed is carried as

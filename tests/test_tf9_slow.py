@@ -54,7 +54,7 @@ def test_tf9_slow_the_whole_corpus_both_ways(base: Path, item: Item, cols: int) 
         wrong += [f"{stream}: {e}" for e in odd_escapes(drawn, live=stream == "stderr")]
         lines = strip(drawn).split("\n")
         wrong += [f"{stream}: broken {c[:40]!r}" for c in commands(said) if not any(c in line for line in lines)]
-    # --json prints the piped bytes on a terminal too (TF9-6a), so its lines never wrap (LB4)
+    # --json prints the piped bytes on a terminal too (TF9-6a), so its lines never wrap
     if "--json" not in item.argv:
         wrong += [f"too wide: {line!r}" for line in _too_wide(r.out, plain.out, cols)]
     assert wrong == [], wrong[:6]

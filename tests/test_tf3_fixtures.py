@@ -1,5 +1,5 @@
-"""TF3-35 to TF3-37: the two fixtures (spec sections 6.1 and 6.2: a reader is listed only on a
-real file the tool wrote, committed with its provenance and its checksum).
+"""TF3-35 to TF3-37: the two fixtures (a reader is listed only on a real file the tool wrote,
+committed with its provenance and its checksum).
 
 - TF3-35: every file of ``tests/fixtures/ingest/table`` and ``…/junit`` that is data is listed in
   ``SHA256SUMS`` and holds its digest, and ``PROVENANCE.md`` has a section for each naming its

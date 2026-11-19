@@ -1,17 +1,14 @@
-"""TF3-32 to TF3-34: the readers' pages (spec sections 6.1 and 6.3, the listing rule; section 5.1,
-ruled 2026-10-12: every documented example uses ``poisson-trace import``).
+"""TF3-32 to TF3-34: the readers' pages (every documented example uses ``poisson-trace import``).
 
 - TF3-32: ``docs/integrations/table.md`` and ``docs/integrations/junit.md`` exist, of the DeepEval
   page's shape: the install lines, and a command that imports the committed fixture with the
-  output Trace printed on it. Every marked block of the four integration pages holds when its
-  commands are run, in page order, in a folder laid out as a clone: an output block is the whole
-  of what the command printed, an excerpt a run of its lines, each with its exit code.
+  output Trace printed on it, and the page ends with what the reader does not do.
 - TF3-33: no command or output block of the README or of any page under ``docs/`` spells
   ``poisson-trace-import``; a page may say in words that the alias exists.
 - TF3-34: the JUnit page names the pytest version that wrote its fixture.
 
-TF3-32's run of the four pages' marked blocks was cut on the ruling of
-2026-11-18 (AR-7): ``test_tf5_blocks.py`` (TF5-14) runs the same page through the same runner.
+That every marked block of the pages holds when its commands are run is ``test_tf5_blocks.py``'s
+(TF5-14).
 """
 
 from __future__ import annotations

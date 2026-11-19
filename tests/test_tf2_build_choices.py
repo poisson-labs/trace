@@ -1,9 +1,9 @@
-"""Choices this build of setup and the config file made where the frozen tests leave room: the
+"""Choices setup and the config file make where the frozen tests leave room: the
 same setup as one command replays whatever the values hold; Ctrl-C while the imported runs are
 written, and stdin that ends before an answer, leave nothing behind; a store path is read
 through a link to the config's folder as the system reads it; the Ragas check reads a row's
-keys and not the text of its values, whatever byte the first 4 KB end on; and the refusals of
-this build write nothing."""
+keys and not the text of its values, whatever byte the first 4 KB end on; and the refusals
+these choices add write nothing."""
 
 from __future__ import annotations
 

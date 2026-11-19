@@ -1,19 +1,18 @@
-"""TF20-10 to TF20-35: the recipe's fixtures under ``examples/three-tools/`` (spec section 17.6;
-the brief's rules 2, 3 and 4). The agent's and the wrapper's contract is written once, in
-``tf20_support``'s opening.
+"""TF20-10 to TF20-36: the recipe's fixtures under ``examples/three-tools/``. The agent's and
+the wrapper's contract is written once, in ``tf20_support``'s opening.
 
-**Rule 2: the tasks are Tasks' own, byte for byte.**
+**The tasks are Tasks' own, byte for byte.**
 
 - TF20-10: ``tasks/`` holds the two files ``generate`` writes and nothing else: ten tasks at
   depth 1 and ten at depth 3, one call and three, the same ten seeds in the same order at both
   levels, so that only the number of steps differs between them.
-- TF20-11: ``generate``, run now with section 17.6's command in an empty folder with a home of
+- TF20-11: ``generate``, run now with the page's command in an empty folder with a home of
   its own and every connection refused, writes those two files byte for byte and nothing else.
 - TF20-12: ``PROVENANCE.md`` names the Tasks version and the command, word for word, and gives
   each file's SHA-256, which is the committed file's.
 - TF20-13: the environment has Tasks at the pin and Prove at Trace's.
 
-**Rule 3: the stand-in agent.**
+**The stand-in agent.**
 
 - TF20-20: ``agent.py`` imports no model client, nothing that reaches the network and no part of
   Tasks that runs a model; ``prove_rollout.py`` and the pytest file neither, but for Prove and
@@ -33,7 +32,7 @@ the brief's rules 2, 3 and 4). The agent's and the wrapper's contract is written
   its seed, and its ``t`` is that step; ``where`` prints those steps and no other.
 - TF20-28: the files a reader opens are in plain words (TF0-21's rule, over the example).
 
-**Rule 4: the spec files and the wrapper.**
+**Prove's spec files and the wrapper.**
 
 - TF20-30: the two spec files differ only in the target, ``prove_rollout:before`` and
   ``prove_rollout:after``: one line, and nothing else.
@@ -48,9 +47,9 @@ the brief's rules 2, 3 and 4). The agent's and the wrapper's contract is written
 - TF20-35: run whole, the page's two runs are complete and as declared: every task at the
   replicates, every outcome a checker's label, the old version failing and the new never.
 - TF20-36: the episode's horizon is the number of model calls a Tasks run allows, 32
-  (``poisson_tasks.taskset.MAX_MODEL_CALLS`` at the pin), not the task's own number of calls
-  (Taylor's ruling on TT-16, 2026-11-15): on every task and seed of both versions, and on every
-  try of the page's two stored runs, each try's ``t`` below it.
+  (``poisson_tasks.taskset.MAX_MODEL_CALLS`` at the pin), not the task's own number of calls:
+  on every task and seed of both versions, and on every try of the page's two stored runs, each
+  try's ``t`` below it.
 """
 
 from __future__ import annotations
@@ -167,7 +166,7 @@ def test_tf20_13_the_environment_has_the_pinned_versions() -> None:
     from pin_support import RECORDED, at_or_above_the_floor
 
     assert version("poisson-tasks") == TASKS_VERSION
-    # Prove at the floor or above it, not at one exact version (ruled 2026-11-17, PV-7)
+    # Prove at the floor or above it, not at one exact version
     assert PROVE_VERSION == RECORDED and at_or_above_the_floor(version("poisson-prove")), version("poisson-prove")
 
 
@@ -419,7 +418,7 @@ def test_tf20_35_the_two_runs_are_complete_and_as_declared(ran: Ran) -> None:
         run = store_of(ran.root, name)
         manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
         assert manifest["status"] == "complete" and manifest["environment"]["import_path"] == TARGETS[version]
-        # the stamp is the installed Prove's, at the floor or above it (ruled 2026-11-17, PV-5)
+        # the stamp is the installed Prove's, at the floor or above it
         from pin_support import installed
 
         assert manifest["environment"]["poisson_prove_version"] == installed()

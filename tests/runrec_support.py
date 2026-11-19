@@ -1,34 +1,32 @@
-"""Shared helpers for the run-record pair's tests: what Poisson Trace's import records about each
-run (spec section 17.3 item 6, AD10), created by Taylor's ruling SV1 of 2026-11-04, read with
-Poisson's artifact format (``Poisson — Spec Artifact Format``, format 1.1) and with what Prove
-0.1.3 writes (the committed ``prove-0.1.3`` store). Not a test module and not collected.
+"""Shared helpers for the run-record tests (RUNREC): what Poisson Trace's import records about
+each run (``docs/handover.md`` says it for a reader), read with Poisson's store format (Prove's
+``docs/artifact-format.md``, format 1.1) and with what Prove 0.1.3 writes (the committed
+``prove-0.1.3`` store). Not a test module and not collected.
 
-The invariants (the README of ``log/trace-runrec-a`` maps each to its tests; the readings the
-spec leaves open are put to Taylor in ``log/trace-runrec-a/rulings.md``, RR1 on):
+The invariants:
 
 1. Each import writes the store descriptor (``<store>/.poisson/store.json``,
    ``poisson.store/1``) as Prove 0.1.3 writes its own, and Prove 0.1.3 lists and reads every
-   store Trace writes, its dashboard included (RR5).
+   store Trace writes, its dashboard included.
 2. Each import writes the run's full event log (``events.jsonl``, ``poisson.run-event/1``):
    ``planned``, ``started``, ``progress`` at most once a second plus once just before the end,
    then ``finished``, or ``interrupted`` when Ctrl-C leaves the run partial; in Prove's line
-   format, with Prove's counts (RR1); nothing in it that section 11.4 or TF21's no-text rules
-   keep out.
+   format, with Prove's counts; nothing in it that TF21's no-text rules keep out, and no hash
+   chain or receipt.
 3. Each manifest records ``produced_by`` naming Trace and the tool the run came from, read as
-   plain JSON from ``manifest.json`` as the static pages will read it (RR2, RR3).
+   plain JSON from ``manifest.json`` as the static pages will read it.
 4. Imports through folders (TF22), through every reader on main, and through ``init`` record
    the same way.
 5. No verb's existing plain or ``--json`` output changes, and the import's ``--json`` keeps
-   TF21's SA5 shape.
-6. TF21's frozen event-log tests change only where this record requires it, each change in its
-   own commit with its guard line.
-7. What else the spec and the format require (each in the README): a newer major or broken
+   the shape TF21 holds.
+6. TF21's frozen event-log tests differ only where this record requires it.
+7. What else the format requires: a newer major or broken
    descriptor refused with nothing written; a format-0 store gains ``.poisson/store.json`` and
    nothing else changes; the event log is whole lines; times as Prove writes them.
 
-What Session B builds, in one place:
+What the record is, in one place:
 
-``poisson_trace.ingest.writer.write`` (its signature as today)
+``poisson_trace.ingest.writer.write`` (its signature unchanged)
     On the first write into a store (the run's folder made), the store descriptor as
     ``poisson_trace.saved.write_store_descriptor`` already writes it for a saved verdict:
     created when absent, else ``{"tool": "poisson-trace", "version", "first_write"}`` appended
@@ -41,17 +39,17 @@ What Session B builds, in one place:
     ``{"schema": "poisson.run-event/1", "at": <UTC, microseconds, Z>, "kind", "detail"}``):
 
     - ``planned``  ``{"run_id": <run>, "reader": <tool>, "files": [<each file's name, no
-      folder>], "rows": <rows to write>}`` (RR2)
+      folder>], "rows": <rows to write>}``
     - ``started``  ``{"run_id": <run>}``
     - ``progress`` ``{"done", "kept", "errored", "total"}`` in rows: ``done`` the rows prepared
       for the write so far, ``errored`` those with no outcome (Prove's errored records),
-      ``kept`` the rest, ``total`` the planned rows (RR1); never within a second of the last
+      ``kept`` the rest, ``total`` the planned rows; never within a second of the last
       one, except the one just before the end, which always comes: all rows on a finished
       import, what Prove holds on an interrupted one
-    - ``finished`` ``{"status": "complete", "kept": <rows with an outcome>}`` (RR1)
+    - ``finished`` ``{"status": "complete", "kept": <rows with an outcome>}``
     - ``interrupted`` ``{"kept": <rows Prove holds>, "status": "partial"}`` when Ctrl-C stops
-      the import after its run folder exists (spec section 9.1 L6), after a closing
-      ``progress``; the exit stays 130
+      the import after its run folder exists, after a closing
+      ``progress``; the exit stays 130 (``docs/cli-look.md``, rule 6)
 
     and no other kind, no ``note``, no tool kind.
 
@@ -59,14 +57,14 @@ What Session B builds, in one place:
     key and drops it on every write, so it is added after Prove's last manifest write):
     ``{"version": <Trace's version>, "from": [{"name", "sha256"} for each file the import
     --json lists, then the --verdicts file when given], "tool": "poisson-trace",
-    "reader": <tool>, "options": <the import's declared, as --json prints it>}`` (RR3, RR4).
+    "reader": <tool>, "options": <the import's declared, as --json prints it>}``.
 
     A row with an outcome and no recorded steps and no spans is stored with ``t`` and
-    ``horizon`` 1, so Prove 0.1.3's pages build over a store holding imports (RR5).
+    ``horizon`` 1, so Prove 0.1.3's pages build over a store holding imports.
 
 ``poisson_trace.setup`` (``init``)
     A rolled-back ``init`` removes the descriptor it wrote with the store folder it made, so
-    nothing is left behind, as today.
+    nothing is left behind.
 """
 
 from __future__ import annotations
@@ -97,8 +95,8 @@ PRODUCED_BY_KEYS = {"version", "from", "tool", "reader", "options"}
 AT = re.compile(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z")
 SECOND = re.compile(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ")
 HEX64 = re.compile(r"[0-9a-f]{64}")
-# what no event line holds: TF21's signals record and its keys (SA4), a hash chain or receipt
-# (section 11.4), a platform or provenance key
+# what no event line holds: TF21's signals record and its keys, a hash chain or receipt,
+# a platform or provenance key
 NEVER_KEYS = ("failure_kind", "input_tokens", "output_tokens", "total_tokens", "cost_usd",
               "signals", "scores", "feedback", "trace_signals", "error", "error_type",
               "sha256", "receipt", "signature", "previous", "chain", "platform", "python",
@@ -133,21 +131,21 @@ def _unpacked(folder: Path) -> Path:
 
 
 def _langsmith(kind: str, root: Path, run: str) -> list[str]:
-    """A committed LangSmith capture read by its root runs' status (the reader pair's TF24)."""
+    """A committed LangSmith capture read by its root runs' status (TF24)."""
     from tf24_support import by_status, export
 
     return by_status(export("baseline", kind), root, run)
 
 
 def _braintrust(kind: str, root: Path, run: str) -> list[str]:
-    """A committed Braintrust capture read by its root spans' error (the reader pair's TF25)."""
+    """A committed Braintrust capture read by its root spans' error (TF25)."""
     from tf25_support import by_error, export
 
     return by_error(export("baseline", kind), root, run)
 
 
 def _weave(kind: str, root: Path, run: str) -> list[str]:
-    """A committed Weave capture read by whether each case errored (the reader pair's TF26)."""
+    """A committed Weave capture read by whether each case errored (TF26)."""
     from tf26_support import of
 
     return of("baseline", kind, root, run, mode="status")
@@ -343,7 +341,7 @@ def check_log(log: Sequence[Mapping[str, Any]], run: str, rows: int, *,
     progress = [e for e in log if e["kind"] == "progress"]
     done = -1
     # progress rises as rows are prepared; on Ctrl-C the closing one says what Prove holds, as
-    # Prove's own closing progress reads the store, so it alone may fall back (RR1)
+    # Prove's own closing progress reads the store, so it alone may fall back
     rising = progress[:-1] if ending == "interrupted" else progress
     for e in progress:
         d = e["detail"]
@@ -365,7 +363,7 @@ def check_log(log: Sequence[Mapping[str, Any]], run: str, rows: int, *,
 
 
 def check_finished(root: Path, run: str, rows: int) -> dict[str, Any]:
-    """A complete import's log, its closing counts read against what Prove stores (RR1)."""
+    """A complete import's log, its closing counts read against what Prove stores."""
     by = check_log(events(root, run), run, rows)
     kept, errored = outcome_counts(root, run)
     assert kept + errored == rows

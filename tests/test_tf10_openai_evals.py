@@ -1,6 +1,5 @@
-"""TF10-26 to TF10-32: the OpenAI Evals reader on evals 3.0.1.post1's committed records (spec
-section 6.3's ``openai-evals`` item, R26; section 18.1.1 row 8; section 18.5.2's OpenAI Evals row;
-the readings in ``tf10_support``'s docstring, RD4).
+"""TF10-26 to TF10-32: the OpenAI Evals reader on evals 3.0.1.post1's committed records (the
+readings in ``tf10_support``'s docstring).
 
 - TF10-26: a ``match`` event is a row, ``data.correct`` its outcome, ``sample_id`` its case.
 - TF10-27: the ``match`` events of one sample are its repeats in ``event_id`` order; every other

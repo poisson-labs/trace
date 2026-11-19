@@ -1,23 +1,21 @@
-"""TF15-S1 to TF15-S14: fix-check's statistics as ruled on 2026-10-20 (spec section 9.7, ST1 to
-ST4 and ST9; the statistics check's write-ups in log/trace-statistics-check/).
+"""TF15-S1 to TF15-S14: fix-check's statistics (docs/how-it-decides.md says them in plain words).
 
-- ST3: the range is the stratified Miettinen-Nurminen score interval, Mantel-Haenszel weights, with
+- The range is the stratified Miettinen-Nurminen score interval, Mantel-Haenszel weights, with
   its per-input N/(N-1) factor; the point estimate is unchanged. Its line names it, says it is for
-  these inputs as run, and adds "rough here: {why}" where section 9.5's gate fails.
-- ST2: *no significant difference* when the test does not call it and a reliable range lies inside
+  these inputs as run, and adds "rough here: {why}" where the range is not reliable.
+- *no significant difference* when the test does not call it and a reliable range lies inside
   plus or minus the size asked; *too small to tell* otherwise; where the range is not reliable
-  (section 9.5: it exists, agrees with the test, at least 10 compared inputs vary, neither version
+  (reliable: it exists, agrees with the test, at least 10 compared inputs vary, neither version
   ran once per input), the drop limit against the size asked decides, as before.
-- ST1: a *too small to tell* answer whose reliable range leaves out a drop of the size asked says
-  so, one-sided, worded as section 9.7 item 2 says.
-- ST4: an unconfirmed *different* names the inputs that carry it, and the gap and p without them.
-- ST9: the per-input column "could not have detected a rise below" and its JSON key go; the
+- A *too small to tell* answer whose reliable range leaves out a drop of the size asked says
+  so, one-sided.
+- An unconfirmed *different* names the inputs that carry it, and the gap and p without them.
+- The per-input column "could not have detected a rise below" and its JSON key go; the
   schemas of fix-check and changes move to /2.
 
-Every number pinned here comes from a reference that is not Trace's code: the statistics check's
-`simlib.mn_stratified` on its per-input dumps (log/trace-statistics-check/evidence/fixtures/counts),
-Newcombe's (1998) published worked example, and the check's `he_outliers.py` run; the Session A log
-(log/trace-tf15-a/evidence/references/) prints each one beside its source.
+Every number pinned here comes from a reference that is not Trace's code: an independent
+statistics check's stratified Miettinen-Nurminen interval on per-input counts of these fixtures,
+Newcombe's (1998) published worked example, and that check's recount without the flagged inputs.
 """
 
 from __future__ import annotations
@@ -49,14 +47,14 @@ def _difference_line(out: str) -> str:
     return norm(found[0])
 
 
-# ---------- ST3: the stratified Miettinen-Nurminen interval ----------
+# ---------- the stratified Miettinen-Nurminen interval ----------
 
-# simlib.mn_stratified (the statistics check's script) on the check's per-input dumps; fractions
+# an independent implementation of the interval, on per-input counts; fractions
 MN = {
-    "tau2_all": (-0.060441, 0.081196),        # F1-tau2-fixcheck-all
-    "humaneval": (0.000378, 0.009263),        # he-fixcheck
-    "failing_from": (-0.615002, 0.113135),    # tau2-fixcheck-failing-from
-    "cs": (-0.212105, 0.212105),              # cs-fixcheck
+    "tau2_all": (-0.060441, 0.081196),        # tau2, all inputs
+    "humaneval": (0.000378, 0.009263),        # the HumanEval pair
+    "failing_from": (-0.615002, 0.113135),    # tau2, --failing-from
+    "cs": (-0.212105, 0.212105),              # the cs pair
     "worked": (-0.501442, 0.004307),          # the frozen tests' WORKED table
 }
 
@@ -97,9 +95,9 @@ def test_tf15_s2_one_input_gives_newcombes_worked_example() -> None:
 @pytest.mark.math
 def test_tf15_s3_the_interval_holds_its_nominal_coverage_with_one_new_try_per_input() -> None:
     """The failing-from design of the README's patch example (6 inputs, 4 old tries, 1 new) under
-    no change, 1,500 seeded draws. The statistics check found Sato's interval covering 86-87% here
-    and the Miettinen-Nurminen interval 95% (findings, item 2); at seed 1 the check's
-    `mn_stratified` covers 0.954 and today's Sato 0.842 (log/trace-tf15-a). Monte Carlo se at 0.95
+    no change, 1,500 seeded draws. The independent check found Sato's interval covering 86-87% here
+    and the Miettinen-Nurminen interval 95%; at seed 1 the check's
+    `mn_stratified` covers 0.954 and Sato's 0.842. Monte Carlo se at 0.95
     is 0.0056, so the band 0.925 to 0.975 is 4.5 se either side: Sato's falls 15 se below it."""
     from poisson_trace.paired import Counts, difference
 
@@ -140,12 +138,12 @@ def test_tf15_s5_rough_here_names_why_where_the_gate_fails(tmp_path: Path) -> No
     assert "rough here:" in cs and "fewer than 10 inputs vary" in cs and "one try per input" not in cs, cs
 
 
-# ---------- ST2: the verdict on a reliable range ----------
+# ---------- the verdict on a reliable range ----------
 
 
 def test_tf15_s6_tau2_at_ten_points_reads_no_significant_difference() -> None:
-    """The first result of the README: -6.0 to +8.1 lies inside plus or minus 10 (ST2's own
-    example), though the drop limit, 11.1, is above 10."""
+    """The first result of the README: -6.0 to +8.1 lies inside plus or minus 10 (the rule's
+    own example), though the drop limit, 11.1, is above 10."""
     d = _json(fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.10", "--json"))
     assert d["verdict"] == "no significant difference"
     assert d["guidance"] is None
@@ -163,7 +161,7 @@ def _gate_pair(tmp_path: Path, name: str, tab):  # type: ignore[no-untyped-def]
     return pair_store(tmp_path / name, tab)
 
 
-# Each table was found by search and checked against the reference (simlib's interval, Trace's
+# Each table was found by search and checked against the reference (the independent interval,
 # unchanged drop limit and exact test): its reference numbers sit beside it.
 POWER_SAYS_YES = [  # 15 inputs, 14 vary; p 0.320; range -6.6 to +25.9; drop limit 23.67 <= 24
     (1, 4, 1, 4), (3, 4, 1, 4), (0, 4, 2, 4), (0, 4, 0, 4), (1, 4, 2, 4), (3, 4, 3, 4), (3, 4, 3, 4),
@@ -220,9 +218,8 @@ def test_tf15_s7_the_gate_decides_which_rule_reads_the_verdict(tmp_path: Path, n
 def test_tf15_s7_the_plan_offered_moves_the_verdict(tmp_path: Path, name, tab, asked) -> None:  # type: ignore[no-untyped-def]
     """Whatever too small to tell offers must work: a ceiling it says accepts the design, given,
     reads otherwise; a number of tries per input it says to run is not the design these runs had. Where the range decided the verdict and
-    the drop limit is already under the size asked, the power-based plan has nothing true to say
-    (the statistician's read of 2026-10-20, finding 1), so it is withheld or larger than the
-    design."""
+    the drop limit is already under the size asked, the power-based plan has nothing true to say,
+    so it is withheld or larger than the design."""
     root = _gate_pair(tmp_path, name, tab)
     d = _json(fix_check(root, "old", "new", ["fail"], *ALL, "--max-mde", asked, "--json"))
     assert d["verdict"] == "too small to tell"
@@ -236,8 +233,8 @@ def test_tf15_s7_the_plan_offered_moves_the_verdict(tmp_path: Path, name, tab, a
 
 
 def test_tf15_s7_the_range_is_named_at_its_own_level(tmp_path: Path) -> None:
-    """At --alpha 0.1 the interval printed is a 90% one, and the line the verdict rests on says so
-    (the statistician's read, finding 2): here -3.9 to +23.5 lies inside plus or minus 24."""
+    """At --alpha 0.1 the interval printed is a 90% one, and the line the verdict rests on says so:
+    here -3.9 to +23.5 lies inside plus or minus 24."""
     root = _gate_pair(tmp_path, "alpha", POWER_SAYS_YES)
     out = ok(fix_check(root, "old", "new", ["fail"], *ALL, "--max-mde", "0.24", "--alpha", "0.1")).out
     assert "90%" in _difference_line(out)
@@ -260,7 +257,7 @@ def test_tf15_s7_no_size_is_said_not_to_fit_where_power_decided(tmp_path: Path, 
 
 
 def test_tf15_s8_a_range_reaching_the_size_asked_on_either_side_stays_too_small_to_tell() -> None:
-    """Two-sided (the fresh read's R7): tau2 at 7.5 points, -6.0 to +8.1, a drop of 7.5 or more
+    """Two-sided: tau2 at 7.5 points, -6.0 to +8.1, a drop of 7.5 or more
     does not fit but a rise of 7.5 still does; at 5 points neither side is left out."""
     for asked in ("0.075", "0.05"):
         d = _json(fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", asked, "--json"))
@@ -273,7 +270,7 @@ def test_tf15_s9_different_still_follows_the_exact_test() -> None:
     assert (d["verdict"], d["direction"]) == ("different", "failed more in new")
 
 
-# ---------- ST1: the one-sided sentence, only on a reliable range ----------
+# ---------- the one-sided sentence, only on a reliable range ----------
 
 
 def test_tf15_s10_the_one_sided_answer_on_a_reliable_range() -> None:
@@ -309,14 +306,14 @@ def test_tf15_s11_no_size_is_ruled_out_without_a_reliable_range_leaving_it_out(a
     assert "does not fit" not in answer, answer
 
 
-# ---------- ST4: an unconfirmed different names what carries it ----------
+# ---------- an unconfirmed different names what carries it ----------
 
 
 def test_tf15_s12_an_unconfirmed_difference_names_its_inputs_and_the_gap_without_them() -> None:
     """The HumanEval pair: different (exact p 0.036), by-input p 0.127. The changes block flags
     HumanEval/129 at both temperatures (32 of the net 49 extra failures); without them the
-    Mantel-Haenszel gap is +0.16 points and the exact test's p 0.4745 (the statistics check's
-    he_outliers.py, review/rerun/he_outliers.out; and test_tr69's own recomputation of the p)."""
+    Mantel-Haenszel gap is +0.16 points and the exact test's p 0.4745 (the independent check's
+    recount without them, and test_tr69's own recomputation of the p)."""
     out = ok(fix_check(HUMANEVAL, HE_A, HE_B, HE_EVENTS, *ALL, "--max-mde", "0.02")).out
     answer = norm(summary(out)["Answer"])
     assert "32 of the net 49 extra failures come from" in answer, answer
@@ -360,7 +357,7 @@ def test_tf15_s13_a_confirmed_difference_names_nothing_without(tmp_path: Path) -
     assert "input i" not in answer and not any("Without " in c for c in caveats(out)), (answer, caveats(out))
 
 
-# ---------- ST9: the per-input rise column goes ----------
+# ---------- the per-input rise column goes ----------
 
 COLUMN = "could not have detected a rise below"
 

@@ -1,4 +1,4 @@
-"""A test of this build's own: what a run's header carries for the markdown alone (where its
+"""What a run's header carries for the markdown alone (where its
 start came from, whether it was imported) stays out of every verb's JSON, on runs Prove stored
 and on imported ones. The fix-check and changes headers are pinned key by key elsewhere; where's
 and compare's are not."""

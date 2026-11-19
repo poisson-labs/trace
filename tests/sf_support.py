@@ -11,8 +11,8 @@ under the alternative. Each arm's share is weighted by, and divided by, its own 
     power = Phi((delta - z * se_null) / se_alt) + Phi((-delta - z * se_null) / se_alt)
 
 with ``z`` the upper ``alpha / 2`` point. Prove 0.0.1 (and Trace's ``limit_rise`` with it) gave the
-raised share the old arm's tries and the baseline the new arm's; Prove's main pairs them as above
-(``poisson_prove.stats.mde_two_proportion``, fixed at Prove ``b6d6292``).
+raised share the old arm's tries and the baseline the new arm's; later Proves pair them as above
+(``poisson_prove.stats.mde_two_proportion``).
 
 The limit is the smallest ``delta`` in ``(0, 1 - p]`` whose power reaches ``power``, with Prove's
 conventions: a share of exactly 0 is measured from ``0.5 / runs_old``; when even the largest rise

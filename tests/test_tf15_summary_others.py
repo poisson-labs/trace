@@ -1,11 +1,11 @@
-"""TF15-P13 to TF15-P28: the plain parts of compare, where, changes and the import (spec sections
-9.5.2 to 9.5.6, ruled 2026-10-20 with S1, S2, S11, S12, S14 and S16; ST5, ST6 and ST8 where the
-statistics change what they say), and the three items S15 carried into this pair.
+"""TF15-P13 to TF15-P28: the plain parts of compare, where, changes and the import, with what
+the statistics change in what they say, and three smaller fixes to the import and where.
 
-As in test_tf15_summary_fix_check: the wording is pinned where section 9.5 writes it; where 9.5
-names a sentence without writing it, the facts it carries are pinned. Every number is the
+As in test_tf15_summary_fix_check: the wording is pinned where it is fixed; where only what a
+sentence must say is fixed, the facts it carries are pinned. Every number is the
 report's own. Commands in the four lines are code spans; a Next command may carry the store and
-events flags the report was given (9.5's templates leave them out), so it is pinned up to them.
+events flags the report was given (the summary's own wording leaves them out), so it is pinned up
+to them.
 """
 
 from __future__ import annotations
@@ -53,13 +53,13 @@ def _last_next(out: str) -> str:
 
 
 def _runnable(command: str) -> str:
-    """S14 (ruled 2026-10-20) with the frozen rule that a next: line runs as written (TF1-17,
-    TF2-16, TF2-26): the next: line is the summary's command without its placeholder ceiling,
-    the one thing a next command may lack (Session A log, rulings.md)."""
+    """The last next: line is the summary's Next, under the frozen rule that a next: line runs as
+    written (TF1-17, TF2-16, TF2-26): the next: line is the summary's command without its
+    placeholder ceiling, the one thing a next command may lack."""
     return re.sub(r" --max-mde(-hr)? X\b", "", command)
 
 
-# ---------- compare (9.5.2, with ST5 and ST6) ----------
+# ---------- compare ----------
 
 
 def test_tf15_p13_compare_cant_tell_yet() -> None:
@@ -77,7 +77,7 @@ def test_tf15_p13_compare_cant_tell_yet() -> None:
     assert s["Answer"].startswith(
         "Can't tell yet. 112 of 200 tries failed after and 110 of 200 before; by Trace's estimate these tries "
         "would catch a 1.60-fold change in that rate 4 times in 5, and you asked about 1.3-fold"), s["Answer"]
-    # ST6 (ruled 2026-10-20): the Answer gives the estimate
+    # the Answer gives the estimate
     assert "after against before, the per-step failure rate is 1.11 times as high (0.80 to 1.55)" in s["Answer"]
     assert s["Next"] == (
         "Run each version 11 times on each of these 50 inputs with your own harness, then run "
@@ -98,7 +98,7 @@ def test_tf15_p13_compare_cant_tell_yet() -> None:
         "A 1.60-fold change means the per-step failure rate among tries still going rises 1.60 times, or "
         "falls to 0.62 of what it was; it is not the ratio of the failure counts."
     ) in c
-    # ST5 (ruled 2026-10-20): the clause naming a target number of failures goes
+    # the clause naming a target number of failures goes
     assert (
         "The 11 times per input is an estimate from these runs' failure rates. Even with good estimates, about "
         "half of runs built to it end up a little too small. Make it a fresh run, judged on its own."
@@ -117,7 +117,7 @@ def test_tf15_p14_compare_no_clear_change() -> None:
         "would catch a 1.60-fold change in that rate 4 times in 5, so a smaller change could be hiding"), s["Answer"]
     assert s["Next"].startswith(f"Compare how often each version fails overall: `poisson-trace fix-check {TAU2_NAMES}"), s["Next"]
     assert s["Next"].endswith("--inputs all --max-mde X`, choosing X before you look."), s["Next"]
-    assert _last_next(out) == _runnable(_command(s["Next"]))  # S14
+    assert _last_next(out) == _runnable(_command(s["Next"]))  # the summary's Next
 
 
 def test_tf15_p15_compare_different(two_run_store) -> None:  # type: ignore[no-untyped-def]
@@ -131,7 +131,7 @@ def test_tf15_p15_compare_different(two_run_store) -> None:  # type: ignore[no-u
     assert "Before putting the difference down to the version, run both versions side by side." in caveats(out)
 
 
-# ---------- where (9.5.3, with ST8 and S11) ----------
+# ---------- where ----------
 
 
 def test_tf15_p16_where_on_a_run_counted_in_turns() -> None:
@@ -157,7 +157,7 @@ def test_tf15_p16_where_on_a_run_counted_in_turns() -> None:
         "not the cause. Check what passing tries end on before reading it as one part's fault."
     )
     assert c[-1] == "One run shows where tries stop, not whether a change moved anything."
-    # ST8 (ruled 2026-10-20): the caveat about the curve counting finished tries goes
+    # the caveat about the curve counting finished tries goes
     assert not any("counts finished tries as if they might still have failed" in x for x in c)
 
 
@@ -172,7 +172,7 @@ def test_tf15_p17_where_with_a_run_before_it() -> None:
     )
     assert s["Next"].startswith(f"See whether a change moved this: `poisson-trace compare {TAU2_NAMES}"), s["Next"]
     assert "--max-mde-hr X`" in s["Next"], s["Next"]
-    assert _last_next(out) == _runnable(_command(s["Next"]))  # S14
+    assert _last_next(out) == _runnable(_command(s["Next"]))  # the summary's Next
 
 
 def test_tf15_p18_where_with_no_failure(two_run_store) -> None:  # type: ignore[no-untyped-def]
@@ -204,7 +204,7 @@ def test_tf15_p19_where_on_a_run_with_no_traces(tmp_path: Path) -> None:
     assert "## Before you act on this" not in out.splitlines()
 
 
-# ---------- changes (9.5.4) ----------
+# ---------- changes ----------
 
 
 def test_tf15_p20_changes_with_two_inputs_flagged() -> None:
@@ -225,7 +225,7 @@ def test_tf15_p20_changes_with_two_inputs_flagged() -> None:
         'See whether the versions differ overall: `poisson-trace fix-check "golden-pilot 2026-09-05 a" '
         '"golden-pilot 2026-09-05 b"'), s["Next"]
     assert s["Next"].endswith("--inputs all --max-mde X`, choosing X before you look."), s["Next"]
-    assert _last_next(out) == _runnable(_command(s["Next"]))  # S14
+    assert _last_next(out) == _runnable(_command(s["Next"]))  # the summary's Next
     c = caveats(out)
     assert c[0] == f"They started 56 min apart. {SIDE}"
     assert "Both are task_id HumanEval/129 at different settings, which may be one fault rather than 2." in c
@@ -245,7 +245,7 @@ def test_tf15_p21_changes_where_no_lone_input_could_stand_out() -> None:
     )
 
 
-# ---------- the import (9.5.5) ----------
+# ---------- the import ----------
 
 
 def _table_import(tmp_path: Path, run: str = "ha"):  # type: ignore[no-untyped-def]
@@ -305,7 +305,7 @@ def test_tf15_p23_the_import_of_junit_skips_and_its_start(tmp_path: Path) -> Non
     assert summary(result.out)["Failures"].endswith("A try counts as failed when its test failed or errored."), summary(result.out)
 
 
-# ---------- S15, carried into this pair ----------
+# ---------- the import's words, where in turns, the first line and the JSON ----------
 
 
 def test_tf15_p24_the_import_line_says_passed_and_failed(tmp_path: Path) -> None:
@@ -328,7 +328,7 @@ def test_tf15_p26_where_on_a_run_counted_in_turns_says_turn() -> None:
     assert "median step of the failed tries: 20" in tau2 and "| step |" in tau2
 
 
-# ---------- the plain first lines that remain (9.5.6) ----------
+# ---------- the plain first lines that remain ----------
 
 
 def test_tf15_p27_the_first_line_and_the_json_sentence_agree() -> None:

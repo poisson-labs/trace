@@ -1,8 +1,7 @@
 """Shared helpers for TF5's tests: the recipes, the README, the docs set, the docs checker and
-the CI workflow (spec sections 7 and 8; the rulings sent to this pair: TF16 item 4, SB6, SG7,
-RB3, SC1, RR6, N3, LS-46, B-6, BT-44, WV-50; the launch note of 2026-11-12). Not collected.
+the CI workflow. Not collected.
 
-What Session B writes, in one place (each test file's opening says which invariant it holds):
+What the docs set holds, in one place (each test file's opening says which invariant it holds):
 
 the pages
     ``README.md``; ``CONTRIBUTING.md``; ``CHANGELOG.md``; under ``docs/``: ``commands.md``,
@@ -20,8 +19,7 @@ the product
 
 The marks (the grammar every page is held to)
 ---------------------------------------------
-A mark is an HTML comment alone on the line just above a fenced block. The three the pages
-already use keep their meaning; the rest are new here.
+A mark is an HTML comment alone on the line just above a fenced block.
 
 ``<!-- command -->``
     The block is run with bash, in a folder laid out as a clone (what the page names of the
@@ -107,9 +105,9 @@ ADDRESS = {
     "weave": ("weave:", "weave:example-entity/trace-fixture/trace-fixture-slice-baseline"),
 }
 
-#: The recipes of 0.1.0 (spec section 7.1, less the two that wait with the pull-request check
-#: and the upload; and section 17.6's three-tools recipe, TF20's): the page and the source whose
-#: first result it shows (None: the recipe is about something else).
+#: The recipes of 0.1.0 (less the two that wait with the pull-request check and the upload;
+#: with the three-tools recipe, TF20's): the page and the source whose first result it shows
+#: (None: the recipe is about something else).
 RECIPES: dict[str, str | None] = {
     "first-look.md": "prove",
     "check-a-fix.md": "prove",
@@ -130,7 +128,7 @@ RECIPES: dict[str, str | None] = {
 }
 #: The recipes that wait: the page must not exist until its feature does.
 WAITING = ("on-a-pull-request.md", "sending-results.md")
-#: The docs set of 0.1.0 beside the recipes and the integration pages (section 7.2).
+#: The docs set of 0.1.0 beside the recipes and the integration pages.
 DOCS_SET = ("commands.md", "config.md", "how-it-decides.md", "handover.md", "app.md", "python.md", "setup-with-your-agent.md")
 STANDARDS = ("cli-look.md", "repo-hygiene.md")
 #: The verbs, in the order the top help lists them.

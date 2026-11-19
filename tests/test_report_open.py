@@ -1,9 +1,9 @@
-"""TF18-B3, ruled 2026-11-08: ``poisson-trace report DIR --open`` on a bundle that already holds
-its page opens that page, without ``--force`` and without rewriting it.
+"""``poisson-trace report DIR --open`` on a bundle that already holds its page opens that page,
+without ``--force`` and without rewriting it.
 
 ``handover --check DIR`` on a bundle that has its page ends ``next: poisson-trace report DIR
---open`` (A12). As TF18 built it, ``report`` refused the page that was there without ``--force``
-(A14), so the command the check printed was refused. Now:
+--open``. Were ``report`` to refuse the page that is there without ``--force``, the command the
+check prints would be refused. So:
 
 **RO-1** The check's ``next:`` command, run as printed, succeeds: exit 0, the page opened, and
 nothing in the bundle written (every byte and every modification time as before).
@@ -20,12 +20,12 @@ writes it again. A page that is the one ``report`` would write gets no note. A p
 not re-listed fails the validator, and ``--open`` is refused before anything is opened, as
 without it.
 
-**RO-4** Without ``--open`` a page that is there is still refused without ``--force`` (A14):
+**RO-4** Without ``--open`` a page that is there is still refused without ``--force``:
 exit 1, nothing on stdout, nothing opened, nothing written.
 
 **RO-5** ``--force`` still rewrites the page, with or without ``--open``; with ``--open`` it
 opens the page it wrote, and prints ``wrote``. A bundle with no page yet is written and opened
-by ``--open`` as before.
+by ``--open``.
 
 **RO-6** The API: ``commands.report(folder, open=True)`` behaves the same: the same text, the
 same note, nothing written; ``open=False`` refuses; ``force=True`` rewrites.

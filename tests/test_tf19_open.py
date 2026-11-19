@@ -1,12 +1,12 @@
-"""TF19-1: how the app opens (spec section 17.2, AD4; A1, A2, A4).
+"""TF19-1: how the app opens (``docs/app.md``, How it opens).
 
 **TF19-1** ``poisson-trace`` with no verb, on a pseudo-terminal as a shell runs it: the app opens
 when stdin and stdout are terminals, ``CI`` is unset and ``TERM`` is not ``dumb`` (stderr may be a
 pipe), and ``q`` leaves it with exit 0 and nothing printed after it. With ``CI`` set (to a value
 or empty), ``TERM=dumb``, stdin or stdout not a terminal, or ``--plain``, it does not open and the
-bare command prints what main prints today (the refusal; on a pipe that is TF19-10's pin).
+bare command prints what it prints without the app: the no-verb refusal.
 ``--config PATH`` and ``--store PATH`` open it on that config or store, the header's slot saying
-which (DM6); with no ``trace.toml`` and no store it opens on home's empty state, not a refusal.
+which; with no ``trace.toml`` and no store it opens on home's empty state, not a refusal.
 ``NO_COLOR`` set and not empty keeps the app and draws no colour; set but empty it changes
 nothing. A Textual that cannot be imported is one ``error:`` line and exit 1; a window below 80 ×
 24 says so in one line.
@@ -130,7 +130,7 @@ def test_tf19_1_a_verb_on_a_terminal_is_the_verb(work: Path, tmp_path: Path) -> 
     assert strip_escapes(run.out).lstrip().startswith("ok  2 runs in store")
 
 
-# ---------- the header's slot (DM6) ----------
+# ---------- the header's slot ----------
 
 
 @pytest.mark.parametrize(("config", "store", "slot"), [

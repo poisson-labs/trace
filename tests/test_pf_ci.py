@@ -1,5 +1,5 @@
-"""PF-60 to PF-79: the floor in CI, in the release and in a clean install (PV-8, PV-15;
-``pf_support``'s opening, item 7).
+"""PF-60 to PF-73: the floor in CI, in the release and in a clean install (``pf_support``'s
+opening, item 7).
 
 - PF-60: ``ci.yml`` has one job that installs the newest ``poisson-prove`` on the package index
   over the Prove the lanes were last green with, says which it got, and runs the pull-request

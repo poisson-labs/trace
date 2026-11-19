@@ -1,5 +1,5 @@
 """TF0-11 to TF0-13: ``--version``, ``python -m poisson_trace``, and help a stranger can act on
-(spec section 9.1: rule L1, rule L2 and the new ``--version`` row).
+(rules 1 and 2 of ``docs/cli-look.md``).
 
 Every verb's help has a description, every argument with help text, every option that takes a
 value with its default or "no default". The usage line shows the two
@@ -73,8 +73,8 @@ def test_tf0_13_the_ceiling_is_shown_required_and_its_absence_is_a_refusal(verb:
 
 
 # ---------- TF0-11: --version ----------
-# The import gets it too: its "--version" is the transcript's T-010, which the spec's --version
-# row lists beside the main command's. Prove's version is read from the imported module.
+# The import gets it too, as the main command does. Prove's version is read from the imported
+# module.
 
 
 @pytest.mark.parametrize("command", ["trace", "import"])

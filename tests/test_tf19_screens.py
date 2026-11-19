@@ -1,11 +1,10 @@
-"""TF19-2: every screen of section 17.2's table, as the design draws it (A4 to A7, DM5, DM6, DM9,
-DM12, DM13).
+"""TF19-2: every screen of the app, as ``docs/app.md`` and ``docs/cli-look.md`` draw it.
 
 **TF19-2** Each screen, reached by keys alone from home, at 120 × 40 and at 80 × 24: its header
 (``poisson-trace · <title>``, its subject, the store slot), the six bands (a dim rule under the
 header, the message line, a dim rule, the key bar), its verdict line where it shows a result
-(the core's word and sentence, the word in its meaning's style), its detail labels in the
-design's order, its table's columns, the focus (one row, ``›`` and reverse video, on the first
+(the core's word and sentence, the word in its meaning's style), its detail labels in their
+fixed order, its table's columns, the focus (one row, ``›`` and reverse video, on the first
 row when the screen opens), and its key bar (the shared keys first, the screen's own letters, ``?
 help`` and ``q quit`` last). Home with no ``trace.toml`` is the empty state naming ``poisson-trace
 init`` and ``poisson-trace init --agent``, not a refusal.
@@ -133,7 +132,7 @@ def test_tf19_2_each_screen_s_frame(work: Path, screen: str, size: tuple[int, in
             assert all(value not in grid.text() for grid in s.grids)
 
 
-# ---------- home (DM5) ----------
+# ---------- home ----------
 
 
 def test_tf19_2_home_opens_with_doctor_s_line_and_its_next(work: Path) -> None:
@@ -250,7 +249,7 @@ def test_tf19_2_run_screen(work: Path) -> None:
     assert cols[:2] == ["kind", "tries"] and cols[-1] == "95% band" and cols[2].startswith("share by step "), cols
 
 
-# ---------- imports (DM9, DM12) ----------
+# ---------- imports ----------
 
 
 def test_tf19_2_imports_screen(work: Path) -> None:
@@ -352,7 +351,7 @@ def test_tf19_2_help_names_every_screen(work: Path) -> None:
 
 
 def test_tf19_2_screens_render_core_objects(work: Path) -> None:
-    """Each screen's object is the core's (A7): the calls the app made to reach every screen."""
+    """Each screen's object is the core's: the calls the app made to reach every screen."""
     s = drive(work, ["r", "enter", "escape", "escape", "i", "escape", "c", "enter", "d", "escape", "escape", "escape",
                      "f", "enter", "g"], size=(120, 40))
     names = set(s.spy.names())

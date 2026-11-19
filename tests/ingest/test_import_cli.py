@@ -44,18 +44,17 @@ def small_doc() -> dict[str, Any]:
     return run_doc(cases)
 
 
-# ---------- the script entry (section 2.2) ----------
+# ---------- the script entry ----------
 
 
 def test_s22_the_script_entry_is_declared_and_no_dependency_is_added() -> None:
     project = tomllib.loads((REPO / "pyproject.toml").read_text())["project"]
     assert project["scripts"]["poisson-trace-import"] == "poisson_trace.ingest.cli:main"
-    # the import adds none; the others are the Prove Trace pins (PIN-1, ruled 2026-11-03),
-    # Rich, which the clean look renders through (TF9-5a; LB2, ruled 2026-11-03), and Textual,
-    # which the terminal app is built with at the floor Prove declares (section 17.2, AD5; TF19's
-    # FT1)
+    # the import adds none; the others are the Prove Trace pins,
+    # Rich, which the clean look renders through (TF9-5a), and Textual,
+    # which the terminal app is built with at the floor Prove declares (TF19)
     # and pyarrow, which Trace imports itself to write a saved verdict's table, declared at the
-    # floor Prove declares (spec section 8.5; the docs pair, TF5-96)
+    # floor Prove declares (TF5-96)
     assert sorted(project["dependencies"]) == sorted(["numpy", "scipy", "pandas>=2", "pyarrow>=17.0.0", REQUIREMENT, "rich>=14.2.0",
                                                       "textual>=6.4.0"])
 
@@ -157,7 +156,7 @@ def test_ic9_without_poisson_prove_the_command_refuses_before_it_opens_a_file(tm
     assert tree(root) == {}
 
 
-# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
+# a Prove below the floor (0.3.0); one above it, such as 9.9.9, is one Trace reads
 def test_ic9_with_poisson_prove_at_another_version_the_command_refuses_before_it_opens_a_file(tmp_path: Path) -> None:
     fake = tmp_path / "fake" / "poisson_prove"
     fake.mkdir(parents=True)
@@ -270,7 +269,7 @@ def _listed(text: str, name: str) -> bool:
 
 
 def test_ic11_help_lists_the_readers_present_and_no_other() -> None:
-    # a tool's module is its name with "-" as "_" (openai-evals is openai_evals.py), TF10's RD3
+    # a tool's module is its name with "-" as "_" (openai-evals is openai_evals.py), as in TF10
     present = [n for n in READERS if (INGEST / f"{n.replace('-', '_')}.py").exists()]
     assert "deepeval" in present
     r = run_python(HELP)
@@ -462,7 +461,7 @@ def test_ic14_changes_reads_the_counts_the_rows_hold(tmp_path: Path) -> None:
 
 
 def test_ic7_case_input_keeps_no_text_of_the_input(tmp_path: Path) -> None:
-    """Ruled 2026-09-29 (Session A ruling 2): the input is the case's identity only as a digest."""
+    """The input is the case's identity only as a digest."""
     doc = _content_doc()
     doc["conversationalTestCases"] = []
     f = save(tmp_path / "results.json", doc)

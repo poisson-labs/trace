@@ -1,6 +1,5 @@
 """TF13-19 to TF13-23: errors and refusals come through the API as ``api.Refusal``, carrying the
-sentence, the next commands, the exit code and the notes the command line prints (invariant 6;
-PA7, PA8).
+sentence, the next commands, the exit code and the notes the command line prints.
 
 TF13-19: every refusal of the main command's verbs after the command line is read, through the
 API: the same sentence (``error: <sentence>``), the same ``next:`` commands, the same exit code

@@ -535,14 +535,14 @@ for it. No key, no model and no network were used.
 
 ## Added for the failure breakdown and the table fixes (2026-11-05)
 
-`breakdown/mockups/` holds ten captures the design session made on 2026-11-05 (vault
+`breakdown/mockups/` holds nine captures the design session made on 2026-11-05 (vault
 `log/trace-design/terminal/`, on vault main at `6f2f2ef`), copied byte for byte: every character a
 real pseudo-terminal received from Trace, the escape sequences removed. The failure breakdown on
 the committed Prove 0.1.3 store at 80 and 140 columns, pretty and `--plain`
 (`breakdown-prove-*`); the continuous-measures table as proposed for the DeepEval and Inspect
 imports of the committed `ingest/deepeval/humaneval-{a,b}.json.gz` and `ingest/inspect/` logs at
-80 and 140 columns (`continuous-proposed-*`); and the table as main printed it at 80 columns
-(`continuous-deepeval-80-pretty`, `continuous-inspect-80-pretty`). The tests of
+80 and 140 columns (`continuous-proposed-*`); and the table as main printed it for Inspect at 80
+columns (`continuous-inspect-80-pretty`). The tests of
 `tests/test_bd_*.py` hold the build to them (one cell corrected, FD10 of the pair's rulings).
 
 `breakdown/main-pins.json` holds the digests of what main `7e6fef6` printed for rule 5 of the pair

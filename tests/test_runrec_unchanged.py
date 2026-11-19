@@ -1,10 +1,10 @@
 """RUNREC-40 to RUNREC-42: what the run record leaves as it is (invariant 5).
 
 No verb's plain or ``--json`` output changes on imported runs, and the import's own plain and
-``--json`` output keeps TF21's SA5 shape: the import is run, then ``runs``, ``where``,
+``--json`` output keeps the shape TF21 holds: the import is run, then ``runs``, ``where``,
 ``fix-check``, ``changes``, ``compare`` and ``name --list`` over what it wrote, and every exit
-code and both streams are byte for byte what Trace main ``667e42c`` printed, the store's and the
-fixtures' folders written as placeholders. Green on main by construction; a ruled change moves
+code and both streams are byte for byte what the pinned main printed, the store's and the
+fixtures' folders written as placeholders. Green on main by construction; a deliberate change moves
 its digest here. TF21-64 already pins the import's ``--json`` and the stored columns a verb
 reads, and TF6-1 every verb's output on the committed Prove stores."""
 
@@ -43,7 +43,7 @@ def _digest(ran: Ran, places: dict[str, str]) -> str:
         text = text.replace(path, word)
     from pin_support import as_pinned
 
-    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned)
     return hashlib.sha256(as_pinned(text).encode("utf-8")).hexdigest()
 
 
@@ -72,8 +72,8 @@ def outputs(tmp: Path, pairs: list[tuple[str, str]]) -> dict[str, str]:
     return got
 
 
-# as Trace main 667e42c printed them; FD15 (Taylor, 2026-11-06) moved the four fix-check and
-# changes readings of the Ragas pair, whose section now says how many tries had no outcome
+# as the pinned main printed them, but for the four fix-check and changes readings of the
+# Ragas pair, whose section says how many tries had no outcome
 MAIN_FAST: dict[str, str] = {
     "import junit-a":
         "991d33a73c8bebd27ad0b9698d321b5318cb65f17362ef0385f6a3fcd438697e",

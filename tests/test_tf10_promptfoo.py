@@ -1,6 +1,5 @@
-"""TF10-4 to TF10-14: the promptfoo reader on promptfoo 0.120.19's committed files (spec section
-6.3's ``promptfoo`` item, R24; section 18.1.1 row 6; section 18.5.2's promptfoo row; the readings
-in ``tf10_support``'s docstring, RD1, RD2 and RD4).
+"""TF10-4 to TF10-14: the promptfoo reader on promptfoo 0.120.19's committed files (the readings
+in ``tf10_support``'s docstring).
 
 - TF10-4: each prompt of the JSON file, picked by its label or its number, is one run of four
   rows, one per test, met and missed as promptfoo's ``success`` says.
@@ -15,10 +14,10 @@ in ``tf10_support``'s docstring, RD1, RD2 and RD4).
   it is ``--started`` or the file's time, said in the summary.
 - TF10-9: the summary counts the file's rows per prompt and per provider, and ``declared`` names
   the case, the prompt by its label and the provider.
-- TF10-10: the CSV is refused, pointing at the JSON export; the table reader refuses it too (RD1).
+- TF10-10: the CSV is refused, pointing at the JSON export; the table reader refuses it too.
 - TF10-11: the signals each row records, and those it does not (``None``, not zero).
 - TF10-12: the failure kinds: the fixture's failed assertions are wrong answers; each assertion
-  type of section 18.5.2 gives its kind; an error row has no outcome, is censored and takes its
+  type ``tf10_support`` lists gives its kind; an error row has no outcome, is censored and takes its
   kind from its text.
 - TF10-13: nothing of the prompt, the answer, another variable, an error or a grader's reason
   is written or printed.

@@ -1,4 +1,4 @@
-"""trace#31 moves one kind of fix-check output and no other: FIX31-U.
+"""This fix moves one kind of fix-check output and no other: FIX31-U.
 
 ``tests/fixtures/fix31/main-pins.json`` holds, for every invocation of
 ``fix31_support.run_corpus``, the exit code and the digests of stdout and stderr as main printed
@@ -15,11 +15,11 @@ no failed run in either version:
   ``--inputs all``;
 - every fix-check invocation and fix-check refusal of TF13's workspace corpus;
 - the committed tau2 and HumanEval stores; two JUnit folders;
-- and ``changes``, ``where`` and ``runs`` on runs that never failed, which trace#31 leaves as
+- and ``changes``, ``where`` and ``runs`` on runs that never failed, which this fix leaves as
   they are.
 
 Green on main by construction; it is here to stay green. Sixteen pins of the synthetic pairs
-have since moved with two sentences of the report, and with nothing else: where the old version
+move with two sentences of the report, and with nothing else: where the old version
 failed no try the caveat says there is no drop to look for, and where the difference has no range
 the comparison says ``no range: Sato's formula gives none on these counts (its variance is zero)``.
 """
@@ -52,7 +52,7 @@ def test_fix31_u_the_corpus_is_the_pinned_corpus(ran: dict[str, list[object]]) -
 
 
 def test_fix31_u_no_pinned_pair_is_one_that_never_failed() -> None:
-    """The pins leave out exactly what trace#31 changes: every pinned table holds a failure."""
+    """The pins leave out exactly what this fix changes: every pinned table holds a failure."""
     for label, tab in TABLES.items():
         assert any(xa or xb for xa, _, xb, _ in tab), label
 

@@ -1,20 +1,20 @@
 """SF1 and SF2: Trace's per-input limit (``paired.limit_rise``, carried on every row ``flags``
-gives) follows Prove's corrected one: each arm's share goes with that arm's own number of tries
-(TF16 Session A yes/no 8, ruled yes 2026-10-28). Prove 0.0.1, which Trace copied, paired the raised
-share with the old arm's tries and the baseline with the new arm's; Prove fixed it at ``b6d6292``.
+gives) follows Prove's corrected one: each arm's share goes with that arm's own number of tries.
+Prove 0.0.1 paired the raised share with the old arm's tries and the baseline with the new arm's;
+later Proves pair each arm's share with its own tries.
 
 - SF1: on any design, even or uneven, at any share below 1, the limit is the one worked out from
   first principles in ``sf_support`` (independent of Trace's and Prove's code; checked equal to
-  ``poisson_prove.stats.mde_two_proportion`` on a wide grid, ``log/trace-stats-a/``).
-- SF2: at a share above 0 the limit never grows when either version gets more tries (spec §17.5's
-  property for a detection limit). At a share of 0 it can: the 0.5-try guard moves the baseline
+  ``poisson_prove.stats.mde_two_proportion`` on a wide grid).
+- SF2: at a share above 0 the limit never grows when either version gets more tries (a property
+  every detection limit has). At a share of 0 it can: the 0.5-try guard moves the baseline
   itself when the old version has one or two tries.
 
 - SF4: where the old version failed every try, no rise is possible and there is no limit: NaN, as
-  Prove's ``mde_two_proportion`` gives (Trace's own decision for a share of 1, yes/no 8; 0.0.1
+  Prove's ``mde_two_proportion`` gives (Trace's own choice for a share of 1; 0.0.1
   measured a rise from ``1 - 0.5 / runs_old`` and gave a number).
 
-All three are the math lane's (§17.5): the statistic against its reference and its property. TR57
+All three are the math lane's: the statistic against its reference and its property. TR57
 (``test_paired.py``) holds the same limit equal to Prove's public function.
 """
 
@@ -50,7 +50,7 @@ def designs(draw, low: int = 0):  # type: ignore[no-untyped-def]
 @given(designs(), ALPHAS, POWERS)
 @example((0, 50, 2), 0.05, 0.8)  # 0.5188; paired the 0.0.1 way, 0.7234
 @example((0, 1, 50), 0.05, 0.8)  # 0.4988; paired the 0.0.1 way, 1.0 (none detectable)
-@example((0, 3, 2), 0.2, 0.8)  # 0.7972; paired the 0.0.1 way, 0.7985 (TF16 Session A's case)
+@example((0, 3, 2), 0.2, 0.8)  # 0.7972; paired the 0.0.1 way, 0.7985
 @example((1, 40, 3), 0.05, 0.8)  # 0.5217; paired the 0.0.1 way, 0.6610
 @example((2, 9, 3), 0.05, 0.8)  # 0.7689; paired the 0.0.1 way, 0.7469
 def test_sf1_each_version_s_share_goes_with_its_own_tries(design, alpha, power) -> None:  # type: ignore[no-untyped-def]

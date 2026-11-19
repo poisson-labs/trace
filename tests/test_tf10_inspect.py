@@ -1,11 +1,10 @@
-"""TF10-15 to TF10-25: the Inspect reader on inspect_ai 0.3.277's committed logs (spec section
-6.3's ``inspect`` item, R25; section 18.1.1 row 7; section 18.5.2's Inspect AI row; the readings
-in ``tf10_support``'s docstring, RD4).
+"""TF10-15 to TF10-25: the Inspect reader on inspect_ai 0.3.277's committed logs (the readings in
+``tf10_support``'s docstring).
 
 - TF10-15: the ``.json`` log: a sample is a row, its case its ``id``, its epochs its repeats in
   epoch order, ``C`` met and ``I`` missed.
 - TF10-16: the ``.eval`` log, its members Zstandard-compressed, read the same way.
-- TF10-17: without the ``zstandard`` package a ``.eval`` is refused in the spec's one line; a log
+- TF10-17: without the ``zstandard`` package a ``.eval`` is refused in one line; a log
   over 200 MB is refused naming its size, before it is read.
 - TF10-18: ``P`` and ``N`` are missed and any other letter refused with the values listed; a
   number at a cut; declared failing values.
@@ -16,7 +15,7 @@ in ``tf10_support``'s docstring, RD4).
 - TF10-21: the start is ``eval.created``; the model, the task and the scorer are declared.
 - TF10-22: the signals each sample records, and those it does not.
 - TF10-23: the failure kinds: wrong answers on the fixture; limits, stop reasons and tool
-  errors as section 18.5.2 maps them.
+  errors as ``tf10_support``'s docstring maps them.
 - TF10-24: nothing of the input, the target, the messages, the output, the events or a score's
   answer or explanation is written or printed.
 - TF10-25: a ``.json`` log and the ``.eval`` holding the same log give the same records.

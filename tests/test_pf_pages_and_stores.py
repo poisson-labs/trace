@@ -1,8 +1,5 @@
 """PF-8, PF-9 and PF-14 to PF-16: the floor is written once, the pages give one install line, and
-the fixture stores Prove made are what their provenance says. These seventeen tests were
-``test_prove_pin.py``'s (PIN-2, PIN-4, PIN-5, PIN-6) and moved here, under floor names and otherwise
-as they were, on the ruling of 2026-11-18 (AR-6); the rest of that file held what PF-1 to PF-5,
-PF-72 and PF-73 hold.
+the fixture stores Prove made are what their provenance says.
 
 - PF-8: the recorded floor is written once, in ``pyproject.toml``'s dependency, so the floor Trace
   checks cannot drift from the one it declares; the pages name no other floor, show no Prove
@@ -37,7 +34,7 @@ SRC = REPO / "src" / "poisson_trace"
 FIXTURES = TESTS / "fixtures"
 STORES = FIXTURES / "prove-stores"
 PINNED_STORE = STORES / f"prove-{RECORDED}"
-#: The store poisson-prove 0.1.3 made, kept as the fixture of the stored format's 1.0 (PV-7).
+#: The store poisson-prove 0.1.3 made, kept as the fixture of the stored format's 1.0.
 KEPT_STORE = STORES / f"prove-{FORMAT_1_0}"
 #: The floor as one exact published version: what the recipe installs to make the floor's store.
 EXACT = f"poisson-prove=={RECORDED}"
@@ -251,16 +248,16 @@ def test_pf_14_every_store_made_with_prove_is_listed() -> None:
     assert _store_roots() == set(MADE_WITH_PROVE)
 
 
-# PP1 (PENDING): the stores Prove made before it was published are kept as they were written: the
+# The stores Prove made before it was published are kept as they were written: the
 # three real-run pairs cannot be made again without paying for the model runs, and the 0.0.1
 # store is the old shape TF16 reads beside the new. The store 0.1.3 made is kept as the fixture of
-# the stored format's 1.0 (PV-7). The rest are made by the recorded Prove, the floor.
+# the stored format's 1.0. The rest are made by the recorded Prove, the floor.
 BEFORE_PUBLISHED = {"tau2", "cs", "humaneval", "prove-stores/prove-0.0.1"}
 KEPT_1_0 = {f"prove-stores/prove-{FORMAT_1_0}"}
 
 
 def test_pf_14_the_store_0_1_3_made_is_kept_as_written() -> None:
-    """PV-7: the fixture of the stored format's 1.0 states the Prove that wrote it and no other,
+    """The fixture of the stored format's 1.0 states the Prove that wrote it and no other,
     in its runs, its descriptor and its saved comparison, and holds no key a later format added."""
     runs = sorted(KEPT_STORE.glob("*/manifest.json"))
     assert len(runs) == 2
@@ -281,7 +278,7 @@ def test_pf_14_the_store_0_1_3_made_is_kept_as_written() -> None:
 
 @pytest.mark.parametrize("root", sorted(BEFORE_PUBLISHED))
 def test_pf_14_the_stores_made_before_prove_was_published_are_kept_as_written(root: str) -> None:
-    """PP1: each states the one version Prove had then, under its old name, and nothing newer."""
+    """Each states the one version Prove had then, under its old name, and nothing newer."""
     manifests = sorted((FIXTURES / root).glob("*/manifest.json"))
     assert manifests, root
     for path in manifests:

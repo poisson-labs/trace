@@ -1,6 +1,6 @@
-"""trace#31: ``fix-check`` answers when the runs it compares hold no failed run.
+"""FIX31: ``fix-check`` answers when the runs it compares hold no failed run.
 
-On main at ``a4bc065`` a pair in which neither run carried the event was refused, ``unknown
+Before this fix a pair in which neither run carried the event was refused, ``unknown
 event failed; the runs carry the outcomes: ok``, exit 1 and nothing on stdout, so Poisson
 Break's confirm stage, which asks ``fix-check --json`` of a control arm and each candidate's
 arm, ended with no finding on a sound agent. These tests hold the answer.
@@ -15,7 +15,7 @@ The cases:
   zero failures is a closed form and never one point wide), no drop limit and the rise limit.
   The range reads the verdict: *no significant difference* when it lies inside plus or minus
   the size asked, *too small to tell* otherwise, with the tries that would bring it inside.
-  Ruled 2026-11-10 (F31-3, F31-4; FIX31-21, FIX31-22): on fewer than three inputs, and where the
+  FIX31-21 and FIX31-22: on fewer than three inputs, and where the
   tries are so unequal across the inputs that the range's one-sided miss is above 5%, the range
   is labelled rough and does not read the verdict: main's rule for a drop does, as before.
 - **Only one version failed** (FIX31-10, FIX31-11): answered on main already; their numbers
@@ -50,7 +50,7 @@ from tf0_support import Ran, chdir, trace
 
 INTERVAL = "stratified Miettinen-Nurminen score interval, Mantel-Haenszel weights"
 
-# ---------- the words (each a call of Taylor's; a ruling moves them here) ----------
+# ---------- the words ----------
 
 SENTENCE_NO_DIFFERENCE = "neither version failed"
 
@@ -195,7 +195,7 @@ def test_fix31_1_breaks_case_is_answered(tmp_path: Path) -> None:
 
 
 def test_fix31_1_the_candidate_with_the_weakness_gets_its_verdict_beside_it(tmp_path: Path) -> None:
-    """The stage of the issue: against a control that never fails, the candidate that fails 28
+    """Break's confirm stage: against a control that never fails, the candidate that fails 28
     runs of 30 is *different*, failed more, and the candidate that changes nothing is answered
     too, so the stage is whole."""
     store = break_case(tmp_path)
@@ -254,7 +254,7 @@ def test_fix31_2_every_number_of_a_pair_that_never_failed(
     cons = doc["consistency"]
     assert cons["failure_share"] == 0.0 and cons["fails_again"] is None and cons["kappa"] is None
     assert cons["within"] == 0.0 and cons["pooled"] == 0.0
-    # what it could catch: no drop (there is no failure to drop), and the rise of the spec's
+    # what it could catch: no drop (there is no failure to drop), and the rise of fix-check's
     # power formula with the old version at zero
     limits = doc["limits"]
     assert limits["drop"] is None and limit(tab, "drop") is None
@@ -492,7 +492,7 @@ def test_fix31_7_a_misspelt_name_on_runs_that_hold_failures_is_still_refused(tmp
 
 
 def test_fix31_8_changes_and_where_still_refuse_the_name(tmp_path: Path) -> None:
-    """trace#31 is fix-check's. ``changes`` and ``where`` on runs that never failed refuse the
+    """This fix is fix-check's. ``changes`` and ``where`` on runs that never failed refuse the
     event as before (their bytes are pinned in ``test_fix31_unchanged.py``); this test is here
     so that a later change to them is made on purpose. It asks fix-check first, which must
     answer."""
@@ -812,7 +812,7 @@ def test_fix31_18_counts_with_a_failure_keep_their_statistics() -> None:
         "one try per input on the old version")
 
 
-# ---------- where only the new version failed (F31-9) ----------
+# ---------- where only the new version failed ----------
 
 NO_DROP_TO_LOOK_FOR = ("The old version did not fail on these inputs, so there is no drop to look for: this check can "
                        "only show whether the new version fails more.")
@@ -861,7 +861,7 @@ def test_fix31_20_on_a_terminal_the_same_facts_in_the_verdicts_colour(
     assert strip(plain.out).split("\n")[0].startswith(f"{word}  {SENTENCE_NO_DIFFERENCE}")
 
 
-# ---------- FIX31-21: fewer than three inputs (F31-3, ruled 2026-11-10) ----------
+# ---------- FIX31-21: fewer than three inputs ----------
 
 FEW = [(2, 5, "0.2"), (1, 1, "0.2"), (1, 30, "0.2"), (2, 14, "0.2"), (2, 2, "0.9")]
 
@@ -915,7 +915,7 @@ def test_fix31_21_the_label_does_not_wait_on_where_the_range_lies(tmp_path: Path
     assert three["verdict"] == "no significant difference" and three["sentence"] == SENTENCE_NO_DIFFERENCE
 
 
-# ---------- FIX31-22: unequal tries (F31-4, ruled 2026-11-10) ----------
+# ---------- FIX31-22: unequal tries ----------
 
 # five inputs, one with many old tries and few new, four the other way round: one try apart,
 # the range's least favourable one-sided miss is 3.95% and 5.60%

@@ -1,14 +1,12 @@
-"""What main prints, pinned for TF25 (the brief's rule 6): the corpus of invocations whose output
-the Braintrust pair leaves byte for byte as main 729a678 prints it, the few it changes, and how
-each is run. Not collected. ``fixtures/tf25/make_main_pins.py`` takes the pins with this module
-alone, so it imports nothing the Braintrust reader brings.
+"""What main prints, pinned for TF25: the corpus of invocations whose output the Braintrust
+reader leaves byte for byte as the pinned main prints it, the few it changes, and how each is
+run. Not collected.
 
 The corpus is TF24's whole (TF19's and TF18's inside it: every verb's plain and ``--json`` output
 on each kind of store, each option, the refusals, the earlier imports, the names, the saves,
-``ui`` and ``report``), with the case TF24 left out while another session was changing it (it is
-settled on main now), and beside it what main gained with the LangSmith reader: its help under
-both spellings, its imports of each kind of export in text and ``--json``, the verbs over two
-imported versions and over two folders of trace files, its refusals, a pull through TF24's
+``ui`` and ``report``), and beside it what main gained with the LangSmith reader: its help
+under both spellings, its imports of each kind of export in text and ``--json``, the verbs over
+two imported versions and over two folders of trace files, its refusals, a pull through TF24's
 transport, and ``init`` on the files it finds.
 """
 
@@ -89,7 +87,7 @@ LANGSMITH: dict[str, tuple[str, str, list[list[str]]]] = {
 }
 
 #: ``init`` on the files it finds, pinned from main as text: label to (what the folder holds,
-#: the steps). TF25 decides this for the three API readers together (item 5 of the brief), so
+#: the steps). TF25 holds one rule for the three API readers together, so
 #: what main prints is kept in words, to say exactly what moves and what does not.
 INIT: dict[str, tuple[str, list[list[str]]]] = {
     "init: langsmith runs": ("runs", [["init", "--yes"], ["init", "--yes", "--no-import"]]),
@@ -110,7 +108,7 @@ FOUND: dict[str, tuple[tuple[str, str], ...]] = {
         ("braintrust/ui/slice-baseline.csv", "old-ui.csv"), ("braintrust/ui/slice-candidate.json", "new-ui.json")),
 }
 
-#: The invocations whose output this pair changes, pinned from main as text to say exactly how:
+#: The invocations whose output this reader changes, pinned from main as text to say exactly how:
 #: the import's help gains the reader and its example; the refusal of a tool the install lacks
 #: names one reader more; and ``braintrust`` itself stops being a tool the install lacks.
 CHANGED: dict[str, tuple[str, str, list[list[str]]]] = {
@@ -121,7 +119,7 @@ CHANGED: dict[str, tuple[str, str, list[list[str]]]] = {
 
 
 def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
-    """Every invocation whose plain and ``--json`` output this pair leaves as main prints it,
+    """Every invocation whose plain and ``--json`` output this reader leaves as main prints it,
     piped (see the module's opening)."""
     from tf24_support import pin_corpus as tf24_corpus
 

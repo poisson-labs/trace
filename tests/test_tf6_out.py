@@ -1,18 +1,16 @@
-"""TF6-16 to TF6-21: ``--out DIR``, the handover bundle (spec sections 11.2, 11.4, 11.6 and 17.3
-item 5, AD11; invariants 1 and 4).
+"""TF6-16 to TF6-21: ``--out DIR``, the handover bundle (``docs/handover.md``).
 
 - TF6-16: ``--out DIR`` saves the artifact into the store, as ``--save`` does, and writes a copy
   of its folder into DIR with ``handover.json`` beside it; DIR holds nothing else. The plain output
   gains ``  wrote  DIR`` and then ``  saved  …``; ``--json`` gains ``saved``.
-- TF6-17: DIR is created; a DIR that exists is refused before any work unless ``--force``, which
-  leaves DIR holding the bundle alone.
-- TF6-18: ``handover.json``: section 11.2's keys in its order; every file in DIR but itself, with
-  its digest and size, ``artifact.json`` among them; the runs with their names and the store by
-  section 11.2's rule.
-- TF6-19: the same bundle bytes on every invocation on equal inputs, but for ``written_at``
-  (section 11.6).
-- TF6-20: a store that cannot be written still gets its bundle in DIR, with the note (SV7).
-- TF6-21: nothing is handed over that section 11.4 or 17.3 item 9 says Trace does not hand over:
+- TF6-17: DIR is created; a DIR that exists is refused before any work (the verb's API function
+  is never called) unless ``--force``, which leaves DIR holding the bundle alone.
+- TF6-18: ``handover.json``: its keys in their order; every file in DIR but itself, with its
+  digest and size, ``artifact.json`` among them; the runs with their names and the store as
+  given when relative, by its last folder's name when absolute.
+- TF6-19: the same bundle bytes on every invocation on equal inputs, but for ``written_at``.
+- TF6-20: a store that cannot be written still gets its bundle in DIR, with the note.
+- TF6-21: nothing is handed over that Trace does not hand over (``docs/handover.md``):
   no absolute path, no platform string, no user or host name, no key, no row content, no Prove
   content key, no page or renderer, no receipt or chain, nothing sent anywhere.
 """
@@ -85,7 +83,8 @@ def test_tf6_17_a_dir_that_exists_is_refused_before_any_work(tmp_path: Path, ver
     bundle.mkdir()
     (bundle / "mine.txt").write_text("keep\n", encoding="utf-8")
     before = tree(tmp_path)
-    # the verb's own function, watched: the work is its call
+    # the verb's API function, watched: the verb's work is that call, so a refusal before any
+    # work never makes it
     function = verb.replace("-", "_")
     real = getattr(api, function)
     calls: list[str] = []

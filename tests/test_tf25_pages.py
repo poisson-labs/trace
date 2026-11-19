@@ -1,6 +1,6 @@
-"""TF25-61 to TF25-65: the reader's page and recipe (spec sections 6.1, the listing rule; 6.3, the
-DeepEval page's shape; 6.4a, the four sentences; 7.1, the recipes; 7.2, plain words; and the facts
-the captures correct, which the page must not repeat).
+"""TF25-61 to TF25-65: the reader's page and recipe (the shape of the other integration pages, as
+``docs/integrations/deepeval.md`` has it; the four sentences of what it does not do; the recipe;
+plain words; and the facts the captures correct, which the page must not repeat).
 
 - TF25-61: ``docs/integrations/braintrust.md`` exists, of the other pages' shape: the one
   install line, the version that wrote the captures, and a command that imports a committed

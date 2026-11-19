@@ -1,7 +1,5 @@
 """TF16-8 to TF16-12: a name given at sweep time (``poisson-prove sweep --name``, written into the
-run's manifest as ``name``) is read as the run's name, below a name in ``trace-names.toml``
-(spec section 16.1 step 1, sections 5.2, 5.3 and 17.6; Prove's spec section 4.3 with its
-rulings of 2026-10-23 and 2026-10-24).
+run's manifest as ``name``) is read as the run's name, below a name in ``trace-names.toml``.
 
 - TF16-8: a run named at sweep time goes by that name in every output, and every verb takes it;
   a store with no such names is named as before.
@@ -33,7 +31,7 @@ X, Y = "20261001T100000Z-aaaa", "20261002T100000Z-bbbb"
 
 
 def _names_file(store: Path, entries: dict[str, str]) -> None:
-    """``trace-names.toml`` as section 5.2 writes it."""
+    """``trace-names.toml`` as ``poisson-trace name`` writes it."""
     lines = ["# Poisson Trace: your names for the runs in this store. Written by `poisson-trace name`.",
              "version = 1", "", "[names]", *(f'"{k}" = "{v}"' for k, v in entries.items())]
     (store / "trace-names.toml").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -46,7 +44,7 @@ def test_tf16_8_a_run_named_at_sweep_time_goes_by_that_name(tmp_path: Path) -> N
     old, new = copies(tmp_path)
     assert run_names(new) == SWEEP_NAMES
     assert run_names(old) == {OLD_A: COMPUTED[0], OLD_B: COMPUTED[1]}
-    # the three-tools recipe's commands (section 17.6 step 4)
+    # the three-tools recipe's commands
     for argv in (["fix-check", "agent before", "agent after", *FIX_CHECK],
                  ["where", "agent before", "--event", EVENT]):
         ran = trace([*argv, "--store", new, "--json"])

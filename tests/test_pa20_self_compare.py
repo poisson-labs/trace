@@ -1,6 +1,6 @@
-"""PA20 (ruled 2026-11-05): ``compare`` refuses two words that reach one run, as ``fix-check`` and
-``changes`` do. Before, ``compare "#2" "agent before"`` compared a run with itself and said *too
-small to tell*, because it checked that the two words differ and not that the two runs do.
+"""PA20: ``compare`` refuses two words that reach one run, as ``fix-check`` and ``changes`` do.
+A check that the two words differ is not enough: ``compare "#2" "agent before"`` would compare a
+run with itself and say *too small to tell*; the check is that the two runs differ.
 
 Every way two words reach one run, on the three verbs that take two runs, through the command
 line and through the Python API: one word twice, a name and its id, a name and its number, an id

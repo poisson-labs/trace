@@ -1,5 +1,5 @@
-"""RUNREC-30 to RUNREC-33: every way in records the same way (invariant 4; spec section 17.3
-item 6 with TF22's folder ingest, section 18.3.1 and 18.3.2, and TF10's readers).
+"""RUNREC-30 to RUNREC-33: every way in records the same way (invariant 4;
+TF22's folder ingest, a saved pull, and TF10's readers).
 
 A folder of one tool's files, a saved pull and the same files named one by one write the same
 run record: the same ``produced_by``, the same ``planned``, closing ``progress`` and

@@ -1,25 +1,21 @@
-"""TF10-42 to TF10-46: each reader's page and recipe (spec sections 6.1, the listing rule; 6.3,
-the DeepEval page's shape; 6.4a, the four sentences; 7.1, the recipes; 7.2, plain words; RD5).
+"""TF10-42 to TF10-46: each reader's page and recipe.
 
 - TF10-42: ``docs/integrations/promptfoo.md``, ``inspect.md`` and ``openai-evals.md`` exist, of
   the DeepEval page's shape: the install line, which version of the tool wrote the fixture, a
   command that imports the committed fixture with the output Trace printed on it. Inspect's page
   shows the extra a ``.eval`` needs in a block after its Install section, and says a ``.eval`` is
   read whole into memory and one over 200 MB refused.
-- TF10-43: every marked block of the three pages holds when its commands are run in page order
-  in a folder laid out as a clone: an output block is the whole of what the command printed, an
-  excerpt a run of its lines, each with its exit code.
 - TF10-44: each page ends with what it does not do: four sentences, one bullet each.
 - TF10-45: ``docs/recipes/from-promptfoo.md``, ``from-inspect.md`` and ``from-openai-evals.md``
   exist: each under 150 lines, starting from the tool's own file, importing twice and running
-  ``fix-check``, every ``poisson-trace`` block marked and holding when run (an output in full or
-  an excerpt of whole lines of it, so that the recipe stays short), no run named by its id, and
-  ending with ``What this does not do``.
+  ``fix-check``, every ``poisson-trace`` block marked (an output in full or an excerpt of whole
+  lines of it, so that the recipe stays short), no run named by its id, and ending with ``What
+  this does not do``.
 - TF10-46: the six files are in plain words: no internal id, no session or ruling word, and no
   block spells the import's old name.
 
-TF10-43's and TF10-45's runs of the pages' and the recipes' marked blocks were cut on the ruling of
-2026-11-18 (AR-7): ``test_tf5_blocks.py`` (TF5-14) runs the same page through the same runner.
+The pages' and the recipes' marked blocks are run, in page order in a folder laid out as a
+clone, by ``test_tf5_blocks.py`` (TF5-14), through the runner every page shares.
 """
 
 from __future__ import annotations
@@ -40,7 +36,7 @@ FIXTURE = {"promptfoo": ("tests/fixtures/ingest/promptfoo/results.json", "tests/
                        "tests/fixtures/ingest/inspect/2026-10-07T04-23-51-00-00_trace-fixture_2nSEDuHHzKiTUjJW3kXknY.json"),
            "openai-evals": ("tests/fixtures/ingest/openai-evals/old.jsonl", "tests/fixtures/ingest/openai-evals/new.jsonl")}
 VERSION = {"promptfoo": "promptfoo 0.120.19", "inspect": "inspect_ai 0.3.277", "openai-evals": "evals 3.0.1.post1"}
-# every page's Install section is the one line (the Prove pin's ruling, test_pf_pages_and_stores.py); the
+# every page's Install section is the one line (as test_pf_pages_and_stores.py holds it); the
 # Inspect page shows the extra a .eval log needs in a block of its own after it
 INSTALL = "pip install poisson-trace"
 EXTRA = "pip install 'poisson-trace[inspect]'"

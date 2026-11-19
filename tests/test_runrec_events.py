@@ -1,14 +1,14 @@
-"""RUNREC-10 to RUNREC-15: the run's full event log (invariant 2; spec section 17.3 item 6,
-section 9.1 L6; the artifact format's section 4.2; TF21's SA4 widened by this record; RR1, RR2).
+"""RUNREC-10 to RUNREC-15: the run's full event log (``runrec_support``'s opening,
+invariant 2).
 
 Each import's ``events.jsonl`` holds, in Prove 0.1.3's line format (``_Events`` and ``Event``
 in ``poisson_prove.core``), ``planned`` (the run, the reader, the files' names, the rows it will
 write), ``started``, ``progress`` at most once a second plus once just before the end with the
 format's counts in rows, then ``finished`` with the status and the rows kept; or, when Ctrl-C
 stops the import after its run folder exists, a closing ``progress`` and ``interrupted`` with
-what Prove holds. Counted as Prove counts its own runs (RR1): ``errored`` the rows with no
-outcome, ``kept`` the rest. Nothing in it that section 11.4 or TF21's no-text rules keep out:
-no signal key (SA4), no error text, no path, no digest chain."""
+what Prove holds. Counted as Prove counts its own runs: ``errored`` the rows with no
+outcome, ``kept`` the rest. Nothing in it that TF21's no-text rules keep out:
+no signal key, no error text, no path, no digest chain."""
 
 from __future__ import annotations
 
@@ -71,7 +71,7 @@ def test_runrec_10_an_unpacked_inspect_folder_is_planned_as_its_one_entry(
     assert by["planned"]["detail"]["files"] == ["inspect-log/"] == [f["name"] for f in data["files"]]
 
 
-# ---------- RUNREC-11: Prove's counts (RR1) ----------
+# ---------- RUNREC-11: Prove's counts ----------
 
 
 def test_runrec_11_rows_with_no_outcome_are_counted_as_errored(tmp_path: Path) -> None:

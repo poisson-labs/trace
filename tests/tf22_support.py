@@ -1,5 +1,5 @@
 """Shared helpers for TF22's tests: folder ingest (``ingest/folder.py``) and the ``--verdicts``
-sidecar join (``ingest/verdicts.py``), spec section 18.2 and 18.3.1, ruled by SG5, SG8 and SG17.
+sidecar join (``ingest/verdicts.py``).
 
 Not a test module and not collected.
 
@@ -7,12 +7,12 @@ Every folder here is built from committed fixtures, never from invented values: 
 reports, the table and the Ragas tables are copied whole or split by case into shards; the
 DeepEval test runs are the files DeepEval wrote, unzipped under the names DeepEval gave them
 (``tests/fixtures/PROVENANCE.md``, their digests checked); the Prove folders are the committed
-stores. A pull folder's ``pull.json`` is the spec's own shape (section 18.3.2) around committed
-files. A verdicts file is built from the cases a committed fixture holds.
+stores. A pull folder's ``pull.json`` is the shape a pull writes (``poisson.raw-pull/1``) around
+committed files. A verdicts file is built from the cases a committed fixture holds.
 
 The rules as these tests read them:
 
-- A folder is read in this order (section 18.3.1): a Prove run folder (``manifest.json`` and
+- A folder is read in this order: a Prove run folder (``manifest.json`` and
   ``episodes/``); a folder Prove reads as a store; a folder holding ``pull.json``; otherwise
   the regular files directly in it, each claimed by the reader whose ``looks_like`` claims it
   (the readers' own detectors are the signature table), leaving out hidden files, names
@@ -20,7 +20,7 @@ The rules as these tests read them:
   Subfolders are not read. Files are taken in the order of their names.
 - Several files of one tool are one run when no case is in two of them (shards); a case in two
   files means two runs, refused with each file named. DeepEval test runs are one run each.
-- On a verb, a run word that reaches a stored run is that run, as before; a word that reaches
+- On a verb, a run word that reaches a stored run is that run, folder or not; a word that reaches
   none and names a folder is the folder. A Prove folder is read where it is. A tool folder is
   read through its reader, with the reader's own flags given on the verb's command line, into a
   store that does not outlive the command; nothing is written anywhere that stays.
@@ -28,7 +28,7 @@ The rules as these tests read them:
   same folders imported one by one into an empty store, each under its folder's name. The
   commands name each folder by the path typed, carry no ``--store``, carry the reader's flags,
   and run as printed. ``--json``'s ``store`` is null.
-- ``--verdicts FILE`` (import only in TF22): a ``.csv`` or ``.jsonl`` file of rows keyed by
+- ``--verdicts FILE`` (on ``import`` alone here): a ``.csv`` or ``.jsonl`` file of rows keyed by
   ``case``, or by ``input`` when no case matches (``input:`` and the first 12 hex characters of
   the SHA-256 of the canonical input). A verdict fills what the source did not record and must
   agree with what it did.
@@ -239,8 +239,8 @@ def sha256_of(path: Path) -> str:
 
 
 def pull_folder(folder: Path, tool: str, listed: Sequence[Path], **override: Any) -> Path:
-    """A saved pull folder (section 18.3.2): the files copied in and ``pull.json`` listing them
-    with their digests, in the spec's shape; ``override`` replaces or adds keys."""
+    """A saved pull folder: the files copied in and ``pull.json`` listing them
+    with their digests, in the shape a pull writes; ``override`` replaces or adds keys."""
     files = list(listed)
     copy_into(folder, *files)
     doc: dict[str, Any] = {

@@ -1,11 +1,11 @@
-"""TF18-13: ``poisson-trace ui`` (spec section 17.3 item 7; Prove 0.1.3's own ``ui`` for the form).
+"""TF18-13: ``poisson-trace ui`` (Prove 0.1.3's own ``ui`` for the form).
 
 - ``ui`` builds the pages of the store it reads (``--store``, or the config's own store) and,
-  when a config is read, of every other store it names, so the links between them hold (DM10,
-  A5); it prints one line, ``ok  pages at file:///…/.poisson/ui/trace/index.html``, the store
-  it read, and no ``next:`` line, as Prove's ``ui`` prints (A5); stderr is empty.
+  when a config is read, of every other store it names, so the links between them hold;
+  it prints one line, ``ok  pages at file:///…/.poisson/ui/trace/index.html``, the store
+  it read, and no ``next:`` line, as Prove's ``ui`` prints; stderr is empty.
 - ``--json``: ``schema`` ``poisson-trace.ui/1``, ``verdict``, ``sentence``, ``location`` (the same
-  address), ``next`` null; nothing else (A5).
+  address), ``next`` null; nothing else.
 - ``--open`` opens that address in the browser (``webbrowser``, which a ``BROWSER`` variable
   points at a recorder here), and prints the same; without it nothing is opened.
 - A store it cannot read is the refusal ``runs`` gives for the same store options, word for

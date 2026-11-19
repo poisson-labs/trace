@@ -1,14 +1,13 @@
-"""TF10-33 to TF10-37: the three readers in the import's command line (spec sections 3.3, 5.1, 6.1
-and 6.3; the shared core of INT1 to INT4; RD3).
+"""TF10-33 to TF10-37: the three readers in the import's command line.
 
 - TF10-33: each reader's help is the verb's under both spellings, byte for byte.
 - TF10-34: each import's ``--json`` is ``poisson-trace.import/1`` with the files' digests and a
   ``next:`` fix check on ``--event missed``; the text summary ends with that ``next:`` line.
 - TF10-35: a file that is missing, not the tool's, or damaged is refused in one plain line naming
-  it, exit 1, nothing written; a wrong command line exits 2 (the exit-code table, section 3.3).
+  it, exit 1, nothing written; a wrong command line exits 2 (the exit-code table).
 - TF10-36: both spellings of the import print the same bytes for each reader, refused or done.
 - TF10-37: the readers import nothing from the tools or from Prove; ``zstandard`` is imported only
-  when a ``.eval`` is read; the third reader's module is ``openai_evals`` (RD3).
+  when a ``.eval`` is read; the third reader's module is ``openai_evals``.
 """
 
 from __future__ import annotations

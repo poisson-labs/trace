@@ -1,4 +1,4 @@
-"""TF13-24 to TF13-27: what the API never does (section 11.8, found while reading: rule 7).
+"""TF13-24 to TF13-27: what the API never does.
 
 TF13-24: it prints nothing, on either stream; what the command line prints as ``note:`` lines
 the API hands back as ``notes``.

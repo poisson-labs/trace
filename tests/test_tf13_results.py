@@ -1,12 +1,11 @@
-"""TF13-8 to TF13-18: the typed results carry everything the command line prints and saves
-(invariant 2; PA4, PA6, PA8, PA9, PA13, PA16).
+"""TF13-8 to TF13-18: the typed results carry everything the command line prints and saves.
 
 TF13-8: every invocation of the corpus, through the API, gives a result whose ``to_json()`` is
 the ``--json`` stdout and whose ``to_markdown()`` is the plain stdout, byte for byte, with the
 command's exit code and its ``note:`` lines as ``notes``; the API prints nothing.
 
 TF13-9: the result is a frozen dataclass of the expected type, each ``--json`` key an attribute
-holding what the JSON holds (``note`` as section 11.3's list; PA9); and it keeps working after
+holding what the JSON holds (``note`` as a list); and it keeps working after
 the process changes folder.
 
 TF13-10: each counting verb's result carries every key of the ``result.json`` its bundle holds,
@@ -90,7 +89,7 @@ def test_tf13_9_the_result_is_typed_and_holds_each_key_of_its_json(tmp_path: Pat
     for key, value in doc.items():
         got = jsonable(getattr(r, key))
         if key == "note" and isinstance(value, str):
-            # section 11.3: note is a list; where's --json keeps the one string it prints (PA9)
+            # note is a list; where's --json keeps the one string it prints
             assert got[:1] == [value], (label, got)
         else:
             assert got == value, (label, key)

@@ -1,5 +1,5 @@
 """TF0-5 to TF0-10: problems go to stderr, one line each, and every path that ended in a traceback
-is closed (spec section 9.1, rules L4 and L6; section 3.3; section 8.2's install line).
+is closed (rules 4 and 6 of ``docs/cli-look.md``, its exit-code table, and the install line).
 
 A refusal is ``error: <sentence>`` on stderr, two-space continuations only, nothing on stdout,
 exit 1. A store that is not there says so instead of reading as an unknown run. ``--svg`` refuses
@@ -43,7 +43,7 @@ SENTINEL = "zq-sentinel-7f3e"
 
 def _one_error(result: Ran, code: int = 1) -> str:
     """Exit ``code``, nothing on stdout, one ``error:`` line and at most ``  next:`` lines under
-    it (rule L4); the error line."""
+    it (rule 4); the error line."""
     assert result.code == code, result.text
     assert result.out == "", result.out
     lines = result.lines()
@@ -373,7 +373,7 @@ def test_tf0_10_a_wrong_command_line_without_prove_is_a_usage_error(tmp_path: Pa
         assert INSTALL_PROVE not in result.text
 
 
-# a Prove below the floor: 9.9.9, the stand-in before the floor, is one Trace now reads (ruled 2026-11-17, PV-4)
+# absent, or a Prove below the floor: 0.3.0 (9.9.9 is above the floor, a version Trace reads)
 @pytest.mark.parametrize("prove", ["absent", "0.3.0"])
 @pytest.mark.parametrize("command", ["trace", "import"])
 def test_tf0_10_a_command_that_needs_prove_names_the_install_line(tmp_path: Path, prove: str, command: str) -> None:

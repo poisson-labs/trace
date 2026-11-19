@@ -33,7 +33,7 @@ CS_EVENTS = ("forbidden_action", "unresolved", "max_turns", "app_error")
 CANNOT_SAY = (
     "The step index is where the run stopped, not why. A run that died at a tool step may "
     "have gone wrong three steps earlier.",
-    # PENDING (TF15 Session A yes/no): under ST8 a timed-out run is an end of its own, not censored
+    # a timed-out run is an end of its own, not censored; only a capped run is censored
     "Capped runs are censored at their last recorded step. If they would have died soon after, "
     "the curve is optimistic by that much. A run that timed out ends where it stopped, counted "
     "beside the kinds and not as a death; the header counts both.",
@@ -42,7 +42,7 @@ CANNOT_SAY = (
     "cells says whether anything moved, and only within what it could not have detected.",
 )
 
-# the verdict and its sentence after the schema, next last (spec section 9.4, rule L9)
+# the verdict and its sentence after the schema, next last (docs/cli-look.md, rule 9)
 WHERE_KEYS = (
     "schema", "verdict", "sentence", "prove", "run", "events", "clock", "curve", "median_step",
     "at", "causes", "bootstrap", "declared", "cannot_say", "next",

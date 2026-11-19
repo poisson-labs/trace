@@ -1,5 +1,4 @@
-"""TF5-30 to TF5-36: nothing stale (the brief's rule 3; TF16 item 4, LS-46, BT-44, WV-50, and
-the 2026-10-28 ruling on README line 272).
+"""TF5-30 to TF5-36: nothing stale.
 
 - TF5-30: no page says Trace is at a version it is not. Every version of Trace a page writes
   (``poisson-trace==X``, ``poisson-trace X``, ``poisson_trace-X``, "Trace X") is the version
@@ -13,9 +12,9 @@ the 2026-10-28 ruling on README line 272).
   skill or the package's own text, but in what a command run on the page printed; the
   examples' store folder is ``prove-runs``.
 - TF5-33: no page says a built reader is still to come, and what is said to be coming names
-  none of the ten tools (LS-46's first sentence; BT-44, WV-50).
+  none of the ten tools.
 - TF5-34: no page says an imported run carries no traces, or that ``where`` and ``compare``
-  read Prove's runs alone (LS-46's second sentence). They read any run that carries traces:
+  read Prove's runs alone. They read any run that carries traces:
   the three services' API answers and pulls do, their summary and page exports do not.
 - TF5-35: that fact, held on the committed captures whatever the pages say: for each of the
   three services, ``where`` places failures on steps and ``compare`` answers on the runs

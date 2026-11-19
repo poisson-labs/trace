@@ -1,8 +1,7 @@
-"""TF5-90 to TF5-97: ``.github/workflows/ci.yml`` and the packaging (spec sections 8.4, 8.5 and
-17.5; the brief's rule 7).
+"""TF5-90 to TF5-97: ``.github/workflows/ci.yml`` and the packaging.
 
-Frozen here: what ``ci.yml`` must run, on which Pythons, and when. Left open, for the CI
-setup session: which runner each job uses (``runs-on``, hosted or not, and which systems the
+Frozen here: what ``ci.yml`` must run, on which Pythons, and when. Left open: which
+runner each job uses (``runs-on``, hosted or not, and which systems the
 full matrix covers), how the jobs are cut into shards, and how the socket guard is made.
 Nothing here reads ``runs-on``. ``ci.yml`` is read as text, by its indentation, since the
 suite carries no YAML reader.
@@ -29,7 +28,7 @@ suite carries no YAML reader.
   install and before the docs check, that refuses every connection but to this machine.
 - TF5-95: the workflow file says in its opening comment what each job is for, as
   ``release.yml`` does, and the lanes are the four ``pyproject.toml`` names, mark for mark.
-- TF5-96: the packaging (section 8.5): both commands and ``python -m poisson_trace``;
+- TF5-96: the packaging: both commands and ``python -m poisson_trace``;
   Python 3.11 to 3.13 declared and classified, macOS and Linux classified; ``pyarrow``
   declared at a floor of Trace's own, since Trace imports it itself, and the one installed at or above it; the setup skill and the
   pages' fixed files in the wheel, and neither ``tools/`` nor the tests; the description not

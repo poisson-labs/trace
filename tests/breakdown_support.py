@@ -1,16 +1,14 @@
-"""Shared helpers for the failure breakdown and table fixes' tests (Taylor's rulings DM1 to DM4
-and DM15 of 2026-11-05, ``log/trace-design/rulings.md``; this pair's own readings are FD1 on,
-``log/trace-breakdown-a/rulings.md``).
+"""Shared helpers for the failure breakdown and table fixes' tests.
 
 Not a test module and not collected.
 
 The rules as these tests read them:
 
-- **The failure breakdown (DM1, DM2).** ``fix-check``, ``compare`` and ``changes`` print a report
+- **The failure breakdown.** ``fix-check``, ``compare`` and ``changes`` print a report
   section, ``## Failures by kind``: one sentence on what is counted; a table ``kind | old | old
   share | new | new share | change`` (``compare`` and ``changes`` name their runs ``A`` and ``B``,
   as their reports and their continuous measures do), one row a kind either run has, ordered by
-  its count over both runs (the larger first, a tie in section 18.5.1's order), and an
+  its count over both runs (the larger first, a tie in ``KINDS``' order), and an
   ``all failures`` row last; the line ``of N tries of … and M of …; a try has one kind``; then,
   when either run has a signal, ``Signals seen on tries, failed or not:`` and a table ``signal |
   old | old share | new | new share``. A share is the count over the run's tries, one decimal
@@ -21,16 +19,16 @@ The rules as these tests read them:
   ``--failing-from`` picked the inputs), before ``The comparison``. ``compare``: at the end of
   ``Comparison``, right after its bold verdict line, before ``Guidance`` and the pointer to
   ``fix-check``. ``changes``: right after ``Runs``, before ``Inputs that changed``.
-- **The JSON (rule 2).** ``--json`` of the three verbs carries ``failure_taxonomy_diff``, the very
+- **The JSON.** ``--json`` of the three verbs carries ``failure_taxonomy_diff``, the very
   object the saved verdict holds, before ``continuous_measures`` (when printed), ``verdicts``
-  (when joined) and ``next``. The API's result carries it as before, and its ``to_json()`` and
+  (when joined) and ``next``. The API's result carries it too, and its ``to_json()`` and
   ``to_markdown()`` are the command's.
-- **The continuous table (DM3).** ``measure | old | new | change | verdict``: the change the
+- **The continuous table.** ``measure | old | new | change | verdict``: the change the
   relative change alone (``+0.88%``), ``none`` when nothing changed, ``-`` when there is no share
   to give; the direction, when there is one, after the verdict word (``different, slower``).
-- **No cell broken (DM4).** In every table the pretty renderer draws, at every width, a body cell
+- **No cell broken.** In every table the pretty renderer draws, at every width, a body cell
   stands whole on one line; when the aligned table cannot fit so, it folds, then prints records.
-- **The verdict word's colour (DM15).** In a pretty table, a cell of the column headed
+- **The verdict word's colour.** In a pretty table, a cell of the column headed
   ``verdict`` that holds a verdict word is drawn in the word's meaning (``too small to tell`` and
   ``no significant difference`` yellow, ``different`` bold, ``identical``, ``not tested`` and
   ``not recorded`` plain); a direction after it stays plain; no digit is coloured; the text under
@@ -59,7 +57,7 @@ HEADING = "## Failures by kind"
 SIGNALS_LINE = "Signals seen on tries, failed or not:"
 BUILT_IN = "by the built-in rules"
 OWN_RULES = "by your own rules and the built-in ones"
-# section 18.5.1's order: the kinds by precedence, then the signals
+# the kinds in their order of precedence, then the signals
 KINDS = (
     "timeout", "rate_limit", "context_overflow", "loop_detected", "step_limit", "guardrail_blocked",
     "tool_error", "retrieval_error", "format_error", "abstained", "crash", "wrong_answer",
@@ -70,7 +68,7 @@ TWO_RUNS = ("fix-check", "compare", "changes")
 # each verb's arms as its JSON names them, and the words its breakdown names them by
 ARMS = {"fix-check": ("old", "new"), "compare": ("a", "b"), "changes": ("a", "b")}
 LABELS = {"fix-check": ("old", "new"), "compare": ("A", "B"), "changes": ("A", "B")}
-# what the sentence under the heading says the verdict is about (FD5)
+# what the sentence under the heading says the verdict is about
 ABOUT = {
     "fix-check": "all failures together",
     "compare": "all failures together",
@@ -97,7 +95,7 @@ def share(n: int, tries: int) -> str:
 
 def points(n_old: int, t_old: int, n_new: int, t_new: int) -> str:
     """The new share less the old, in points, as the per-input table prints its change: one
-    decimal, signed, no sign on no change (FD6)."""
+    decimal, signed, no sign on no change."""
     value = 100.0 * (n_new / t_new - n_old / t_old)
     text = f"{value:+.1f}" if value != 0.0 else f"{value:.1f}"
     return f"{text} points"
@@ -145,7 +143,7 @@ def expected_section(
     whose: str = BUILT_IN,
 ) -> list[str]:
     """The section's lines as the plain report prints them, from the counts: the reference the
-    build is held to (DM1, DM2, FD3 to FD7)."""
+    report is held to."""
     ta, tb = tries
     order = sorted(kinds, key=lambda k: (-(kinds[k][0] + kinds[k][1]), KINDS.index(k)))
     rows = [[k, thousands(kinds[k][0]), share(kinds[k][0], ta), thousands(kinds[k][1]), share(kinds[k][1], tb),
@@ -206,9 +204,9 @@ def without_section(text: str, heading: str = HEADING) -> str:
 
 
 def outside_new_parts(argv: Sequence[str], out: str) -> str:
-    """What this pair leaves as it was: a verb's plain stdout with the failure breakdown and the
-    continuous-measures section taken out (DM1, DM3 change those), its ``--json`` with
-    ``failure_taxonomy_diff`` taken out (rule 2 adds it); any other output as it is."""
+    """What the breakdown leaves as it was: a verb's plain stdout with the failure breakdown and
+    the continuous-measures section taken out (the two it changes), its ``--json`` with
+    ``failure_taxonomy_diff`` taken out (the key it adds); any other output as it is."""
     if not out or (argv and argv[0] not in TWO_RUNS):
         return out
     if "--json" in argv:
@@ -309,7 +307,7 @@ def table_store(tmp: Path, outcomes: Mapping[str, Mapping[str, str]], *, extra_c
 
 def deepeval_store(tmp: Path) -> Path:
     """The DeepEval import of the committed humaneval-a and humaneval-b fixtures, as the
-    design session's continuous-measures captures read it (328 cases, 32 repeats)."""
+    continuous-measures captures read it (328 cases, 32 repeats)."""
     store = tmp / "de"
     for run, start in (("humaneval-a", "2026-09-05T18:54:07Z"), ("humaneval-b", "2026-09-05T19:54:07Z")):
         made = trace_import(["deepeval", str(INGEST / "deepeval" / f"{run}.json.gz"), "--store", str(store),
@@ -339,8 +337,8 @@ INSPECT_ARGV = ["fix-check", "trace-fixture eval", "trace-fixture json", "--even
 
 
 def mockup(name: str) -> list[str]:
-    """A capture of the design session's terminal (every byte the terminal received, escapes
-    removed), as lines."""
+    """A mockup: a terminal capture (every byte the terminal received, escapes removed), as
+    lines."""
     return (MOCKUPS / f"{name}.txt").read_text(encoding="utf-8").split("\n")
 
 
@@ -350,7 +348,7 @@ def sha256(text: str) -> str:
 
 
 
-# ---------- what main prints (rule 5) ----------
+# ---------- what main prints ----------
 
 #: The commit the pins in ``fixtures/breakdown/main-pins.json`` were taken on.
 MAIN = "7e6fef6"
@@ -360,7 +358,7 @@ PTY_WIDTHS = (60, 80, 100, 120, 140, 160)
 
 
 def piped_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
-    """Every invocation rule 5 holds, piped: label to (where it runs, the command, its steps).
+    """Every invocation main's pins hold, piped: label to (where it runs, the command, its steps).
     ``work`` runs inside TF13's workspace, ``repo`` on the committed fixtures by their paths.
     TF13-32's corpus (every verb on each kind of store, each option, the refusals, the imports,
     the names) and TF6-1's larger fixtures, plain and ``--json``."""
@@ -377,8 +375,8 @@ def piped_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
         out[f"import json: {label}"] = ("work", "import", [[*argv, "--json"]])
     for label, (argv, _code) in IMPORT_REFUSALS_ARGV.items():
         if label == "a tool not in this install":
-            # it names every reader in the install, so it moves with each reader pair, which
-            # holds it (for LangSmith, test_tf24_unchanged.py)
+            # it names every reader in the install, so it moves with each new reader, whose
+            # tests hold it (for LangSmith, test_tf24_unchanged.py)
             continue
         out[f"import refusal: {label}"] = ("work", "import", [argv, [*argv, "--json"]])
     out["names"] = ("work", "trace", [
@@ -411,5 +409,5 @@ def normal(text: str, *roots: Path) -> str:
 
     for root in roots:
         text = text.replace(str(root), "<ROOT>")
-    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned)
     return as_pinned(text)

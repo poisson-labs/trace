@@ -1,6 +1,6 @@
-"""Guidance that would not work is not offered (the statistician's audit of TF15, findings 1a and
-2): fix-check never says no value of --max-mde accepts a design that a value does accept, and
-compare never advises the number of tries per input that has just fallen short."""
+"""Guidance that would not work is not offered: fix-check never says no value of --max-mde
+accepts a design that a value does accept, and compare never advises the number of tries per
+input that has just fallen short."""
 
 from __future__ import annotations
 

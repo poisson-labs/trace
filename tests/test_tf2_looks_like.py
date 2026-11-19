@@ -1,5 +1,5 @@
-"""TF2-8: each reader in the install says whether a file looks like one it reads (spec section
-4.3: ``looks_like(path) -> str | None``; yes/no 15).
+"""TF2-8: each reader in the install says whether a file looks like one it reads
+(``looks_like(path) -> str | None``).
 
 ``poisson_trace.ingest.deepeval.looks_like`` and ``poisson_trace.ingest.ragas.looks_like`` give the
 one line a listing shows for a file the reader reads, and None for any other file, without

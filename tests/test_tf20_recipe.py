@@ -1,10 +1,9 @@
 """TF20-1 to TF20-9, TF20-40 to TF20-46 and TF20-50: the recipe that runs Tasks, Prove and Trace
-together, as a page (spec section 17.6; section 7.1's rules; the brief's rules 1, 5 and 6). What
-its fixtures must be is ``test_tf20_fixtures.py``; that it moves nothing else,
-``test_tf20_unchanged.py``.
+together, as a page. What its fixtures must be is ``test_tf20_fixtures.py``; that it moves
+nothing else, ``test_tf20_unchanged.py``.
 
-The page is one of the docs pair's recipes (``tf5_support.RECIPES``), so every rule the docs pair
-holds a recipe to holds it too, by the docs pair's own tests: the marks and their faults, no
+The page is one of the recipes (``tf5_support.RECIPES``), so every rule TF5's tests
+hold a recipe to holds it too, by those tests: the marks and their faults, no
 unmarked block, skipped blocks and what may be skipped (TF5-11 to TF5-13); every marked block
 holding when the page is run, byte for byte or under *varies* (TF5-14, TF5-15); no run named by
 its id (TF5-17); under 150 lines, opening with what you have and ending with "What this does not
@@ -13,10 +12,10 @@ read (TF5-72); relative links that lead somewhere (TF5-76); the reader-list rule
 TF5-24); the unit rule (TF5-38); plain words (TF0-21); reached from the README by an absolute
 link (TF5-25, TF5-69). TF20-46 holds that those tests read this page.
 
-**Rule 1: every step of section 17.6's story, as blocks the docs runner runs.**
+**Every step of the recipe's story, as blocks the docs runner runs.**
 
 - TF20-1: the story's commands, each in a block marked ``command`` (never skipped), in the
-  story's order: Tasks' ``generate`` word for word as section 17.6 writes it; ``generate
+  story's order: Tasks' ``generate`` word for word as ``GENERATE`` holds it; ``generate
   --show``; Prove's two sweeps, each of its spec file, named ``agent before`` and ``agent
   after``; Trace's ``init``; ``fix-check "agent before" "agent after" --inputs all --max-mde
   0.20``; ``where "agent before"``; the team's pytest file run twice with ``--junitxml``, to two
@@ -29,7 +28,7 @@ link (TF5-25, TF5-69). TF20-46 holds that those tests read this page.
 - TF20-5: the two sweeps are the same command but for the spec file and the name: the same
   flags, the local backend, and the replicates the spec files hold (no ``--replicates``); a
   ``--pair-with`` on the after sweep is allowed and not required. Both carry one fixed
-  ``--salt``, the same on both (Taylor's ruling on TT-11, 2026-11-15), so that every count
+  ``--salt``, the same on both, so that every count
   ``fix-check`` and ``where`` print repeats from run to run: what the page shows of them is held
   byte for byte, never under *varies*; a sweep run again as the page writes it stores the same
   tries; and two whole runs of the page print the same ``fix-check`` and ``where``, byte for byte
@@ -44,11 +43,11 @@ link (TF5-25, TF5-69). TF20-46 holds that those tests read this page.
 - TF20-9: the page compares what ``generate`` wrote with the committed files, byte for byte, in
   a block the docs runner runs, and shows the comparison passing.
 
-**Rule 5: what the page claims it shows, it shows.**
+**What the page claims it shows, it shows.**
 
 - TF20-40: every figure the page writes in prose is one its commands printed, or one of its
   commands holds.
-- TF20-41: each claim of section 17.6's story the page makes is backed by a block it runs and
+- TF20-41: each claim of the recipe's story the page makes is backed by a block it runs and
   shows: the 20 tasks, the files byte for byte, no model and the cost ($0, from Prove's plan),
   fewer failures, the step the old version dies at, the same answer from JUnit.
 - TF20-42: every link to another of the lab's tools is absolute; the page names
@@ -57,10 +56,10 @@ link (TF5-25, TF5-69). TF20-46 holds that those tests read this page.
 - TF20-44: the page names no version of Tasks but the pin, and no version of Prove but Trace's.
 - TF20-45: each command word the page runs is one a reader has after the install line:
   ``poisson-tasks``, ``poisson-prove``, ``poisson-trace``, ``pytest`` and the shell's own.
-- TF20-46: the docs pair's tests read this page: it is among their recipes, their pages and the
+- TF20-46: TF5's tests read this page: it is among their recipes, their pages and the
   pages the reader-list and unit rules read.
 
-**Rule 6.** TF20-50: "What this does not do" says what section 17.6 lists: the stand-in is not an
+**The limits.** TF20-50: "What this does not do" says four things: the stand-in is not an
 agent; a real agent's runs cost what its model costs; Tasks' ``run`` and ``card`` need a model
 and are not in the recipe; Prove's run here is the local backend.
 """

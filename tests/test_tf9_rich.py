@@ -1,5 +1,5 @@
-"""TF9, invariant 5: Rich is a core dependency, imported only by one private rendering module (spec
-section 17.1; the look file's rule 16: "Rich is an ordinary dependency, not an optional extra").
+"""TF9, invariant 5: Rich is a core dependency, imported only by one private rendering module (the
+look file's rule 16: "Rich is an ordinary dependency, not an optional extra").
 
 - **TF9-5a** ``pyproject.toml`` declares ``rich`` among the project's dependencies, not under an
   extra, and the installed package's metadata says the same.
@@ -7,7 +7,7 @@ section 17.1; the look file's rule 16: "Rich is an ordinary dependency, not an o
   ``src/`` imports it, by an ``import`` statement or by naming it to an import function, and
   ``_pretty`` does. The terminal app's modules (``poisson_trace/_app*.py``) are the one
   exception: Textual draws through Rich, and Prove's shell, which Trace's app copies, imports
-  Rich's ``Text`` (section 17.2, AD5; TF19's FT3).
+  Rich's ``Text`` (TF19).
 """
 
 from __future__ import annotations
@@ -62,6 +62,6 @@ def test_tf9_5b_only_the_private_rendering_module_imports_rich() -> None:
         if found:
             importing[rel] = found
     assert PRETTY_FILE.exists(), "there is no poisson_trace/_pretty.py"
-    # the terminal app's modules draw through Textual, which is built on Rich (TF19's FT3)
+    # the terminal app's modules draw through Textual, which is built on Rich (TF19)
     app = [k for k in importing if k.startswith("poisson_trace/_app")]
     assert [k for k in importing if k not in app] == ["poisson_trace/_pretty.py"], importing

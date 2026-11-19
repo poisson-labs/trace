@@ -1,11 +1,10 @@
-"""TF2-21: help a stranger can act on for ``init`` and ``doctor`` (spec sections 4.6 and 9.1 rule
-L2; TF1's examples that run as written).
+"""TF2-21: help a stranger can act on for ``init`` and ``doctor``.
 
 Each has a description, help on every argument with its default or "no default", and an example;
 every example runs as written, read as a shell reads it, in a folder that holds what it names: a
 copy of the tau2 store under each store path the example names (``proofload-runs`` when it names
 none), and for ``doctor`` a config naming it. An ``init`` example that asks questions runs on a
-terminal with Enter for every answer. ``init``'s help lists every flag of section 4.6, and the
+terminal with Enter for every answer. ``init``'s help lists every flag ``init`` takes, and the
 main help lists both verbs."""
 
 from __future__ import annotations

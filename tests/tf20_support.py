@@ -1,11 +1,10 @@
 """Shared helpers for TF20's tests: the recipe that runs Poisson Tasks, Poisson Prove and Poisson
-Trace together, and its fixtures (spec section 17.6; section 7.1's recipe rules; the order's
-step 12). Not collected.
+Trace together, and its fixtures. Not collected.
 
-What Session B writes, in one place (each test file's opening says which invariant it holds):
+What the recipe adds, in one place (each test file's opening says which invariant it holds):
 
 ``docs/recipes/with-tasks-and-prove.md``
-    The recipe: one page under section 7.1's rules, its every block run by the docs runner
+    The recipe: one page like every other recipe, its every block run by the docs runner
     (``tf5_support``'s marks) and by ``tools/docs_check.py``.
 ``examples/three-tools/``
     Its fixtures: ``tasks/depth-d1.jsonl`` and ``tasks/depth-d3.jsonl`` as Tasks' ``generate``
@@ -19,8 +18,8 @@ the rest
     fixtures; the clean-install job installs Tasks at its pin and fetches its tokenizer file
     before the socket guard. Nothing else moves (``test_tf20_unchanged.py``).
 
-The agent's contract (the brief's rule 3, frozen here so that a test can call it)
---------------------------------------------------------------------------------
+The agent's contract (frozen here so that a test can call it)
+-------------------------------------------------------------
 ``agent.before(task, seed)`` and ``agent.after(task, seed)``: ``task`` is one line of a task
 file read as JSON, ``seed`` an integer. Each returns the tool calls the version made, in order,
 as ``(name, arguments)`` pairs, ``arguments`` a dictionary. ``after`` makes the task's
@@ -34,8 +33,8 @@ value names. ``cfg`` holds the one axis of the spec files, whose value names one
 the episode's outcome is the label the task's own checker (``poisson_tasks.tasks.verify``)
 gives the calls the agent made; ``t`` is the number of calls; the horizon is the number of
 model calls a Tasks run allows (``poisson_tasks.taskset.MAX_MODEL_CALLS``, 32), not the task's
-own number of calls (Taylor's ruling on TT-16, 2026-11-15); ``meta["case_id"]`` is the axis
-value; and each call is a ``tool`` span of the episode's trace, in order.
+own number of calls; ``meta["case_id"]`` is the axis value; and each call is a ``tool`` span
+of the episode's trace, in order.
 """
 
 from __future__ import annotations
@@ -69,17 +68,17 @@ SPECS = {"before": EXAMPLE / "prove-before.toml", "after": EXAMPLE / "prove-afte
 TARGETS = {"before": "prove_rollout:before", "after": "prove_rollout:after"}
 RUNS = {"before": "agent before", "after": "agent after"}
 
-#: The versions the recipe uses: Tasks pinned here (the brief: Tasks 0.4.2 from PyPI), Prove at
-#: the floor Trace declares or above it (0.1.3, Trace's exact pin, until ruled 2026-11-17, PV-7).
+#: The versions the recipe uses: Tasks pinned here (Tasks 0.4.2 from PyPI), Prove at the floor
+#: Trace declares or above it.
 TASKS_VERSION = "0.4.2"
 PROVE_VERSION = "0.4.0"
 TASKS_PIN = f"poisson-tasks=={TASKS_VERSION}"
 HORIZON = 32  # the model calls a Tasks run allows: poisson_tasks.taskset.MAX_MODEL_CALLS at the pin
-#: Section 17.6's command, word for word.
+#: The page's ``generate`` command, word for word.
 GENERATE = ("poisson-tasks", "generate", "--knob", "depth", "--levels", "1,3", "--tasks-per-level", "10", "--out", "tasks/")
 LEVELS = {"depth-d1.jsonl": ("depth:d1", 1), "depth-d3.jsonl": ("depth:d3", 3)}
 TASKS_PER_LEVEL = 10
-#: The fix check section 17.6 runs, after the command's name.
+#: The fix check the page runs, after the command's name.
 FIX_CHECK = ("fix-check", RUNS["before"], RUNS["after"], "--inputs", "all", "--max-mde", "0.20")
 #: The modules a stand-in that calls no model never imports: model clients, the network, and
 #: the parts of Tasks that run a model.

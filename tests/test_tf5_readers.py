@@ -1,5 +1,5 @@
-"""TF5-20 to TF5-25: every page that lists the readers lists them all, the same way (the
-brief's rule 2; B-6, BT-44, WV-50), and help, ``doctor`` and ``init`` agree with the pages.
+"""TF5-20 to TF5-25: every page that lists the readers lists them all, the same way, and
+help, ``doctor`` and ``init`` agree with the pages.
 
 Trace reads eleven sources: Prove's stored runs, and ten tools' files (``tf5_support.TOOLS``,
 in the one order every listing gives them: deepeval, ragas, table, junit, promptfoo, inspect,
@@ -168,7 +168,7 @@ def test_tf5_23_the_readme_gives_each_tool_a_line_that_links_its_page() -> None:
 
 @pytest.mark.parametrize("page", INTEGRATIONS, ids=[page.name for page in INTEGRATIONS])
 def test_tf5_23_each_tool_s_page_shows_the_fixture_it_is_listed_by(page: Path) -> None:
-    """The listing rule (spec section 6.1): a tool is named only when a real export of it is a
+    """The listing rule: a tool is named only when a real export of it is a
     committed fixture and its page shows a command on that fixture with what Trace printed."""
     blocks = parse(read(page))[0]
     word = page.stem

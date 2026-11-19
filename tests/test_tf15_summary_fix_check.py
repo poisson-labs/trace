@@ -1,16 +1,14 @@
-"""TF15-P1 to TF15-P12: fix-check's plain parts (spec section 9.5 and 9.5.1, ruled 2026-10-20 with
-S1, S2, S12, S14 and S16, and the statistics fixes of section 9.7).
+"""TF15-P1 to TF15-P12: fix-check's plain parts: the summary at the head of the report and the
+caveats under it.
 
 Every report opens with its verdict line, the title on line 3, a ``## Summary`` of four labelled
 lines (Compared, Question, Answer, Next), a ``## Before you act on this`` section holding the
-caveats, then the statistics. The wording is pinned where section 9.5 writes it (Taylor,
-2026-10-20: "Freeze the wording in 9.5 and 9.6 as written"); where 9.5 names a sentence without
-writing it, the facts it carries are pinned and not its words. Every number is the report's own
-(its text or its --json), restated by the rules of 9.5's "Numbers".
+caveats, then the statistics. The wording is pinned word for word where it is fixed; where only
+what a sentence must say is fixed, the facts it carries are pinned and not its words. Every number
+is the report's own (its text or its --json), restated by the report's rounding rules.
 
-Three sentences 9.5.1 writes carry words frozen tests ban from fix-check's output and from the
-source ("worse", "better", "pass", "fixed": test_tr63, test_tr21, test_tr28): they are left out of
-these pins until Taylor rules (Session A log, rulings.md); the facts around them are pinned.
+Words frozen tests ban from fix-check's output and from the source ("worse", "better", "pass",
+"fixed": test_tr63, test_tr21, test_tr28) are not pinned here; the facts around them are.
 """
 
 from __future__ import annotations
@@ -73,8 +71,7 @@ def test_tf15_p1_the_head_of_the_report(argv) -> None:  # type: ignore[no-untype
 
 
 def test_tf15_p2_the_summary_stays_out_of_the_json() -> None:
-    """S2 (ruled 2026-10-20): the summary is held privately in this pair; --json's sentence is the
-    first line's."""
+    """The summary stays out of --json; --json's sentence is the first line's."""
     argv = (TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.12")
     d = ok(fix_check(*argv, "--json")).json()
     assert not any("summary" in k or "before_you_act" in k for k in d), list(d)
@@ -82,7 +79,7 @@ def test_tf15_p2_the_summary_stays_out_of_the_json() -> None:
     assert d["sentence"] == first_line(_out(*argv))[1]
 
 
-# ---------- no significant difference, decided by a reliable range (ST2) ----------
+# ---------- no significant difference, decided by a reliable range ----------
 
 
 def test_tf15_p3_no_clear_change_on_a_reliable_range() -> None:
@@ -123,7 +120,7 @@ def test_tf15_p3_no_clear_change_on_a_reliable_range() -> None:
         "0.53, where 0 is no more alike than chance and 1 is identical), and if they are near copies the "
         "answer is more confident than it should be."
     )
-    # the rise sentence and the single-input sentence (9.5.1 names them, not their words)
+    # the rise sentence and the single-input sentence (their facts, not their words)
     rest = " ".join(c[4:])
     assert "11-point rise" in rest and "7 tries per input" in rest, c[4:]
 
@@ -317,7 +314,7 @@ def test_tf15_p10_tries_with_no_outcome(tmp_path: Path) -> None:
     assert summary(out)["Next"].startswith("First find out why the new version has more tries with no outcome; then run")
 
 
-# ---------- the last next: line is the summary's Next (S14) ----------
+# ---------- the last next: line is the summary's Next ----------
 
 
 @pytest.mark.parametrize("argv", [
@@ -340,8 +337,8 @@ def test_tf15_p12_the_too_small_next_line_names_the_tries_the_summary_names() ->
 
 
 def test_tf15_p11_a_confirmed_difference_points_at_changes(tmp_path: Path) -> None:
-    """The case where S14 binds: the summary's Next is `poisson-trace changes old new` and the last
-    next: line is that command (with the flags the report was given)."""
+    """The case where the rule binds: the summary's Next is `poisson-trace changes old new` and the
+    last next: line is that command (with the flags the report was given)."""
     root = pair_store(tmp_path, [(3, 4, 0, 4)] * 20)
     out = _out(root, "old", "new", ["fail"], *ALL, "--max-mde", "0.5")
     told = summary(out)["Next"]
@@ -351,7 +348,8 @@ def test_tf15_p11_a_confirmed_difference_points_at_changes(tmp_path: Path) -> No
 
 
 def test_tf15_p29_one_more_decimal_where_rounding_would_meet_the_size_asked() -> None:
-    """9.5's Numbers: a 64.29-point limit against an asked 64 prints 64.3, not 64."""
+    """Rounding never meets the size asked: a 64.29-point limit against an asked 64 prints 64.3,
+    not 64."""
     out = _out(TAU2, TAU2_B, PILOT, TAU2_EVENTS, "--failing-from", TAU2_A, "--max-mde", "0.64")
     answer = summary(out)["Answer"]
     assert "a 64.3-point drop 4 times in 5" in answer and "you asked for 64" in answer, answer

@@ -1,7 +1,6 @@
-"""Shared helpers for TF18's tests: the static pages and the HTML report (spec section 17.3 items
-7, 8 and 9; section 11.7 as amended; section 11.8's ``to_html`` and ``build_pages``; the design's
-section 3 and its rulings DM5 to DM14, all ruled yes on 2026-11-05; PA5, SB5 and SV15). This
-pair's own readings are TF18-A1 on, ``log/trace-tf18-a/rulings.md``.
+"""Shared helpers for TF18's tests: the static pages and the HTML report (``docs/cli-look.md``'s
+"The static UI", ``docs/handover.md``, and ``to_html`` and ``build_pages`` in
+``docs/python.md``).
 
 Not a test module and not collected.
 
@@ -13,36 +12,36 @@ The pages as these tests read them.
   ``compare``, ``fix-check``, ``changes``; the id in full, 16 hex), one *could not say* page per
   saved verdict at ``<kind>/<id>/could-not-say.html``, and the fixed files ``style.css`` and
   ``ui.js``, Prove 0.1.3's bundle byte for byte (Prove's bundle holds the colour tokens inside
-  ``style.css``; it has no third file). Nothing else (A1).
+  ``style.css``; it has no third file). Nothing else.
 - **Every page** is Prove's page skeleton: ``<!doctype html>``, ``<html lang="en">``, the charset,
   Prove's Content-Security-Policy meta (:data:`PROVE_POLICY`), the viewport, a generator meta
   ``poisson-trace <version>``, the stylesheet and the script by relative path, the header (the
   tool, the view, the store's folder name), and Prove's footer with Trace's name and the page's
   address inside the UI: ``Built by poisson-trace from the store. Nothing was loaded from the
-  network. Address: trace/<address>`` (A2).
+  network. Address: trace/<address>``.
 - **A verdict page** (``<kind>/<id>.html``): its first ``<h1>`` is the verdict line,
-  ``<verdict>␣␣<sentence>`` (section 11.7's check, which the amendment keeps; the mockup's title
-  goes to ``<title>``, A3); ``<title>`` is the report's title line; then every line of the
-  report as the plain command prints it, in order, under the report's own headings (DM14), with
-  the continuous-measures section ``fix-check --measures`` prints where it prints it (A4). A
+  ``<verdict>␣␣<sentence>`` (the check ``handover --check`` holds a report
+  to); ``<title>`` is the report's title line; then every line of the
+  report as the plain command prints it, in order, under the report's own headings, with
+  the continuous-measures section ``fix-check --measures`` prints where it prints it. A
   condition cell may be written as its words (``task_id search · tool_fail_rate 0.55``) instead
-  of its JSON, as the mockup does. The page links its could-not-say page and the runs page.
+  of its JSON. The page links its could-not-say page and the runs page.
 - **The where page** inlines the run's curve (``<figure id="curve">``) with its data as a table
   under it; **the compare page** inlines the two runs' curves (``<figure id="curves">``) and the
-  hazard ratio with its range (``<figure id="hazard-ratio">``, DM8), each with its data as a
+  hazard ratio with its range (``<figure id="hazard-ratio">``), each with its data as a
   table. The compare artifact carries both as ``charts/curves.svg`` and ``.json`` and
-  ``charts/hazard-ratio.svg`` and ``.json`` (SV15, A9).
+  ``charts/hazard-ratio.svg`` and ``.json``.
 - **The index** opens with the verdict line ``runs`` prints for the store; one row per run with
   its number, name, id, target or tool, rows, failed, traces, started and status; a saved
   verdicts table, newest first, each row linking to its page; a link to each other store the
-  config names (DM10) and, when Prove's own index is beside it, to ``../index.html`` (DM11).
+  config names and, when Prove's own index is beside it, to ``../index.html``.
 - **No network.** Every ``href`` and ``src`` is a relative path that resolves to a file that is
   there, or a ``#`` anchor; no attribute holds a scheme but ``data:``.
 
 The HTML report (``poisson-trace report DIR``) is the verdict page for the bundle's artifact,
 self-contained: Prove's style inlined in one ``<style>``, the charts inline, no script, no
-``<link>``, no ``href`` but ``#`` anchors, and the narrower policy :data:`REPORT_POLICY`. Section
-11.7's checks hold on it, ``handover --check`` applies them, and ``to_html()`` is the same text.
+``<link>``, no ``href`` but ``#`` anchors, and the narrower policy :data:`REPORT_POLICY`. The
+page's checks hold on it, ``handover --check`` applies them, and ``to_html()`` is the same text.
 """
 
 from __future__ import annotations
@@ -80,7 +79,7 @@ PROVE_POLICY = (
     "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' "
     "data:; base-uri 'none'; form-action 'none'"
 )
-# the report's: inline style and images and nothing else (section 17.3 item 8; A6)
+# the report's: inline style and images and nothing else
 REPORT_POLICY = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'"
 FOOTER = "Built by poisson-trace from the store. Nothing was loaded from the network. Address: {address}"
 SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:")
@@ -335,7 +334,7 @@ def artifact_folder(store: Path, kind: str, ident: str) -> Path:
 
 
 def expected_files(store: Path) -> set[str]:
-    """The files of a store's pages (A1): the index, the fixed files, a page and a could-not-say
+    """The files of a store's pages: the index, the fixed files, a page and a could-not-say
     page per saved verdict of Trace's."""
     out = {"index.html", *BUNDLE}
     for kind, ids in artifacts(store).items():
@@ -364,8 +363,8 @@ def snapshot(folder: Path, skip: str | None = None) -> dict[str, str]:
 
 # ---------- the pages workspace ----------
 
-# Each verdict the pages workspace saves: (store, argv without --save). The Prove store's are the
-# design session's own (the mockups' ids); the table store's hold tries with no outcome.
+# Each verdict the pages workspace saves: (store, argv without --save). The Prove store's give the
+# ids of MOCKUP_IDS; the table store's hold tries with no outcome.
 SAVES: dict[str, tuple[str, list[str]]] = {
     "where after": ("store", ["where", "agent after", "--store", "store", *EV]),
     "where before": ("store", ["where", "agent before", "--store", "store", *EV]),
@@ -375,7 +374,7 @@ SAVES: dict[str, tuple[str, list[str]]] = {
     "fix-check tables": ("tables", ["fix-check", "old", "new", "--store", "tables", "--event", "missed", "--inputs", "all", "--max-mde", "0.5"]),
     "changes tables": ("tables", ["changes", "old", "new", "--store", "tables", "--event", "missed"]),
 }
-# the mockups' ids, read off the design's pages (log/trace-design/pages/)
+# the ids the design's mockups show, which the Prove store's saves give
 MOCKUP_IDS = {"where after": "13c7d6008e73d824", "where before": "a69a60ecfbd40931", "compare": "004ef6df2b56cae9",
               "fix-check": "2ef6dc12196c5aa9"}
 
@@ -394,7 +393,7 @@ def build_work(tmp: Path) -> Path:
         kind, ident = json.loads(ran.out)["saved"].split("/")[-2:]
         ids[label] = [store, kind, ident]
     (work / "ids.json").write_text(json.dumps(ids), encoding="utf-8")
-    # a save builds the pages (A7); the workspace starts with none, as a store does
+    # a save builds the pages; the workspace starts with none, as a store does
     for store in ("store", "tables"):
         shutil.rmtree(ui_root(work / store), ignore_errors=True)
     return work
@@ -505,7 +504,7 @@ FORBIDDEN = ("script", "link", "iframe", "object", "embed")
 
 
 def section_11_7(page: Page, result: dict[str, Any]) -> list[str]:
-    """Section 11.7's checks, as ``handover --check`` applies them, and what fails."""
+    """The report page's checks, as ``handover --check`` applies them, and what fails."""
     fails = list(page.errors)
     fails += [f"<{t}>" for t in FORBIDDEN if page.all(t)]
     for e in page.elements:
@@ -553,15 +552,15 @@ def recording_browser(tmp: Path) -> tuple[dict[str, str], Path]:
 
 def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
     """Every invocation whose plain and ``--json`` output TF18 leaves as main prints it, piped:
-    label to (where it runs, the command, its steps). The failure breakdown pair's corpus whole
+    label to (where it runs, the command, its steps). The failure breakdown tests' corpus whole
     (``breakdown_support.piped_corpus``: TF13-32's and TF6-1's), and beside it every verb's help,
     the commands that save (``--save``, ``--out``, ``--svg``) and ``handover``. A step
     ``["!edit", FILE]`` appends a byte to FILE (a bundle made invalid)."""
     from breakdown_support import piped_corpus
 
     out = dict(piped_corpus())
-    # the import's help lists the readers, so it moves with each reader pair, which holds it (for
-    # LangSmith, test_tf24_unchanged.py)
+    # the import's help lists the readers, so it moves with each new reader, whose tests hold it
+    # (for LangSmith, test_tf24_unchanged.py)
     for verb in ("init", "runs", "name", "where", "compare", "fix-check", "changes", "handover", "doctor"):
         out[f"help: {verb}"] = ("work", "trace", [[verb, "--help"]])
     for label, (_store, argv) in SAVES.items():
@@ -580,8 +579,8 @@ def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
 
 
 #: The invocations whose output TF18 changes, pinned from main to say exactly how: the top help
-#: gains the two verbs (A10); the line naming the verbs gains them (A11); ``handover --check`` on
-#: a valid bundle gains its ``next:`` line (SB5, A12).
+#: gains the two verbs; the line naming the verbs gains them; ``handover --check`` on
+#: a valid bundle gains its ``next:`` line.
 CHANGED: dict[str, tuple[str, str, list[list[str]]]] = {
     "help: top": ("work", "trace", [["--help"]]),
     "verb: unknown": ("work", "trace", [["nosuch"]]),
@@ -589,7 +588,7 @@ CHANGED: dict[str, tuple[str, str, list[list[str]]]] = {
     "handover: ok": ("work", "trace", [[*SAVES["fix-check"][1], "--out", "hb"], ["handover", "--check", "hb"]]),
 }
 
-#: The slow ones: the larger fixtures and the DeepEval import, as the breakdown pair has them.
+#: The slow ones: the larger fixtures and the DeepEval import, as the breakdown tests have them.
 SLOW = frozenset({"import: deepeval", "import json: deepeval", "fixture: where cs", "fixture: compare tau2", "fixture: fix-check tau2",
                   "fixture: fix-check tau2 all", "fixture: fix-check humaneval", "fixture: changes humaneval"})
 
@@ -599,7 +598,7 @@ def normal(text: str, *roots: Path) -> str:
 
     for root in roots:
         text = text.replace(str(root.resolve()), "<ROOT>").replace(str(root), "<ROOT>")
-    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+    # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned)
     return as_pinned(text)
 
 

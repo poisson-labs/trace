@@ -1,23 +1,22 @@
-"""TF6-25 to TF6-29: the continuous measures and the failure types in the verdict (spec sections
-18.5, 18.6 with CS1 to CS14 as ruled, 18.7.2 step 16; rulings CT2, CB2, HY1, SA11).
+"""TF6-25 to TF6-29: the continuous measures and the failure types in the verdict.
 
 - TF6-25: ``fix-check --measures`` prints the continuous-measures table (TF23's ``table``) and each
   measure's lines in a section of its report, ``## Time, length, tokens and cost``, right before
-  ``## What this cannot say``; nothing else printed moves (SV2). ``--json`` gains
+  ``## What this cannot say``; nothing else printed moves. ``--json`` gains
   ``continuous_measures``, TF23's ``Comparison.to_dict()``, before ``next``. The comparison is
   TF23's ``compare`` over TF21's ``read_rows`` and ``version_of`` of the two runs, every shared
-  case (SV6), labelled ``old`` and ``new``, at the verb's ``--alpha``.
+  case, labelled ``old`` and ``new``, at the verb's ``--alpha``.
 - TF6-26: ``--max-change measure=N%`` (repeatable) sets a measure's ceiling and implies
   ``--measures``; ``trace.toml``'s ``[check] max_change`` sets them too, a flag winning for its
   measure; a bad value is a wrong command line (exit 2), a bad config value a refusal (exit 1)
-  naming its line; ``total_tokens`` takes none (CB2).
-- TF6-27: HY1: a near-zero old mean leaves the relative change out instead of raising, through
+  naming its line; ``total_tokens`` takes none.
+- TF6-27: a near-zero old mean leaves the relative change out instead of raising, through
   ``compare`` and through the verb.
 - TF6-28: the saved verdict of each verb of two runs carries ``continuous_measures`` whether or not
   ``--measures`` was given, the config's ceilings applied, and ``failure_taxonomy_diff``: each
   run's taxonomy digest, whether the rules are the same, the tries, and the count of each failure
-  kind and signal in each run, in section 18.5.1's order.
-- TF6-29: runs classified by different rules are not refused (SA11's deferral, SV9): the diff
+  kind and signal in each run, in the taxonomy's precedence order.
+- TF6-29: runs classified by different rules are not refused: the diff
   says so, gives no counts, and ``note`` carries a sentence saying so.
 """
 
@@ -219,7 +218,7 @@ def test_tf6_26_the_config_key_is_a_setting_doctor_accepts(tmp_path: Path) -> No
     assert next(c for c in doc["checks"] if c["name"] == "config")["ok"] is True, doc
 
 
-# ---------- TF6-27: HY1 ----------
+# ---------- TF6-27: a near-zero old mean ----------
 
 
 def _versions(old: list[float], new: list[float]) -> tuple[Any, Any]:
@@ -232,14 +231,14 @@ def _versions(old: list[float], new: list[float]) -> tuple[Any, Any]:
 
 
 NEAR_ZERO = [
-    # HY11's shrunk example: one case
+    # a shrunk example: one case
     ([2.225073858507203e-309], [1.0]),
     # the smallest float, under the floor
     ([5e-324] * 4, [1.0, 2.0, 3.0, 4.0]),
     # tested, called different
     ([1e-310 * (i + 1) for i in range(12)], [1.0 + 0.01 * i for i in range(12)]),
     # tested and quiet: the smallest catchable change's share and, with a ceiling, the cases
-    # needed are read against the old mean too (SV11)
+    # needed are read against the old mean too
     ([1e-310 * (i + 1) for i in range(20)], [1e-3 * (i + 1) * (-1) ** i for i in range(20)]),
 ]
 
@@ -252,7 +251,7 @@ def test_tf6_27_a_near_zero_old_mean_gives_no_relative_change(old: list[float], 
     comparison = compare(*_versions(old, new), ceilings=None if ceiling is None else {"cost_usd": ceiling})
     m = comparison.measures["cost_usd"]
     assert m.relative is None or math.isfinite(m.relative)
-    # every line stays a line: none past section 11.2's 400 characters
+    # every line stays a line: none past the 400 characters a saved string may hold
     assert all(len(line) <= 400 for line in m.lines), [len(line) for line in m.lines]
     text = " ".join(m.lines) + json.dumps(comparison.to_dict(), allow_nan=False)
     header, rows = table(comparison, technical=True)
@@ -303,7 +302,7 @@ def test_tf6_28_the_saved_verdict_carries_both(tmp_path: Path, verb: str) -> Non
     assert diff["tries"] == {a: na, b: nb} == {a: 160, b: 160}
     assert diff["kinds"] == [{"failure_kind": k, a: ka[k], b: kb[k]} for k in FAILURE_KINDS if ka[k] or kb[k]]
     assert diff["signals"] == [{"signal": s, a: sa[s], b: sb[s]} for s in SIGNALS if sa[s] or sb[s]]
-    # the committed store's counts, as TF21's follow-up recorded them (SB2)
+    # the committed store's counts, as TF21-40 counts them (test_tf21_prove.py)
     assert {d["failure_kind"]: (d[a], d[b]) for d in diff["kinds"]} == {
         "loop_detected": (6, 15), "step_limit": (0, 5), "tool_error": (66, 21)}
 

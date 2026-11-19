@@ -1,4 +1,4 @@
-"""Choices about names and runs that the frozen tests leave to the build, pinned where a
+"""Choices about names and runs that the frozen tests leave open, pinned where a
 plausible wrong build would harm a user.
 
 - A names file that gives one run two names of yours is refused by every verb, with the

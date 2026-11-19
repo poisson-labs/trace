@@ -1,5 +1,5 @@
-"""Choices this build of the import under the main command and the two readers made where the
-frozen tests leave room: the table's summary counts the rows each failure value matched, so a
+"""Choices the import under the main command and the two readers make where the frozen
+tests leave room: the table's summary counts the rows each failure value matched, so a
 value that matched nothing shows; a start given on the command line drops the note a JUnit
 timestamp with no zone carries; init's table import replays a failure value that opens with a
 dash; an option nobody knows, before a verb that is not import, stays the main command's to

@@ -1,7 +1,6 @@
 """TF25-73 to TF25-79: ``[signals]`` stands in for the Braintrust reader's flags, as it does for
-the LangSmith reader's (ruled for that reader on 2026-11-10, where its Session A had recommended
-leaving it out; the brief asks the same of this one) and for the Ragas, DeepEval and table
-readers' (SA8; spec section 18.5.3). Every test reads a committed capture.
+the LangSmith, Ragas, DeepEval and table readers' (``docs/config.md``, under ``[signals]``;
+``docs/integrations/braintrust.md``). Every test reads a committed capture.
 
 - TF25-73: ``case_field`` stands in for ``--case-from`` and ``outcome_field`` for
   ``--outcome-from``, each written as the flag writes it (``"record"``, ``"metadata:KEY"``,
@@ -9,7 +8,7 @@ readers' (SA8; spec section 18.5.3). Every test reads a committed capture.
   an import given the config and no reader flag writes the run the flags write, from the API's
   answer, the summary and the page's CSV, and records what it used.
 - TF25-74: ``score_field`` names the score whose value is read, as ``KEY``, as ``score:KEY``
-  or, as the spec's own example writes Braintrust's field, as ``scores.KEY``; an
+  or, as Braintrust's own field is written, as ``scores.KEY``; an
   ``outcome_field`` beside it wins.
 - TF25-75: a cut from the config with no side on the line reads below, and a side given is
   kept; the cut is filled only where a score is read (not with ``error``, and not with a
@@ -21,7 +20,7 @@ readers' (SA8; spec section 18.5.3). Every test reads a committed capture.
 - TF25-78: an ``[[import]]`` entry and the Python API too may leave to ``[signals]`` what they do
   not say; what an entry says wins.
 - TF25-79: ``cost_field`` names the metric the cost is read from in place of
-  ``estimated_cost``, as ``NAME`` or, as the spec's example writes it, ``metrics.NAME``: a
+  ``estimated_cost``, as ``NAME`` or, as Braintrust's own field is written, ``metrics.NAME``: a
   model call's metric in the spans, the row's in the summary and the page's files; a metric no
   row holds records no cost.
 """

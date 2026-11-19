@@ -1,7 +1,6 @@
-"""TF15-S46 (PENDING Taylor's yes/no, Session A log rulings.md): under ST5 compare's guidance is the
+"""TF15-S46: with its limit taken from the log-rank's own information, compare's guidance is the
 tries per input per version alone; the keys that held Schoenfeld's deaths, runs and inputs stay in
-the JSON with no value, and the report's guidance names no deaths. Revert this file's commit if the
-answer is no.
+the JSON with no value, and the report's guidance names no deaths.
 """
 
 from __future__ import annotations

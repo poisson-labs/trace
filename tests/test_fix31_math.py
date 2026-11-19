@@ -1,4 +1,4 @@
-"""trace#31, the math lane: the statistics of a pair that never failed, over many designs.
+"""The math lane (FIX31-M): the statistics of a pair that never failed, over many designs.
 
 - FIX31-M1: the range the package gives at zero failures is the closed form of the score
   interval, on every design of 1 to 12 inputs by 1 to 40 tries and on 300 seeded designs of
@@ -9,13 +9,13 @@
   clean run seen less than 2.5% of the time, on every such design; on one or two inputs the
   figure is above 2.5% and at most 11.6% (one input, one try each).
 - FIX31-M3: on unequal tries the same figure against the least favourable spread of failures
-  across inputs is larger: recorded here at its size, not gated (rulings.md, F31-4). Where the
+  across inputs is larger: recorded here at its size, not gated. Where the
   tries differ only a little it stays near 2.5%.
 - FIX31-M4: the tries and the inputs the guidance names are the smallest that bring the range
   inside the size asked, against a count upward from one.
 - FIX31-M5: the rise limit, put to the exact test by full enumeration, is caught at least four
   times in five.
-- FIX31-M6 (F31-3 and F31-4, ruled 2026-11-10): the package's least favourable miss is the
+- FIX31-M6: the package's least favourable miss is the
   tests' own, and the range at zero is labelled rough exactly on fewer than three inputs or,
   from three inputs up, where that miss is above 5%.
 - FIX31-M7: the simulation the 5% bar was set against, in terms of how unequal the tries are:

@@ -1,8 +1,8 @@
-"""TF25-33 to TF25-46: the raw-saving pull (spec section 18.3.2, SG9 and SG2; the folder a pull
-saves is the one TF22's resolver reads; the LangSmith pair's LS-18 to LS-27, B-1 and B-5). No test
-here reaches the network: ``pulling.send`` is replaced by a transport that answers each request
-with the response Braintrust gave to that request (``api/requests.json``), and every socket
-connection is refused while it runs.
+"""TF25-33 to TF25-46: the raw-saving pull (the folder a pull saves is the one TF22's resolver
+reads; the LangSmith pull's TF24-33 to TF24-46 in Braintrust's words). No test here reaches
+the network: ``pulling.send`` is replaced by a transport that answers each request with the
+response Braintrust gave to that request (``api/requests.json``), and every socket connection
+is refused while it runs.
 
 - TF25-33: what is asked. ``braintrust:PROJECT/EXPERIMENT`` in the files' place asks for the
   project's experiments (``GET /v1/experiment?project_name=PROJECT``) and then for the events

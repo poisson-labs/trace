@@ -1,8 +1,9 @@
-"""What main prints, builds and holds, pinned for the Prove label kinds pair (the brief's item 5):
-main c981832, the TF20 recipe merged, and how each output the rule moves moves. Not collected.
+"""What main prints, builds and holds, pinned for the Prove label kinds tests (PL):
+main as ``MAIN`` names it, with the TF20 recipe, and how each output the rule moves moves.
+Not collected.
 ``fixtures/pl/make_main_pins.py`` takes the pins with this module alone.
 
-What is pinned, each as main c981832 gives it:
+What is pinned, each as that main gives it:
 
 ``piped``
     TF20's whole corpus (``tf20_pins.pin_corpus()``: every verb's plain and ``--json`` output on
@@ -56,7 +57,7 @@ def _cs(verb: str, *extra: str) -> list[str]:
     return [verb, CS_A, CS_B, "--store", str(CS), *CS_EVENTS, *extra]
 
 
-#: The cases this pair adds to the corpus: the label-bearing stores the corpus did not read with
+#: The cases these tests add to the corpus: the label-bearing stores the corpus did not read with
 #: every verb of two runs.
 EXTRA: dict[str, tuple[str, str, list[list[str]]]] = {}
 for _label, _argv in (
@@ -83,7 +84,7 @@ CHANGED: dict[str, list[dict[str, Any]]] = {
 #: The larger cases, slow; each kind has a fast case among the rest.
 SLOW = frozenset({"fixture: compare tau2", "fixture: fix-check tau2", "fixture: fix-check tau2 all", "fixture: fix-check humaneval",
                   "fixture: changes humaneval"})
-#: The files the build changes: the five modules of the rule, and the config's page.
+#: The files the rule changes: the five modules of the rule, and the config's page.
 BUILT = ("src/poisson_trace/config.py", "src/poisson_trace/core.py", "src/poisson_trace/doctor.py",
          "src/poisson_trace/ingest/prove.py", "src/poisson_trace/ingest/taxonomy.py", "docs/config.md")
 TEXT_FILES = ("docs/config.md",)
@@ -139,8 +140,8 @@ def moved(label: str, main: list[list[Any]]) -> list[list[Any]]:
     return [[code_p, moved_plain(out_p, labels), err_p], [code_j, moved_json(out_j, counts), err_j]]
 
 
-#: The cases of the shared corpus (``breakdown_support.piped_corpus``, in every pair's corpus
-#: since the failure breakdown) that the rule moves; an earlier pair's unchanged test holds
+#: The cases of the shared corpus (``breakdown_support.piped_corpus``, in every later family's
+#: corpus since the failure breakdown) that the rule moves; another family's unchanged test holds
 #: each with what the rule adds taken out (``unmoved``), and ``test_pl_unchanged.py`` holds
 #: what it adds.
 MOVED_SHARED = frozenset(label for label in CHANGED if label.startswith("fixture: "))

@@ -1,4 +1,4 @@
-"""TF1-16: the look held over TF1's own invocations (spec section 9.2).
+"""TF1-16: the look held over TF1's own invocations (``docs/cli-look.md``).
 
 ``runs`` and ``name`` in every form, the verbs given runs by every word, the imports TF1 refuses,
 and every refusal and wrong command line TF1 adds, run in order in one folder and each held to

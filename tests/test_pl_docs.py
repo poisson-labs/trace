@@ -3,10 +3,9 @@
 - PL-60: the ``[taxonomy]`` part of ``docs/config.md`` names the setting ``labels`` and the table
   ``[taxonomy.labels]``, shows it in a ``toml`` block that ``trace.toml`` accepts, and names each
   of Poisson Tasks' nine labels and each kind they give by default; and it says ``rules`` and
-  ``budgets`` apply to a run Prove swept (LK-9, LK-26, ruled 2026-11-16).
+  ``budgets`` apply to a run Prove swept.
 
-The part is read as it stands. These tests once read only the lines the page had gained over a
-pinned main, which also held every other line of the page to that main (B1-2, ruled 2026-11-18).
+The part is read as it stands.
 """
 
 from __future__ import annotations
@@ -51,13 +50,13 @@ def test_pl_60_it_names_each_tasks_label_and_its_kind() -> None:
 
 
 def test_pl_60_it_says_the_rules_apply_to_a_run_prove_swept() -> None:
-    """LK-9 (ruled 2026-11-16): a team's ``[[taxonomy.rules]]`` apply to runs Prove swept."""
+    """A team's ``[[taxonomy.rules]]`` apply to runs Prove swept."""
     paragraphs = " ".join(line.strip() or "\n" for line in _part()).split("\n")
     assert any("`rules`" in p and "run Prove swept" in p for p in paragraphs), paragraphs
 
 
 def test_pl_60_it_says_the_budgets_apply_to_a_run_prove_swept() -> None:
-    """LK-26 (budgets ruled no 2026-11-16): ``[signals.budgets]`` apply to runs Prove swept, and
+    """``[signals.budgets]`` apply to runs Prove swept, and
     the page says which of a swept try's signals each budget reads."""
     paragraphs = " ".join(line.strip() or "\n" for line in _part()).split("\n")
     said = [p for p in paragraphs if "`budgets`" in p and "run Prove swept" in p]

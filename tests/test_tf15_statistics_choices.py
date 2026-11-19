@@ -1,4 +1,4 @@
-"""Choices this build of the statistics fixes made where the frozen tests leave room: where a
+"""Choices the statistics make where the frozen tests leave room: where a
 reliable range decides too small to tell and the tries were short of the size asked, the ceiling
 offered holds the range as well as the drop limit, so that given, it reads otherwise; and the
 tries compare offers are those whose expected log-rank information, in closed form under the

@@ -1,5 +1,5 @@
 """TF21-51 to TF21-54: signal and failure-kind extraction on the five existing readers, on the
-committed real fixtures (spec section 18.1.1 rows 1 to 5, 18.5.2; SG1, SG2, SG11; SA6, SA7).
+committed real fixtures.
 
 Each reader records what its source records, marks the rest not recorded (``None``), and gives
 each failing row its kind by the built-in rules (``ref_kind``). The expectations are read from

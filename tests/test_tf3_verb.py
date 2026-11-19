@@ -1,6 +1,6 @@
 """TF3-1 to TF3-7: the import is a verb of the main command, and the old command is its alias
-(spec sections 3.1, 5.1, 8.5 and 9.1 rule L1; ruled 2026-10-12: "poisson-trace import", with
-poisson-trace-import kept working with the same behaviour, help and exit codes).
+("poisson-trace import", with poisson-trace-import kept working with the same behaviour, help
+and exit codes).
 
 - TF3-1: ``poisson-trace import …`` and ``poisson-trace-import …`` print the same bytes on both
   streams, exit with the same code and write the same run, for every kind of invocation: help,

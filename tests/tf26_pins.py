@@ -1,11 +1,11 @@
-"""What main prints, pinned for TF26 (the brief's rule 6): the corpus of invocations whose output
-the Weave pair leaves byte for byte as main bfda500 prints it, the few it changes, and how each
-is run. Not collected. ``fixtures/tf26/make_main_pins.py`` takes the pins with this module alone,
-so it imports nothing the Weave reader brings.
+"""What main prints, pinned for the TF26 tests: the corpus of invocations whose output the
+Weave reader leaves byte for byte as the pinned main (``MAIN``) prints it, the few it changes,
+and how each is run. Not collected. ``fixtures/tf26/make_main_pins.py`` takes the pins with
+this module alone, so it imports nothing the Weave reader brings.
 
 The corpus is TF25's whole (TF24's, TF19's and TF18's inside it: every verb's plain and
-``--json`` output on each kind of store, each option, the refusals, the earlier imports and
-LangSmith's, the names, the saves, ``ui`` and ``report``), and beside it what main gained with
+``--json`` output on each kind of store, each option, the refusals, the other imports and
+LangSmith's, the names, the saves, ``ui`` and ``report``), and beside it what main prints for
 the Braintrust reader: its help under both spellings, its imports of each kind of export in text
 and ``--json``, the verbs over two imported versions, its refusals, a pull through TF25's
 transport, and ``init`` on the files it finds.
@@ -47,7 +47,7 @@ def _bt_verbs() -> list[list[str]]:
     return steps
 
 
-#: What main gained with the Braintrust reader, as it prints it: label to (where it runs, the
+#: What main prints for the Braintrust reader: label to (where it runs, the
 #: command, its steps). ``bt`` is TF13's workspace with the Braintrust captures copied in as
 #: ``bt/``; ``bt-pull`` the same with the pull's seams replaced by TF25's transport.
 BRAINTRUST: dict[str, tuple[str, str, list[list[str]]]] = {
@@ -87,7 +87,7 @@ BRAINTRUST: dict[str, tuple[str, str, list[list[str]]]] = {
 
 _INIT_STEPS = [["init", "--yes"], ["init", "--yes", "--no-import"]]
 #: ``init`` on the files it finds, pinned from main as text: label to (what the folder holds,
-#: the steps). BT-35 ruled this for the three API readers together; what main prints on
+#: the steps). One rule holds for the three API readers together: what main prints on
 #: LangSmith's and Braintrust's files stays, and what it prints on Weave's is kept in words, to
 #: say exactly what moves.
 INIT: dict[str, tuple[str, list[list[str]]]] = {
@@ -115,7 +115,7 @@ FOUND: dict[str, tuple[tuple[str, str], ...]] = {
     "weave-tables": (("weave/ui/predict-and-score.csv", "page.csv"), ("weave/ui/predict-and-score.tsv", "page.tsv"), ("weave/ui/traces-roots.csv", "roots.csv")),
 }
 
-#: The invocations whose output this pair changes, pinned from main as text to say exactly how:
+#: The invocations whose output the Weave reader changes, pinned from main as text to say how:
 #: the import's help gains the reader and its example; the refusal of a tool the install lacks
 #: names one reader more; and ``weave`` itself stops being a tool the install lacks.
 CHANGED: dict[str, tuple[str, str, list[list[str]]]] = {
@@ -126,8 +126,8 @@ CHANGED: dict[str, tuple[str, str, list[list[str]]]] = {
 
 
 def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
-    """Every invocation whose plain and ``--json`` output this pair leaves as main prints it,
-    piped (see the module's opening)."""
+    """Every invocation whose plain and ``--json`` output the Weave reader leaves as main
+    prints it, piped (see the module's opening)."""
     from tf25_pins import pin_corpus as tf25_corpus
 
     out = dict(tf25_corpus())

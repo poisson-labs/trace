@@ -1,6 +1,6 @@
-"""TF26-33 to TF26-46: the raw-saving pull (spec section 18.3.2, SG9 and SG2; the folder a pull
-saves is the one TF22's resolver reads; the two finished pairs' rules for a pull: no silent
-window, what the raw copy leaves out, never written over). No test here reaches the network:
+"""TF26-33 to TF26-46: the raw-saving pull (the folder a pull saves is the one the folder
+resolver reads; the rules every pull keeps: no silent window, what the raw copy leaves out,
+never written over). No test here reaches the network:
 ``pulling.send`` is replaced by a transport that answers each request with the response Weave
 gave to that request (``api/requests.json``), and every socket connection is refused while it
 runs.
@@ -14,7 +14,7 @@ runs.
 - TF26-34: what is saved, before anything is read: ``raw.jsonl`` (the calls, one a line, in the
   order returned) and ``pull.json`` (``poisson.raw-pull/1``: the tool, when, the address, the
   endpoint, whether the text was left out, and the file with its digest and its rows) under
-  ``STORE/.poisson/raw/weave/RUN/``, and nothing else there; TF22's resolver reads the folder
+  ``STORE/.poisson/raw/weave/RUN/``, and nothing else there; the folder resolver reads the folder
   as a pull of ``weave``.
 - TF26-35: the content and the run's own metadata are measured and left out by default: no
   input, output, prompt, traceback or note is in the raw copy, nor who ran the calls or on what

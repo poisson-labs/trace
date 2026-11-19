@@ -1,6 +1,4 @@
-"""TF26-16 to TF26-27: the signals, the failure kinds, scores and feedback, and what is kept (spec
-sections 18.1 row 11, 18.4.1 and 18.4.2 as TF21's SA1 reads them, 18.5.2's Weave row; SG2; IC7;
-the two finished pairs' rules in Weave's words).
+"""TF26-16 to TF26-27: the signals, the failure kinds, scores and feedback, and what is kept.
 
 - TF26-16: time. The wall time is Weave's own figure for the model's run
   (``output.model_latency``), the same from every export, and never the call's end less its
@@ -25,7 +23,7 @@ the two finished pairs' rules in Weave's words).
   error is a wrong answer. The baseline's failed stock check is a timeout and the candidate's
   cut reply a crash where the exception is in the file (the service's answers); from the
   page's rows, which hold no exception, each is unclassified. A passed row has no kind.
-- TF26-21: the kinds section 18.5.2 names that the captures lack, on a capture edited in one
+- TF26-21: the kinds the rule set names that the captures lack, on a capture edited in one
   place: an exception whose class or words say a rate limit, a context overflow or a timeout;
   the kind of the call that failed; three calls in a row to one tool under a case that
   answered and failed its score (a loop).

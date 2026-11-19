@@ -1,5 +1,4 @@
-"""TF2-6, TF2-7 and TF2-9: how ``init`` finds results (spec sections 4.3 and 4.7, ruling R1;
-yes/nos 11 to 14).
+"""TF2-6, TF2-7 and TF2-9: how ``init`` finds results.
 
 One pass over the current folder's tree, breadth first and in name order, to a depth of six
 folders below it, reading at most 10,000 entries and saying so when it stops short. A store is a

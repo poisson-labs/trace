@@ -1,13 +1,11 @@
-"""TF5-3: two rules of what the commands print that the docs pair set.
+"""TF5-3: two rules of what the commands print that the docs depend on.
 
 **TF5-3** The top help lists the verbs in one order, and the refusal of the bare command lists them
-in that order (ruled 2026-11-13, DOC-33). And no text the package can print names
-``proofload-runs``, the store folder Prove had before it was published.
+in that order. And no text the package can print names ``proofload-runs``, the store folder
+Prove had before it was published.
 
-TF5-1, TF5-2, the rest of TF5-3 and TF5-4 to TF5-8 (every command, the pages, the app, ``init``,
-``doctor`` and the setup skill as main 2ff191b gave them, each help and refusal as that main's
-text with one named change, and the tests of those pins) were cut on the rulings of 2026-11-18
-(AR-1, AR-3): ``test_pl_unchanged.py`` (PL-51 to PL-55) holds each of those outputs at today's
+Every command's output, the pages, the app, ``init``, ``doctor`` and the setup skill are held
+elsewhere: ``test_pl_unchanged.py`` (PL-51 to PL-55) holds each of those outputs at today's
 bytes.
 """
 

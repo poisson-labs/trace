@@ -1,4 +1,4 @@
-"""TF22-15 to TF22-23: ``poisson-trace import`` given a folder (spec section 18.3.1).
+"""TF22-15 to TF22-23: ``poisson-trace import`` given a folder.
 
 ``import TOOL DIR`` reads the folder's files of that tool; ``import DIR`` finds the tool. Both
 print, byte for byte, what ``import TOOL FILE ...`` prints on the same files in name order (a
@@ -121,7 +121,7 @@ def test_tf22_15_every_built_folder_imports_as_its_files(tmp_path: Path, kind: s
 
 
 def test_tf22_15_shards_merged_hold_the_whole_reports_rows(tmp_path: Path) -> None:
-    """Section 18.3.1 3b: the shards of one report merge into one run with every case once, as
+    """The shards of one report merge into one run with every case once, as
     the whole report reads, and the manifest lists every shard with its digest."""
     _, folder, files = build("junit-shards", tmp_path)
     whole, merged = tmp_path / "whole", tmp_path / "merged"
@@ -266,7 +266,7 @@ TOOL_OF = {"junit-suite": "junit", "junit-versions": "junit", "ragas": "ragas", 
 
 @pytest.mark.parametrize("kind", ["junit-suite", "junit-versions", "ragas", "table", "deepeval"])
 def test_tf22_20_a_folder_of_two_runs_is_refused_naming_each(tmp_path: Path, kind: str) -> None:
-    """Section 18.3.1 3c: two runs in one folder are never pooled. A case in two files makes
+    """Two runs in one folder are never pooled. A case in two files makes
     them two runs; the refusal names every file and, under it, how to read one of them."""
     folder, files = _two_runs(kind, tmp_path)
     tool = TOOL_OF[kind]

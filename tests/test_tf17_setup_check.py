@@ -1,5 +1,6 @@
 """TF17-22 and TF17-24 to TF17-32: ``poisson-trace doctor --setup``, the check the setup file
-names (spec section 17.4, AD15; the shared page's section 4 for its exit codes).
+names (``docs/setup-with-your-agent.md``, "The check"; its exit codes as the shared setup-file
+page gives them).
 
 - TF17-24: ready is exit 0 and, on stdout, ``ok  trace.toml is ready for the person to review``,
   then ``doctor``'s detail lines, then one ``  import  FILE: TOOL, N rows, …, not imported yet``
@@ -8,21 +9,22 @@ names (spec section 17.4, AD15; the shared page's section 4 for its exit codes).
 - TF17-25: not ready is exit 1, nothing on stdout, ``error:`` naming the first failing check's
   fact and one ``  next:`` line per failing check that has one (``doctor``'s ``not ready`` line
   is not printed); no ``trace.toml`` is not ready, its next ``poisson-trace init``.
-- TF17-26: a ``trace.toml`` wrong under section 3.2 (an unknown key, a wrong type, a
+- TF17-26: a ``trace.toml`` wrong by the config's rules (an unknown key, a wrong type, a
   ``[[import]]`` fault, a ``[signals]`` or ``[[taxonomy.rules]]`` fault) is exit 2 with the
   validation's line as the ``error:`` line.
 - TF17-27: ``--json`` is ``poisson-trace.doctor/1`` (``schema``, ``verdict``, ``sentence``,
   ``checks``, ``next``) with ``doctor``'s six checks then one check named ``import`` per
   ``[[import]]`` entry, exit 0 or 1 as the text; ``--config PATH`` is carried in the next.
-- TF17-28: each wrong setup of section 17.4's list, and the others found: a missing file, a tool
-  not in the install, a metric not in the file, a cut no score reaches on one side, a failure no
-  run carries, a name used twice or refused, a store path that is no store, no failures set, no
-  store and nothing to import, a file no reader reads, a folder of two tools, a folder that is a
-  Prove store, a required option missing.
+- TF17-28: each wrong setup: a missing file, a tool not in the install (``otel``), a metric not
+  in the file, a cut no score reaches on one side or a cut with no side, a failure no run
+  carries, a name used twice or refused, a store path that is no store, no failures set, no
+  store and nothing to import, a file no reader reads, a folder with none of the tool's files, a
+  folder that is a Prove store, a required option missing. A folder of two tools' files is not
+  refused: the tool named reads its own files there.
 - TF17-29: it writes nothing (no store, no run, no byte code in the repository), opens no
   connection and reads no key.
-- TF17-30: plain ``doctor`` is unchanged: its lines on a ready config are as today, and on a
-  config with pending entries and no store it still says the config names no store (exit 4).
+- TF17-30: plain ``doctor`` is unchanged: its lines on a ready config are those pinned here, and
+  on a config with pending entries and no store it still says the config names no store (exit 4).
 - TF17-31: a config with no store is ready when it has pending entries that read, and not ready
   when it has none; the imports' store named and holding no run yet is ready; an entry already
   imported is not pending and has no line.
@@ -204,7 +206,7 @@ def remove(path: str) -> Callable[[Path], None]:
 
 
 def test_tf17_28_a_folder_of_two_tools_reads_the_named_tools_files_alone(tmp_path: Path) -> None:
-    """FI1: the tool named reads its files alone, so a mixed folder under a junit entry is the
+    """The tool named reads its files alone, so a mixed folder under a junit entry is the
     JUnit report it holds."""
     repo = ready_repo(tmp_path)
     (repo / "mixed").mkdir()
@@ -285,7 +287,7 @@ def test_tf17_30_plain_doctor_is_unchanged_on_a_ready_config(tmp_path: Path) -> 
     lines = [line for line in r.out.splitlines() if not re.match(r"^  (?:python|package|readers) ", line)]
     assert lines == [
         "ok  this environment is ready",
-        f"  prove     poisson-prove {installed()} (Trace reads version {OR_LATER})",  # the floor (PV-4)
+        f"  prove     poisson-prove {installed()} (Trace reads version {OR_LATER})",  # the floor
         "  config    trace.toml: store proofload-runs (3 runs, 3 complete, 0 partial), failures unsolved",
         "  names     proofload-runs: no names of yours yet",
         "next: poisson-trace runs",

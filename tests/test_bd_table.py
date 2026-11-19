@@ -1,24 +1,24 @@
-"""BD-3: the continuous-measures table's new shape (Taylor's DM3 of 2026-11-05) and the renderer's
-rule that a cell is never broken across rows (DM4); FD9 to FD11, ``log/trace-breakdown-a/rulings.md``.
+"""BD-3: the continuous-measures table's shape, and the renderer's rule that a cell is never
+broken across rows.
 
 **BD-3a** ``continuous.table`` gives ``measure | old | new | change | verdict`` (``technical``:
 ``measure | old | new | change | 95% range | p | verdict``): the change cell the relative change
 alone, as the measure's lines spell it (``+0.88%``); ``none`` when the measure did not change
 (identical, or a change of exactly zero); ``-`` when there is no relative change to give (no old
-mean to read a share of, HY1, or nothing recorded); the verdict cell the verdict word, and when
+mean to read a share of, or nothing recorded); the verdict cell the verdict word, and when
 there is a direction, the word, a comma and the direction (``different, slower``). The absolute
 change stays in the measure's lines.
 
-**BD-3b** ``fix-check --measures`` on the design session's two pairs (the DeepEval import of the
+**BD-3b** ``fix-check --measures`` on the mockups' two pairs (the DeepEval import of the
 committed HumanEval files, the Inspect import of the committed logs): the table's plain rows, and
 on a terminal at 80 and 140 columns its pretty lines, are the mockups'
 (``continuous-proposed-*``), with one correction: the Inspect pair's ``total_tokens`` reads
-``not tested``, the word the build prints, where the drawing script printed a dash (FD10).
+``not tested``, the word Trace prints, where the mockup has a dash.
 
-**BD-3c** DM4: at every width from 60 to 160, in every table the renderer draws, each body cell
+**BD-3c** At every width from 60 to 160, in every table the renderer draws, each body cell
 stands whole on one line, and the clean look's rules hold (no line wider than the width, no
 digit coloured, only the look's escapes, plain's words in plain's order). A key folded one field
-a line is the fold's form, not a broken cell; a header may still take two lines (FD11).
+a line is the fold's form, not a broken cell; a header may still take two lines.
 """
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ def _mixed() -> Any:
 
 
 def _unconfirmed() -> Any:
-    """New is 20% faster and timed out twice where old did not: faster, unconfirmed (CS8)."""
+    """New is 20% faster and timed out twice where old did not: faster, unconfirmed."""
     rng = np.random.default_rng(6)
     ya = rng.lognormal(1.5, 0.4, 30)
     yb = ya * 0.8 * np.exp(rng.normal(0, 0.02, 30))
@@ -85,7 +85,7 @@ def _unconfirmed() -> Any:
 
 
 def _near_zero() -> Any:
-    """An old cost too near zero to read a share of (HY1): the change has no relative form."""
+    """An old cost too near zero to read a share of: the change has no relative form."""
     old = [1e-310 * (i + 1) for i in range(12)]
     new = [1.0 + 0.01 * i for i in range(12)]
     return cm().compare(*_versions({"cost_usd": (old, new)}))
@@ -213,7 +213,7 @@ def test_bd_3b_inspect_plain(inspect: Path) -> None:
 
 def mockup_table(name: str, correct: dict[str, str] | None = None) -> list[str]:
     """The proposed table's lines in a mockup capture: its header, its rule and its rows, a cell
-    corrected where the drawing differs from the build's word (FD10)."""
+    corrected where the mockup differs from the word Trace prints."""
     lines = mockup(name)
     start = next(i for i, line in enumerate(lines) if line.startswith("measure "))
     end = lines.index("", start)
@@ -345,7 +345,7 @@ def test_bd_3c_no_cell_is_broken_at_any_width(name: str) -> None:
         assert [line for line in lines if len(line) > width] == [], (name, width)
         assert odd_escapes(drawn, live=False) == [], (name, width)
         assert not any(ch.char.isdigit() and ch.fg is not None for line in cells(drawn) for ch in line), (name, width)
-        # plain's words, but the key column's header where it folds to records (CT1)
+        # plain's words, but the key column's header where it folds to records
         assert tokens(drawn) <= tokens(plain), (name, width)
         assert tokens(plain) - tokens(drawn) <= set(re.findall(r"[A-Za-z0-9]+", header[0])), (name, width)
 
@@ -361,7 +361,7 @@ def test_bd_3c_these_fit_aligned_at_80(name: str) -> None:
 
 
 def test_bd_3c_a_header_may_take_two_lines() -> None:
-    """FD11: the rule is about the body; compare's long header still wraps under its column."""
+    """The rule is about the body; compare's long header still wraps under its column."""
     from poisson_trace import _pretty
 
     header, rows = TABLES["per kind"]
@@ -391,7 +391,7 @@ def _pty_widths() -> list[Any]:
 @pytest.mark.parametrize("cols", _pty_widths())
 def test_bd_3c_through_the_verb_at_every_width(inspect: Path, cols: int, tmp_path: Path) -> None:
     """fix-check --measures on a terminal: each table's cells whole, every line within the
-    terminal but the verdict line and a line holding a command (LB1)."""
+    terminal but the verdict line and a line holding a command."""
     from tf9_support import run as pty
 
     home = tmp_path / "home"

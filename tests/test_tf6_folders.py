@@ -1,12 +1,11 @@
-"""TF6-37 to TF6-39: saving a verdict over runs read from folders (SV16, Taylor 2026-11-04;
-where TF6 meets TF22's folder ingest). Added by TF6's Session B once TF22's build was on main;
-not among the files Session A froze.
+"""TF6-37 to TF6-39: saving a verdict over runs read from folders (where TF6 meets TF22's folder
+ingest).
 
 - TF6-37: on runs read from tool folders, ``--save`` prints one ``note:`` line, ``the verdict
   was not saved: the runs were read from folders, not a store``, and goes on: the output is the
   plain output, ``--json`` gains no ``saved``, and nothing is written anywhere.
 - TF6-38: on the same runs ``--out DIR`` still writes its bundle, with each run's ``store`` null
-  in ``handover.json`` (as FI13 nulls it in ``--json``), ``saved`` null in ``result.json``, no
+  in ``handover.json`` (as ``--json`` nulls it), ``saved`` null in ``result.json``, no
   absolute path in it, and ``handover --check`` holds; the note is still printed.
 - TF6-39: runs read from a Prove folder save into that folder's store, the same artifact the
   runs reach by ``--store``; ``handover.json``'s ``store`` is null there too.
@@ -154,7 +153,7 @@ def test_tf6_38_the_json_gains_nothing_on_tool_folders(here: Path) -> None:
 
 
 def _prove_argv(verb: str, store: Path, *extra: str) -> list[str]:
-    """Each verb on the two runs of a copy of the Prove 0.1.2 store, given as run folders."""
+    """Each verb on the two runs of a copy of the Prove 0.1.3 store, given as run folders."""
     before, after = str(store / BEFORE_ID), str(store / AFTER_ID)
     return {
         "where": ["where", after, *EVENTS_012, "--at", "3"],
@@ -178,7 +177,7 @@ def test_tf6_39_prove_folders_save_into_their_own_store(tmp_path: Path, verb: st
     assert folder.name == the_artifact(by_store, verb).name
     assert f"  saved  {verb} {folder.name[:12]}" in ran.out.splitlines()
     result = json.loads((folder / "result.json").read_text(encoding="utf-8"))
-    # the runs are read from the store that holds them, which --json names as none (FI13)
+    # the runs are read from the store that holds them, which --json names as none
     assert result["prove"]["store"] is None and result["saved"] == f".poisson/artifacts/{verb}/{folder.name}"
     assert str(tmp_path).encode() not in (folder / "report.md").read_bytes()
 

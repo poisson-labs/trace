@@ -1,5 +1,5 @@
 """init refuses a failure value no file carries, and a setup with no failure to set does not send
-doctor and init to each other (Taylor's ruling on the partner wheel's yes/no 7, 2026-10-19).
+doctor and init to each other.
 
 - A ``--failed`` value that matches no cell of the outcome column in any table init imports is
   refused, naming the value and the column, with the column's values listed; nothing is written.

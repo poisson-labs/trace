@@ -1,5 +1,5 @@
-"""TF17-42: ``[signals]``'s field mappings stand in for the import's required flags (SA8, sent to
-TF17 by TF21 Session A's ruling; spec section 18.5.3).
+"""TF17-42: ``[signals]``'s field mappings stand in for the import's required flags
+(``docs/config.md``, "``[signals]``: where an import finds what it reads").
 
 - ``case_field`` stands in for ``--case-column`` (the Ragas and table readers);
   ``outcome_field`` for ``--outcome-column`` (table); ``score_field`` for ``--metric`` (Ragas,
@@ -8,12 +8,11 @@ TF17 by TF21 Session A's ruling; spec section 18.5.3).
   line as a side the flags gave would be.
 - A flag given on the command line wins over the config; the run records what the import used.
 - Nothing stands in without a config, or when the config has no ``[signals]``: the import's
-  help is byte for byte as today and the refusal of a missing flag is argparse's (exit 2).
-- ``cost_field``, the budgets and the rules keep working as TF21 built them.
+  help is unchanged byte for byte and the refusal of a missing flag is argparse's (exit 2).
+- ``cost_field``, the budgets and the rules keep working as TF21's tests hold them.
 - A ``[[import]]`` entry too may leave to ``[signals]`` what it does not say.
 
-TF21-61, which pinned that ``case_field`` does not stand in, moves to its inverse in this
-commit with TF21's guard line.
+TF21-61 holds the same from TF21's side: ``case_field`` stands in for ``--case-column``.
 """
 
 from __future__ import annotations

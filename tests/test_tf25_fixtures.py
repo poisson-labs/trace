@@ -1,6 +1,5 @@
 """TF25-1 to TF25-3: the committed Braintrust captures, and the facts the reader's shapes rest on
-(spec section 18.3.4; ``tests/fixtures/PROVENANCE.md``; the captures' log and its gaps). These
-pass on main: they hold the files, not the reader.
+(``tests/fixtures/PROVENANCE.md``). These hold the files, not the reader.
 
 - TF25-1: every capture the provenance lists is there and reads: the four experiments' fetch
   (18, 18, 85 and 88 span events), the three BTQL shapes of each, the candidate's fetch and
@@ -14,7 +13,7 @@ pass on main: they hold the files, not the reader.
   a null output, no score span, and a root whose metadata is null. The slice's roots carry the
   dataset record's id; the lookup fixture's carry none. A whole fetch ends with a cursor, and
   the page a cursor at the end is answered with has no event and no cursor.
-- TF25-3: the facts the spec states that the captures correct or sharpen: no row holds a
+- TF25-3: the facts of Braintrust's exports that the captures correct or sharpen: no row holds a
   ``dataset_record_id`` (the record is ``origin.id``); a span's total is ``metrics.tokens`` and
   a summary row's ``metrics.total_tokens``; the summary's ``metrics.duration`` is the task
   span's, not the root's; the summary cuts an error short, so its class is not in that shape;

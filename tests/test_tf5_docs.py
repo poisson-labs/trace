@@ -1,4 +1,4 @@
-"""TF5-60 to TF5-69: the docs set (the brief's rules 6 and 7; spec section 7.2; N3, SB6, RR6).
+"""TF5-60 to TF5-69: the docs set.
 
 - TF5-60: ``docs/commands.md`` shows the top help and every verb's help whole, each run, in
   the order the top help lists the verbs; the exit codes, every one, in one table; the
@@ -9,18 +9,18 @@
   ``trace-names.toml``; it shows a config a command printed and a refusal of a mistyped key.
 - TF5-63: ``docs/how-it-decides.md`` names each method the reports rest on, the flags that
   set a size or a seed, and no method the statistics retired; the README keeps none of it.
-- TF5-64: ``docs/handover.md`` (SB6): the bundle file by file, the verbs that write it, the
+- TF5-64: ``docs/handover.md``: the bundle file by file, the verbs that write it, the
   check that reads it with its exit codes, what ``result.json`` promises key by key, what is
   never in it, and the HTML page; it shows a bundle written and checked.
-- TF5-65: the W&B and MLflow mapping (RR6; spec section 17.3): ``docs/handover.md`` has a
+- TF5-65: the W&B and MLflow mapping: ``docs/handover.md`` has a
   table whose header names MLflow and W&B, with a row for an imported run's record, its event
   log, and each kind of verdict Trace saves, each row filled in both columns.
 - TF5-66: and its test, that every key Trace writes is documented: every key of
   ``handover.json``, ``artifact.json``, the store descriptor, a run's ``produced_by`` and its
-  event log, every file of a bundle, every schema Trace stamps, and every key section 11.3
-  promises of ``result.json``, as Trace writes them today on the four verbs and an import, is
+  event log, every file of a bundle, every schema Trace stamps, and every key ``PROMISED``
+  names of ``result.json``, as Trace writes them today on the four verbs and an import, is
   named in ``docs/handover.md``.
-- TF5-67: ``docs/app.md`` (N3): the bare command opens the app; every screen, how it is
+- TF5-67: ``docs/app.md``: the bare command opens the app; every screen, how it is
   reached, and its own keys beside its name, as the key bar writes them; the smallest window; what it never does; and
   what the bare command prints where there is no terminal, run.
 - TF5-68: ``CONTRIBUTING.md``: the clone and the dev install, the four lanes by the exact
@@ -78,7 +78,7 @@ def test_tf5_60_every_help_is_shown_whole_and_in_order() -> None:
 
 
 def test_tf5_60_the_top_help_shown_is_the_one_printed() -> None:
-    """The page follows the top help (ruled 2026-11-13, DOC-33). The page is one of the longer
+    """The page follows the top help. The page is one of the longer
     ones, run whole in the slow lane (TF5-14); this holds its first block in the fast one."""
     from tf0_support import trace
 
@@ -412,7 +412,7 @@ def test_tf5_69_every_page_is_reached_from_the_readme() -> None:
 
 @pytest.mark.parametrize("word", ["run", "store", "case", "input", "event"])
 def test_tf5_69_each_of_the_five_words_is_explained(word: str) -> None:
-    """Section 7.2: "run", "store", "case", "input" and "event" each explained where first
+    """The five words "run", "store", "case", "input" and "event" are each explained where first
     used. Held as one sentence of the README that says what the word is ("A run is ...")."""
     said = " ".join(prose(read(README)).split())
     article = "an" if word[0] in "aei" else "a"

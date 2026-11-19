@@ -1,13 +1,14 @@
 """TF1-1 to TF1-3: the names file beside the runs, the reader that refuses a damaged one, and the
-name every run has from its manifest (spec section 5.2, ruling R3).
+name every run has from its manifest.
 
-``poisson-trace name`` writes ``trace-names.toml`` at the store root, in the spec's form byte for
-byte, entries sorted by name, any name a user can type kept whole. Every verb that reads names
-refuses a file that is not one, in one line naming the file. A run with no entry is named from
-its manifest: the target up to its first ``/``, the day it started in UTC, and a letter in
-start order among the runs that would otherwise share that name, partial runs included. An
-imported run is named by the name it was imported under. Names are read through the commands
-only: ``runs --json`` for the name each run has, ``where --json`` for the run a name reaches."""
+``poisson-trace name`` writes ``trace-names.toml`` at the store root, in the form
+``docs/config.md`` gives, byte for byte, entries sorted by name, any name a user can type kept
+whole. Every verb that reads names refuses a file that is not one, in one line naming the file.
+A run with no entry is named from its manifest: the target up to its first ``/``, the day it
+started in UTC, and a letter in start order among the runs that would otherwise share that
+name, partial runs included. An imported run is named by the name it was imported under.
+Names are read through the commands only: ``runs --json`` for the name each run has,
+``where --json`` for the run a name reaches."""
 
 from __future__ import annotations
 

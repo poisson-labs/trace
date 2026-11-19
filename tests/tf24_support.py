@@ -1,9 +1,7 @@
-"""Shared helpers for TF24's tests: the LangSmith reader and its raw-saving API pull (spec sections
-6.3, 6.4a, 18.1.1 row 9, 18.3.1 to 18.3.4, 18.4 and 18.5.2; rulings SG2, SG9, SG10 and SG18; the
-captures' rulings CP1 to CP7; the INT3 spec's sections 3.1 and 4 as its Session A's rulings left
-them; TF21's and TF22's rulings, which this reader follows as the others do). Not collected.
+"""Shared helpers for TF24's tests: the LangSmith reader and its raw-saving API pull (it follows
+TF21's and TF22's rules as the other readers do). Not collected.
 
-What Session B builds, in one place (each test file's docstring says which invariant it holds):
+What these tests hold, in one place (each test file's docstring says which invariant it holds):
 
 ``poisson_trace.ingest.langsmith``
     A reader module of the shape ``ingest/cli.py`` documents (``add_arguments``, ``read``,
@@ -18,13 +16,13 @@ What Session B builds, in one place (each test file's docstring says which invar
 ``docs/integrations/langsmith.md`` and ``docs/recipes/from-langsmith.md``
     The page and the recipe, of the other readers' shape.
 
-The readings these tests hold (each is a yes/no in the session's rulings, TF24-A1 on):
+The rules these tests hold:
 
 the command
     ``poisson-trace import langsmith FILE [FILE ...] --store ROOT --run NAME --case-from (example
     | metadata:KEY | input | none) --outcome-from (status | feedback:KEY | metadata:KEY) [--cut X
-    (--below | --above)] [--failed VALUE ...] [--select metadata:KEY=VALUE ...]``. The INT3
-    interface, with two changes that TF21 and section 6.3 force: every outcome is written ``met``
+    (--below | --above)] [--failed VALUE ...] [--select metadata:KEY=VALUE ...]``. Every
+    outcome is written ``met``
     or ``missed`` (``status``: missed when the root run ended in error; ``feedback:KEY``: the
     score at the cut; ``metadata:KEY``: missed when its value is one of ``--failed``, or its
     number at the cut), and ``--case-from input`` gives TF22's input key (``input:`` and 12 hex
@@ -154,7 +152,7 @@ EXACT = {
     "candidate": {"c01": 1.0, "c02": 1.0, "c03": 1.0, "c04": 1.0, "c05": 1.0, "c06": 0.0, "c07": 1.0, "c08": 1.0, "c09": 0.0, "c10": 1.0},
 }
 #: The roots whose ``feedback_stats`` lack ``exact`` in the v2 pulls and the command's exports
-#: (the statistics had not caught up with the feedback records; TC-11): the baseline's two.
+#: (the statistics had not caught up with the feedback records): the baseline's two.
 LATE = {"baseline": ("c08", "c10"), "candidate": ()}
 #: The root that ended in error, by version, with the class its error names, the kind of the run
 #: that failed and the kind TF21's rules reach.
@@ -586,7 +584,7 @@ def tally(data: Mapping[str, Any]) -> dict[str, int]:
     return {word: n for word, n in data["outcomes"].items() if n}
 
 
-# ---------- what main prints, pinned (the brief's rule 6) ----------
+# ---------- what main prints, pinned ----------
 
 from tf21_support import FIXTURES  # noqa: E402
 
@@ -594,12 +592,11 @@ TF24 = FIXTURES / "tf24"
 PINS = TF24 / "main-pins.json"
 #: The readers main has, whose helps stay as main prints them.
 EARLIER = ("deepeval", "ragas", "table", "junit", "promptfoo", "inspect", "openai-evals")
-#: The refusal another session is changing while these tests are written (a fix check asked for an
-#: event neither run carries, trace issue 31): a case of main's whose output holds it is left out.
+#: Words of the refusal of a fix check asked for an event neither run carries.
 ELSEWHERE = "unknown event"
 ABSENT = ["otel", "files/old.jsonl", "--store", "new-store", "--run", "x"]
 
-#: The invocations whose output this pair changes, pinned from main as text to say exactly how:
+#: The invocations whose output this reader changes, pinned from main as text to say exactly how:
 #: the import's help gains the reader and its example; the refusal of a tool the install lacks
 #: names one reader more.
 CHANGED: dict[str, tuple[str, str, list[list[str]]]] = {
@@ -609,11 +606,11 @@ CHANGED: dict[str, tuple[str, str, list[list[str]]]] = {
 
 
 def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
-    """Every invocation whose plain and ``--json`` output this pair leaves as main prints it,
-    piped: TF19's corpus whole (TF18's and the failure breakdown pair's inside it: every verb on
+    """Every invocation whose plain and ``--json`` output this reader leaves as main prints it,
+    piped: TF19's corpus whole (TF18's and the failure breakdown's inside it: every verb on
     each kind of store, each option, the refusals, the imports, the names, the saves, ``ui`` and
     ``report``), the outputs TF19 changed as main now prints them (the top help, the bare
-    options), ``report``'s help and ``report`` on a page already there (settled on main since),
+    options), ``report``'s help and ``report`` on a page already there,
     and each earlier reader's help under both spellings."""
     from tf18_support import SAVES
     from tf19_support import CHANGED as tf19_changed
