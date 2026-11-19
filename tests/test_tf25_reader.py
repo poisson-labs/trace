@@ -38,7 +38,7 @@ LS-1 to LS-5 and LS-15, in Braintrust's words).
 - TF25-13: rows come in the order their roots started, whatever order the file holds them, so
   the tries of a case are its repeats in the order they ran.
 - TF25-14: the start is the earliest span's start, from every export (the page's rows carry
-  their root's start too); ``--started`` wins; rows with no start take the file's time.
+  their root's start too); rows with no start take the file's time.
 - TF25-15: a root that has not ended has no outcome under ``error`` and the reason ``pending``.
 """
 
@@ -56,7 +56,7 @@ import pytest
 from tf21_support import run_import
 from tf25_support import (
     CASES, EARLIEST, ERRORED, EVENTS, EXACT, EXPERIMENTS, EXPORTS, ITEM, KEY, LOOKUP, LOOKUP_EXACT, PAGED, QUESTIONS,
-    ROW_EXPORTS, RUN, SHAPE, SPAN_EXPORTS, VERSIONS, approx, bt_argv, by_error, columns, edited, experiment, export,
+    RUN, SHAPE, SPAN_EXPORTS, VERSIONS, approx, bt_argv, by_error, columns, edited, experiment, export,
     imported, is_root, outcomes, passed, recs, refused, roots, rows_of, span_type, tally, trace_rows, tries, work_spans,
     world,
 )
@@ -105,13 +105,6 @@ def test_tf25_4_every_export_of_the_lookup_fixture_reads_as_two_tries_of_three_c
     got = tries(root, RUN)
     assert sorted(got) == [(q, n) for q in QUESTIONS for n in (0, 1)]
     assert {key: rec["score"] for key, rec in got.items()} == {(q, n): LOOKUP_EXACT[name][q] for q in QUESTIONS for n in (0, 1)}
-
-
-def test_tf25_4_the_reader_names_its_shapes() -> None:
-    from poisson_trace.ingest import braintrust
-
-    assert tuple(braintrust.SHAPES) == ("span", "summary", "ui")
-    assert braintrust.ADDRESS == "braintrust:"
 
 
 # ---------- TF25-5 ----------
@@ -169,15 +162,17 @@ def test_tf25_5_a_metadata_key_is_the_case_and_an_errored_root_holds_none(tmp_pa
 
 
 @pytest.mark.parametrize(("version", "kind"), BOTH)
-def test_tf25_5_input_is_a_key_of_the_root_s_input_and_never_its_text(tmp_path: Path, version: str, kind: str) -> None:
-    data = imported(by_error(export(version, kind), tmp_path / "st", "r", case="input"))
+def test_tf25_5_input_is_a_key_of_the_root_s_input_and_never_its_text(tmp_path_factory: Any, version: str, kind: str) -> None:
+    # the import the shared store was made by: by the root's error, the case the input's key
+    root, data = world(tmp_path_factory, version, kind, "error")
     from tf21_support import records
 
-    got = sorted(r["case"] for r in records(tmp_path / "st", "r"))
+    assert data["declared"]["case_from"] == "input"
+    got = sorted(r["case"] for r in records(root, RUN))
     assert got == sorted(KEY[case] for case in CASES)
     assert all(re.fullmatch(r"input:[0-9a-f]{12}", case) for case in got)
-    assert tally(data) == {"met": 9, "missed": 1} and outcomes(tmp_path / "st", "r")[ERRORED[version][0]] == "missed"
-    held = b"".join(p.read_bytes() for p in (tmp_path / "st").rglob("*") if p.is_file())
+    assert tally(data) == {"met": 9, "missed": 1} and outcomes(root, RUN)[ERRORED[version][0]] == "missed"
+    held = b"".join(p.read_bytes() for p in root.rglob("*") if p.is_file())
     for item in ITEM.values():
         assert item.encode() not in held, item
 
@@ -601,11 +596,6 @@ def test_tf25_14_the_earliest_span_need_not_be_the_first_root_s(tmp_path: Path, 
     assert data["started"] == {"at": "2026-11-09T20:24:05.250000Z", "from": "earliest span"}
 
 
-def test_tf25_14_started_given_wins(tmp_path: Path) -> None:
-    data = imported(by_error(export("baseline", "fetch"), tmp_path / "st", "r", "--started", "2026-11-01T00:00:00Z"))
-    assert data["started"] == {"at": "2026-11-01T00:00:00Z", "from": "given"}
-
-
 @pytest.mark.parametrize("kind", ["summary", "ui-json"])
 def test_tf25_14_rows_with_no_start_take_the_file_s_time(tmp_path: Path, kind: str) -> None:
     def untimed(rows: list[dict[str, Any]]) -> None:
@@ -634,12 +624,3 @@ def test_tf25_15_a_root_that_has_not_ended_has_no_outcome(tmp_path: Path, kind: 
     assert got["outcome"] is None and got["error"] == "pending"
     rec = recs(tmp_path / "st", "r")["c02"]
     assert rec["outcome"] is None and rec["wall_time_s"] is None
-
-
-@pytest.mark.parametrize("kind", ROW_EXPORTS)
-def test_tf25_15_an_export_edited_and_written_back_reads_as_the_file_does(tmp_path: Path, kind: str) -> None:
-    """The helper that edits an export keeps it readable: an unedited copy reads as the file."""
-    path = edited(tmp_path, "baseline", kind, lambda rows: None)
-    imported(by_error(path, tmp_path / "a", "r"))
-    imported(by_error(export("baseline", kind), tmp_path / "b", "r"))
-    assert recs(tmp_path / "a", "r") == recs(tmp_path / "b", "r")

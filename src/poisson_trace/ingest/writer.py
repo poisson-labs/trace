@@ -334,16 +334,16 @@ def _check_name(store: Store, root: Path, name: str, form: str, *, held: bool = 
         raise Refusal(in_use)
 
 
-def check_before_reading(root: Path, name: str, form: str = "target") -> None:
+def check_before_reading(root: Path, name: str, form: str = "target", *, held: bool = True) -> None:
     """What ``write`` refuses about the store and the run's name, asked before any file is read
-    and before any service is pulled, in the same sentences: a name another run of the store
-    answers to, and a ``store.json`` that is not a descriptor, is in a newer format, or cannot
-    be read. ``write`` asks again, since it is also called on its own. A store that is not
-    there yet holds no run, and nothing of it is made here. A name the store itself holds is
-    not refused here: ``write`` refuses it once the files are read, and a pull before it asks
-    its service anything, each in its own words."""
+    and before any service is pulled, in the same sentences: a name the store holds, a name
+    another run of the store answers to, and a ``store.json`` that is not a descriptor, is in
+    a newer format, or cannot be read. ``write`` asks again, since it is also called on its
+    own. A store that is not there yet holds no run, and nothing of it is made here. With
+    ``held`` False a name the store itself holds is passed over: a pull refuses it before it
+    asks its service anything, in its own words."""
     if root.is_dir():
-        _check_name(Store(root), root, name, form, held=False)
+        _check_name(Store(root), root, name, form, held=held)
     _check_descriptor(root)
 
 

@@ -53,7 +53,7 @@ def test_tr73_few_inputs_repeating_on_one_version_alone_print_no_kappa(
     build_store(tmp_path, "b", _rows(new))
     argv = ("--inputs", "all", "--max-mde", "0.5")
     r = fix_check(tmp_path, "a", "b", ("fail",), *argv)
-    assert r.code in (0, 2), r.text
+    assert r.code == 0, r.text
     d = fix_check(tmp_path, "a", "b", ("fail",), *argv, "--json").json()
     assert d["inputs"]["compared"] == 6
     c = d["consistency"]

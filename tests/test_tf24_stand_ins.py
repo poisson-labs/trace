@@ -97,8 +97,8 @@ def test_tf24_73_a_value_the_flag_would_not_take_is_refused_as_the_flag_s(tmp_pa
 # ---------- TF24-74 ----------
 
 
-@pytest.mark.parametrize("score_field", ["exact", "feedback:exact"])
-@pytest.mark.parametrize("kind", KINDS)
+# the spelling is settled before a file is opened: one spelling on every format, every spelling on one
+@pytest.mark.parametrize(("kind", "score_field"), [*[(kind, "exact") for kind in KINDS], (KINDS[0], "feedback:exact")])
 def test_tf24_74_score_field_names_the_feedback_key(tmp_path: Path, kind: str, score_field: str) -> None:
     config = _config(tmp_path, case_field="metadata:ls_example_case", score_field=score_field, cut=0.5)
     data = imported(_bare(export("candidate", kind), tmp_path / "st", "r", config))

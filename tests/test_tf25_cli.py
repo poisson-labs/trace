@@ -42,7 +42,13 @@ the LangSmith pair's LS-24 and LS-28 to LS-30).
   pullers this install still lacks stay refused.
 - TF25-59: the readers' two sentences: ``runs`` shows an imported run's backend as
   ``import:braintrust`` and whether it has traces.
-- TF25-60: the reader's module documents what it does not keep, in plain words.
+- TF25-60: the reader's module documents what it does not keep, in plain words: held by
+  TF24-60 in ``test_tf24_cli.py``, for the three readers that pull.
+
+That the import's help lists ``braintrust`` (TF25-47) and that ``doctor`` lists it among the
+readers (TF25-56) is held by ``test_tf5_readers.py`` (TF5-20), which holds the whole help and
+``doctor``'s readers line byte for byte; that the addresses of the pullers this install lacks stay
+refused (TF25-58) by ``test_tf17_config.py`` (TF17-20).
 """
 
 from __future__ import annotations
@@ -57,7 +63,7 @@ import pytest
 
 from tf0_support import chdir, trace, trace_import
 from tf1_support import shell_words
-from tf2_support import check, doctor_doc, init_yes, numbered, work, write_config
+from tf2_support import init_yes, numbered, work
 from tf17_support import config_text, import_entry, setup_check, trace_in, write_toml
 from tf21_support import INGEST, run_import
 from tf25_support import (
@@ -72,14 +78,6 @@ OPTIONS = {"case_from": "input", "outcome_from": "score:exact", "cut": 0.5, "bel
 
 
 # ---------- TF25-47 ----------
-
-
-def test_tf25_47_the_import_s_help_lists_braintrust() -> None:
-    helped = trace(["import", "--help"])
-    assert helped.code == 0, helped.text
-    for tool in PRESENT:
-        assert re.search(rf"^ +{re.escape(tool)}(?: {{2,}}\S.*)?$", helped.out, re.M), (tool, helped.out)
-    assert "poisson-trace import braintrust " in helped.out
 
 
 def test_tf25_47_the_reader_s_help_is_the_verb_s_and_names_its_flags() -> None:
@@ -168,7 +166,7 @@ def test_tf25_48_the_next_line_reads_the_other_version_the_same_way(tmp_path: Pa
     assert sorted(columns(tmp_path / "st", "new")) == [c for c in CASES if c != "c09"]
 
 
-@pytest.mark.parametrize("kind", ["fetch", "ui-json"])
+@pytest.mark.parametrize("kind", ["fetch"])
 def test_tf25_48_a_name_in_use_is_refused_and_nothing_changes(tmp_path: Path, kind: str) -> None:
     imported(by_error(export("baseline", kind), tmp_path / "st", "first"))
     before = snapshot(tmp_path / "st")
@@ -304,7 +302,7 @@ def test_tf25_50_a_wrong_command_line_exits_2_naming_the_flag(tmp_path: Path, la
 # ---------- TF25-51 ----------
 
 
-@pytest.mark.parametrize("kind", ["fetch", "ui-csv"])
+@pytest.mark.parametrize("kind", ["fetch"])
 def test_tf25_51_both_spellings_print_the_same_bytes(tmp_path: Path, kind: str) -> None:
     outs = []
     for spelling in ("verb", "alias"):
@@ -556,17 +554,6 @@ def test_tf25_56_init_lists_the_exports_and_prints_a_line_for_each(tmp_path: Pat
     assert not (folder / "trace-store").exists()
 
 
-def test_tf25_56_doctor_lists_braintrust_among_the_readers(tmp_path: Path) -> None:
-    folder = work(tmp_path)
-    write_config(folder, "version = 1\n")
-    _, data = doctor_doc(folder)
-    line = check(data, "readers")["line"]
-    for tool in PRESENT:
-        assert tool in line, line
-    for absent in ("otel", "lemma"):
-        assert absent not in line, line
-
-
 # ---------- TF25-57 ----------
 
 
@@ -669,17 +656,6 @@ def test_tf25_58_an_address_is_an_entry_of_the_braintrust_reader(tmp_path: Path)
     assert held.imports[0].file == "braintrust/old.json"
 
 
-@pytest.mark.parametrize("puller", ["lemma"])
-def test_tf25_58_the_addresses_of_the_pullers_this_install_lacks_stay_refused(tmp_path: Path, puller: str) -> None:
-    from poisson_trace import config
-
-    folder = work(tmp_path)
-    text = config_text(import_entry(f"{puller}:some/name", "table", "pulled", case_column="c", outcome_column="o", failed=["x"]), store="s")
-    with pytest.raises(config.ConfigError) as caught:
-        config.parse(text, folder / "trace.toml", "trace.toml", given=False)
-    assert puller in str(caught.value) and "not in this install" in str(caught.value), str(caught.value)
-
-
 def test_tf25_58_no_verb_and_no_doctor_asks_the_service_anything(tmp_path: Path) -> None:
     from tf17_support import CS
 
@@ -747,17 +723,3 @@ def test_tf25_59_runs_says_where_the_run_came_from_and_whether_it_has_traces(tmp
     assert ran.code == 0, ran.err
     row = json.loads(ran.out)["runs"][0]
     assert row["traced"] is (traces == "yes") and row["backend"] == "import:braintrust", row
-
-
-# ---------- TF25-60 ----------
-
-
-def test_tf25_60_the_reader_s_words_are_plain() -> None:
-    from tf0_support import INTERNAL
-
-    from poisson_trace.ingest import braintrust, pulling as module
-
-    for text in (braintrust.DESCRIPTION, braintrust.__doc__ or "", module.__doc__ or ""):
-        assert text.strip()
-        assert not INTERNAL.search(text), INTERNAL.search(text)
-    assert "BRAINTRUST_API_KEY" in braintrust.DESCRIPTION and "braintrust:PROJECT/EXPERIMENT" in braintrust.DESCRIPTION

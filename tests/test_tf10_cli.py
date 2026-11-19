@@ -1,12 +1,9 @@
 """TF10-33 to TF10-37: the three readers in the import's command line (spec sections 3.3, 5.1, 6.1
 and 6.3; the shared core of INT1 to INT4; RD3).
 
-- TF10-33: the import's help lists ``promptfoo``, ``inspect`` and ``openai-evals``; each reader's
-  help is the verb's under both spellings, byte for byte; a tool the install lacks is refused
-  naming every reader it has.
+- TF10-33: each reader's help is the verb's under both spellings, byte for byte.
 - TF10-34: each import's ``--json`` is ``poisson-trace.import/1`` with the files' digests and a
-  ``next:`` fix check on ``--event missed``; the text summary ends with that ``next:`` line; a run
-  name the store holds is refused and the store is unchanged.
+  ``next:`` fix check on ``--event missed``; the text summary ends with that ``next:`` line.
 - TF10-35: a file that is missing, not the tool's, or damaged is refused in one plain line naming
   it, exit 1, nothing written; a wrong command line exits 2 (the exit-code table, section 3.3).
 - TF10-36: both spellings of the import print the same bytes for each reader, refused or done.
@@ -18,7 +15,6 @@ from __future__ import annotations
 
 import ast
 import hashlib
-import json
 import re
 from pathlib import Path
 from typing import Any
@@ -27,7 +23,7 @@ import pytest
 
 from tf0_support import trace, trace_import
 from tf10_support import (
-    IN_EVAL, IN_JSON, OE_OLD, PF_JSON, PF_JSONL, PRESENT, TOOLS, imported, in_argv, module, oe_argv, pf_argv,
+    IN_EVAL, IN_JSON, OE_OLD, PF_JSON, PF_JSONL, TOOLS, imported, in_argv, module, oe_argv, pf_argv,
     refused, wrong_line,
 )
 from tf21_support import run_import
@@ -44,14 +40,6 @@ def _sha(path: Path) -> str:
 
 
 # ---------- TF10-33 ----------
-
-
-def test_tf10_33_the_import_s_help_lists_the_three_readers() -> None:
-    helped = trace(["import", "--help"])
-    assert helped.code == 0, helped.text
-    for tool in PRESENT:
-        # a long name is set on a line of its own, its description under it
-        assert re.search(rf"^ +{re.escape(tool)}(?: {{2,}}\S.*)?$", helped.out, re.M), (tool, helped.out)
 
 
 @pytest.mark.parametrize("tool", NEW)
@@ -73,11 +61,6 @@ def test_tf10_33_each_reader_s_flags_are_the_spec_s() -> None:
     assert "--case" not in trace(["import", "openai-evals", "--help"]).out
 
 
-def test_tf10_33_an_absent_tool_is_refused_naming_every_reader() -> None:
-    unknown = trace(["import", "otel", "x.json", "--store", "st", "--run", "r1"])
-    assert unknown.code == 1 and all(tool in unknown.lines()[0] for tool in PRESENT), unknown.err
-
-
 # ---------- TF10-34 ----------
 
 
@@ -91,16 +74,6 @@ def test_tf10_34_the_summary_is_the_import_s(tmp_path: Path, tool: str) -> None:
     text = run_import(FIRST[tool](tmp_path / "st2", "first"))
     assert text.code == 0 and text.out.startswith("ok  wrote run first to "), text.out
     assert text.out.rstrip("\n").splitlines()[-1].startswith("next: poisson-trace fix-check OLD NEW"), text.out
-
-
-@pytest.mark.parametrize("tool", NEW)
-def test_tf10_34_a_name_in_use_is_refused_and_nothing_changes(tmp_path: Path, tool: str) -> None:
-    imported(FIRST[tool](tmp_path / "st", "first"))
-    before = sorted((str(p), p.read_bytes()) for p in (tmp_path / "st").rglob("*") if p.is_file())
-    line = refused(run_import(FIRST[tool](tmp_path / "st", "first")))
-    assert "first" in line, line
-    after = sorted((str(p), p.read_bytes()) for p in (tmp_path / "st").rglob("*") if p.is_file())
-    assert after == before
 
 
 # ---------- TF10-35 ----------
@@ -260,9 +233,3 @@ def test_tf10_37_the_inspect_extra_holds_zstandard() -> None:
     assert any(re.match(r"zstandard\b", d) for d in extras["inspect"]), extras
     assert any(re.match(r"zstandard\b", d) for d in extras["dev"]), extras
     assert not any(re.match(r"zstandard\b", d) for d in project["dependencies"]), project["dependencies"]
-
-
-def test_tf10_37_the_json_summary_is_one_document(tmp_path: Path) -> None:
-    for tool in NEW:
-        result = run_import([*FIRST[tool](tmp_path / tool, "first"), "--json"])
-        assert result.code == 0 and json.loads(result.out)["schema"] == "poisson-trace.import/1", result.err

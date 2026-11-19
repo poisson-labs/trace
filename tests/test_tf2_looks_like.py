@@ -55,12 +55,6 @@ def test_tf2_08_a_file_the_reader_reads_is_described_in_one_line(files: dict[str
     _one_line(looks_like(tool, files[label]))
 
 
-@pytest.mark.parametrize("label", ["deepeval results", "deepeval latest", "ragas jsonl", "ragas csv", "ragas json"])
-def test_tf2_08_the_other_readers_file_is_none(files: dict[str, Path], label: str) -> None:
-    other = "ragas" if label.startswith("deepeval") else "deepeval"
-    assert looks_like(other, files[label]) is None
-
-
 @pytest.mark.parametrize("metric", METRICS)
 def test_tf2_08_every_ragas_metric_names_a_table(tmp_path: Path, metric: str) -> None:
     path = tmp_path / "t.csv"

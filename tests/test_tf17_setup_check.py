@@ -218,7 +218,7 @@ def test_tf17_28_a_folder_of_two_tools_reads_the_named_tools_files_alone(tmp_pat
 
 WRONG = {
     "a missing file": Row(remove("evals/results/rag-base.jsonl"), 1, ("evals/results/rag-base.jsonl",)),
-    "a tool not in the install": Row(edit_toml('tool = "junit"', 'tool = "braintrust"'), 2, ("braintrust",)),
+    "a tool not in the install": Row(edit_toml('tool = "junit"', 'tool = "otel"'), 2, ("otel", "not in this install")),
     "a metric not in the file": Row(edit_toml('metric = "faithfulness"', 'metric = "precision"'), 1, ("precision", "rag-base.jsonl")),
     "a cut every row misses": Row(edit_toml("cut = 0.5", "cut = 2.0"), 1, ("2.0", "rag-base.jsonl")),
     "a cut every row meets": Row(edit_toml("cut = 0.5", "cut = -1.0"), 1, ("-1.0", "rag-base.jsonl")),
@@ -262,10 +262,11 @@ def test_tf17_29_the_check_writes_nothing_opens_no_connection_and_reads_no_key(t
     repo = ready_repo(tmp_path)
     users_own_files(repo)
     home = Path(os.environ["HOME"])
-    before = snapshot(repo, home)
+    elsewhere = work(tmp_path, "elsewhere")
+    before = snapshot(repo, home, elsewhere)
     r = setup_check(repo)
     assert r.code == 0, r.text
-    assert snapshot(repo, home) == before
+    assert snapshot(repo, home, elsewhere) == before
     assert not (repo / "trace-store").exists() and not (repo / ".poisson").exists()
     assert not list(repo.rglob("__pycache__"))
     assert no_network == []

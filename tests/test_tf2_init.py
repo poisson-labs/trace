@@ -236,7 +236,8 @@ def test_tf2_13_a_config_there_already_is_refused_and_left_as_it_was(tmp_path: P
     mine = write_config(folder, config_of("proofload-runs", ("solved",), "\n# mine\n"))
     before = mine.read_bytes()
     result = init_yes(folder)
-    refused(result)
+    line = refused(result)
+    assert "there already" in line, line
     assert mine.read_bytes() == before
     _yes(folder, "--force")
     assert config(folder)["events"]["failed"] == ["unsolved"]

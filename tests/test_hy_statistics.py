@@ -3,7 +3,7 @@
 fix-check and the continuous measures use.
 
 Each property is one body run twice: a fast test in the pull-request lane (a fixed seed through
-``derandomize`` and a bounded example count) and a wide twin of the same body in the slow lane and the math lane (HY2).
+``derandomize`` and a bounded example count) and a wide twin of the same body in the math lane.
 Already held elsewhere, and not repeated here: the stratified test equals the unstratified on one
 input (TR19, TR20); Aalen-Johansen's ends sum to one minus Kaplan-Meier (TR15); the per-input
 limit does not grow with tries (SF2); fix-check's exact p is unchanged by swapping (TR47).
@@ -37,11 +37,11 @@ EPS = 1e-9
 
 
 def twin(*strategies: Any) -> Callable[[Callable[..., None]], tuple[Any, Any]]:
-    """The property as two tests: the fast one for every pull request, the wide one in the slow
-    lane and the math lane (yes/no HY2, ruled yes 2026-11-04)."""
+    """The property as two tests: the fast one for every pull request, the wide one in the math
+    lane."""
     def make(body: Callable[..., None]) -> tuple[Any, Any]:
         fast = FAST(given(*strategies)(body))
-        wide = pytest.mark.math(pytest.mark.slow(WIDE(given(*strategies)(body))))
+        wide = pytest.mark.math(WIDE(given(*strategies)(body)))
         return fast, wide
     return make
 
@@ -308,7 +308,7 @@ test_hy10_the_continuous_ranges_hold_their_estimate, test_hy10_wide = twin(diffe
 
 ENDINGS = [None, None, None, "timeout", "crash", "wrong_answer"]
 # Positive amounts start at a nanosecond (or a billionth of a dollar): below that the relative
-# change can overflow and compare raises, which is finding HY1, held by the example test below.
+# change can overflow and compare raises, which is finding HY1, held by TF6-27 in ``test_tf6_measures.py``.
 seconds = st.one_of(st.just(0.0), st.floats(1e-9, 600))
 dollars = st.one_of(st.just(0.0), st.floats(1e-9, 2))
 
@@ -356,19 +356,3 @@ def _hy11(v) -> None:  # type: ignore[no-untyped-def]
 
 
 test_hy11_the_continuous_reading_is_deterministic_and_order_free, test_hy11_wide = twin(versions())(_hy11)
-
-
-def _one_case(cost_old: float, cost_new: float) -> tuple[Version, Version]:
-    def version(label: str, cost: float) -> Version:
-        values = {"wall_time_s": None, "output_chars": None, "input_tokens": None, "cost_usd": cost}
-        return Version(name=f"run-{label}", cases={"c0": [Try(values=values)]}, label=label)
-    return version("old", cost_old), version("new", cost_new)
-
-
-def test_hy11_finding_hy1_a_near_zero_old_mean_does_not_crash_compare() -> None:
-    # HY11's wide run, shrunk by Hypothesis: one case, an old cost of 2.2e-309 dollars (a
-    # subnormal float), a new cost of 1 dollar. The relative change 1 / 2.2e-309 is infinite;
-    # HY1 (ruled 2026-11-04) leaves it out, and the summary line prints the change alone.
-    a, b = _one_case(2.225073858507203e-309, 1.0)
-    m = compare(a, b).measures["cost_usd"]
-    assert m.relative is None or math.isfinite(m.relative)

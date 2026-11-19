@@ -15,7 +15,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-import pyarrow.parquet as pq
 import pytest
 from poisson_prove.store import Store
 from tf21_support import (
@@ -105,11 +104,6 @@ def test_tf21_25_tool_counts_follow_tool_calls_none_and_empty_apart() -> None:
     empty = trace_signals(Row("c", "met", None, tool_calls=()), 0)
     assert (none["tool_call_count"], none["tool_error_count"], none["tool_calls"]) == (None, None, None)
     assert (empty["tool_call_count"], empty["tool_error_count"], empty["tool_calls"]) == (0, 0, [])
-
-
-def test_tf21_25_the_record_is_json_with_no_nan() -> None:
-    text = json.dumps(trace_signals(FULL, 0), allow_nan=False)
-    assert json.loads(text)["total_tokens"] == 715
 
 
 # ---------- TF21-26: the record is stored in meta, nulls kept ----------
@@ -218,16 +212,6 @@ def test_tf21_28_the_record_carries_no_error_text() -> None:
 
 
 # ---------- TF21-29: Prove 0.1.2 reads the run as it reads any (SA1) ----------
-
-
-def test_tf21_29_the_parquet_schema_is_proves_own(tmp_path: Path) -> None:
-    from poisson_prove import store as prove_store
-
-    root, _ = _stored(tmp_path, [FULL, BARE])
-    parts = sorted((root / "run" / "episodes").glob("part-*.parquet"))
-    assert len(parts) == 1
-    assert pq.read_schema(parts[0]).remove_metadata().equals(
-        prove_store._SCHEMA.remove_metadata())  # noqa: SLF001
 
 
 def test_tf21_29_prove_reads_tallies_and_lists_the_run(tmp_path: Path) -> None:

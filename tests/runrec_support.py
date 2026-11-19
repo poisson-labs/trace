@@ -71,6 +71,7 @@ What Session B builds, in one place:
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import re
@@ -218,6 +219,28 @@ def import_key(key: str, root: Path, run: str | None = None, *extra: Any) -> Res
 def import_json(key: str, root: Path, run: str | None = None, *extra: Any) -> dict[str, Any]:
     data: dict[str, Any] = json.loads(import_key(key, root, run, "--json", *extra).out)
     return data
+
+
+_IMPORTED: dict[str, tuple[Path, dict[str, Any]]] = {}
+INSPECT_FOLDER = "an unpacked inspect folder"
+
+
+def imported(key: str, factory: Any) -> tuple[Path, dict[str, Any]]:
+    """The committed fixture ``key`` imported once a session into a new store of its own, as run
+    ``r``: the store (in a folder that holds nothing else) and what the import printed with
+    ``--json``. ``INSPECT_FOLDER`` is the committed ``.eval`` unpacked beside the store and read
+    as a folder. For a test that only reads what the import wrote: one that writes into the store
+    imports its own. ``factory`` is pytest's ``tmp_path_factory``."""
+    if key not in _IMPORTED:
+        tmp = factory.mktemp("imported")
+        root = tmp / "store"
+        if key == INSPECT_FOLDER:
+            out = ok(run_import([*in_argv(unpacked_inspect(tmp), root, "r"), "--json"]))
+            _IMPORTED[key] = (root, json.loads(out.out))
+        else:
+            _IMPORTED[key] = (root, import_json(key, root, "r"))
+    root, data = _IMPORTED[key]
+    return root, copy.deepcopy(data)
 
 
 # ---------- reading what an import wrote ----------

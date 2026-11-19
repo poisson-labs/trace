@@ -30,14 +30,13 @@ anything else.
 
 from __future__ import annotations
 
-import dataclasses
 import inspect
 from pathlib import Path
 from typing import Any
 
 import pytest
 from tf13_support import (
-    COUNTING, DELIVERY, EV, FUNCTIONS, IMPORT_COMMON, RESULT_TYPES, TYPES, VERB_FUNCTION, api,
+    COUNTING, DELIVERY, FUNCTIONS, IMPORT_COMMON, RESULT_TYPES, TYPES, VERB_FUNCTION, api,
     attempt, cli_parsers, commands, expected_keywords, import_parsers, keyword, options_of,
     plain_default, positionals_of, workspace,
 )
@@ -252,12 +251,3 @@ def test_tf13_7_a_value_the_parser_would_refuse_is_a_value_error(tmp_path: Path,
         attempt(_wrong_calls(a)[label], work)
     assert sorted(p.relative_to(work).as_posix() for p in work.rglob("*")) == before, "nothing written"
     assert not issubclass(a.Refusal, ValueError), "a refusal is not a wrong argument"
-
-
-def test_tf13_7_a_the_result_types_are_frozen_dataclasses(tmp_path: Path) -> None:
-    work = workspace(tmp_path)
-    a = api()
-    r = attempt(lambda: a.where("store", "agent after", event=EV[1::2]), work).result
-    assert dataclasses.is_dataclass(r) and type(r).__dataclass_params__.frozen  # type: ignore[attr-defined]
-    with pytest.raises(dataclasses.FrozenInstanceError):
-        r.verdict = "different"  # type: ignore[misc]

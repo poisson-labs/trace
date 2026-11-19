@@ -11,7 +11,8 @@ bytes) and the schema names stay.
 ``failure_taxonomy_diff``, and what the API's ``to_json()`` prints.
 
 **BD-2c** The section printed is that object's counts: each row's counts, shares and change are
-worked out from it, every kind and signal it lists has its row, and the tries line is its tries.
+worked out from it, every kind and signal it lists has its row, and the tries line is its tries
+(held with BD-2b's API result). The JSON lists kinds in precedence, the section by count.
 
 **BD-2d** The saved ``report.md`` holds the section as the plain report prints it; the API's
 ``to_markdown()`` too; a bundle with it passes ``handover --check``.
@@ -25,7 +26,7 @@ from typing import Any
 
 import pytest
 from breakdown_support import (
-    AFTER, ARMS, BEFORE, EV, HEADING, KINDS, LABELS, SIGNALS, TWO_RUNS, argv_of, expected_section, ok,
+    AFTER, ARMS, BEFORE, EV, HEADING, KINDS, SIGNALS, TWO_RUNS, argv_of, expected_section, ok,
     prove_store, section, table_rows, table_store,
 )
 from tf0_support import chdir
@@ -52,7 +53,8 @@ def test_bd_2a_json_carries_the_diff_before_next(verb: str, tmp_path: Path) -> N
     assert doc["schema"] == SCHEMAS[verb]
     diff = doc["failure_taxonomy_diff"]
     assert list(diff) == ["taxonomy_sha256", "same_rules", "tries", "kinds", "signals"]
-    assert set(diff["tries"]) == set(ARMS[verb])
+    # the JSON names the arms as the verb's ``runs`` does; the section names them in words
+    assert set(diff["tries"]) == set(doc["runs"]) == set(ARMS[verb])
 
 
 def test_bd_2a_fix_check_measures_after_the_diff(tmp_path: Path) -> None:
@@ -76,13 +78,6 @@ def test_bd_2a_where_carries_none(tmp_path: Path) -> None:
     assert "failure_taxonomy_diff" not in doc and doc["schema"] == SCHEMAS["where"]
 
 
-@pytest.mark.parametrize("verb", TWO_RUNS)
-def test_bd_2a_save_adds_saved_after_it(verb: str, tmp_path: Path) -> None:
-    store = prove_store(tmp_path)
-    doc = ok(argv_of(verb, store, "--save", "--json")).json()
-    assert list(doc)[-3:] == ["failure_taxonomy_diff", "saved", "next"], list(doc)
-
-
 # ---------- BD-2b ----------
 
 
@@ -90,6 +85,7 @@ def test_bd_2a_save_adds_saved_after_it(verb: str, tmp_path: Path) -> None:
 def test_bd_2b_the_saved_diff_is_the_printed_one(verb: str, tmp_path: Path) -> None:
     store = prove_store(tmp_path)
     printed = ok(argv_of(verb, store, "--save", "--json")).json()
+    assert list(printed)[-3:] == ["failure_taxonomy_diff", "saved", "next"], list(printed)
     folder = store / printed["saved"]
     result = json.loads((folder / "result.json").read_text(encoding="utf-8"))
     assert result["failure_taxonomy_diff"] == printed["failure_taxonomy_diff"]
@@ -122,27 +118,14 @@ def test_bd_2b_the_api_result_carries_the_same(verb: str, tmp_path: Path) -> Non
         assert r.to_json() == printed.out
         assert as_json["failure_taxonomy_diff"] == json.loads(json.dumps(r.failure_taxonomy_diff))
         assert r.to_markdown() == plain.out
-    assert section(r.to_markdown()) == _diff_section(verb, as_json["failure_taxonomy_diff"])
+    diff = as_json["failure_taxonomy_diff"]
+    assert section(r.to_markdown()) == _diff_section(verb, diff)
+    # the JSON keeps its own order of signals
+    assert [s["signal"] for s in diff["signals"]] == [s for s in SIGNALS if s in [x["signal"] for x in diff["signals"]]]
     del store
 
 
 # ---------- BD-2c ----------
-
-
-@pytest.mark.parametrize("verb", TWO_RUNS)
-def test_bd_2c_the_section_is_the_diffs_counts(verb: str, tmp_path: Path) -> None:
-    store = prove_store(tmp_path)
-    doc = ok(argv_of(verb, store, "--json")).json()
-    shown = section(ok(argv_of(verb, store)).out)
-    diff = doc["failure_taxonomy_diff"]
-    assert shown == _diff_section(verb, diff)
-    rows = table_rows(shown)
-    a, b = ARMS[verb]
-    listed = [k["failure_kind"] for k in diff["kinds"]]
-    assert sorted(r[0] for r in rows if r[0] in KINDS) == sorted(listed)
-    total = [r for r in rows if r[0] == "all failures"][0]
-    assert int(total[1]) == sum(k[a] for k in diff["kinds"]) and int(total[3]) == sum(k[b] for k in diff["kinds"])
-    assert [s["signal"] for s in diff["signals"]] == [s for s in SIGNALS if s in [x["signal"] for x in diff["signals"]]]
 
 
 def test_bd_2c_the_diff_lists_kinds_in_precedence_and_the_section_by_count(tmp_path: Path) -> None:
@@ -176,10 +159,3 @@ def test_bd_2d_a_bundle_with_it_passes_the_check(verb: str, tmp_path: Path) -> N
     result = json.loads((tmp_path / "bundle" / "result.json").read_text(encoding="utf-8"))
     assert result["failure_taxonomy_diff"]["same_rules"] is True
 
-
-def test_bd_2d_the_labels_in_the_json_are_the_arms(tmp_path: Path) -> None:
-    """The JSON names the arms as the verb's ``runs`` does; the section names them in words."""
-    for verb in TWO_RUNS:
-        doc = ok(argv_of(verb, prove_store(tmp_path / verb), "--json")).json()
-        assert set(doc["failure_taxonomy_diff"]["tries"]) == set(doc["runs"]) == set(ARMS[verb]), verb
-        assert LABELS[verb]

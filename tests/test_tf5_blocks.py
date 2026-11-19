@@ -67,12 +67,6 @@ def _blocks(page: Path) -> list[Block]:
 # ---------- TF5-10 ----------
 
 
-@pytest.mark.parametrize("page", PAGES, ids=IDS)
-def test_tf5_10_the_page_is_written(page: Path) -> None:
-    assert page.is_file(), rel(page)
-    assert read(page).startswith("# "), rel(page)
-
-
 def test_tf5_10_the_pages_are_these_and_no_recipe_that_waits_is_written() -> None:
     assert len(RECIPES) == 16 and len(INTEGRATIONS) == 10 and len(DOCS_SET) == 7
     written = {p.name for p in (DOCS / "recipes").glob("*.md")}
@@ -87,6 +81,7 @@ def test_tf5_10_the_pages_are_these_and_no_recipe_that_waits_is_written() -> Non
 @pytest.mark.parametrize("page", PAGES, ids=IDS)
 def test_tf5_11_the_page_reads_under_the_marks(page: Path) -> None:
     text = read(page)
+    assert text.startswith("# "), rel(page)
     assert parse(text)[1] == [], rel(page)
     assert "docs-check:" not in text, "the marks are Trace's own (command, output, excerpt, skip)"
 
@@ -143,8 +138,14 @@ def _lane(page: Path) -> object:
 
 
 @pytest.mark.parametrize("page", [_lane(page) for page in PAGES])
-def test_tf5_14_every_marked_block_of_the_page_holds(tmp_path: Path, page: Path) -> None:
-    checked = run_page(page, tmp_path)
+def test_tf5_14_every_marked_block_of_the_page_holds(tmp_path: Path, tmp_path_factory: pytest.TempPathFactory, page: Path) -> None:
+    if rel(page) == "docs/recipes/with-tasks-and-prove.md":
+        # this page's commands take minutes: its one run by this same runner is shared with the tests of the page itself
+        from tf20_support import shared_run
+
+        checked = shared_run(tmp_path_factory).checked
+    else:
+        checked = run_page(page, tmp_path)
     for c in checked:
         assert holds(c), why(page, c)
     commands = [block for block in _blocks(page) if block.kind == "command"]
@@ -191,11 +192,12 @@ def test_tf5_15_what_may_vary_is_a_path_a_time_an_id_or_a_version() -> None:
         assert VARIES.fullmatch(fine), fine
     for not_fine in ("different", "3 of 9", "12.5%", "no significant difference", "old", "0.21", "p = 0.4", "ok", "8", "unsolved"):
         assert not VARIES.fullmatch(not_fine), not_fine
-    import tf5_support
+    from tf5_support import docs_check
 
-    assert tf5_support._line_holds("wrote …, in …", "wrote /tmp/x/out.json, in 0.4 s")
-    assert not tf5_support._line_holds("wrote …, no … difference", "wrote /tmp/x/out.json, no significant difference"), "every … of a line is held"
-    assert not tf5_support._line_holds("no significant difference", "no significant differencE")
+    assert VARIES is docs_check.VARIES, "the rule held here is the checker's own"
+    assert docs_check.line_holds("wrote …, in …", "wrote /tmp/x/out.json, in 0.4 s", True)
+    assert not docs_check.line_holds("wrote …, no … difference", "wrote /tmp/x/out.json, no significant difference", True), "every … of a line is held"
+    assert not docs_check.line_holds("no significant difference", "no significant differencE", True)
 
 
 # ---------- TF5-16 ----------
@@ -294,6 +296,8 @@ def test_tf5_18_each_tool_has_a_first_result_on_its_recipe(tool: str) -> None:
         assert len(set(runs)) >= 2, (name, runs)
     checks = _runs_shown(page, "fix-check")
     assert checks, f"{name}: fix-check on the two runs, with what it printed"
+    if len(imports) >= 2:
+        assert all(any(run in command for run in runs) for _, command in checks), f"{name}: the fix check names the runs imported"
     first = min(at for at, _ in checks)
     assert all(at < first for at, _ in imports[:2]), f"{name}: the imports come before the fix check"
     fixtures = [word for block in _blocks(page) if block.kind == "command" for command in words(block) for word in command

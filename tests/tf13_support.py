@@ -92,6 +92,7 @@ own work is under the system's temporary folder and gone when it returns.
 from __future__ import annotations
 
 import ast
+import atexit
 import contextlib
 import dataclasses
 import hashlib
@@ -323,8 +324,26 @@ def workspace(tmp: Path, name: str = "work") -> Path:
     - ``files/``: the committed result files the imports read, one of each reader's;
     - ``conf/trace.toml``: a config naming ``store`` (and ``tables`` as ``tables``), the
       failures ``violated`` and ``timeout``, and both ceilings.
+
+    It is built once in each process, in a folder no test is given, and every call copies
+    that folder: nothing in it names where it was built, so a copy is the same workspace.
     """
+    global _BUILT
+    if _BUILT is None:
+        root = Path(tempfile.mkdtemp(prefix="tf13-workspace-"))
+        atexit.register(shutil.rmtree, root, ignore_errors=True)
+        _build(root / "work")
+        _BUILT = root / "work"
     work = tmp / name
+    shutil.copytree(_BUILT, work)
+    return work
+
+
+_BUILT: Path | None = None
+
+
+def _build(work: Path) -> None:
+    """The workspace, made at ``work``: the copies, the files and the six imports."""
     work.mkdir(parents=True)
     shutil.copytree(PROVE_013, work / "store")
     # the same store with a third run whose record Prove cannot read: latest, previous and the
@@ -365,7 +384,6 @@ def workspace(tmp: Path, name: str = "work") -> Path:
         for i, (run, file) in enumerate((("ja", "humaneval-a.xml"), ("jb", "humaneval-b.xml"))):
             made = trace_import(["junit", f"files/{file}", "--store", "jstore", "--run", run, "--started", STARTS[i]])
             assert made.code == 0, made.text
-    return work
 
 
 EV = ["--event", "violated", "--event", "timeout"]

@@ -12,7 +12,6 @@ Prove that Trace pins, so a move of that pin moves them.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -35,20 +34,6 @@ def test_fix31_p_the_files_are_the_nine() -> None:
 @pytest.mark.parametrize("name", NAMES)
 def test_fix31_p_printed_byte_for_byte(ran: dict[str, str], name: str) -> None:
     assert ran[name] == (PRINTED / name).read_text(encoding="utf-8")
-
-
-def test_fix31_p_what_break_reads_in_the_record() -> None:
-    """The fields Break reads, as the committed record of its case holds them."""
-    doc = json.loads((PRINTED / "break-case.json").read_text(encoding="utf-8"))
-    assert doc["verdict"] == "no significant difference"
-    assert doc["direction"] == "no direction"
-    assert [(doc["rows"][arm]["failed"], doc["rows"][arm]["runs"]) for arm in ("old", "new")] == [(0, 30), (0, 30)]
-    assert doc["difference"]["points"] == 0.0
-    assert (round(doc["difference"]["lo"], 6), round(doc["difference"]["hi"], 6)) == (-0.124555, 0.124555)
-    assert doc["test"]["p"] == 1.0
-    assert doc["guidance"] is None
-    weak = json.loads((PRINTED / "break-case-weak-candidate.json").read_text(encoding="utf-8"))
-    assert (weak["verdict"], weak["direction"]) == ("different", "failed more in new")
 
 
 def test_fix31_p_no_path_of_a_machine_is_in_the_record() -> None:

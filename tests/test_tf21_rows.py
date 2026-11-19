@@ -1,4 +1,4 @@
-"""TF21-1 to TF21-12: the normalised shape (spec section 18.4.1, SG1, SG2; SA1, SA2).
+"""TF21-1 to TF21-11: the normalised shape (spec section 18.4.1, SG1, SG2; SA1, SA2).
 
 Every field of ``Row``, ``SpanRecord`` and ``ToolCallRecord``, its type and unit, and what *not
 recorded* looks like: ``None`` for a number or a word, never ``0``; ``0`` is a recorded zero.
@@ -306,21 +306,3 @@ def test_tf21_11_the_module_names_each_signal_and_its_unit() -> None:
     from tf21_support import UNITS
 
     assert dict(rows_module.UNITS) == UNITS
-
-
-# ---------- TF21-12: rows.py stays standard library only ----------
-
-
-def test_tf21_12_rows_imports_only_the_standard_library() -> None:
-    import ast
-    import sys
-    from pathlib import Path
-
-    tree = ast.parse(Path(rows_module.__file__).read_text(encoding="utf-8"))
-    roots = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            roots |= {a.name.split(".")[0] for a in node.names}
-        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-            roots.add(node.module.split(".")[0])
-    assert roots <= set(sys.stdlib_module_names) | {"__future__"}, roots

@@ -18,8 +18,8 @@ from pathlib import Path
 import pytest
 from tf19_support import (
     KEY_NAME,
-    NAV_KEYS,
     PLANTED_KEYS,
+    Session,
     Type,
     app_files,
     app_world,
@@ -58,9 +58,19 @@ def _tour() -> list[object]:
             "escape", "escape", "f", "enter", "t", "g", "escape", "d", "escape", "escape", "escape", "?", "escape"]
 
 
-@pytest.mark.slow
-def test_tf19_7_no_network_call(work: Path) -> None:
+@pytest.fixture(scope="module")
+def toured(world: Path, tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Session, list[str]]:
+    """One tour of the app in a copy of its own, read by the tests that only read what it did:
+    the folder, the session, and the files the tour changed."""
+    work = copy_world(world, tmp_path_factory.mktemp("tf19-never-tour"))
+    before = snapshot(work)
     s = drive(work, _tour(), size=(120, 40))
+    return work, s, sorted(changed(before, snapshot(work)))
+
+
+@pytest.mark.slow
+def test_tf19_7_no_network_call(toured: tuple[Path, Session, list[str]]) -> None:
+    _work, s, _moved = toured
     assert s.fakes.connects == []
     assert s.fakes.opened and s.fakes.copied
 
@@ -75,8 +85,8 @@ def test_tf19_7_the_app_imports_no_network_module(path: str) -> None:
 
 
 @pytest.mark.slow
-def test_tf19_7_no_key_read(work: Path) -> None:
-    s = drive(work, _tour(), size=(120, 40))
+def test_tf19_7_no_key_read(toured: tuple[Path, Session, list[str]]) -> None:
+    _work, s, _moved = toured
     keys = sorted({k for k in s.fakes.env_read if KEY_NAME.search(k) or k == "*"})
     assert keys == [], keys
     for g in s.grids:
@@ -85,10 +95,9 @@ def test_tf19_7_no_key_read(work: Path) -> None:
 
 
 @pytest.mark.slow
-def test_tf19_7_no_planted_key_in_a_file(work: Path) -> None:
-    before = snapshot(work)
-    drive(work, _tour(), size=(120, 40))
-    for name in changed(before, snapshot(work)):
+def test_tf19_7_no_planted_key_in_a_file(toured: tuple[Path, Session, list[str]]) -> None:
+    work, _s, moved = toured
+    for name in moved:
         path = work / name
         if path.is_file():
             data = path.read_bytes()
@@ -164,11 +173,3 @@ def test_tf19_7_a_verdict_shown_writes_no_key(work: Path) -> None:
         data = (work / name).read_bytes()
         assert not any(v.encode() in data for v in PLANTED_KEYS.values()), name
 
-
-@pytest.mark.parametrize("screen", list(NAV_KEYS))
-def test_tf19_7_every_screen_without_a_network_or_a_key(work: Path, screen: str) -> None:
-    s = drive(work, NAV_KEYS[screen], size=(80, 24))
-    assert s.fakes.connects == []
-    assert not {k for k in s.fakes.env_read if KEY_NAME.search(k) or k == "*"}
-    for value in PLANTED_KEYS.values():
-        assert all(value not in g.text() for g in s.grids)

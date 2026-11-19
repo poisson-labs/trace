@@ -54,8 +54,8 @@ Nothing needs declaring: the record says what was right.
   `.jsonl` with the same keys. A row of it joins every try of the case it names. It fills
   what the files left out, a try with no outcome above all; a verdict that differs from
   what the files recorded refuses the import, naming the case, and nothing is written.
-- The record is the file you give the import. `oaieval` spells its own flag `--record_path`;
-  the import has no `--record` flag.
+- The record is the file you give the import: the one `oaieval` wrote where its own
+  `--record_path` flag named.
 - The eval's name and its completion functions are recorded with what was declared.
 
 ## The worked example

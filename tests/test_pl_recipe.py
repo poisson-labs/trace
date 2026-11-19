@@ -4,7 +4,7 @@ files under ``examples/three-tools/``).
 - PL-40 (slow): run as the page runs them (both sweeps with the page's salt, ``init`` with the
   answer the page gives, ``fix-check`` as the page asks it), the lost-token failures read as the
   kind their label ``wrong_state`` gives, ``wrong_answer``: ``fix-check``'s ``Failures by kind``
-  prints ``FROZEN``, which is main's ``MAIN`` with that one word in place of
+  prints ``FROZEN``, which is what main printed with that one word in place of
   ``unclassified_error``, and no note.
 - PL-41 (its fast twin): Prove's wrapper, called for every committed task on a few seeds of both
   versions and stored through Prove's own store: every failed try is labelled ``wrong_state``
@@ -27,19 +27,6 @@ SALT = "7f3a2c"
 RUNS = {"before": "agent before", "after": "agent after"}
 OPENING = ("Each failed try's kind of failure, by the built-in rules; the same rules classified both runs. Counts, not a test: "
            "the verdict above is about all failures together.")
-#: What main c981832 prints there (taken 2026-11-16 from a run of the page's commands).
-MAIN = [
-    "## Failures by kind",
-    "",
-    OPENING,
-    "",
-    "| kind | old | old share | new | new share | change |",
-    "|---|---|---|---|---|---|",
-    "| unclassified_error | 1,320 | 25.4% | 0 | 0.0% | -25.4 points |",
-    "| all failures | 1,320 | 25.4% | 0 | 0.0% | -25.4 points |",
-    "",
-    "of 5,200 tries of the old version and 5,200 of the new; a try has one kind",
-]
 #: What it prints under the rule.
 FROZEN = [
     "## Failures by kind",
@@ -53,11 +40,6 @@ FROZEN = [
     "",
     "of 5,200 tries of the old version and 5,200 of the new; a try has one kind",
 ]
-
-
-def test_pl_40_the_frozen_lines_are_mains_but_the_kind() -> None:
-    assert [line.replace("unclassified_error", "wrong_answer") for line in MAIN] == FROZEN
-    assert sum(a != b for a, b in zip(MAIN, FROZEN, strict=True)) == 1
 
 
 @pytest.mark.slow

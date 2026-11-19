@@ -42,9 +42,13 @@ from __future__ import annotations
 
 import ast
 import json
+import os
+import pickle
 import re
 import subprocess
 import sys
+import time
+import traceback
 from collections.abc import Iterator
 from dataclasses import dataclass
 from functools import cache
@@ -164,17 +168,68 @@ class Ran:
     home: Path
     bin_dir: Path
 
-    def env(self) -> dict[str, str]:
-        return page_env(self.home, self.bin_dir, pull=False)
+    def env(self, home: Path | None = None) -> dict[str, str]:
+        """The page's environment; with ``home``, under that home folder and not the page's own."""
+        return page_env(home or self.home, self.bin_dir, pull=False)
 
-    def run(self, command: str) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(["bash", "-c", command], cwd=self.root, env=self.env(), capture_output=True, text=True, timeout=600,
+    def own_home(self, tmp: Path) -> Path:
+        """A copy of the home the page ran under, for a test that runs a command of its own: the
+        page's run is shared, so nothing but the page writes under its home."""
+        import shutil
+
+        return Path(shutil.copytree(self.home, tmp / "home-of-its-own"))
+
+    def run(self, command: str, home: Path | None = None) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(["bash", "-c", command], cwd=self.root, env=self.env(home), capture_output=True, text=True, timeout=600,
                               stdin=subprocess.DEVNULL)
 
 
 def run_whole(tmp: Path) -> Ran:
     checked = run_page(PAGE, tmp)
     return Ran(checked, tmp / "clone", tmp / "home", shims(tmp / "bin"))
+
+
+#: How long a process waits for the one run of the page another process is making (seconds).
+SHARED_WAIT = 3600
+_SHARED: dict[str, Ran] = {}
+
+
+def shared_run(factory: Any) -> Ran:
+    """The page run whole, once for the whole test session: every test that reads what the page
+    printed or left reads this one run, whichever process it is in. ``factory`` is pytest's
+    ``tmp_path_factory``.
+
+    The run is made in a folder of the session's own temporary folder (the one above each
+    worker's, under pytest-xdist). The process that makes that folder makes the run and then
+    writes it down; any other waits for it. A run that failed fails every reader with what
+    went wrong, and a wait that outlasts ``SHARED_WAIT`` fails too. No test writes under the
+    run's folders: one that runs a command of its own does so in a copy, under ``own_home``."""
+    base = Path(factory.getbasetemp())
+    if os.environ.get("PYTEST_XDIST_WORKER"):
+        base = base.parent
+    folder = base / "tf20-page-shared"
+    if str(folder) in _SHARED:
+        return _SHARED[str(folder)]
+    done, failed = folder / "ran.pickle", folder / "failed.txt"
+    try:
+        os.mkdir(folder)
+    except FileExistsError:
+        deadline = time.monotonic() + SHARED_WAIT
+        while not done.exists() and not failed.exists():
+            assert time.monotonic() < deadline, f"the one run of {NAME} in {folder} was not finished after {SHARED_WAIT} seconds"
+            time.sleep(0.5)
+    else:
+        try:
+            (folder / "run").mkdir()
+            part = folder / "ran.pickle.part"
+            part.write_bytes(pickle.dumps(run_whole(folder / "run")))
+            os.replace(part, done)
+        except BaseException:
+            failed.write_text(traceback.format_exc(), encoding="utf-8")
+            raise
+    assert not failed.exists(), f"the one run of {NAME} failed in {folder}:\n{failed.read_text(encoding='utf-8')}"
+    _SHARED[str(folder)] = pickle.loads(done.read_bytes())
+    return _SHARED[str(folder)]
 
 
 def shown_after(command_has: str, ran: Ran) -> list[Checked]:

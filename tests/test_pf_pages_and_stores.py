@@ -81,18 +81,25 @@ FOUND_SHOWN = (
 # a figure's footer names the Prove it was drawn with: 0.1.3 for the figures drawn before the floor
 FOOTER = re.compile(r"Poisson Trace \u00b7 Prove (\d+\.\d+\.\d+[\w.]*?) \u00b7")
 FIGURES = sorted((REPO / "docs" / "figures").glob("*.svg"))
+# the two pages outside docs/ that a reader installs by: the contributing page and the setup skill
+OTHER_PAGES = [REPO / "CONTRIBUTING.md", SRC / "skills" / "poisson-trace-setup" / "SKILL.md"]
+# a page's prose naming a Prove by its version alone: the floor or one above it
+PROSE = re.compile(r"\bProve `?(\d+\.\d+\.\d+[\w.]*)")
 
 
 def test_pf_8_the_pages_show_no_other_floor_as_the_one_trace_reads() -> None:
-    """The README, the pages under docs/ and the figures they show: no page names another floor,
-    shows a Prove below it as installed, or says any more that Trace reads one exact version."""
+    """The README, the pages under docs/, the contributing page, the setup skill and the figures
+    the pages show: no page names another floor, shows or names a Prove below it, or says any more
+    that Trace reads one exact version."""
     wrong = []
-    for page in [*PAGES, *FIGURES]:
+    for page in [*PAGES, *OTHER_PAGES, *FIGURES]:
         for n, line in enumerate(page.read_text(encoding="utf-8").splitlines(), 1):
             where = f"{page.relative_to(REPO)}:{n}: {line.strip()}"
             wrong += [where for pattern in FLOOR_SHOWN for shown in pattern.findall(line) if shown != RECORDED]
             wrong += [where for pattern in FOUND_SHOWN for shown in pattern.findall(line) if not at_or_above_the_floor(shown)]
             wrong += [where for shown in FOOTER.findall(line) if shown != FORMAT_1_0 and not at_or_above_the_floor(shown)]
+            if page.suffix == ".md":
+                wrong += [where for shown in PROSE.findall(line) if not at_or_above_the_floor(shown.rstrip("."))]
             if "(the version Trace reads)" in line or re.search(r"\bone exact version\b", line):
                 wrong.append(where)
     assert wrong == []

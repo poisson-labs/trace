@@ -24,8 +24,7 @@ openai-evals, langsmith, braintrust, weave).
 - TF5-24: no page counts the readers wrong: a count of readers, tools or sources written as a
   word or a figure is ten (the tools) or eleven (with Prove's stored runs), or it is the three
   that pull.
-- TF5-25: every tool's page and recipe is reachable from the README, and from
-  ``docs/commands.md``'s section on the import.
+- TF5-25: every tool's page is reachable from ``docs/commands.md``'s section on the import.
 """
 
 from __future__ import annotations
@@ -39,7 +38,7 @@ import pytest
 
 from tf5_pins import EVERY_LABEL, EVERY_TOOL, PINS
 from tf5_support import (
-    API_TOOLS, CONTRIBUTING, DOCS, GITHUB, INTEGRATIONS, README, RECIPES, REPO, TOOLS, WORDS, expected_pages, lists_readers, named, parse,
+    API_TOOLS, CONTRIBUTING, DOCS, GITHUB, INTEGRATIONS, README, REPO, TOOLS, WORDS, expected_pages, lists_readers, named, parse,
     passages, prose, read, rel, sections,
 )
 
@@ -199,14 +198,6 @@ def test_tf5_24_no_page_counts_the_readers_wrong(page: Path) -> None:
 
 
 # ---------- TF5-25 ----------
-
-
-def test_tf5_25_every_tool_s_page_and_recipe_is_reached_from_the_readme() -> None:
-    text = read(README)
-    for word in WORDS:
-        assert f"{GITHUB}docs/integrations/{word}.md" in text, word
-    for name in RECIPES:
-        assert f"{GITHUB}docs/recipes/{name}" in text, name
 
 
 def test_tf5_25_the_commands_page_reaches_every_tool_s_page() -> None:

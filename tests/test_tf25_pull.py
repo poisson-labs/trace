@@ -35,26 +35,35 @@ connection is refused while it runs.
 - TF25-39: a raw copy is never written over: a second pull under a name the store holds is
   refused before any request; a pull whose read was refused leaves its raw copy, and pulling
   that name again is refused naming the folder and the command that reads it.
-- TF25-40: refused before any request, exit 1, nothing written: no key, an empty key, an
-  address naming no project or no experiment, an endpoint that is not https. A wrong command
+- TF25-40: refused before any request, exit 1, nothing written: no key, an address naming no
+  project or no experiment, the service's own host asked over http. A wrong command
   line exits 2: an address beside files, no ``--run``, ``--keep-raw-text`` or ``--page-size``
   without an address, a page size that is not 1 to 1000.
 - TF25-41: the service says no, exit 1, nothing saved: no experiment of that name in the
   project; a key refused (401, 403), which names the variable and never the key.
-- TF25-42: a failure after the pull began, exit 3, nothing saved and no folder left: a 500, an
-  answer that is not JSON, the connection failing, 429 on every try.
+- TF25-42: a failure after the pull began, exit 3, nothing saved and no folder left: at each
+  request, a 500, an answer that is not JSON, an answer of another shape.
 - TF25-43: a 429 is waited out and asked again: the wait is the answer's ``Retry-After`` where
   given, and grows where it is not; the run is the one an unthrottled pull gives.
 - TF25-44: the key is printed nowhere and written nowhere; ``BRAINTRUST_API_URL`` moves every
-  request to that host, https or this machine alone.
+  request to that host.
 - TF25-45: ``pulling.send`` is the only code in the package that reaches the network, standard
   library only; an import of files calls it never.
-- TF25-46: ``--json`` on a pull is one document; on a failure the stopped document.
+- TF25-46: ``--json`` on a pull is one document, whose ``pull`` block TF25-36 holds.
+
+What the three readers that pull share (one transport, one folder check, one import command) is
+held once, in ``test_tf24_pull.py``: a raw copy changed after the pull is refused (TF24-37), a 429
+on every try stops after a few (TF24-42), the wait grows when the answer names none (TF24-43), the
+scan for the one function that reaches the network, which reads this reader's module too
+(TF24-45), and ``--json`` on a pull done or failed (TF24-46). So is every value of a rule the
+transport alone decides: a key that is empty or blank and every endpoint that is refused
+(TF24-40), a 502, the connection failing and a timeout (TF24-42), an endpoint with a slash at its
+end or on this machine (TF24-44). Here each of those rules is held on one value, with this
+reader's variable and host.
 """
 
 from __future__ import annotations
 
-import ast
 import hashlib
 import json
 import re
@@ -327,18 +336,6 @@ def test_tf25_37_the_saved_folder_reads_again_with_no_key_and_no_request(tmp_pat
     assert snapshot(folder) == before
 
 
-def test_tf25_37_a_raw_copy_changed_after_the_pull_is_refused(tmp_path: Path) -> None:
-    root = tmp_path / "st"
-    _pull(root, "baseline")
-    folder = raw_folder(root, "r")
-    raw = folder / "raw.jsonl"
-    raw.chmod(0o644)
-    raw.write_bytes(raw.read_bytes() + b"\n")
-    line = refused(run_import(bt_argv(folder, root, "again")))
-    assert "raw.jsonl" in line and "sha256" in line, line
-    assert not (root / "again").exists()
-
-
 # ---------- TF25-38 ----------
 
 
@@ -432,7 +429,7 @@ def test_tf25_39_a_raw_copy_is_never_written_over(tmp_path: Path) -> None:
 # ---------- TF25-40 ----------
 
 
-@pytest.mark.parametrize("key", [None, "", "   "])
+@pytest.mark.parametrize("key", [None])
 def test_tf25_40_no_key_is_refused_naming_the_variable(tmp_path: Path, key: str | None) -> None:
     with pulling(key=key) as (sent, _):
         line = refused(run_import(bt_argv(address("baseline"), tmp_path / "st", "r")))
@@ -450,7 +447,7 @@ def test_tf25_40_an_address_naming_no_project_or_no_experiment_is_refused(tmp_pa
     assert not (tmp_path / "st").exists()
 
 
-@pytest.mark.parametrize("endpoint", ["http://example.com", "http://api.braintrust.dev", "ftp://127.0.0.1/x", "api.braintrust.dev"])
+@pytest.mark.parametrize("endpoint", ["http://api.braintrust.dev"])
 def test_tf25_40_the_key_goes_over_https_or_to_this_machine_only(tmp_path: Path, endpoint: str) -> None:
     with pulling(endpoint=endpoint) as (sent, _):
         line = refused(run_import(bt_argv(address("baseline"), tmp_path / "st", "r")))
@@ -501,8 +498,7 @@ def test_tf25_41_an_experiment_s_name_is_matched_whole(tmp_path: Path) -> None:
     assert _nothing_saved(tmp_path / "st")
 
 
-@pytest.mark.parametrize("status", [401, 403])
-@pytest.mark.parametrize("at", [1, 2, 3])
+@pytest.mark.parametrize(("at", "status"), [(1, 401), (1, 403), (2, 401), (3, 401)])
 def test_tf25_41_a_key_the_service_refuses(tmp_path: Path, status: int, at: int) -> None:
     body = json.dumps({"detail": f"Invalid token {PLANTED_KEY}"}).encode()
     with pulling(Transport({at: (status, {}, body)})) as (sent, _):
@@ -517,16 +513,12 @@ def test_tf25_41_a_key_the_service_refuses(tmp_path: Path, status: int, at: int)
 
 FAILURES: dict[str, Any] = {
     "a 500": (500, {}, b"Internal Server Error"),
-    "a 502 of html": (502, {"Content-Type": "text/html"}, b"<html>bad gateway</html>"),
     "an answer that is not JSON": (200, {}, b"<html>sign in</html>"),
     "an answer of another shape": (200, {}, b'"ok"'),
-    "the connection failing": ConnectionResetError(54, "Connection reset by peer"),
-    "a timeout": TimeoutError("timed out"),
 }
 
 
-@pytest.mark.parametrize("label", list(FAILURES))
-@pytest.mark.parametrize("at", [1, 2, 3])
+@pytest.mark.parametrize(("at", "label"), [(at, label) for at in (1, 2, 3) for label in FAILURES])
 def test_tf25_42_a_failure_after_the_pull_began_exits_3_and_saves_nothing(tmp_path: Path, label: str, at: int) -> None:
     with pulling(Transport({at: FAILURES[label]})) as (sent, _):
         result = run_import(bt_argv(address("baseline"), tmp_path / "st", "r"))
@@ -535,16 +527,6 @@ def test_tf25_42_a_failure_after_the_pull_began_exits_3_and_saves_nothing(tmp_pa
     lines = result.err.splitlines()
     assert len(lines) == 1 and lines[0].startswith("error: ") and "Traceback" not in result.err, result.err
     assert "nothing was saved" in lines[0] and PLANTED_KEY not in result.err, result.err
-    assert _nothing_saved(tmp_path / "st")
-
-
-def test_tf25_42_a_429_on_every_try_stops_after_a_few(tmp_path: Path) -> None:
-    script = {n: (429, {"Retry-After": "1"}, b"{}") for n in range(2, 40)}
-    with pulling(Transport(script)) as (sent, waits):
-        result = run_import(bt_argv(address("baseline"), tmp_path / "st", "r"))
-    assert result.code == 3 and "429" in result.err and "nothing was saved" in result.err, result.err
-    assert 3 <= len(sent.calls) - 1 <= 10, len(sent.calls)
-    assert len(waits) == len(sent.calls) - 2 and all(w == 1 for w in waits), waits
     assert _nothing_saved(tmp_path / "st")
 
 
@@ -565,12 +547,6 @@ def test_tf25_43_a_429_is_waited_out_and_asked_again(tmp_path: Path) -> None:
     assert recs(tmp_path / "throttled", "r") == recs(tmp_path / "plain", "r")
     assert raw_lines(tmp_path / "throttled", "r") == raw_lines(tmp_path / "plain", "r")
     assert throttled["counts"] == plain["counts"]
-
-
-def test_tf25_43_the_wait_grows_when_the_answer_names_none(tmp_path: Path) -> None:
-    script = {2: (429, {}, b""), 3: (429, {}, b""), 4: (429, {}, b"")}
-    _, _, waits = _pull(tmp_path / "st", "baseline", transport=Transport(script))
-    assert len(waits) == 3 and waits[0] > 0 and waits[0] < waits[1] < waits[2] <= 120, waits
 
 
 def test_tf25_43_the_listing_is_waited_out_too(tmp_path: Path) -> None:
@@ -595,7 +571,7 @@ def test_tf25_44_the_key_is_printed_nowhere_and_written_nowhere(tmp_path: Path, 
     assert KEY_VARIABLE.encode() not in held
 
 
-@pytest.mark.parametrize("endpoint", ["https://api-eu.braintrust.dev", "https://braintrust.example.internal/", "http://127.0.0.1:8000", "http://localhost:8000"])
+@pytest.mark.parametrize("endpoint", ["https://api-eu.braintrust.dev"])
 def test_tf25_44_the_endpoint_variable_moves_every_request(tmp_path: Path, endpoint: str) -> None:
     host = endpoint.rstrip("/")
     data, sent, _ = _pull(tmp_path / "st", "baseline", transport=Transport(host=host), endpoint=endpoint)
@@ -623,65 +599,8 @@ def test_tf25_44_langsmith_s_key_and_endpoint_are_not_braintrust_s(tmp_path: Pat
 
 # ---------- TF25-45 ----------
 
-NETWORK = ("urllib.request", "urllib3", "http.client", "socket", "ssl", "requests", "httpx", "aiohttp", "ftplib", "smtplib")
-
-
-def _imports(path: Path) -> set[str]:
-    found: set[str] = set()
-    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-        if isinstance(node, ast.Import):
-            found.update(a.name for a in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
-            found.add(node.module)
-            found.update(f"{node.module}.{a.name}" for a in node.names)
-    return found
-
-
-def test_tf25_45_one_function_reaches_the_network(tmp_path: Path) -> None:
-    import sys
-
-    import poisson_trace
-    from poisson_trace.ingest import braintrust, pulling as module
-
-    package = Path(poisson_trace.__file__).parent
-    reaching = sorted(
-        str(p.relative_to(package)) for p in package.rglob("*.py")
-        if any(name == net or name.startswith(net + ".") for name in _imports(p) for net in NETWORK)
-    )
-    assert reaching == ["ingest/pulling.py"], reaching
-    stdlib = set(sys.stdlib_module_names)
-    for path in (Path(module.__file__), Path(braintrust.__file__)):
-        for name in _imports(path):
-            top = name.split(".")[0]
-            assert top in stdlib or top == "poisson_trace", (path.name, name)
-            assert top not in ("braintrust", "braintrust_core", "autoevals", "openai", "poisson_prove"), (path.name, name)
-    assert callable(module.send) and callable(module.sleep)
-    # the module's top level reaches for nothing: the network is imported inside send
-    top_level = {n for node in ast.parse(Path(module.__file__).read_text(encoding="utf-8")).body for n in _top(node)}
-    assert not [n for n in top_level if any(n == net or n.startswith(net + ".") for net in NETWORK)], top_level
-
-
-def _top(node: ast.AST) -> list[str]:
-    if isinstance(node, ast.Import):
-        return [a.name for a in node.names]
-    if isinstance(node, ast.ImportFrom) and node.module:
-        return [node.module]
-    return []
-
 
 def test_tf25_45_an_import_of_files_asks_nothing(tmp_path: Path) -> None:
     with pulling(never(), key=None):
         for kind in EXPORTS:
             imported(by_error(export("baseline", kind), tmp_path / kind, "r"))
-
-
-# ---------- TF25-46 ----------
-
-
-def test_tf25_46_json_is_one_document_done_or_failed(tmp_path: Path) -> None:
-    with pulling() as (_, _waits):
-        done = run_import([*bt_argv(address("baseline"), tmp_path / "st", "r"), "--json"])
-    assert done.code == 0 and done.err == "" and json.loads(done.out)["verdict"] == "ok"
-    with pulling(Transport({2: (500, {}, b"")})) as (_, _waits):
-        failed = run_import([*bt_argv(address("baseline"), tmp_path / "st2", "r"), "--json"])
-    assert failed.code == 3 and failed.out == "" and failed.err.startswith("error: "), failed.out + failed.err

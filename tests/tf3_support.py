@@ -35,7 +35,6 @@ TABLE_A, TABLE_B = TABLE / "humaneval-a.csv", TABLE / "humaneval-b.csv"
 OWN_1, OWN_2 = JUNIT / "trace-suite-1.xml", JUNIT / "trace-suite-2.xml"
 SUITE_1, SUITE_2 = JUNIT / "humaneval-a.xml", JUNIT / "humaneval-b.xml"
 # the readers TF3 adds, and every reader a module of the install carries once it lands
-NEW_READERS = ("table", "junit")
 PRESENT = ("deepeval", "ragas", "table", "junit")
 OLD = "poisson-trace-import"
 VERB = "poisson-trace import"

@@ -1,4 +1,4 @@
-"""TR43 to TR53, and the function-level halves of TR55 to TR58: the statistics in
+"""TR43 to TR53, and the function-level halves of TR55 to TR57: the statistics in
 ``poisson_trace.paired`` (and ``survival.deaths_needed``) against oracles written here from the
 spec's section 2: full enumeration in exact fractions, the section's own formulas restated, and
 Prove's public statistics and scipy imported inside the tests as dev oracles."""
@@ -16,7 +16,7 @@ from scipy import stats
 from fixcheck_support import WORKED, counts_of, exact_p_enumerated, moves, sign_flip_enumerated
 from poisson_trace.paired import (
     Counts, accepts_at, by_input, consistency, detection_limit, difference, flags, inputs_needed,
-    limit_rise, paired_test, power_at, repeats_needed,
+    paired_test, power_at, repeats_needed,
 )
 
 SETTINGS = settings(max_examples=120, deadline=None, suppress_health_check=[HealthCheck.too_slow])
@@ -158,6 +158,7 @@ def _rates(rng: np.random.Generator, k: int, mean: float, kappa: float) -> np.nd
     return rng.beta(mean * total, (1.0 - mean) * total, size=k)
 
 
+@pytest.mark.math
 @pytest.mark.parametrize("k,n", [(10, 3), (50, 4), (50, 1)])
 def test_tr48_level_under_the_null(k: int, n: int) -> None:
     rng = np.random.default_rng(4800 + 10 * k + n)
@@ -526,7 +527,7 @@ def test_tr56_deaths_needed_on_the_tau2_pair() -> None:
     assert deaths_needed(1.3, 0.5) == 457
 
 
-# ---------- TR57, TR58 (the functions) ----------
+# ---------- TR57 (the functions) ----------
 
 
 @pytest.mark.math
@@ -561,18 +562,3 @@ def test_tr57_a_real_flag_fires_in_each_direction() -> None:
     assert got["h000"] == "failed more in B"
     assert got["h001"] == "failed less in B"
     assert sum(v is not None for v in got.values()) == 2
-
-
-@pytest.mark.math
-@SETTINGS
-@given(st.integers(1, 60).flatmap(lambda n: st.tuples(st.integers(0, n - 1), st.just(n))), st.integers(1, 60),
-       st.sampled_from([0.01, 0.05, 0.1]), st.sampled_from([0.8, 0.9]))
-def test_tr58_limit_rise_is_proves_mde_two_proportion(old, runs_new, alpha, power) -> None:  # type: ignore[no-untyped-def]
-    """Prove's public per-cell limit, as Prove's main computes it: each arm's share with its own
-    tries (Prove ``b6d6292``; TF16 Session A yes/no 8). Below a share of 1, where Prove gives a
-    number; at 1 Trace's own answer is SF4's (``test_sf_per_input_limit.py``)."""
-    from poisson_prove.stats import mde_two_proportion
-
-    failed, runs = old
-    got = limit_rise(failed / runs, runs, runs_new, alpha=alpha, power=power)
-    assert got == pytest.approx(mde_two_proportion(failed / runs, runs, runs_new, alpha=alpha, power=power), abs=1e-12)

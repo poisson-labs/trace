@@ -17,7 +17,20 @@ import json
 from pathlib import Path
 
 import pytest
-from tf19_support import OWN, Grid, app_world, cli, columns, copy_world, drive, found_steps, name_shown
+from tf19_support import (
+    KEY_NAME,
+    OWN,
+    PLANTED_KEYS,
+    Grid,
+    app_world,
+    cli,
+    columns,
+    copy_world,
+    drive,
+    found_steps,
+    name_shown,
+    norm,
+)
 
 SIZES = [(120, 40), (80, 24)]
 
@@ -100,20 +113,24 @@ def test_tf19_2_each_screen_s_frame(work: Path, screen: str, size: tuple[int, in
         assert g.value_of(word) == sentence or g.body_text().startswith(f"{word} {sentence}"), g.text()
         role = g.mask_of(2, 2, len(word))
         assert len(set(role)) == 1 and role[0] in "GYRB", role
-
-
-@pytest.mark.parametrize("size", SIZES, ids=["120x40", "80x24"])
-@pytest.mark.parametrize("screen", ["home", "runs", "run", "imports", "compare", "fix-check"])
-def test_tf19_2_a_screen_opens_with_the_focus_on_its_first_row(work: Path, screen: str, size: tuple[int, int]) -> None:
-    s = drive(work, NAV[screen][0], size=size)
-    g = s.last
-    focused = g.focused()
-    assert len(focused) == 1, g.text()
-    row = focused[0]
-    assert set(g.mask_of(row, 0, len(g.rows[row].rstrip()))) == {"V"}, g.masks[row]
-    # the first row of the table: the row after the table's header
-    header = row - 1
-    assert g.masks[header].strip() and set(g.masks[header].strip()) == {"D"}, (g.rows[header], g.masks[header])
+        if size == (120, 40) and screen != "runs":
+            # the verdict line is the plain command's first line
+            plain = cli(work, EXPECTED_VERDICT[screen]).out.splitlines()[0]
+            assert norm(" ".join(g.body[:3])).startswith(norm(plain)), (plain, g.body[:3])
+    if screen in ("home", "runs", "run", "imports", "compare", "fix-check"):
+        focused = g.focused()
+        assert len(focused) == 1, g.text()
+        row = focused[0]
+        assert set(g.mask_of(row, 0, len(g.rows[row].rstrip()))) == {"V"}, g.masks[row]
+        # the first row of the table: the row after the table's header
+        header = row - 1
+        assert g.masks[header].strip() and set(g.masks[header].strip()) == {"D"}, (g.rows[header], g.masks[header])
+    if size == (80, 24):
+        # TF19-7: opening the screen makes no network call, reads no key, shows no planted key
+        assert s.fakes.connects == []
+        assert not {k for k in s.fakes.env_read if KEY_NAME.search(k) or k == "*"}
+        for value in PLANTED_KEYS.values():
+            assert all(value not in grid.text() for grid in s.grids)
 
 
 # ---------- home (DM5) ----------

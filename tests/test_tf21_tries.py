@@ -1,4 +1,4 @@
-"""TF21-45 to TF21-50: TF21's per-try records convert without loss into the plain per-case inputs
+"""TF21-45 to TF21-49: TF21's per-try records convert without loss into the plain per-case inputs
 ``stats/continuous.py`` takes (TF23, CT2): each try's values, how it ended, its signals and its
 repeat number. A conversion test only: no verb prints the continuous table yet (CT2)."""
 
@@ -151,23 +151,3 @@ def test_tf21_49_per_try_values_match_the_store(measure: str) -> None:
             want.append((h, int(r), sum(ins) if ins else None))
         want.sort(key=lambda x: (x[0], x[1]))
     assert got == want
-
-
-# ---------- TF21-50: no verb but fix-check's module prints it (CT2; TF6 wires it) ----------
-
-
-def test_tf21_50_no_verb_imports_the_conversion() -> None:
-    import ast
-
-    import poisson_trace
-
-    package = Path(poisson_trace.__file__).resolve().parent
-    # TF6 wires the table into fix-check (CT2, ruled 2026-11-03): cli.py may import them now
-    for path in [package / "summary.py", package / "report.py", package / "ingest" / "cli.py"]:
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        names = {node.module for node in ast.walk(tree)
-                 if isinstance(node, ast.ImportFrom) and node.module}
-        names |= {a.name for node in ast.walk(tree) if isinstance(node, ast.Import)
-                  for a in node.names}
-        assert "poisson_trace.ingest.tries" not in names, path.name
-        assert "poisson_trace.stats.continuous" not in names, path.name

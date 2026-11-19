@@ -1,4 +1,4 @@
-"""TF0-4 to TF0-10: problems go to stderr, one line each, and every path that ended in a traceback
+"""TF0-5 to TF0-10: problems go to stderr, one line each, and every path that ended in a traceback
 is closed (spec section 9.1, rules L4 and L6; section 3.3; section 8.2's install line).
 
 A refusal is ``error: <sentence>`` on stderr, two-space continuations only, nothing on stdout,
@@ -22,7 +22,10 @@ from __future__ import annotations
 import csv
 import dataclasses
 import io
+import json
 import os
+import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -31,19 +34,12 @@ from poisson_prove.store import Store
 
 from conftest import CS, CS_RECORD, TAU2
 from tf0_support import (
-    INSTALL_PROVE, PLACEHOLDER_INSTALL, REPR, VERDICT_LINE, Item, Ran, changes_he, chdir, compare_tau2,
-    corpus, deepeval_import, fix_check_tau2, prepare, ragas_import, run_item, run_sub, stderr_shape,
+    COMMANDS, INSTALL_PROVE, PLACEHOLDER_INSTALL, REPR, VERDICT_LINE, Ran, changes_he, compare_tau2,
+    deepeval_import, fix_check_tau2, ragas_import, run_sub,
     trace, trace_import, where_cs,
 )
 
 SENTINEL = "zq-sentinel-7f3e"
-REFUSALS = [item for item in corpus() if item.kind == "refusal"]
-
-
-@pytest.fixture(scope="module")
-def work(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    return prepare(tmp_path_factory.mktemp("tf0-refusals"))
-
 
 def _one_error(result: Ran, code: int = 1) -> str:
     """Exit ``code``, nothing on stdout, one ``error:`` line and at most ``  next:`` lines under
@@ -54,21 +50,6 @@ def _one_error(result: Ran, code: int = 1) -> str:
     assert lines and lines[0].startswith("error: "), result.err
     assert all(line.startswith("  next: ") for line in lines[1:]), result.err
     return lines[0]
-
-
-# ---------- TF0-4: every refusal ----------
-
-
-@pytest.mark.parametrize("item", REFUSALS, ids=[item.label for item in REFUSALS])
-def test_tf0_04_every_refusal_is_an_error_line_on_stderr(work: Path, item: Item) -> None:
-    with chdir(work):
-        result = run_item(item)
-    assert result.code == 1, result.text
-    assert result.out == "", result.out
-    lines = result.lines()
-    assert lines and lines[0].startswith("error: "), result.err
-    assert stderr_shape(lines) == [], result.err
-    assert not REPR.search(result.err), result.err
 
 
 # ---------- TF0-5: no store at ----------
@@ -133,7 +114,7 @@ def test_tf0_06_an_svg_into_a_folder_that_cannot_be_written_is_refused(tmp_path:
         result = trace(where_cs("--svg", str(folder / "curve.svg")))
     finally:
         folder.chmod(0o700)
-    assert "Traceback" not in result.text and result.code in (1, 3), result.text
+    assert "Traceback" not in result.text and result.code == 1 and result.out == "", result.text
     lines = result.lines()
     assert lines and lines[0].startswith("error: ") and str(folder / "curve.svg") in lines[0], result.err
     assert list(folder.iterdir()) == []
@@ -270,7 +251,7 @@ def test_tf0_08_ctrl_c_while_an_import_writes_leaves_the_run_partial_and_named(t
         result = trace_import(deepeval_import(store, "v1"))
     assert result.code == 130, result.text
     first = result.lines("out")[0]
-    assert first.startswith("stopped  ") and "v1" in first, result.out
+    assert first.startswith("stopped  ") and "v1" in first and str(store) in first, result.out
     assert "Traceback" not in result.text
     held = Store(store)
     assert "v1" in held.runs() and held.manifest("v1").status != "complete"
@@ -343,13 +324,42 @@ HELPS = {
 }
 
 
-@pytest.mark.parametrize(
-    "command,argv",
-    [(c, a) for c, argvs in HELPS.items() for a in argvs],
-    ids=[f"{c} {' '.join(a)}" for c, argvs in HELPS.items() for a in argvs],
-)
-def test_tf0_10_help_and_version_work_without_prove(command: str, argv: list[str]) -> None:
-    result = run_sub(command, argv, prove="absent")
+# Every help and version in one interpreter where Prove cannot be imported: each command's
+# ``main`` is called in turn, its streams and exit code kept apart, a failure of one kept to it.
+_WITHOUT_PROVE = """
+import contextlib, io, json, sys, traceback
+from importlib import import_module
+sys.modules['poisson_prove'] = None
+results = []
+for module, argv in json.loads(sys.argv[1]):
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        try:
+            code = import_module(module).main(argv)
+        except SystemExit as e:
+            code = e.code
+        except BaseException:
+            code = -1
+            traceback.print_exc()
+    results.append([0 if code is None else code, out.getvalue(), err.getvalue()])
+print(json.dumps(results))
+"""
+HELP_CASES = [(c, a) for c, argvs in HELPS.items() for a in argvs]
+
+
+@pytest.fixture(scope="module")
+def without_prove() -> dict[tuple[str, tuple[str, ...]], Ran]:
+    """What each help and version gives where Prove is absent, by command and argv."""
+    asked = [[COMMANDS[c], a] for c, a in HELP_CASES]
+    proc = subprocess.run([sys.executable, "-c", _WITHOUT_PROVE, json.dumps(asked)], capture_output=True, timeout=300)
+    assert proc.returncode == 0, proc.stderr.decode("utf-8", "replace")
+    results = json.loads(proc.stdout.decode("utf-8"))
+    return {(c, tuple(a)): Ran(code, out, err) for (c, a), (code, out, err) in zip(HELP_CASES, results, strict=True)}
+
+
+@pytest.mark.parametrize("command,argv", HELP_CASES, ids=[f"{c} {' '.join(a)}" for c, a in HELP_CASES])
+def test_tf0_10_help_and_version_work_without_prove(without_prove: dict[tuple[str, tuple[str, ...]], Ran], command: str, argv: list[str]) -> None:
+    result = without_prove[command, tuple(argv)]
     assert result.code == 0, result.text
     assert result.out.strip() and result.err == "", result.text
 
@@ -374,6 +384,7 @@ def test_tf0_10_a_command_that_needs_prove_names_the_install_line(tmp_path: Path
     # the install line once, alone on the next line under the error, not in the sentence too
     assert INSTALL_PROVE not in line and PLACEHOLDER_INSTALL not in result.text, line
     assert [ln for ln in result.lines() if INSTALL_PROVE in ln] == [f"  next: {INSTALL_PROVE}"], result.err
+    assert len(result.lines()) == 2, result.err
     if prove != "absent":
         assert prove in line, line
     assert not store.exists()

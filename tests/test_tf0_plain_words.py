@@ -15,10 +15,9 @@ from pathlib import Path
 
 import pytest
 
-from tf0_support import INTERNAL, REPO, Ran, chdir, corpus, plain, prepare, run_item
+from tf0_support import INTERNAL, REPO, Ran, corpus_ran, plain
 
 STANDARDS = {"cli-look.md", "repo-hygiene.md"}
-CORPUS = corpus()
 
 
 def _user_files() -> list[Path]:
@@ -58,9 +57,7 @@ def test_tf0_21_every_string_the_source_can_show_is_in_plain_words() -> None:
 
 @pytest.fixture(scope="module")
 def outputs(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Ran]:
-    work = prepare(tmp_path_factory.mktemp("tf0-words"))
-    with chdir(work):
-        return {item.label: run_item(item) for item in CORPUS}
+    return corpus_ran(tmp_path_factory)
 
 
 def test_tf0_21_every_output_of_the_corpus_is_in_plain_words(outputs: dict[str, Ran]) -> None:

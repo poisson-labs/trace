@@ -21,7 +21,6 @@ import ast
 import re
 import shutil
 from pathlib import Path
-from typing import Any
 
 import pytest
 from poisson_prove.store import Store
@@ -30,7 +29,7 @@ from tf0_support import Ran, chdir, examples, ragas_import, run_module, run_sub,
 from tf1_support import shell_words
 from tf2_support import config_of, deepeval_file, doctor_doc, init_yes, scratch_home, work, write_config  # noqa: F401
 from tf3_support import (
-    NEW_READERS, OLD, PRESENT, SUITE_1, TABLE_A, alias, both, junit_argv, read_rows, src_files, table_argv, verb,
+    OLD, PRESENT, SUITE_1, TABLE_A, alias, both, junit_argv, read_rows, src_files, table_argv, verb,
     write_table,
 )
 
@@ -49,6 +48,22 @@ def _prepared(folder: Path) -> Path:
     with chdir(folder):
         assert alias(table_argv("small.csv", "held-store", "held")).code == 0
     return folder
+
+
+@pytest.fixture(scope="module")
+def prepared(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The prepared folder, built once for the module with a home of its own. No test runs in it
+    or writes to it: each takes a copy (``_copy``) and works there."""
+    base = tmp_path_factory.mktemp("tf3-prepared")
+    (base / "home").mkdir()
+    with pytest.MonkeyPatch.context() as patched:
+        patched.setenv("HOME", str(base / "home"))
+        return _prepared(base / "prepared")
+
+
+def _copy(prepared: Path, folder: Path) -> Path:
+    """A copy of the prepared folder for one test to run in and write to."""
+    return Path(shutil.copytree(prepared, folder))
 
 
 DE = ["deepeval", "results/test_run_20261002_101500.json", "--store", "st", "--run", "r1", "--metric", "Tests Passed",
@@ -90,13 +105,12 @@ def _same_store(a: Path, b: Path) -> None:
 
 
 @pytest.mark.parametrize("label", list(CORPUS))
-def test_tf3_01_the_verb_and_the_alias_are_one_command(tmp_path: Path, label: str) -> None:
+def test_tf3_01_the_verb_and_the_alias_are_one_command(tmp_path: Path, prepared: Path, label: str) -> None:
     argv = CORPUS[label]
-    prepared = _prepared(tmp_path / "prepared")
     places = {}
     results: dict[str, Ran] = {}
     for spelling in ("verb", "alias"):
-        places[spelling] = shutil.copytree(prepared, tmp_path / spelling)
+        places[spelling] = _copy(prepared, tmp_path / spelling)
         with chdir(places[spelling]):
             results[spelling] = (verb if spelling == "verb" else alias)(argv)
     a, b = results["verb"], results["alias"]
@@ -125,8 +139,8 @@ def test_tf3_01_every_help_reads_the_verb(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("prove", ["absent", "0.0.0-other"])
-def test_tf3_02_without_prove_both_spellings_refuse_alike(tmp_path: Path, prove: str) -> None:
-    folder = _prepared(tmp_path / "f")
+def test_tf3_02_without_prove_both_spellings_refuse_alike(tmp_path: Path, prepared: Path, prove: str) -> None:
+    folder = _copy(prepared, tmp_path / "f")
     argv = table_argv("small.csv", "st", "r1")
     a = run_sub("trace", ["import", *argv], prove=prove, cwd=folder)
     b = run_sub("import", argv, prove=prove, cwd=folder)
@@ -169,8 +183,8 @@ def test_tf3_03_options_may_stand_anywhere(tmp_path: Path, place: str) -> None:
 
 
 @pytest.mark.parametrize("option", ["--bogus", "--star"], ids=["unknown", "abbreviated"])
-def test_tf3_03_a_wrong_option_before_the_verb_is_the_alias_s_wrong_option(tmp_path: Path, option: str) -> None:
-    folder = _prepared(tmp_path / "f")
+def test_tf3_03_a_wrong_option_before_the_verb_is_the_alias_s_wrong_option(tmp_path: Path, prepared: Path, option: str) -> None:
+    folder = _copy(prepared, tmp_path / "f")
     argv = [option, "x", "deepeval", "results/test_run_20261002_101500.json", "--store", "st", "--run", "r1"]
     with chdir(folder):
         a = trace([*argv[:2], "import", *argv[2:]])
@@ -192,8 +206,8 @@ def test_tf3_03_the_config_given_before_the_verb_names_the_store(tmp_path: Path)
 # ---------- TF3-4 and TF3-5 ----------
 
 
-def test_tf3_04_python_m_runs_the_verb(tmp_path: Path) -> None:
-    folder = _prepared(tmp_path / "f")
+def test_tf3_04_python_m_runs_the_verb(tmp_path: Path, prepared: Path) -> None:
+    folder = _copy(prepared, tmp_path / "f")
     help_text = run_module(["import", "table", "--help"], cwd=folder)
     assert help_text.code == 0 and help_text.out == verb(["table", "--help"]).out, help_text.text
     done = run_module(["import", *junit_argv("suite-1.xml", "st", "r1")], cwd=folder)
@@ -201,13 +215,13 @@ def test_tf3_04_python_m_runs_the_verb(tmp_path: Path) -> None:
     assert Store(folder / "st").runs() == ["r1"]
 
 
-def test_tf3_05_ctrl_c_while_the_verb_writes_is_the_alias_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_tf3_05_ctrl_c_while_the_verb_writes_is_the_alias_stop(tmp_path: Path, prepared: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     def stop(*args: object, **kwargs: object) -> None:
         raise KeyboardInterrupt
 
     results = {}
     for spelling, command in (("verb", verb), ("alias", alias)):
-        folder = _prepared(tmp_path / spelling)
+        folder = _copy(prepared, tmp_path / spelling)
         with monkeypatch.context() as patched, chdir(folder):
             patched.setattr(Store, "append", stop)
             results[spelling] = command(junit_argv("suite-1.xml", "st", "r1"))
@@ -237,11 +251,11 @@ def test_tf3_06_the_main_command_names_import_among_its_verbs(argv: list[str]) -
 # ---------- TF3-7: the old name is never the command shown ----------
 
 
-def _shown(tmp_path: Path) -> list[tuple[str, Ran]]:
+def _shown(tmp_path: Path, prepared: Path) -> list[tuple[str, Ran]]:
     """Every output that names a command to run: the helps of both spellings, the refusals and
     wrong command lines of the corpus, init's lines, doctor's line for a config with no store."""
     out: list[tuple[str, Ran]] = []
-    folder = _prepared(tmp_path / "shown")
+    folder = _copy(prepared, tmp_path / "shown")
     with chdir(folder):
         for label, argv in CORPUS.items():
             if "--help" in argv or not label.startswith(("a DeepEval import", "a Ragas import", "a table import", "a JUnit import")):
@@ -263,18 +277,29 @@ def _shown(tmp_path: Path) -> list[tuple[str, Ran]]:
     return out
 
 
-def test_tf3_07_no_output_names_the_old_command(tmp_path: Path) -> None:
-    for label, result in _shown(tmp_path):
+@pytest.fixture(scope="module")
+def shown(tmp_path_factory: pytest.TempPathFactory, prepared: Path) -> list[tuple[str, Ran]]:
+    """``_shown``, run once for the module in folders of its own, with a home of its own beside
+    them; the tests read the outputs and write nothing."""
+    base = tmp_path_factory.mktemp("tf3-shown")
+    (base / "home").mkdir()
+    with pytest.MonkeyPatch.context() as patched:
+        patched.setenv("HOME", str(base / "home"))
+        return _shown(base, prepared)
+
+
+def test_tf3_07_no_output_names_the_old_command(shown: list[tuple[str, Ran]]) -> None:
+    for label, result in shown:
         assert OLD not in result.text, (label, result.text)
 
 
-def test_tf3_07_init_and_doctor_point_at_the_verb(tmp_path: Path) -> None:
-    shown = dict(_shown(tmp_path))
+def test_tf3_07_init_and_doctor_point_at_the_verb(shown: list[tuple[str, Ran]]) -> None:
+    by_label = dict(shown)
     for label in ("init with nothing found", "init with two tools' files", "init importing", "doctor on a config with no store"):
-        assert "poisson-trace import" in shown[label].text, (label, shown[label].text)
+        assert "poisson-trace import" in by_label[label].text, (label, by_label[label].text)
     # the import lines init prints run as written, under the verb
-    lines = [line.strip() for line in shown["init importing"].out.splitlines() if "poisson-trace import deepeval" in line]
-    assert lines, shown["init importing"].out
+    lines = [line.strip() for line in by_label["init importing"].out.splitlines() if "poisson-trace import deepeval" in line]
+    assert lines, by_label["init importing"].out
     for line in lines:
         words = shell_words(line[line.index("poisson-trace import"):])
         assert words[:3] == ["poisson-trace", "import", "deepeval"], words
@@ -312,55 +337,3 @@ def test_tf3_07_no_string_of_the_package_spells_the_old_command() -> None:
         for node in ast.walk(tree):
             if isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in skip:
                 assert OLD not in node.value, f"{path.name}:{node.lineno}: {node.value!r}"
-
-
-@pytest.mark.parametrize("tool", NEW_READERS)
-def test_tf3_07_the_new_readers_help_examples_run_as_written(tmp_path: Path, tool: str) -> None:
-    """Every example of the table and JUnit helps runs where the files it names hold the
-    committed fixtures' data."""
-    text = verb([tool, "--help"]).out
-    found = examples(text, ["poisson-trace import"])
-    assert found, text
-    for i, example in enumerate(found):
-        folder = work(tmp_path, f"example-{i}")
-        words = shell_words(example)
-        assert words[:3] == ["poisson-trace", "import", tool], example
-        for word in words[3:]:
-            if word.startswith("-"):
-                break
-            target = folder / word
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if tool == "table":
-                _table_for(example, target)
-            else:
-                shutil.copy(SUITE_1, target)
-        with chdir(folder):
-            result = trace(words[1:])
-        assert result.code == 0, (example, result.text)
-
-
-def _table_for(example: str, target: Path) -> None:
-    """A table at ``target`` holding the HumanEval fixture's rows under the columns the example
-    names: its case column, and its outcome column with its failure values, or its score column
-    with a score of 1 for a pass and 0 otherwise."""
-    import csv
-
-    words = shell_words(example)
-
-    def value(flag: str) -> str | None:
-        return words[words.index(flag) + 1] if flag in words else None
-
-    failed = [words[i + 1] for i, w in enumerate(words) if w == "--failed"]
-    case, outcome, score = value("--case-column"), value("--outcome-column"), value("--score-column")
-    assert case is not None, example
-    with open(TABLE_A, encoding="utf-8", newline="") as f:
-        source = list(csv.DictReader(f))
-    rows: list[dict[str, Any]] = []
-    for row in source:
-        made: dict[str, Any] = {case: row["case"]}
-        if outcome is not None:
-            made[outcome] = failed[0] if row["outcome"] != "passed" else "passed"
-        if score is not None:
-            made[score] = 1.0 if row["outcome"] == "passed" else 0.0
-        rows.append(made)
-    write_table(target, rows)

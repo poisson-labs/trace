@@ -58,6 +58,14 @@ def built(tmp_path_factory: pytest.TempPathFactory) -> Path:
         (work / "printed.txt").write_text(printed, encoding="utf-8")
     finally:
         mp.undo()
+    # the control: the content and the keys are in what was read in, the absolute paths in what ``ui`` printed
+    pages = everything(work)
+    assert len([k for k in pages if k.endswith("report.html")]) == 6
+    assert any(k.startswith("content/") for k in pages)
+    assert str(work.resolve()) in (work / "printed.txt").read_text(encoding="utf-8")
+    raw = (work / "cold.csv").read_text(encoding="utf-8")
+    assert all(p in raw and r in raw for p, r in CONTENT.values())
+    assert KEY in (work / "conf" / ".env").read_text(encoding="utf-8")
     return work
 
 
@@ -70,16 +78,6 @@ def everything(work: Path) -> dict[str, str]:
     for p in work.glob("b-*/report.html"):
         out[str(p.relative_to(work))] = p.read_text(encoding="utf-8")
     return out
-
-
-def test_tf18_19_the_control(built: Path) -> None:
-    pages = everything(built)
-    assert len([k for k in pages if k.endswith("report.html")]) == 6
-    assert any(k.startswith("content/") for k in pages)
-    assert str(built.resolve()) in (built / "printed.txt").read_text(encoding="utf-8")
-    raw = (built / "cold.csv").read_text(encoding="utf-8")
-    assert all(p in raw and r in raw for p, r in CONTENT.values())
-    assert KEY in (built / "conf" / ".env").read_text(encoding="utf-8")
 
 
 def test_tf18_19_no_absolute_path(built: Path) -> None:

@@ -5,8 +5,8 @@
 prints it, every run id, every saved id at 12 hex, every command it names. What a screen's keys
 show (``m`` the lines with no room, ``k`` the failures by kind, ``t`` the second table) and its
 could not say screen (``d``) count as the screen's; the screens are read at 120 columns and tall
-enough to show their tables whole. The verdict line is the command's, word and sentence. The
-summary's lines and every line of "Before you act on this" are on the verdict screen whole, never
+enough to show their tables whole. (The verdict line being the command's, word and sentence, is
+held with each screen's frame, TF19-2.) The summary's lines and every line of "Before you act on this" are on the verdict screen whole, never
 shortened, at 120 × 40 and at 80 × 24; at 80 × 24 the lines with no room are behind one key,
 ``m``, the screen says how many, and the links block stays on screen (DM13). Could not say carries
 each sentence of the report's "What this cannot say" whole; for a verdict on an imported store,
@@ -94,14 +94,6 @@ def test_tf19_3_every_fact_of_the_plain_command(work: Path, screen: str) -> None
     assert missing == [], (screen, missing)
 
 
-@pytest.mark.parametrize("screen", ["run", "verdict compare", "verdict fix-check", "changes"])
-def test_tf19_3_the_verdict_line_is_the_command_s(work: Path, screen: str) -> None:
-    reach, _behind, argv = SCREENS[screen]
-    first = cli(work, argv).out.splitlines()[0]
-    s = drive(work, reach, size=(120, 40))
-    assert norm(" ".join(s.last.body[:3])).startswith(norm(first)), (first, s.last.body[:3])
-
-
 def test_tf19_3_home_carries_doctor_s_config_and_the_runs(work: Path) -> None:
     s = drive(work, [], size=TALL)
     shown = s.last.body_text()
@@ -160,11 +152,10 @@ def test_tf19_3_at_80x24_the_overflow_is_behind_one_key(work: Path, screen: str)
     assert n > 0
     assert "m" in first.keys()
     # the links block stays on screen (DM13)
-    assert first.line_starting("page") and first.line_starting("saved") is None or first.line_starting("page")
-    assert first.body[0].startswith("  different") or first.body[0].startswith("  ")
-    report = cli(work, argv).out
-    for line in section_lines(report, "Before you act on this"):
-        assert any(norm(line) in g.body_text() for g in views), line
+    assert first.line_starting("page"), first.text()
+    # the verdict line stays first, with the command's word
+    word = str(json.loads(cli(work, [*argv, "--json"]).out)["verdict"])
+    assert first.body[0].startswith(f"  {word}  "), (first.body[0], word)
 
 
 def test_tf19_3_at_80x24_the_compare_links_stay(work: Path) -> None:

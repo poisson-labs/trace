@@ -19,8 +19,12 @@ the captures correct, which the page must not repeat).
   holding when run, no run named by its id, ending with ``What this does not do``; both files
   are in plain words.
 
-TF25-63's and TF25-65's runs of the page's and the recipe's marked blocks were cut on the ruling of
-2026-11-18 (AR-7): ``test_tf5_blocks.py`` (TF5-14) runs the same page through the same runner.
+What TF25-63 and TF25-65 say is held for these two files where every page's is: the marked
+blocks are run by ``test_tf5_blocks.py`` (TF5-14), which also holds that a service is asked only
+in a block marked pull (TF5-16), that no run is named by its id (TF5-17) and that the recipe
+imports twice and checks the fix on those runs (TF5-18); ``test_tf5_recipes.py`` holds the
+recipe's length, its last section and its marked commands (TF5-70, TF5-71);
+``test_tf0_plain_words.py`` (TF0-21) and ``test_tf3_pages.py`` (TF3-33) hold the plain words.
 """
 
 from __future__ import annotations
@@ -29,18 +33,13 @@ import re
 import shlex
 from pathlib import Path
 
-import pytest
-
-from tf0_support import INTERNAL
-from tf3_support import OLD, PAGES, REPO, blocks, fenced
+from tf3_support import PAGES, REPO, blocks, fenced
 
 TOOL = "braintrust"
 PAGE = PAGES / "braintrust.md"
-RECIPE = REPO / "docs" / "recipes" / "from-braintrust.md"
 CAPTURES = "tests/fixtures/ingest/braintrust/"
 INSTALL = "pip install poisson-trace"
 VERSIONS = ("braintrust 0.49.3",)
-RUN_ID = re.compile(r"\b\d{8}T\d{6}Z-[0-9a-f]{4}\b")
 
 
 def _commands(text: str) -> list[list[str]]:
@@ -111,23 +110,6 @@ def test_tf25_62_the_page_says_how_an_experiment_gets_out_as_the_captures_show()
     assert "--from-api" not in text
 
 
-# ---------- TF25-63 ----------
-
-
-def test_tf25_63_no_marked_command_pulls() -> None:
-    """Changed by the docs pair (TF5): a command that names the service's address stands in a
-    block marked ``pull``, which is answered from the committed captures with no network
-    (TF5-16); no other marked command names one."""
-    from tf5_support import parse
-    from tf5_support import words as commands_of
-
-    for path in (PAGE, RECIPE):
-        for block in parse(path.read_text(encoding="utf-8"))[0]:
-            if block.kind == "command" and not block.pull:
-                for words in commands_of(block):
-                    assert not [w for w in words if w.startswith("braintrust:")], (path.name, words)
-
-
 # ---------- TF25-64 ----------
 
 
@@ -139,41 +121,3 @@ def test_tf25_64_the_page_ends_with_what_it_does_not_do() -> None:
     joined = " ".join(body)
     assert "does not run" in joined and "one run" in joined and "0.49.3" in joined
     assert "keeps no prompt" in joined, joined
-
-
-# ---------- TF25-65 ----------
-
-
-def test_tf25_65_the_recipe_is_short_and_ends_with_what_it_does_not_do() -> None:
-    assert RECIPE.is_file(), RECIPE
-    text = RECIPE.read_text(encoding="utf-8")
-    assert text.startswith("# ") and len(text.splitlines()) < 150, len(text.splitlines())
-    heading, body = _last_section(text)
-    assert heading == "What this does not do" and body, heading
-
-
-def test_tf25_65_the_recipe_imports_twice_and_checks_the_fix() -> None:
-    text = RECIPE.read_text(encoding="utf-8")
-    commands = _commands(text)
-    imports = [w for w in commands if w[:3] == ["poisson-trace", "import", TOOL]]
-    assert len(imports) >= 2 and len(_imports_shown(text, ("output", "excerpt"))) >= 2, commands
-    runs = [w[w.index("--run") + 1] for w in imports]
-    assert len(set(runs)) == len(runs), runs
-    checks = [w for w in commands if w[:2] == ["poisson-trace", "fix-check"]]
-    assert checks and all(any(r in w for r in runs) for w in checks), commands
-    assert commands.index(checks[0]) > commands.index(imports[1])
-    marked = {b.body for b in blocks(text) if b.kind == "command"}
-    for body in fenced(text):
-        if body.lstrip().startswith("poisson-trace"):
-            assert body in marked, body
-    for words in commands:
-        assert not any(RUN_ID.search(w) for w in words), words
-
-
-@pytest.mark.parametrize("path", [PAGE, RECIPE], ids=["braintrust.md", "from-braintrust.md"])
-def test_tf25_65_the_page_and_the_recipe_are_in_plain_words(path: Path) -> None:
-    text = path.read_text(encoding="utf-8")
-    found = INTERNAL.search(text)
-    assert found is None, (path.name, found.group(0) if found else None)
-    for body in fenced(text):
-        assert OLD not in body, body

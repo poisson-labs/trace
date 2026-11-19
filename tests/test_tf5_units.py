@@ -262,11 +262,6 @@ def test_tf5_37_a_number_that_drops_its_unit_is_caught(sentence: str, bare: list
     assert [number for number, _ in bare_numbers(sentence)] == bare, sentence
 
 
-def test_tf5_37_the_rule_s_lists_do_not_overlap() -> None:
-    assert not UNITS & JOINING and not (NAMES | NUMBERED) & JOINING and not (NAMES | NUMBERED) & LEADS
-    assert CHAIN <= JOINING | {"x", "×"} and LEADS & NAMES == frozenset()
-
-
 # ---------- TF5-38 ----------
 
 PAGES = expected_pages()

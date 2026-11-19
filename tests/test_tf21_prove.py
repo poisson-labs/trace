@@ -60,15 +60,6 @@ def test_tf21_37_an_imported_run_reads_back_its_signals(tmp_path: Path) -> None:
     assert back[1].wall_time_s == 0.0 and back[2].wall_time_s is None
 
 
-def test_tf21_37_an_imported_run_ignores_the_failed_words_given() -> None:
-    # an import's result was decided at the import; the words given name a Prove run's failures
-    import inspect
-
-    # the Prove label kinds pair adds the kinds a team names for its labels (test_pl_reader.py, PL-2),
-    # and the team's rules and budgets (PL-9, LK-9 and LK-26 ruled 2026-11-16)
-    assert list(inspect.signature(read_rows).parameters) == ["root", "run_id", "failed", "labels", "rules", "budgets"]
-
-
 # ---------- TF21-38: a swept run, from Prove's columns ----------
 
 

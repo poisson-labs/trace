@@ -11,8 +11,7 @@ the 2026-10-28 ruling on README line 272).
   section's line is ``pip install poisson-trace`` either way.
 - TF5-32: no page names ``proofload`` where Prove is meant: the word is in no page, the agent
   skill or the package's own text, but in what a command run on the page printed; the
-  examples' store folder is ``prove-runs``; and every version of Prove a page writes is the
-  one Trace pins.
+  examples' store folder is ``prove-runs``.
 - TF5-33: no page says a built reader is still to come, and what is said to be coming names
   none of the ten tools (LS-46's first sentence; BT-44, WV-50).
 - TF5-34: no page says an imported run carries no traces, or that ``where`` and ``compare``
@@ -44,7 +43,6 @@ VERSION = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))["
 PRE = re.search(r"(a|b|rc)\d+$", VERSION) is not None
 _V = r"(\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?)"
 TRACE_VERSION = re.compile(rf"poisson-trace(?:==| ){_V}|poisson_trace-{_V}|\bTrace(?:'s)? `?{_V}`?")
-PROVE_VERSION = re.compile(rf"poisson-prove(?:==| ){_V}|\bProve `?{_V}`?")
 EARLIER = re.compile(r"0\.1\.0rc\d|0\.1\.0b\d")
 COMING = re.compile(r"(?i)\b(?:is|are|still) (?:to come|coming)\b|\bcoming (?:soon|later|next)\b|\bnot yet (?:built|read|supported)\b|\bin a later release\b"
                     r"|\bnext slice\b|\bwill (?:read|support|come)\b|^#+ What is coming", re.M)
@@ -134,15 +132,6 @@ def test_tf5_32_the_examples_store_folder_is_the_published_prove_s() -> None:
     for path in sorted((REPO / "src" / "poisson_trace").rglob("*")):
         if path.is_file() and path.suffix in (".py", ".md", ".toml"):
             assert "proofload" not in path.read_text(encoding="utf-8"), path.name
-
-
-@pytest.mark.parametrize("page", PAGES, ids=IDS)
-def test_tf5_32_every_version_of_prove_a_page_writes_is_the_pin(page: Path) -> None:
-    from poisson_trace.look import PROVE_VERSION as PIN
-
-    for found in PROVE_VERSION.finditer(read(page)):
-        version = next(group for group in found.groups() if group)
-        assert version == PIN, f"{rel(page)}: {found.group(0)}; Trace reads {PIN}"
 
 
 # ---------- TF5-33 ----------

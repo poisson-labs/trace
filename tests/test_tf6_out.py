@@ -77,17 +77,30 @@ def test_tf6_16_where_writes_svg_and_out_together(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("verb", VERBS)
-def test_tf6_17_a_dir_that_exists_is_refused_before_any_work(tmp_path: Path, verb: str) -> None:
+def test_tf6_17_a_dir_that_exists_is_refused_before_any_work(tmp_path: Path, verb: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    from poisson_trace import api
+
     store = store012(tmp_path)
     bundle = tmp_path / "there"
     bundle.mkdir()
     (bundle / "mine.txt").write_text("keep\n", encoding="utf-8")
     before = tree(tmp_path)
+    # the verb's own function, watched: the work is its call
+    function = verb.replace("-", "_")
+    real = getattr(api, function)
+    calls: list[str] = []
+
+    def watched(*args: Any, **kwargs: Any) -> Any:
+        calls.append(function)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(api, function, watched)
     ran = trace(argv012(verb, store, "--out", str(bundle)))
     assert ran.code == 1 and ran.out == "", ran.text
     assert ran.err.startswith("error: ") and str(bundle) in ran.err.splitlines()[0]
     assert "--force" in ran.err
     assert tree(tmp_path) == before
+    assert calls == [], "the verb did its work before the folder was looked at"
 
 
 @pytest.mark.parametrize("verb", VERBS)

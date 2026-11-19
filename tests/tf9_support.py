@@ -46,12 +46,6 @@ from tf0_support import DEEPEVAL, HE_A, HE_B, HE_EVENTS, HUMANEVAL, PILOT, scrip
 
 REPO = Path(__file__).resolve().parent.parent
 SRC = REPO / "src"
-LOOK = REPO / "docs" / "cli-look.md"
-
-#: Prove's look file as poisson-prove 0.1.2 publishes it (tag v0.1.2, commit a6f211b), the same
-#: bytes spec section 17.1 records: 275 lines.
-LOOK_SHA256 = "92e71488c2824c056252be9a7b340e7fc138d15359fbcb7431bcfc6fa267d85f"
-LOOK_LINES = 275
 
 #: The one module that may import Rich (spec section 17.1: "Rich as a core dependency imported
 #: only by a private rendering module").
@@ -441,6 +435,25 @@ def _lock(path: Path) -> Iterator[None]:
         path.unlink()
 
 
+#: The stages that cost imports to build: each is built once for the whole test session and
+#: copied into the folder of every run that starts from it.
+BUILT_ONCE = ("tf0", "tf0-bare", "imported")
+
+
+def staged(base: Path, item: Item) -> Path:
+    """The folder ``stage`` makes for the item's stage, built once for the whole test session
+    (under ``base``, by whichever worker asks first) and never written again: a run copies it."""
+    made = base / "staged" / item.stage
+    with _lock(base / f"stage-{item.stage}.lock"):
+        if not made.exists():
+            building = base / "staged" / f"{item.stage}.building"
+            if building.exists():  # left by a build that failed
+                shutil.rmtree(building)
+            stage(building, item)
+            building.rename(made)
+    return made
+
+
 def shared_run(base: Path, item: Item, **how: Any) -> Run:
     """``run`` of ``item`` with ``how``, made once for the whole test session (under ``base``, a
     folder every worker shares) and read back by every test and worker that asks for it again."""
@@ -449,14 +462,18 @@ def shared_run(base: Path, item: Item, **how: Any) -> Run:
     of = hashlib.sha256(json.dumps(folder).encode()).hexdigest()[:16]
     key = hashlib.sha256(json.dumps([asdict(item), sorted(how.items())], default=str).encode()).hexdigest()[:24]
     done = base / f"{key}.json"
-    # every run of one item runs in the same folder, staged afresh, so that a path a command
-    # prints (init prints the folder it looks under) reads the same in every run of it
+    # every run of one item runs in the same folder, staged afresh (a fresh copy of its stage,
+    # so a run that writes, an import, writes into its own), so that a path a command prints
+    # (init prints the folder it looks under) reads the same in every run of it
     with _lock(base / f"{of}.lock"):
         if not done.exists():
             work, home = base / of / "w", base / of / "home"
             if work.parent.exists():
                 shutil.rmtree(work.parent)
-            stage(work, item)
+            if item.stage in BUILT_ONCE:
+                shutil.copytree(staged(base, item), work)
+            else:
+                stage(work, item)
             home.mkdir()
             made = run(item.argv, cwd=work, home=home, command=item.command, **how)
             done.write_text(json.dumps(asdict(made)), encoding="utf-8")

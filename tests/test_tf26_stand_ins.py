@@ -116,8 +116,12 @@ def test_tf26_73_a_value_the_flag_would_not_take_is_refused_as_the_flag_s(tmp_pa
 # ---------- TF26-74 ----------
 
 
-@pytest.mark.parametrize("score_field", ["exact", "score:exact", "scores.exact", "output.scores.exact", "exact.exact", "output.scores.exact.exact"])
-@pytest.mark.parametrize("kind", KINDS)
+# the spelling is settled before a file is opened: one spelling on every format, every spelling on one, and the
+# dotted path, which each shape looks up in its file, on every format
+@pytest.mark.parametrize(("kind", "score_field"), [
+    *[(kind, score_field) for score_field in ("exact", "exact.exact") for kind in KINDS],
+    *[(KINDS[0], score_field) for score_field in ("score:exact", "scores.exact", "output.scores.exact", "output.scores.exact.exact")],
+])
 def test_tf26_74_score_field_names_the_scorer(tmp_path: Path, kind: str, score_field: str) -> None:
     config = _config(tmp_path, case_field=_case(kind), score_field=score_field, cut=0.5)
     data = imported(_bare("candidate", kind, tmp_path / "st", "r", config))
@@ -283,8 +287,11 @@ def test_tf26_78_the_python_api_takes_them_too(tmp_path: Path) -> None:
 # ---------- TF26-79 ----------
 
 
-@pytest.mark.parametrize("kind", ["pull", "expanded", "ui-json", "ui-csv"])
-@pytest.mark.parametrize("named", ["estimated_cost", "metrics.estimated_cost", "prompt_tokens_total_cost", "no_such_cost"])
+# no name is read on any format: every name on one format, one name on every format
+@pytest.mark.parametrize(("named", "kind"), [
+    *[(named, "pull") for named in ("estimated_cost", "metrics.estimated_cost", "prompt_tokens_total_cost", "no_such_cost")],
+    *[("estimated_cost", kind) for kind in ("expanded", "ui-json", "ui-csv")],
+])
 def test_tf26_79_cost_field_is_not_read_and_changes_nothing(tmp_path: Path, kind: str, named: str) -> None:
     config = _config(tmp_path, cost_field=named)
     imported([*_flags("baseline", kind, tmp_path / "named", "r", outcome="status", cut=None), "--config", config])

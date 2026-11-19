@@ -71,7 +71,7 @@ import numpy as np
 import pytest
 
 from tf23_support import (
-    MEASURES, WORDS, cm, from_differences, norm, one_measure, run, several, tries, version, words,
+    MEASURES, WORDS, cm, from_differences, one_measure, run, several, version, words,
 )
 
 # hand-found differences (exact sign-flip p beside each, from the module's own enumeration,
@@ -516,8 +516,3 @@ def test_tf23_22_tries_with_no_order_are_drawn_by_the_seed_rule() -> None:
     for i, x in enumerate(m1.d):
         assert (10 * i + 2.5 - x) - 10 * i in {0.0, 1.0, 2.0, 3.0, 4.0}
     assert math.isfinite(m1.change)
-
-
-def test_tf23_22_norm_helper_is_plain() -> None:
-    assert norm("a  –  b") == "a - b"
-    assert tries([1.0, 2.0])[1].repeat == 1

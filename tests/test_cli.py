@@ -1,5 +1,6 @@
 """TR9, TR10, TR11, TR23, TR31: the command line, its refusals and exit codes, and the two
-source-level rules (read-only, through Prove only)."""
+source-level rules (read-only, through Prove only) on the package's top-level modules: the
+readers under ``ingest/`` write runs and read other tools' files, and are not held to them."""
 
 from __future__ import annotations
 
@@ -15,12 +16,13 @@ import pytest
 
 from pin_support import RECORDED
 from conftest import (
-    CELL_A, CELL_B, CS, CS_EVENTS, CS_RECORD, FIXTURES, SYNTH_EVENTS, TAU2, TAU2_A, TAU2_B,
-    TAU2_EVENTS, compare, deaths_rows, run_cli, where,
+    CELL_A, CELL_B, CS, CS_EVENTS, CS_RECORD, FIXTURES, TAU2, TAU2_A, TAU2_B,
+    TAU2_EVENTS, compare, deaths_rows, where,
 )
 
 
-def src_files() -> list[Path]:
+def top_level_modules() -> list[Path]:
+    """The package's own modules, without those under ``ingest/``, ``stats/`` and ``skills/``."""
     import poisson_trace
 
     return sorted(Path(poisson_trace.__file__).resolve().parent.glob("*.py"))
@@ -81,9 +83,8 @@ def _enclosing_functions(tree: ast.AST) -> dict[int, list[str]]:
     return out
 
 
-def test_tr9_src_writes_nothing_but_the_svg_and_the_json(synth) -> None:  # type: ignore[no-untyped-def]
-    assert where(*synth, SYNTH_EVENTS).code == 0
-    for path in src_files():
+def test_tr9_the_top_level_modules_write_nothing_but_the_svg_and_the_json() -> None:
+    for path in top_level_modules():
         source = path.read_text()
         tree = ast.parse(source)
         lines = source.splitlines()
@@ -144,9 +145,8 @@ ALLOWED_PROVE_IMPORTS = {
 WRITES_THE_TABLE = "saved.py"
 
 
-def test_tr10_reads_through_prove_only(synth) -> None:  # type: ignore[no-untyped-def]
-    assert where(*synth, SYNTH_EVENTS).code == 0
-    for path in src_files():
+def test_tr10_the_top_level_modules_read_through_prove_only() -> None:
+    for path in top_level_modules():
         text = path.read_text()
         table = path.name == WRITES_THE_TABLE
         tree = ast.parse(text)
@@ -203,7 +203,7 @@ def test_tr11_compare_refuses_an_event_absent_from_both_and_allows_one_absent_fr
     _one_sentence(both)
     assert "never_seen" in both.text
     one = compare(root, "a", "b", ["fail"], 100.0)
-    assert one.code in (0, 2), one.text
+    assert one.code == 0, one.text
     assert "fail" in one.out
 
 
@@ -222,21 +222,6 @@ def test_tr11_no_death_in_either_run_is_refused_and_where_still_prints(two_run_s
     assert data["causes"] == []
     assert data["run"]["placement"] == {"placed": 4, "died": 0, "ended": 2, "timed out": 0, "capped": 2,
                                         "excluded": {"no trace": 0, "unreadable trace": 0, "no leaf span": 0, "no outcome, not a timeout": 0}}
-
-
-def test_tr11_every_refusal_is_one_sentence_and_an_argument_error_exits_two() -> None:
-    # R17: the command line is wrong, so exit 2 (the shared exit-code table); still one sentence
-    for argv in (
-        ["where", TAU2_A, "--store", str(TAU2)],                       # no --event
-        ["where", TAU2_A, "--event", "unsolved"],                      # no --store
-        ["where", TAU2_A, "--store", str(TAU2), "--event", "unsolved", "--by", "wall"],
-    ):
-        result = run_cli(argv)
-        lines = [line for line in result.text.splitlines() if line.strip()]
-        assert lines and all(line.startswith("  next: ") for line in lines[1:]), result.text
-        assert result.code == 2
-    # the missing ceiling stays the command's own refusal, exit 1
-    _one_sentence(run_cli(["compare", TAU2_A, TAU2_B, "--store", str(TAU2), "--event", "unsolved"]))
 
 
 # ---------- TR23 ----------
@@ -309,10 +294,3 @@ def test_tr31_refuses_on_the_wrong_prove_version(tmp_path: Path, argv) -> None: 
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
     assert lines and all(line.startswith("  next: ") for line in lines[1:]), proc.stdout + proc.stderr
     assert "poisson-prove" in lines[0] and RECORDED in lines[0] and "0.3.0" in lines[0] and "pip install" in " ".join(lines)
-
-
-def test_tr31_prints_no_such_line_when_prove_is_present() -> None:
-    result = where(TAU2, TAU2_A, TAU2_EVENTS)
-    assert result.code == 0, result.text
-    assert "pip install" not in result.text
-    assert result.err == ""

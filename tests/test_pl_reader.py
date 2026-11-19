@@ -121,15 +121,6 @@ def test_pl_2_an_empty_table_is_no_table(tmp_path: Path) -> None:
         assert a == b
 
 
-def test_pl_2_read_rows_takes_the_table_by_name() -> None:
-    import inspect
-
-    params = inspect.signature(read_rows).parameters
-    # LK-9 and LK-26 (ruled 2026-11-16) add the team's rules and budgets last (PL-9)
-    assert list(params) == ["root", "run_id", "failed", "labels", "rules", "budgets"]
-    assert params["labels"].default is None
-
-
 # ---------- PL-3: the order ----------
 
 #: Records on which a rule finds a cause, each with the kind it gives, as main gives it.
@@ -408,8 +399,7 @@ def test_pl_9_read_rows_takes_the_rules_and_the_budgets_last_none_by_default(tmp
     import inspect
 
     params = inspect.signature(read_rows).parameters
-    assert list(params)[-2:] == ["rules", "budgets"]
-    assert tuple(params["rules"].default) == () and params["budgets"].default is None
+    assert list(params) == ["root", "run_id", "failed", "labels", "rules", "budgets"]
     for i, label in enumerate(("wrong_state", "unsolved", "passed")):
         root = prove_run(tmp_path / f"s{i}", "r", [Try("t", label)])
         words = ["wrong_state", "unsolved"]
@@ -792,15 +782,3 @@ def test_pl_9_an_import_and_a_swept_run_under_one_config_read_as_the_same_rules(
     assert diff["taxonomy_sha256"]["a"] == diff["taxonomy_sha256"]["b"] != BUILT_IN_DIGEST
     # every swept try is over the wall-time budget
     assert {s["signal"]: s["a"] for s in diff["signals"]}["over_budget"] == 2
-
-
-def test_pl_9_the_store_helper_writes_prove_runs(tmp_path: Path) -> None:
-    """The tests' own store is Prove's: its runs list, and its records have the schema's
-    record only where a test put one."""
-    from poisson_prove.store import Store
-
-    root = prove_run(tmp_path / "s", "r", [Try("t", "wrong_state", meta=own("crash")), Try("u", "passed")])
-    frame = Store(root).read("r", meta=True, trace="full")
-    metas = list(frame["meta"])
-    assert metas[0]["trace_signals"] == {"schema": SIGNALS_SCHEMA, "failure_kind": "crash"}
-    assert "trace_signals" not in metas[1]

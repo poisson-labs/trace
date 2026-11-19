@@ -18,8 +18,8 @@ from typing import Any
 
 import pytest
 from runrec_support import (
-    FAST, NEVER_KEYS, READERS, SLOW, all_keys, check_finished, check_log, descriptor_file, events,
-    events_text, import_json, import_key, manifest_json, stored_rows, unpacked_inspect,
+    FAST, INSPECT_FOLDER, NEVER_KEYS, READERS, SLOW, all_keys, check_finished, check_log,
+    descriptor_file, events, events_text, import_key, imported, manifest_json, stored_rows,
 )
 from tf21_support import run_import
 
@@ -33,9 +33,8 @@ def _run(rows: tuple[Row, ...], name: str = "r") -> Run:
                files=({"name": "results.csv", "sha256": "ab" * 32},))
 
 
-def _check_import(tmp_path: Path, key: str) -> None:
-    root = tmp_path / "store"
-    data = import_json(key, root, "r")
+def _check_import(factory: pytest.TempPathFactory, key: str) -> None:
+    root, data = imported(key, factory)
     by = check_finished(root, "r", data["rows"])
     planned = by["planned"]["detail"]
     assert planned["reader"] == READERS[key][0] == data["tool"]
@@ -46,32 +45,28 @@ def _check_import(tmp_path: Path, key: str) -> None:
 
 
 @pytest.mark.parametrize("key", FAST)
-def test_runrec_10_an_import_writes_the_full_log(tmp_path: Path, key: str) -> None:
-    _check_import(tmp_path, key)
+def test_runrec_10_an_import_writes_the_full_log(tmp_path_factory: pytest.TempPathFactory, key: str) -> None:
+    _check_import(tmp_path_factory, key)
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize("key", SLOW)
-def test_runrec_10_slow_every_other_import_writes_the_full_log(tmp_path: Path, key: str) -> None:
-    _check_import(tmp_path, key)
+def test_runrec_10_slow_every_other_import_writes_the_full_log(
+        tmp_path_factory: pytest.TempPathFactory, key: str) -> None:
+    _check_import(tmp_path_factory, key)
 
 
-def test_runrec_10_planned_names_the_files_without_their_folders(tmp_path: Path) -> None:
-    root = tmp_path / "store"
-    data = import_json("junit-suite", root, "r")
+def test_runrec_10_planned_names_the_files_without_their_folders(
+        tmp_path_factory: pytest.TempPathFactory) -> None:
+    root, data = imported("junit-suite", tmp_path_factory)
     planned = events(root, "r")[0]["detail"]
     assert planned == {"run_id": "r", "reader": "junit",
                        "files": ["trace-suite-1.xml", "trace-suite-2.xml"], "rows": data["rows"]}
 
 
-def test_runrec_10_an_unpacked_inspect_folder_is_planned_as_its_one_entry(tmp_path: Path) -> None:
-    folder = unpacked_inspect(tmp_path)
-    root = tmp_path / "store"
-    from tf10_support import in_argv
-
-    out = run_import([*in_argv(folder, root, "r"), "--json"])
-    assert out.code == 0, out.out + out.err
-    data = json.loads(out.out)
+def test_runrec_10_an_unpacked_inspect_folder_is_planned_as_its_one_entry(
+        tmp_path_factory: pytest.TempPathFactory) -> None:
+    root, data = imported(INSPECT_FOLDER, tmp_path_factory)
     by = check_finished(root, "r", data["rows"])
     assert by["planned"]["detail"]["files"] == ["inspect-log/"] == [f["name"] for f in data["files"]]
 
@@ -92,18 +87,24 @@ def test_runrec_11_rows_with_no_outcome_are_counted_as_errored(tmp_path: Path) -
                                        "rows": 4}
 
 
-def test_runrec_11_progress_counts_the_rows_prepared_in_the_order_read(tmp_path: Path) -> None:
-    # the rows with no outcome come first: any progress before the end counts them as errored
+def test_runrec_11_progress_counts_the_rows_prepared_in_the_order_read(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # the rows with no outcome come first: any progress before the end counts them as errored.
+    # Written under a clock the test steps, so that paced lines fall among the rows whatever
+    # the machine: on its own clock an import this short may write none before the closing one
+    from pacing_support import Clock, paced, steady, write_under
+
     root = tmp_path / "store"
-    rows = (*(Row(f"e{i}", None, "no score") for i in range(30_000)),
-            *(Row(f"m{i}", "met", None) for i in range(30_000)))
-    write(_run(tuple(rows)), root)
-    check_finished(root, "r", len(rows))
-    for e in events(root, "r"):
+    write_under(Clock(steady()), 2_000, root, monkeypatch, errored_first=1_000)
+    check_finished(root, "r", 2_000)
+    log = events(root, "r")
+    done = [e["detail"]["done"] for e in paced(log)]
+    assert any(n < 1_000 for n in done) and any(1_000 < n < 2_000 for n in done), done
+    for e in log:
         if e["kind"] == "progress":
             d = e["detail"]
-            assert d["errored"] == min(d["done"], 30_000), d
-            assert d["kept"] == max(0, d["done"] - 30_000), d
+            assert d["errored"] == min(d["done"], 1_000), d
+            assert d["kept"] == max(0, d["done"] - 1_000), d
 
 
 def test_runrec_11_a_run_of_outcomes_keeps_every_row(tmp_path: Path) -> None:
@@ -111,28 +112,6 @@ def test_runrec_11_a_run_of_outcomes_keeps_every_row(tmp_path: Path) -> None:
     write(_run(tuple(Row(f"c{i}", "met" if i % 2 else "missed", None) for i in range(25))), root)
     by = check_finished(root, "r", 25)
     assert by["finished"]["detail"] == {"status": "complete", "kept": 25}
-
-
-# ---------- RUNREC-12: progress at most once a second ----------
-
-
-def test_runrec_12_a_large_import_paces_its_progress(tmp_path: Path) -> None:
-    # about a second of work on this Mac; the slow twin below takes several
-    root = tmp_path / "store"
-    rows = tuple(Row(f"c{i % 4000}", "met" if i % 3 else "missed", None, 0.5) for i in range(40_000))
-    write(_run(rows), root)
-    check_finished(root, "r", len(rows))
-
-
-@pytest.mark.slow
-def test_runrec_12_slow_an_import_of_several_seconds_paces_its_progress(tmp_path: Path) -> None:
-    root = tmp_path / "store"
-    rows = tuple(Row(f"c{i % 20000}", "met" if i % 3 else None, None if i % 3 else "no score")
-                 for i in range(240_000))
-    write(_run(rows), root)
-    check_finished(root, "r", len(rows))
-    progress = [e for e in events(root, "r") if e["kind"] == "progress"]
-    assert len(progress) >= 1
 
 
 # ---------- RUNREC-13: Ctrl-C ----------
@@ -221,14 +200,14 @@ def test_runrec_14_no_signal_key_error_text_or_chain_in_the_log(tmp_path: Path) 
 
 @pytest.mark.parametrize("key", ["junit-a", "junit-suite", "promptfoo-old", "inspect-eval",
                                  "openai-evals-old"])
-def test_runrec_14_no_path_or_row_text_reaches_the_log(tmp_path: Path, key: str) -> None:
+def test_runrec_14_no_path_or_row_text_reaches_the_log(
+        tmp_path_factory: pytest.TempPathFactory, key: str) -> None:
     from conftest import FIXTURES
     from poisson_prove.store import Store
 
-    root = tmp_path / "store"
-    import_key(key, root, "r")
+    root, _ = imported(key, tmp_path_factory)
     text = events_text(root, "r") + descriptor_file(root).read_text(encoding="utf-8")
-    assert str(tmp_path) not in text and str(FIXTURES) not in text
+    assert str(root.parent) not in text and str(FIXTURES) not in text
     planned = events(root, "r")[0]["detail"]
     assert all("/" not in name.rstrip("/") for name in planned["files"]), planned
     # no error text the rows carry (Trace's own short reason words aside)

@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 from conftest import TAU2
-from tf0_support import DEEPEVAL, RAGAS, TOOLS, VERBS, chdir, examples, help_blocks, help_entries, trace, trace_import
+from tf0_support import DEEPEVAL, RAGAS, RUN_ID, TOOLS, VERBS, chdir, examples, help_blocks, help_entries, trace, trace_import
 from tf1_support import shell_words
 
 NEW_VERBS = ("runs", "name")
@@ -51,7 +51,7 @@ TF10_FILES = {
     "weave": {".jsonl": _TF10 / "weave" / "api" / "trace-fixture-slice-baseline.jsonl"},
 }
 TRACE_HELPS = [[], *[[v] for v in (*VERBS, *NEW_VERBS)]]
-IMPORT_HELPS = [[], *[[t] for t in TOOLS]]
+IMPORT_HELPS = [[], *[[t] for t in (*TOOLS, "table", "junit")]]
 
 
 def _help(command: str, words: list[str]) -> str:
@@ -159,6 +159,7 @@ def test_tf1_13_every_help_example_runs_as_written(tmp_path: Path, command: str,
     for i, example in enumerate(found):
         folder = tmp_path / f"example-{i}"
         folder.mkdir()
+        assert not RUN_ID.search(example), f"an example names a run by its id: {example}"
         shown = shell_words(example)
         assert shown[0] in ("poisson-trace", "poisson-trace-import"), example
         argv = _set_up(folder, command, shown)

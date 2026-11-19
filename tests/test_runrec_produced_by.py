@@ -20,8 +20,8 @@ from typing import Any
 import pytest
 from conftest import FIXTURES
 from runrec_support import (
-    FAST, HEX64, PRODUCED_BY_KEYS, READERS, SLOW, SUITE_1, TOOL, all_strings, import_json,
-    import_key, manifest_json, produced_by, sha256_file, suite_verdicts, trace_version, unpacked_inspect,
+    FAST, HEX64, INSPECT_FOLDER, PRODUCED_BY_KEYS, READERS, SLOW, SUITE_1, TOOL, all_strings,
+    import_key, imported, manifest_json, produced_by, sha256_file, suite_verdicts, trace_version,
 )
 from tf21_support import run_import
 
@@ -46,18 +46,17 @@ def _check(root: Path, run: str, data: dict[str, Any], reader: str) -> dict[str,
 
 
 @pytest.mark.parametrize("key", FAST)
-def test_runrec_20_each_import_records_produced_by(tmp_path: Path, key: str) -> None:
-    root = tmp_path / "store"
-    data = import_json(key, root, "r")
+def test_runrec_20_each_import_records_produced_by(tmp_path_factory: pytest.TempPathFactory, key: str) -> None:
+    root, data = imported(key, tmp_path_factory)
     got = _check(root, "r", data, READERS[key][0])
     assert len(got["from"]) == len(data["files"])
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize("key", SLOW)
-def test_runrec_20_slow_every_other_import_records_produced_by(tmp_path: Path, key: str) -> None:
-    root = tmp_path / "store"
-    data = import_json(key, root, "r")
+def test_runrec_20_slow_every_other_import_records_produced_by(
+        tmp_path_factory: pytest.TempPathFactory, key: str) -> None:
+    root, data = imported(key, tmp_path_factory)
     got = _check(root, "r", data, READERS[key][0])
     assert len(got["from"]) == len(data["files"])
 
@@ -65,9 +64,8 @@ def test_runrec_20_slow_every_other_import_records_produced_by(tmp_path: Path, k
 # ---------- RUNREC-21: what each file's digest is over ----------
 
 
-def test_runrec_21_a_files_digest_is_over_its_bytes(tmp_path: Path) -> None:
-    root = tmp_path / "store"
-    import_key("junit-suite", root, "r")
+def test_runrec_21_a_files_digest_is_over_its_bytes(tmp_path_factory: pytest.TempPathFactory) -> None:
+    root, _ = imported("junit-suite", tmp_path_factory)
     junit = FIXTURES / "ingest" / "junit"
     assert produced_by(root, "r")["from"] == [
         {"name": "trace-suite-1.xml", "sha256": sha256_file(junit / "trace-suite-1.xml")},
@@ -75,21 +73,14 @@ def test_runrec_21_a_files_digest_is_over_its_bytes(tmp_path: Path) -> None:
     ]
 
 
-def test_runrec_21_a_compressed_file_is_digested_as_given(tmp_path: Path) -> None:
-    root = tmp_path / "store"
-    import_key("ragas-causal", root, "r")
+def test_runrec_21_a_compressed_file_is_digested_as_given(tmp_path_factory: pytest.TempPathFactory) -> None:
+    root, _ = imported("ragas-causal", tmp_path_factory)
     path = FIXTURES / "ingest" / "ragas" / "memory-causal.jsonl.gz"
     assert produced_by(root, "r")["from"] == [{"name": path.name, "sha256": sha256_file(path)}]
 
 
-def test_runrec_21_an_unpacked_inspect_folder_is_its_one_entry(tmp_path: Path) -> None:
-    from tf10_support import in_argv
-
-    folder = unpacked_inspect(tmp_path)
-    root = tmp_path / "store"
-    out = run_import([*in_argv(folder, root, "r"), "--json"])
-    assert out.code == 0, out.out + out.err
-    data = json.loads(out.out)
+def test_runrec_21_an_unpacked_inspect_folder_is_its_one_entry(tmp_path_factory: pytest.TempPathFactory) -> None:
+    root, data = imported(INSPECT_FOLDER, tmp_path_factory)
     got = _check(root, "r", data, "inspect")
     assert [e["name"] for e in got["from"]] == ["inspect-log/"]
 
@@ -98,12 +89,11 @@ def test_runrec_21_an_unpacked_inspect_folder_is_its_one_entry(tmp_path: Path) -
 
 
 @pytest.mark.parametrize("key", ["junit-a", "promptfoo-old", "inspect-json", "openai-evals-old"])
-def test_runrec_22_no_path_reaches_produced_by(tmp_path: Path, key: str) -> None:
-    root = tmp_path / "store"
-    import_key(key, root, "r")
+def test_runrec_22_no_path_reaches_produced_by(tmp_path_factory: pytest.TempPathFactory, key: str) -> None:
+    root, _ = imported(key, tmp_path_factory)
     got = produced_by(root, "r")
     for text in all_strings(got):
-        assert str(tmp_path) not in text and str(FIXTURES) not in text, text
+        assert str(root.parent) not in text and str(FIXTURES) not in text, text
     assert all("/" not in e["name"].rstrip("/") for e in got["from"]), got["from"]
 
 
@@ -125,13 +115,6 @@ def test_runrec_23_the_verdicts_file_follows_the_files(tmp_path: Path) -> None:
     assert str(verdicts.parent) not in json.dumps(got)
 
 
-def test_runrec_23_without_verdicts_from_holds_the_files_alone(tmp_path: Path) -> None:
-    root = tmp_path / "store"
-    out = run_import(["junit", str(SUITE_1), "--store", str(root), "--run", "r", "--json"])
-    assert out.code == 0, out.out + out.err
-    assert produced_by(root, "r")["from"] == [{"name": SUITE_1.name, "sha256": sha256_file(SUITE_1)}]
-
-
 # ---------- RUNREC-24: the manifest stays the import's record ----------
 
 
@@ -151,10 +134,9 @@ def test_runrec_24_reading_verbs_leave_the_manifest_as_it_is(tmp_path: Path) -> 
     assert {r: (root / r / "manifest.json").read_bytes() for r in ("a", "b")} == held
 
 
-def test_runrec_24_the_import_block_keeps_its_place(tmp_path: Path) -> None:
+def test_runrec_24_the_import_block_keeps_its_place(tmp_path_factory: pytest.TempPathFactory) -> None:
     # produced_by is beside what the import recorded, never in place of it (SA5's block stays)
-    root = tmp_path / "store"
-    data = import_json("junit-a", root, "r")
+    root, data = imported("junit-a", tmp_path_factory)
     block = manifest_json(root, "r")["environment"]["import"]
     assert block["tool"] == "junit" and block["declared"] == data["declared"]
     assert block["files"] == data["files"]
@@ -164,9 +146,9 @@ def test_runrec_24_the_import_block_keeps_its_place(tmp_path: Path) -> None:
 # ---------- RUNREC-25: the format's reading ----------
 
 
-def test_runrec_25_a_reader_of_the_shared_members_reads_what_it_needs(tmp_path: Path) -> None:
-    root = tmp_path / "store"
-    import_key("promptfoo-old", root, "r")
+def test_runrec_25_a_reader_of_the_shared_members_reads_what_it_needs(
+        tmp_path_factory: pytest.TempPathFactory) -> None:
+    root, _ = imported("promptfoo-old", tmp_path_factory)
     doc = manifest_json(root, "r")
     shared = {k: doc["produced_by"][k] for k in ("version", "from")}
     assert isinstance(shared["version"], str) and shared["version"]

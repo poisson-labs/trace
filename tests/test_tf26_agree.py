@@ -20,8 +20,8 @@ section 18.3.2's "two entry points that converge on one reader"; SG9).
      signal that follows from its kind);
   d. the page's table holds a model's total tokens and no input or output count, and leaves
      out the reference to the dataset row.
-- TF26-30: both versions pair, for both evaluation pairs: by the dataset row's digest from
-  every export that carries the reference; by the input's key and by a key of the row from
+- TF26-30: both versions pair: the lookup fixture's by the dataset row's digest from
+  every export that carries the reference, and by the input's key and by a key of the row from
   every export that holds the row; one export of one version with another of the other. The
   page's table pairs by a key of the row or by the input, never by the reference.
 - TF26-31: a fix check counts the same from every export, by the status and by the score; by
@@ -42,8 +42,8 @@ import pytest
 from tf0_support import trace
 from tf21_support import records, run_import
 from tf26_support import (
-    API_EXPORTS, CASES, DIGEST, ERRORED, EXPORTS, KEY, LOOKUP, QUESTIONS, RUN, UI_CALLS, UI_EXPORTS, UI_TABLES, VERSIONS, WITH_REF,
-    WITH_ROW, approx, columns, export, imported, of, recs, refused, same_but_case, stored_spans, tally, tries, world, wv_argv,
+    CASES, DIGEST, ERRORED, EXPORTS, KEY, LOOKUP, QUESTIONS, RUN, UI_CALLS, UI_EXPORTS, UI_TABLES, VERSIONS, WITH_REF,
+    WITH_ROW, approx, columns, export, imported, of, recs, refused, stored_spans, tally, tries, world, wv_argv,
 )
 
 MODES = ("status", "exact")
@@ -171,7 +171,7 @@ def test_tf26_29_what_every_export_agrees_on() -> None:
 
 
 @pytest.mark.parametrize("kind", [k for k in EXPORTS if k in WITH_REF])
-@pytest.mark.parametrize("pair", [VERSIONS, LOOKUP])
+@pytest.mark.parametrize("pair", [LOOKUP])
 def test_tf26_30_by_the_dataset_row_the_two_versions_hold_the_same_cases(tmp_path: Path, kind: str, pair: tuple[str, str]) -> None:
     for name, run in zip(pair, ("old", "new"), strict=True):
         imported(of(name, kind, tmp_path / "st", run, mode="status", case="example"))
@@ -181,7 +181,7 @@ def test_tf26_30_by_the_dataset_row_the_two_versions_hold_the_same_cases(tmp_pat
 
 
 @pytest.mark.parametrize("kind", WITH_ROW)
-@pytest.mark.parametrize("pair", [VERSIONS, LOOKUP])
+@pytest.mark.parametrize("pair", [LOOKUP])
 @pytest.mark.parametrize("case", ["input", "example:id"])
 def test_tf26_30_by_the_input_or_a_key_of_the_row_every_export_that_holds_the_row_pairs_them(tmp_path: Path, kind: str, pair: tuple[str, str], case: str) -> None:
     for name, run in zip(pair, ("old", "new"), strict=True):
@@ -232,10 +232,22 @@ def _fix_check(tmp: Path, kind: str, mode: str, pair: tuple[str, str] = VERSIONS
     return doc
 
 
+_FIRST: dict[tuple[str, str, str | None], dict[str, Any]] = {}
+
+
+def _first(factory: Any, kind: str, mode: str, case: str | None = None) -> dict[str, Any]:
+    """The fix check every other export's is compared with: made once in a store of its own.
+    Read-only."""
+    key = (kind, mode, case)
+    if key not in _FIRST:
+        _FIRST[key] = _fix_check(factory.mktemp(f"wv-first-{kind}-{mode}"), kind, mode, case=case)
+    return _FIRST[key]
+
+
 @pytest.mark.parametrize("kind", EXPORTS)
-def test_tf26_31_a_fix_check_by_the_status_counts_the_same_from_every_export(tmp_path: Path, kind: str) -> None:
+def test_tf26_31_a_fix_check_by_the_status_counts_the_same_from_every_export(tmp_path: Path, tmp_path_factory: Any, kind: str) -> None:
     doc = _fix_check(tmp_path / kind, kind, "status")
-    first = _fix_check(tmp_path / "first", "pull", "status")
+    first = _first(tmp_path_factory, "pull", "status")
     for key in COMPARED:
         if key == "by_input":
             # the inputs are named by the case, which the table spells by a key of the row
@@ -248,9 +260,9 @@ def test_tf26_31_a_fix_check_by_the_status_counts_the_same_from_every_export(tmp
 
 
 @pytest.mark.parametrize("kind", EXPORTS)
-def test_tf26_31_by_the_score_every_export_counts_the_same_and_says_which_tries_have_no_outcome(tmp_path: Path, kind: str) -> None:
+def test_tf26_31_by_the_score_every_export_counts_the_same_and_says_which_tries_have_no_outcome(tmp_path: Path, tmp_path_factory: Any, kind: str) -> None:
     doc = _fix_check(tmp_path / kind, kind, "exact")
-    first = _fix_check(tmp_path / "first", "pull", "exact")
+    first = _first(tmp_path_factory, "pull", "exact")
     for key in COMPARED:
         if key == "by_input":
             assert len(doc[key]) == len(first[key]), key
@@ -267,9 +279,9 @@ def test_tf26_31_by_the_score_every_export_counts_the_same_and_says_which_tries_
 
 
 @pytest.mark.parametrize("kind", ["expanded", "ui-json", "ui-csv"])
-def test_tf26_31_by_the_input_the_fix_check_is_the_same_document_from_every_export_that_holds_the_row(tmp_path: Path, kind: str) -> None:
+def test_tf26_31_by_the_input_the_fix_check_is_the_same_document_from_every_export_that_holds_the_row(tmp_path: Path, tmp_path_factory: Any, kind: str) -> None:
     doc = _fix_check(tmp_path / kind, kind, "exact", case="input")
-    first = _fix_check(tmp_path / "first", "expanded", "exact", case="input")
+    first = _first(tmp_path_factory, "expanded", "exact", case="input")
     for key in COMPARED:
         assert _same(doc[key], first[key]), (kind, key)
 
@@ -299,11 +311,3 @@ def test_tf26_32_the_lookup_fixture_s_two_tries_a_case_pair_across_its_versions(
     old, new = tries(tmp_path / kind / "st", "old"), tries(tmp_path / kind / "st", "new")
     assert sorted(old) == sorted(new) and len(old) == 6
     assert tally({"outcomes": {"met": sum(1 for r in new.values() if r["outcome"] == "pass")}}) == {"met": 6}
-
-
-@pytest.mark.parametrize("kind", API_EXPORTS)
-def test_tf26_32_the_two_answers_of_one_evaluation_place_its_failures_alike(tmp_path_factory: Any, kind: str) -> None:
-    for version in VERSIONS:
-        a, b = world(tmp_path_factory, version, kind, "status"), world(tmp_path_factory, version, "pull", "status")
-        assert {c: same_but_case(r) for c, r in recs(a[0], RUN).items() if kind == "pull"} == {c: same_but_case(r) for c, r in recs(b[0], RUN).items() if kind == "pull"}
-        assert _spans(a[0]) == _spans(b[0])

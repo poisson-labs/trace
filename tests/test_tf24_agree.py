@@ -13,7 +13,7 @@ rule 2; the INT3 spec's IT1 and IT18 on the real captures; the captures' gap 3 a
   two rows have no outcome there, and every other row and every other key is the same. The
   candidate agrees everywhere.
 - TF24-30: the UI's CSV agrees with the other exports on everything it holds: the cases (by
-  example id, by the example's ``case`` and by input), the outcome by status and by score, the
+  the example's ``case``), the outcome by status and by score, the
   wall time, the lengths, the total tokens, the cost, each score's value and each word; what it
   lacks is not recorded; and the one kind it reads differently is the candidate's cut reply (a
   crash, where the exports with the steps see the parser fail).
@@ -35,7 +35,7 @@ import pytest
 
 from tf0_support import trace
 from tf24_support import (
-    CASES, EXACT, EXPORTS, LATE, RUN, TRACE_EXPORTS, VERSIONS, approx, by_status, columns, example_ids, export,
+    CASES, EXACT, EXPORTS, LATE, RUN, TRACE_EXPORTS, VERSIONS, approx, by_status, columns, export,
     feedback_file, imported, ls_argv, recs, world,
 )
 
@@ -161,18 +161,6 @@ def test_tf24_30_the_csv_agrees_on_what_it_holds_and_records_nothing_else(tmp_pa
             assert ui[case]["failure_kind"] == v1[case]["failure_kind"], case
 
 
-@pytest.mark.parametrize("version", VERSIONS)
-@pytest.mark.parametrize("case_from", ["example", "input"])
-def test_tf24_30_the_csv_names_the_cases_as_the_api_does(tmp_path: Path, version: str, case_from: str) -> None:
-    named = {}
-    for kind in ("ui", "v1", "v2"):
-        imported(by_status(export(version, kind), tmp_path / kind, "r", case=case_from))
-        named[kind] = {case: row["outcome"] for case, row in columns(tmp_path / kind, "r").items()}
-    assert named["ui"] == named["v1"] == named["v2"]
-    if case_from == "example":
-        assert sorted(named["ui"]) == sorted(example_ids().values())
-
-
 # ---------- TF24-31 ----------
 
 COMPARED = ("verdict", "sentence", "inputs", "rows", "control", "test", "difference", "by_input", "direction", "limits", "guidance")
@@ -189,10 +177,21 @@ def _fix_check(tmp: Path, kind: str, mode: str, feedback: bool = False) -> dict[
     return doc
 
 
+_FIRST: dict[str, dict[str, Any]] = {}
+
+
+def _first(factory: Any, mode: str) -> dict[str, Any]:
+    """The fix check of the v1 run queries, which every other export's is compared with: made
+    once in a store of its own. Read-only."""
+    if mode not in _FIRST:
+        _FIRST[mode] = _fix_check(factory.mktemp(f"ls-first-{mode}"), "v1", mode)
+    return _FIRST[mode]
+
+
 @pytest.mark.parametrize("kind", EXPORTS)
-def test_tf24_31_a_fix_check_by_status_counts_the_same_from_every_export(tmp_path: Path, kind: str) -> None:
+def test_tf24_31_a_fix_check_by_status_counts_the_same_from_every_export(tmp_path: Path, tmp_path_factory: Any, kind: str) -> None:
     doc = _fix_check(tmp_path / kind, kind, "status")
-    first = _fix_check(tmp_path / "first", "v1", "status")
+    first = _first(tmp_path_factory, "status")
     for key in COMPARED:
         assert _same(doc[key], first[key]), (kind, key, doc[key], first[key])
     assert (doc["rows"]["old"]["failed"], doc["rows"]["old"]["runs"]) == (1, 10)
@@ -201,11 +200,11 @@ def test_tf24_31_a_fix_check_by_status_counts_the_same_from_every_export(tmp_pat
 
 
 @pytest.mark.parametrize(("kind", "feedback"), [("v1", False), ("ui", False), ("v2", True), ("v2-subtree", True), ("cli-runs", True), ("cli-traces", True)])
-def test_tf24_31_by_the_score_every_export_that_holds_every_score_counts_the_same(tmp_path: Path, kind: str, feedback: bool) -> None:
+def test_tf24_31_by_the_score_every_export_that_holds_every_score_counts_the_same(tmp_path: Path, tmp_path_factory: Any, kind: str, feedback: bool) -> None:
     doc = _fix_check(tmp_path / kind, kind, "exact", feedback)
     assert (doc["rows"]["old"]["failed"], doc["rows"]["old"]["runs"], doc["rows"]["old"]["no_outcome"]) == (4, 10, 0)
     assert (doc["rows"]["new"]["failed"], doc["rows"]["new"]["runs"], doc["rows"]["new"]["no_outcome"]) == (2, 10, 0)
-    first = _fix_check(tmp_path / "first", "v1", "exact")
+    first = _first(tmp_path_factory, "exact")
     for key in COMPARED:
         assert _same(doc[key], first[key]), (kind, key)
 

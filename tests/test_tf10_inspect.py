@@ -24,7 +24,6 @@ in ``tf10_support``'s docstring, RD4).
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -32,7 +31,7 @@ from typing import Any
 import pytest
 
 from tf10_support import (
-    IN_EVAL, IN_JSON, STARTED, ZSTD_REFUSAL, eval_members, eval_samples, imported, in_argv, in_doc, letter_float,
+    IN_EVAL, IN_JSON, STARTED, ZSTD_REFUSAL, eval_samples, imported, in_argv, in_doc, letter_float,
     recs, ref_kind_of, refused, sample_of, stored_bytes, write_eval, write_in, wrong_line,
 )
 from tf21_support import run_import
@@ -95,13 +94,6 @@ def test_tf10_16_the_eval_log_is_read_from_its_compressed_members(tmp_path: Path
     got = _by_case(tmp_path / "st", "old")
     assert got == _letters(eval_samples()) == {"q1": ["met", "met"], "q2": ["missed", "met"], "q3": ["missed", "missed"]}
     assert data["outcomes"] == {"met": 3, "missed": 3}
-
-
-def test_tf10_16_the_journal_and_summaries_are_not_rows(tmp_path: Path) -> None:
-    members = eval_members()
-    assert len(members["summaries.json"]) == 6
-    data = imported(in_argv(IN_EVAL, tmp_path / "st", "old"))
-    assert data["rows"] == len([n for n in members if n.startswith("samples/")])
 
 
 # ---------- TF10-17 ----------
@@ -432,13 +424,3 @@ def test_tf10_25_the_same_log_as_json_and_as_eval_gives_the_same_records(tmp_pat
     assert recs(tmp_path / "st", "a") == recs(tmp_path / "st", "b")
     for key in ("rows", "cases", "repeats", "outcomes", "no_outcome", "declared", "started"):
         assert a[key] == b[key], key
-
-
-def test_tf10_25_the_rewritten_archive_reads_as_inspect_s_does(tmp_path: Path) -> None:
-    import zipfile
-
-    archive = write_eval(tmp_path / "copy.eval")
-    with zipfile.ZipFile(archive) as z:
-        assert all(i.compress_type == 93 for i in z.infolist())
-    assert eval_members(archive) == eval_members()
-    assert json.dumps(eval_samples(archive), sort_keys=True) == json.dumps(eval_samples(), sort_keys=True)

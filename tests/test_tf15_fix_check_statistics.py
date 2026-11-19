@@ -94,6 +94,7 @@ def test_tf15_s2_one_input_gives_newcombes_worked_example() -> None:
     assert lo == pytest.approx(0.0528, abs=5e-5) and hi == pytest.approx(0.3382, abs=5e-5)
 
 
+@pytest.mark.math
 def test_tf15_s3_the_interval_holds_its_nominal_coverage_with_one_new_try_per_input() -> None:
     """The failing-from design of the README's patch example (6 inputs, 4 old tries, 1 new) under
     no change, 1,500 seeded draws. The statistics check found Sato's interval covering 86-87% here

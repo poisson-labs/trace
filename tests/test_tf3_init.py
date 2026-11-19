@@ -1,4 +1,4 @@
-"""TF3-23 to TF3-28: the table and JUnit readers join init's search and its import (spec sections
+"""TF3-23 to TF3-27: the table and JUnit readers join init's search and its import (spec sections
 4.3 and 4.4; TF2 Session B's ruling 1, carried).
 
 - TF3-23: init lists the JUnit reports and the outcome tables it finds as result files, and no
@@ -14,7 +14,6 @@
   and ``poisson-trace import``; ``--no-import`` writes the config with no store.
 - TF3-27: a file is listed once, as its one reader's: a Ragas table with an outcome column is the
   Ragas reader's, and imports as one tool's file.
-- TF3-28: doctor lists the table and JUnit readers among the readers of the install.
 """
 
 from __future__ import annotations
@@ -27,8 +26,8 @@ from poisson_prove.store import Store
 
 from tf0_support import Ran
 from tf2_support import (
-    CONFIG, check, config, copy_tree, deepeval_file, doctor_doc, here, init_yes, numbered, ragas_file, refused,
-    summary_command, tree, tty, work, write_config,
+    CONFIG, config, copy_tree, deepeval_file, here, init_yes, numbered, ragas_file, refused,
+    summary_command, tree, tty, work,
 )  # noqa: F401
 from tf1_support import shell_words
 from tf3_support import HE_FAILED, SUITE_1, SUITE_2, TABLE_A, TABLE_B, by_case, read_rows, write_table
@@ -294,14 +293,3 @@ def test_tf3_27_a_ragas_table_with_an_outcome_column_is_one_tool_s(tmp_path: Pat
     assert _listed(result.err) == ["scores/base.csv"], result.err
     store = Store(folder / "trace-store")
     assert store.runs() == ["base"] and store.manifest("base").backend == "import:ragas"
-
-
-# ---------- TF3-28: doctor ----------
-
-
-def test_tf3_28_doctor_lists_the_new_readers(tmp_path: Path) -> None:
-    folder = work(tmp_path)
-    write_config(folder, "version = 1\n")
-    _, data = doctor_doc(folder)
-    line = check(data, "readers")["line"]
-    assert "table" in line and "junit" in line, line

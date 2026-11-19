@@ -682,7 +682,7 @@ def world(factory: Any, name: str, kind: str, mode: str = "exact") -> tuple[Path
     the run ``RUN``, with its ``--json`` summary: by the ``exact`` score at 0.5 (``mode``
     ``exact``) or by the root's error (``error``), the case the input's key. Read-only: a test
     that writes takes its own."""
-    key = (name, kind, mode)
+    key = (experiment(name), kind, mode)
     if key not in _WORLD:
         root = factory.mktemp(f"bt-{name}-{kind}-{mode}") / "st"
         argv = by_error(export(name, kind), root, RUN) if mode == "error" else bt_argv(export(name, kind), root, RUN)

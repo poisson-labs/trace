@@ -21,19 +21,14 @@ import re
 
 import pytest
 
-from tf0_support import CLI_LOOK, EXIT_CODES, REPR, VERDICT_LINE, Item, Ran, chdir, corpus, doc_exit_codes, prepare, run_item, stderr_shape
+from tf0_support import CLI_LOOK, EXIT_CODES, REPR, VERDICT_LINE, Item, Ran, corpus, corpus_ran, doc_exit_codes, stderr_shape
 
 CORPUS = corpus()
 
 
 @pytest.fixture(scope="module")
 def ran(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Ran]:
-    work = prepare(tmp_path_factory.mktemp("tf0-corpus"))
-    results = {}
-    with chdir(work):
-        for item in CORPUS:
-            results[item.label] = run_item(item)
-    return results
+    return corpus_ran(tmp_path_factory)
 
 
 def _held(item: Item, result: Ran) -> list[str]:

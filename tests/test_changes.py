@@ -1,7 +1,7 @@
 """TR57 to TR60 through the command line, and the ``changes`` verb's own JSON, bytes and
 refusals: the per-input flags against Prove's public statistics, Fisher's test on each input then
 Benjamini and Hochberg's correction (``poisson_prove.stats``, a dev oracle, imported inside the test),
-the per-row limit against Prove's ``mde_two_proportion``, the attainability numbers, and the
+that no row carries a per-input limit, the attainability numbers, and the
 order and length of the flags table."""
 
 from __future__ import annotations
@@ -99,7 +99,7 @@ def test_tr57_each_row_is_fisher_on_its_counts_and_flagged_by_its_q(tmp_path: Pa
 # ---------- TR58 ----------
 
 
-def test_tr58_each_row_carries_proves_per_cell_limit() -> None:
+def test_tr58_no_row_carries_a_per_input_limit() -> None:
     """ST9 (ruled 2026-10-20): the per-input limit is dropped, from the table and the JSON, at any
     alpha; no row carries it (no printed value was reached 4 times in 5 by the flag Trace raises)."""
     for root, a, b, events in ((TAU2, TAU2_A, TAU2_B, TAU2_EVENTS), (TAU2, TAU2_B, PILOT, TAU2_EVENTS)):

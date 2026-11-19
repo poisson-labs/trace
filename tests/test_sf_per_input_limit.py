@@ -14,8 +14,8 @@ share with the old arm's tries and the baseline with the new arm's; Prove fixed 
   Prove's ``mde_two_proportion`` gives (Trace's own decision for a share of 1, yes/no 8; 0.0.1
   measured a rise from ``1 - 0.5 / runs_old`` and gave a number).
 
-All three are the math lane's (§17.5): the statistic against its reference and its property. TR57 and
-TR58 (``test_paired.py``) hold the same limit equal to Prove's public function, in the code lane.
+All three are the math lane's (§17.5): the statistic against its reference and its property. TR57
+(``test_paired.py``) holds the same limit equal to Prove's public function.
 """
 
 from __future__ import annotations

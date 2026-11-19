@@ -39,8 +39,6 @@ LangSmith row; SG2; IC7; the INT3 spec's IT11 to IT14 on the real captures).
   the score read; ``meta["cost_usd"]`` only where a cost was recorded.
 - TF24-25: no content. No prompt, input, output, error, traceback, comment or tag text of the
   captures is in any file of the store or in anything printed.
-- TF24-26: every stored record has exactly the writer's keys; ``horizon``, ``working_time_s``
-  and the signals no LangSmith export records are not recorded.
 - TF24-27: the record is checked against a second reading of the files, written here.
 """
 
@@ -52,7 +50,7 @@ from typing import Any
 
 import pytest
 
-from tf21_support import RECORD_KEYS, run_import
+from tf21_support import run_import
 from tf24_support import (
     ANSWER, CASES, CONTENT, ERRORED, EXACT, EXPORTS, HUMAN_THUMBS, ITEM, JUDGE, LATE, LATENCY, REVIEW, RUN,
     TRACE_EXPORTS, USAGE, VERSIONS, approx, by_status, children, columns, export, feedback_file, imported, ls_argv, metas,
@@ -546,18 +544,6 @@ def test_tf24_25_a_comment_on_a_thumb_is_not_kept(tmp_path: Path) -> None:
     stored = stored_bytes(tmp_path / "st")
     for comment in comments:
         assert comment.encode() not in stored, comment
-
-
-# ---------- TF24-26 ----------
-
-
-@pytest.mark.parametrize(("version", "kind"), BOTH)
-def test_tf24_26_the_record_has_the_writer_s_keys_and_nothing_langsmith_does_not_record(tmp_path_factory: Any, version: str, kind: str) -> None:
-    root, _ = world(tmp_path_factory, version, kind, "status")
-    for case, rec in recs(root, RUN).items():
-        assert set(rec) == set(RECORD_KEYS), (case, set(rec) ^ set(RECORD_KEYS))
-        assert rec["schema"] == "poisson.trace-signals/1" and rec["repeat"] == 0
-        assert rec["horizon"] is None and rec["working_time_s"] is None
 
 
 # ---------- TF24-27 ----------

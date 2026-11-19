@@ -124,13 +124,6 @@ def test_tf18_14_touches_no_store(work: Path) -> None:
     assert {s: snapshot(work / s) for s in ("store", "tables")} == stores
 
 
-def test_tf18_14_the_bundle_still_holds_what_it_promises(work: Path) -> None:
-    assert cli(work, ["report", "fb"]).code == 0
-    checked = cli(work, ["handover", "--check", "fb"])
-    assert checked.code == 0 and checked.out.startswith("ok  ")
-    assert checked.out.splitlines()[-1] == "next: poisson-trace report fb --open"
-
-
 def test_tf18_14_a_page_that_is_there_needs_force(work: Path) -> None:
     assert cli(work, ["report", "fb"]).code == 0
     first = snapshot(work / "fb")

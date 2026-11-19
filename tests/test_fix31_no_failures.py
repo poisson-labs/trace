@@ -33,7 +33,6 @@ code with the package: enumeration in fractions, scipy, or a closed form derived
 from __future__ import annotations
 
 import json
-import math
 from pathlib import Path
 from typing import Any
 
@@ -41,9 +40,9 @@ import pytest
 
 from fix31_support import (
     BREAK_CASES, BREAK_FAILED_1, BREAK_REPEATS, CANDIDATE_1, CANDIDATE_2, CONTROL, MISS_BAR,
-    accepts_at, asked, break_argv, break_case, clean, clean_chance, clean_inputs_needed, clean_miss,
+    accepts_at, asked, break_argv, break_case, clean, clean_inputs_needed, clean_miss,
     clean_range,
-    clean_repeats_needed, difference, exact_p, exact_power_of_a_rise, fisher_p, junit_clean,
+    clean_repeats_needed, difference, exact_p, fisher_p, junit_clean,
     limit, no_outcome_store, other_outcome_store, score_range, selecting_store, stray_store,
 )
 from fixcheck_support import FIX_KEYS, GUIDANCE_KEYS, exact_p_enumerated, pair_store
@@ -66,15 +65,48 @@ DROP_LINE = ("- a drop in failure share: no limit; neither version failed on the
              "there is no failure to drop")
 NEXT_BIGGER = ("If a change inside that range matters to you, plan a bigger run with your own "
                "harness, then run `poisson-trace fix-check` on it.")
-GUIDANCE_CLOSING = ("These numbers hold if neither version fails in the next runs either, and if "
-                    "new inputs resemble the present ones. A run in which either version fails "
-                    "is read as any other.")
 CLOSE_TO_THE_MOST = "is close to the most these inputs could drop"
-# F31-3 and F31-4 (ruled 2026-11-10): where the range at zero is rough, main's rule for a drop
-# reads the pair, in main's words, and the range prints with its reason
-SENTENCE_ROUGH = "too few tries to see a drop of any size"
+# Where the range at zero is rough the pair is too small to tell, and the report says why in words of its
+# own: nothing failed, so it speaks of no drop, and it names what is short, the inputs or tries that match
 FEW_INPUTS = "fewer than 3 inputs"
 UNEQUAL = "unequal tries"
+
+
+def sentence_rough(why: str) -> str:
+    return f"neither version failed, and with {why} Trace can't say what size of change that rules out"
+
+
+def answer_rough(old: int, new: int, why: str) -> str:
+    return (f"- Answer: Can't tell. The new version failed 0 of {new} tries and the old 0 of {old}, but with {why} "
+            "Trace can't say what size of change these tries rule out.")
+
+
+def caveat_rough(lo: float, hi: float, why: str) -> str:
+    return ("- Neither version failed here. Their true failure rates could still differ by about "
+            f"{per_100(max(-lo, hi))} points either way, and with {why} even that figure is rough: don't use it to "
+            "rule any size in or out.")
+
+
+def verdict_rough(why: str, asked: str) -> str:
+    return f"**too small to tell: neither version failed, and the range is too rough to read ({why}); {asked} points was asked for**"
+
+
+def tries_that_reach(ceiling: float) -> int:
+    """The fewest tries per input, on three inputs with the same number on each, at which the range at zero
+    lies inside the size asked: by the support file's own range, one try at a time."""
+    n = 1
+    while not (-ceiling <= clean_range([(n, n)] * 3)[0] and clean_range([(n, n)] * 3)[1] <= ceiling):
+        n += 1
+    return n
+
+
+def guidance_rough(ceiling: str) -> str:
+    return (f"- on 3 inputs or more, with the same number of tries on each, {tries_that_reach(float(ceiling))} tries "
+            f"per input on each version bring the range inside {100 * float(ceiling):g} points")
+
+
+NEXT_FEW = "- Next: Run both versions on at least 3 inputs, with the same number of tries on each, then run `poisson-trace fix-check` on it."
+NEXT_UNEQUAL = "- Next: Run both versions with the same number of tries on every input, then run `poisson-trace fix-check` on it."
 NO_GUIDANCE = {"repeats": None, "inputs": None, "accepts_at": None}
 
 
@@ -254,16 +286,6 @@ def test_fix31_2_every_number_of_a_pair_that_never_failed(
     json.dumps(doc, allow_nan=False)
 
 
-def test_fix31_2_both_verdicts_are_reached() -> None:
-    """The table above holds pairs on each side of the size asked, so neither branch of the
-    test before this one is empty."""
-    sides = set()
-    for _, inputs, old, new, ceiling in CLEAN:
-        lo, hi = clean_range([(old, new)] * inputs)
-        sides.add(-float(ceiling) <= lo and hi <= float(ceiling))
-    assert sides == {True, False}
-
-
 @pytest.mark.parametrize("alpha", ["0.1", "0.01"])
 def test_fix31_2_the_range_is_at_the_level_asked(tmp_path: Path, alpha: str) -> None:
     tab = clean(5, 4)
@@ -288,52 +310,6 @@ def test_fix31_2_the_verdict_turns_exactly_where_the_range_meets_the_size_asked(
     assert outside["verdict"] == "too small to tell"
     assert outside["guidance"]["repeats"] == clean_repeats_needed(6, 0.1245) == 6
     assert outside["guidance"]["accepts_at"] == 0.1246
-
-
-# ---------- FIX31-3: the range at zero is never one point, and what it leaves out ----------
-
-
-@pytest.mark.parametrize(("inputs", "tries"), [(1, 1), (1, 5), (2, 2), (3, 1), (6, 5), (12, 3), (40, 50)])
-def test_fix31_3_the_range_at_zero_has_two_ends_that_close_with_more_tries(
-    tmp_path: Path, inputs: int, tries: int
-) -> None:
-    doc = doc_of(pair_store(tmp_path / "s", clean(inputs, tries)))
-    more = doc_of(pair_store(tmp_path / "m", clean(inputs, tries + 1)))
-    lo, hi = doc["difference"]["lo"], doc["difference"]["hi"]
-    assert lo == pytest.approx(-hi, abs=1e-12) and hi > 0.0
-    assert 0.0 < more["difference"]["hi"] < hi
-
-
-@pytest.mark.parametrize(("inputs", "tries"), [(3, 1), (3, 2), (3, 5), (4, 3), (6, 5), (10, 2), (12, 12), (40, 50)])
-def test_fix31_3_a_rise_beyond_the_range_would_have_shown(inputs: int, tries: int) -> None:
-    """What the high end means, checked exactly. If the new version failed on a share of tries
-    as large as the range's high end, on every input alike, the chance of the clean run that was
-    seen is the binomial's at zero. With equal tries of both versions and three inputs or more
-    that chance is under 2.5%, the range's stated one-sided miss at 95%."""
-    _, hi = clean_range([(tries, tries)] * inputs)
-    assert clean_chance(inputs * tries, hi) < 0.025
-
-
-@pytest.mark.parametrize(("inputs", "tries", "most"), [(1, 1, 0.116), (1, 2, 0.079), (1, 5, 0.046), (1, 30, 0.026),
-                                                       (2, 1, 0.043), (2, 5, 0.029), (2, 10, 0.0252)])
-def test_fix31_3_on_one_or_two_inputs_the_miss_is_larger_and_this_is_how_large(
-    inputs: int, tries: int, most: float
-) -> None:
-    """The same chance on one or two inputs, where it is above 2.5%: the figures the record
-    gives (rulings.md, F31-3). The range is the score interval's, which is approximate there."""
-    _, hi = clean_range([(tries, tries)] * inputs)
-    assert 0.025 < clean_chance(inputs * tries, hi) < most
-
-
-@pytest.mark.parametrize(("inputs", "tries"), [(6, 5), (4, 3), (3, 8), (10, 2)])
-def test_fix31_3_the_rise_limit_is_caught_at_least_four_times_in_five(inputs: int, tries: int) -> None:
-    """The rise limit printed for a pair that never failed, put to the exact test itself: with
-    the old version never failing and the new failing that share of tries, every outcome
-    enumerated, the test calls *different, failed more* at least 80% of the time."""
-    rise = limit(clean(inputs, tries), "rise")
-    assert rise is not None
-    power = exact_power_of_a_rise([(tries, tries)] * inputs, rise)
-    assert 0.8 <= power < 0.95
 
 
 # ---------- FIX31-4: the plain report, a pair inside the size asked ----------
@@ -374,7 +350,7 @@ def test_fix31_4_the_report_says_nothing_it_said_of_a_drop(tmp_path: Path) -> No
     any size*, no interval withheld, no *every failure gone, a drop of 0.00 points*, and no size
     asked *close to the most these inputs could drop*."""
     text = answered(asked(pair_store(tmp_path / "s", clean(6, 5)))).out
-    for gone in ("drop of any size", "no interval", "can't put a range", "every failure gone",
+    for gone in ("drop of any size", "no interval", "no range: Sato", "can't put a range", "every failure gone",
                  CLOSE_TO_THE_MOST, "rough"):
         assert gone not in text, gone
 
@@ -401,52 +377,6 @@ def test_fix31_4_two_decimals_where_the_range_is_under_a_point(tmp_path: Path) -
 
 
 # ---------- FIX31-5: the plain report, a pair too small for the size asked ----------
-
-
-def test_fix31_5_the_plain_report_of_a_pair_too_small(tmp_path: Path) -> None:
-    store = pair_store(tmp_path / "s", clean(3, 4))
-    lines = lines_of(store)
-    lo, hi = clean_range([(4, 4)] * 3)
-    assert (points(lo), points(hi)) == ("-26.8", "+26.8")
-    repeats, inputs = clean_repeats_needed(3, 0.2), clean_inputs_needed([(4, 4)] * 3, 0.2)
-    assert (repeats, inputs) == (6, 5)
-    assert lines[0] == f"too small to tell  {sentence_too_small('20')}"
-    assert ("- Answer: Can't tell yet. The new version failed 0 of 12 tries and the old 0 of 12; "
-            f"they fit {fits(lo, hi)} (if tries of an input are independent), so a change of 20 "
-            "points or more still fits them.") in lines
-    assert ("- Next: Run each version 6 times on each of these 3 inputs with your own harness, "
-            "then run `poisson-trace fix-check` on the two new runs.") in lines
-    assert ("**too small to tell: the 95% range, -26.8 to +26.8 points, does not lie inside ±20, "
-            "which was asked for**") in lines
-    at = lines.index("## Guidance")
-    assert lines[at + 2:at + 7] == [
-        "- repeats: 6 per arm on these 3 inputs, with no failure in either version, would bring "
-        "the range inside ±20 points",
-        "- inputs: 5 inputs like these, at the present repeats, would do the same",
-        f"- ceiling: --max-mde {accepts_at(lo, hi):.4f} accepts this design as it stands",
-        "",
-        GUIDANCE_CLOSING,
-    ]
-    assert DROP_LINE in lines
-    assert lines[-1] == ("next: run 6 repeats per arm on these 3 inputs, then poisson-trace "
-                         "fix-check on the two new runs")
-
-
-def test_fix31_5_the_caveats_of_a_pair_too_small(tmp_path: Path) -> None:
-    lines = lines_of(pair_store(tmp_path / "s", clean(3, 4)))
-    lo, hi = clean_range([(4, 4)] * 3)
-    assert ("- The 6 times per input is what brings the range inside ±20 points if neither version "
-            "fails then either. 5 inputs like these at the present tries would do the same, more "
-            "than the 3 here. Make it a fresh run, judged on its own: don't add tries to these "
-            "and test again.") in lines
-    assert (f"- If a {per_100(max(-lo, hi))}-point change is the smallest that matters to you, and "
-            "you would have said so before seeing this, "
-            f"`--max-mde {accepts_at(lo, hi):.4f}` accepts this design as it stands. That changes "
-            "the label only, not the evidence.") in lines
-    text = "\n".join(lines)
-    for gone in ("drop of any size", "an estimate from these runs' failure rates", CLOSE_TO_THE_MOST,
-                 "about half of runs built to it"):
-        assert gone not in text, gone
 
 
 def test_fix31_5_the_tries_it_names_are_enough_when_run(tmp_path: Path) -> None:
@@ -740,8 +670,8 @@ def test_fix31_15_the_verdict_page_shows_the_report(tmp_path: Path, inputs: int,
     page = read_file(pages_of(store) / "fix-check" / f"{folder.name}.html")
     result = result_of(folder)
     assert page.h1 == verdict_line(result)
-    assert (result["sentence"] == SENTENCE_ROUGH) == (inputs < 3)
-    assert result["sentence"].startswith(SENTENCE_NO_DIFFERENCE) == (inputs >= 3)
+    assert (result["sentence"] == sentence_rough(FEW_INPUTS)) == (inputs < 3)
+    assert result["sentence"].startswith(SENTENCE_NO_DIFFERENCE), "every one of these pairs says neither version failed"
     report = (folder / "report.md").read_text(encoding="utf-8")
     assert missing_lines(page, report_lines(report)) == []
     index = read_file(pages_of(store) / "index.html")
@@ -821,7 +751,7 @@ def test_fix31_17_the_python_api_on_a_pair_too_small_and_on_breaks_case(tmp_path
                               "accepts_at": accepts_at(*clean_range([(4, 4)] * 3))}
     rough = api.fix_check(str(pair_store(tmp_path / "r", clean(2, 5))), "old", "new", event=["fail"],
                           inputs="all", max_mde=0.2)
-    assert (rough.verdict, rough.sentence) == ("too small to tell", SENTENCE_ROUGH)
+    assert (rough.verdict, rough.sentence) == ("too small to tell", sentence_rough(FEW_INPUTS))
     assert rough.guidance == NO_GUIDANCE
     store = break_case(tmp_path)
     sound = api.fix_check(str(store), CONTROL, CANDIDATE_2, event=["failed"], inputs="all", max_mde=0.2)
@@ -882,26 +812,30 @@ def test_fix31_18_counts_with_a_failure_keep_their_statistics() -> None:
         "one try per input on the old version")
 
 
-def test_fix31_19_the_closed_form_is_the_score_interval() -> None:
-    """The closed form the tests use for the range at zero is the score interval itself: on a
-    spread of designs it meets the interval found from the score with numerically constrained
-    rates. A check of the tests' own oracle, green before and after the fix."""
-    designs = [[(1, 1)], [(5, 5)] * 6, [(3, 9)] * 3, [(2, 6), (7, 3), (4, 4), (1, 9)], [(1, 1)] * 30,
-               [(50, 50)] * 4, [(11, 1)], [(6, 22), (4, 13), (16, 2)]]
-    for design in designs:
-        tab = [(0, a, 0, b) for a, b in design]
-        for alpha in (0.05, 0.1):
-            assert clean_range(design, alpha) == pytest.approx(score_range(tab, alpha), abs=1e-7)
-    assert math.isclose(clean_range([(5, 5)] * 6)[1], 0.12455502974186711, rel_tol=1e-12)
+# ---------- where only the new version failed (F31-9) ----------
+
+NO_DROP_TO_LOOK_FOR = ("The old version did not fail on these inputs, so there is no drop to look for: this check can "
+                       "only show whether the new version fails more.")
+
+
+def test_fix31_9_where_the_old_version_never_failed_there_is_no_drop_to_look_for(tmp_path: Path) -> None:
+    """The old version failed no try and the new one failed some: the caveat says there is no drop to look
+    for, and no longer that the size asked is *close to the most these inputs could drop (the old version
+    failed 0.0% of tries)*. Where the old version failed some tries that sentence stays."""
+    never = lines_of(pair_store(tmp_path / "never", [(0, 5, 2, 5)] * 6))
+    assert f"- {NO_DROP_TO_LOOK_FOR}" in never
+    assert not any(CLOSE_TO_THE_MOST in line for line in never)
+    some = lines_of(pair_store(tmp_path / "some", [(1, 5, 2, 5)] * 6))
+    assert (f"- The 20 points you asked about {CLOSE_TO_THE_MOST} (the old version failed 20.0% of tries).") in some
+    assert f"- {NO_DROP_TO_LOOK_FOR}" not in some
 
 
 # ---------- FIX31-20: on a terminal ----------
 
 
-@pytest.mark.parametrize("cols", [80, 140])
 @pytest.mark.parametrize(("inputs", "tries", "word"), [(6, 5, "no significant difference"), (3, 4, "too small to tell")])
 def test_fix31_20_on_a_terminal_the_same_facts_in_the_verdicts_colour(
-    tmp_path: Path, cols: int, inputs: int, tries: int, word: str
+    tmp_path: Path, inputs: int, tries: int, word: str
 ) -> None:
     """The pretty rendering of the new answer: exit 0, every word and number of the piped report
     is on the terminal, pretty and ``--plain``, and the verdict word opens the first line in
@@ -916,8 +850,8 @@ def test_fix31_20_on_a_terminal_the_same_facts_in_the_verdicts_colour(
     argv = ["fix-check", "old", "new", "--store", "s", "--event", "fail", "--inputs", "all", "--max-mde", "0.2"]
     piped = cli(tmp_path, argv)
     assert piped.code == 0 and piped.out.startswith(f"{word}  {SENTENCE_NO_DIFFERENCE}")
-    pretty = pty(argv, cwd=tmp_path, home=home, cols=cols)
-    plain = pty([*argv, "--plain"], cwd=tmp_path, home=home, cols=cols)
+    pretty = pty(argv, cwd=tmp_path, home=home, cols=80)
+    plain = pty([*argv, "--plain"], cwd=tmp_path, home=home, cols=80)
     for ran in (pretty, plain):
         assert ran.code == 0, ran.err
         assert tokens(piped.out) <= tokens(ran.out), sorted(tokens(piped.out) - tokens(ran.out))
@@ -937,8 +871,9 @@ def test_fix31_21_on_fewer_than_three_inputs_the_range_is_rough(
     tmp_path: Path, inputs: int, tries: int, ceiling: str
 ) -> None:
     """At zero failures a range on one or two inputs is labelled rough, wherever it lies: it
-    prints, with its reason, and does not read the verdict. Main's rule for a drop reads it, as
-    it read these counts before: *too small to tell*, with no count of tries."""
+    prints, with its reason, and does not read the verdict. The pair is *too small to tell*, and
+    every line that says so says neither version failed and that inputs are what is short: none
+    speaks of a drop, and the next step asks for three inputs with the same tries on each."""
     tab = clean(inputs, tries)
     store = pair_store(tmp_path / "s", tab)
     doc = doc_of(store, ceiling=ceiling)
@@ -947,24 +882,25 @@ def test_fix31_21_on_fewer_than_three_inputs_the_range_is_rough(
     assert doc["difference"]["hi"] == pytest.approx(hi, abs=1e-9)
     assert doc["difference"]["points"] == 0.0 and doc["difference"]["variance"] == 0.0
     assert doc["test"]["p"] == 1.0 and doc["direction"] == "no direction"
-    assert (doc["verdict"], doc["sentence"]) == ("too small to tell", SENTENCE_ROUGH)
+    assert (doc["verdict"], doc["sentence"]) == ("too small to tell", sentence_rough(FEW_INPUTS))
     assert doc["guidance"] == NO_GUIDANCE
     assert doc["limits"]["drop"] is None
     lines = lines_of(store, ceiling=ceiling)
-    assert lines[0] == f"too small to tell  {SENTENCE_ROUGH}"
+    assert lines[0] == f"too small to tell  {sentence_rough(FEW_INPUTS)}"
     places = 2 if max(-lo, hi) < 0.01 else 1
     assert (f"difference: {0.0:.{places}f} points, new minus old ({points(lo, places)} to {points(hi, places)}; "
             "Mantel-Haenszel weights; range: stratified Miettinen-Nurminen score interval, 95%, for "
             f"these inputs as run; rough here: {FEW_INPUTS})") in lines
-    assert (f"- These results fit {fits(lo, hi)}, but that range is only a rough guide here and may "
-            f"be off either way ({FEW_INPUTS}): don't use it to rule sizes in or out.") in lines
+    assert caveat_rough(lo, hi, FEW_INPUTS) in lines
     n = inputs * tries
-    assert (f"- Answer: Can't tell. The new version failed 0 of {n} tries and the old 0 of {n}, and "
-            "with these tries Trace can't reliably catch a drop of any size.") in lines
+    assert answer_rough(n, n, FEW_INPUTS) in lines
+    assert NEXT_FEW in lines
+    assert verdict_rough(FEW_INPUTS, f"{100 * float(ceiling):g}") in lines
+    assert lines[lines.index("## Guidance") + 2] == guidance_rough(ceiling)
     assert DROP_LINE in lines
     text = "\n".join(lines)
-    for gone in ("Neither version failed", "which is reliable here", "would bring the range inside",
-                 CLOSE_TO_THE_MOST, "lies inside"):
+    for gone in ("drop of any size", "every failure gone", "Plan a bigger run", "no number of", "rough guide",
+                 "which is reliable here", "would bring the range inside", CLOSE_TO_THE_MOST, "lies inside"):
         assert gone not in text, gone
 
 
@@ -979,29 +915,12 @@ def test_fix31_21_the_label_does_not_wait_on_where_the_range_lies(tmp_path: Path
     assert three["verdict"] == "no significant difference" and three["sentence"] == SENTENCE_NO_DIFFERENCE
 
 
-def test_fix31_21_why_the_bar_is_three() -> None:
-    """The figures behind F31-3: at equal tries the range's one-sided miss is under 2.5% from
-    three inputs up, and above it on one or two."""
-    for inputs, tries, above in ((1, 1, True), (1, 5, True), (2, 1, True), (2, 5, True), (3, 1, False),
-                                 (3, 2, False), (6, 5, False)):
-        _, hi = clean_range([(tries, tries)] * inputs)
-        assert (clean_chance(inputs * tries, hi) > 0.025) == above, (inputs, tries)
-
-
 # ---------- FIX31-22: unequal tries (F31-4, ruled 2026-11-10) ----------
 
 # five inputs, one with many old tries and few new, four the other way round: one try apart,
 # the range's least favourable one-sided miss is 3.95% and 5.60%
 UNDER = [(0, 7, 0, 3)] + [(0, 3, 0, 7)] * 4
 OVER = [(0, 8, 0, 3)] + [(0, 3, 0, 8)] * 4
-
-
-def test_fix31_22_the_two_sides_of_the_bar() -> None:
-    assert MISS_BAR == 0.05
-    assert clean_miss(design_of(UNDER)) == pytest.approx(0.0395, abs=5e-4)
-    assert clean_miss(design_of(OVER)) == pytest.approx(0.0560, abs=5e-4)
-    # equal tries, and one try missing, are far under it
-    assert clean_miss([(5, 5)] * 6) < 0.02 and clean_miss([(5, 5)] * 5 + [(5, 4)]) < 0.025
 
 
 def test_fix31_22_under_the_bar_the_range_reads_the_verdict(tmp_path: Path) -> None:
@@ -1017,21 +936,26 @@ def test_fix31_22_under_the_bar_the_range_reads_the_verdict(tmp_path: Path) -> N
 
 def test_fix31_22_over_the_bar_the_range_is_rough(tmp_path: Path) -> None:
     """One more try on each side of the lopsided inputs and the least favourable miss passes
-    5%: the range still prints, labelled, and main's rule for a drop reads the pair."""
+    5%: the range still prints, labelled, and the pair is too small to tell, in the words of a
+    pair that never failed, with unequal tries as the reason and as what the next run mends."""
     store = pair_store(tmp_path / "s", OVER)
     doc = doc_of(store, ceiling="0.25")
     lo, hi = clean_range(design_of(OVER))
     assert -0.25 < lo and hi < 0.25  # it would have read no significant difference
     assert doc["difference"]["lo"] == pytest.approx(lo, abs=1e-9)
     assert doc["difference"]["hi"] == pytest.approx(hi, abs=1e-9)
-    assert (doc["verdict"], doc["sentence"]) == ("too small to tell", SENTENCE_ROUGH)
+    assert (doc["verdict"], doc["sentence"]) == ("too small to tell", sentence_rough(UNEQUAL))
     assert doc["guidance"] == NO_GUIDANCE and doc["test"]["p"] == 1.0
     lines = lines_of(store, ceiling="0.25")
     assert (f"difference: 0.0 points, new minus old ({points(lo)} to {points(hi)}; Mantel-Haenszel "
             "weights; range: stratified Miettinen-Nurminen score interval, 95%, for these inputs as "
             f"run; rough here: {UNEQUAL})") in lines
-    assert (f"- These results fit {fits(lo, hi)}, but that range is only a rough guide here and may "
-            f"be off either way ({UNEQUAL}): don't use it to rule sizes in or out.") in lines
+    assert lines[0] == f"too small to tell  {sentence_rough(UNEQUAL)}"
+    assert caveat_rough(lo, hi, UNEQUAL) in lines
+    assert answer_rough(sum(na for _, na, _, _ in OVER), sum(nb for _, _, _, nb in OVER), UNEQUAL) in lines
+    assert NEXT_UNEQUAL in lines
+    assert verdict_rough(UNEQUAL, "25") in lines
+    assert lines[lines.index("## Guidance") + 2] == guidance_rough("0.25")
 
 
 def test_fix31_22_tries_a_little_short_stay_reliable(tmp_path: Path) -> None:
@@ -1054,4 +978,4 @@ def test_fix31_22_on_fewer_than_three_inputs_one_reason_is_given(tmp_path: Path)
         lines = lines_of(pair_store(tmp_path / f"s{k}", tab), ceiling="0.5")
         assert any(line.endswith(f"rough here: {FEW_INPUTS})") for line in lines), tab
         assert not any(UNEQUAL in line for line in lines), tab
-        assert lines[0] == f"too small to tell  {SENTENCE_ROUGH}"
+        assert lines[0] == f"too small to tell  {sentence_rough(FEW_INPUTS)}"

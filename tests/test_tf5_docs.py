@@ -123,7 +123,7 @@ def test_tf5_61_every_flag_of_a_tool_s_import_is_on_its_page(page: Path) -> None
 
     ran = trace(["import", page.stem, "--help"])
     assert ran.code == 0, ran.text
-    flags = sorted(set(re.findall(r"(?<![\w-])--[a-z][a-z-]+", ran.out)) - {"--help", "--version", "--plain", "--json", "--debug", "--config"})
+    flags = sorted(set(re.findall(r"(?<![\w-])--[a-z][a-z-]+(?![\w-])", ran.out)) - {"--help", "--version", "--plain", "--json", "--debug", "--config"})
     text = read(page)
     missing = [flag for flag in flags if not re.search(rf"(?<![\w-]){re.escape(flag)}(?![\w-])", text)]
     assert missing == [], f"{page.name} never names {missing}"

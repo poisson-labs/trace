@@ -36,7 +36,7 @@ import pytest
 from tf26_support import (
     API, CALL_ID, CALLS, CASES, DIGEST, EVALUATE, EVALUATION, EXACT, LLM_OP, MODEL, NAMES, PROJECT_ID, QUESTIONS, RETRIED, ROOTS_ONLY, ROW,
     SHOWN, TRACE_ID, UI, UI_CALLS, UI_TABLES, VERSIONS, Transport, calls_of, case_of, cells_of, export, model_call, of_evaluation, op,
-    rows_by_case, under, work_calls,
+    picked, rows_by_case, under, work_calls,
 )
 
 ROWS = {"old": 6, "new": 6, "baseline": 10, "candidate": 10}
@@ -92,9 +92,11 @@ def test_tf26_1_the_page_s_downloads_in_four_formats_for_both_views() -> None:
         calls = calls_of(export("baseline", kind)[0])
         assert len(calls) == 32 and all(op(c) == ROW for c in calls)
         assert {name: len(of_evaluation(calls, name)) for name in NAMES} == ROWS
+    assert len(list(UI.iterdir())) == 8
     for kind in UI_TABLES:
         fields, rows = cells_of(export("baseline", kind)[0])
         assert len(rows) == 32 and len(fields) == 65
+        assert picked("old", kind), "the page's download holds every evaluation, so a command on it picks one"
     assert not list(UI.glob("*.parquet")), "the page offers no Parquet"
     for path in ROOTS_ONLY[1:3]:
         assert [op(c) for c in calls_of(path)] == [EVALUATE] * 4

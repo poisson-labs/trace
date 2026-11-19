@@ -23,7 +23,7 @@
   ],
   "old none, new some: --max-mde 0.2": [
    0,
-   "971ed26407f58753aeddf74ebf22d85046db3b5ce648dcc8647a2c5144cd712e",
+   "da15386f0fb909cf68dcd577157b4b8f7dda6340fecea336e3975338c272cccb",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "old none, new some: --max-mde 0.2 --json": [
@@ -33,7 +33,7 @@
   ],
   "old none, new some: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
    0,
-   "6790e0a4c7a5bd978679681b87884a72c68fc6341a8e7ff15a283c483229ee7a",
+   "e4470b27e89888c4d05a427760287fd0e0cbdf230529950f89fa09d34c5d86fe",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "old none, new some: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
@@ -63,7 +63,7 @@
   ],
   "old none, new every try: --max-mde 0.2": [
    0,
-   "b2d1a1d2ce85f87208d7b2d5b4a16b1141a3553e0e4ff9b71c4f40d5377795fd",
+   "168aaebb3144f84429e5072d82bf6b7d8a4d4473977643defe41203c039a6759",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "old none, new every try: --max-mde 0.2 --json": [
@@ -73,7 +73,7 @@
   ],
   "old none, new every try: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
    0,
-   "3e309f28594aaa918233122ceeb948d7d06161113b9a579eb7467427647cbd47",
+   "85d996374ae8f952e33cff227e31c1e9b82424d29fe77105a324a444d1527977",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "old none, new every try: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
@@ -83,7 +83,7 @@
   ],
   "new none, old every try: --max-mde 0.2": [
    0,
-   "9ea01960fad340bfbbbea80199684ad5f58e60fdc393b423f798761470b865f6",
+   "27879d6783f54af8478f5af8fc379443e25ba76ff97e84219379cc759b12d55e",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "new none, old every try: --max-mde 0.2 --json": [
@@ -93,7 +93,7 @@
   ],
   "new none, old every try: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
    0,
-   "90a6dfe1781141c8de9b104a22c826911fc00e8794abe3cd05004c2df3b83816",
+   "6867be2455ab8363661b1b1c2d94486e759000aa619bf1e414387bc8866ce0f5",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "new none, old every try: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
@@ -103,7 +103,7 @@
   ],
   "old none, new on several inputs: --max-mde 0.2": [
    0,
-   "4cc9b1b21da04c181a895aa63cad0508c7c0603cc324e1c4eb7fee712bdc8a49",
+   "70f86805c6ca8ab0f93fb752366da7694d639d9deacfa8fd18842f717333c7a1",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "old none, new on several inputs: --max-mde 0.2 --json": [
@@ -113,7 +113,7 @@
   ],
   "old none, new on several inputs: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
    0,
-   "7e50e951f58d8a87e5cf100373f8d03033309db6cd282b1e669c98231de67cb7",
+   "d1204c26b91a08435c33fbdb7a0d0efb49762861b3c7482d79ae384f6efb7df5",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "old none, new on several inputs: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
@@ -143,7 +143,7 @@
   ],
   "one input, one try, old failed: --max-mde 0.2": [
    0,
-   "df7a40381c74ca1b94b05fdb9f2830e78b35d9b3500de3ed4793de085336e1b6",
+   "dbc7118589c133c843ed4e0dbddceb1864a95843ebb462e76193c23aa58008b0",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "one input, one try, old failed: --max-mde 0.2 --json": [
@@ -153,7 +153,7 @@
   ],
   "one input, one try, old failed: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
    0,
-   "c8e1f5ed1fc204a1b670c976ad98263952b2adafdb9458dad406563b0fe11425",
+   "0deb1c80d263fc51108de60c6e8b37934905485bd57c5cf7694865bbeb257494",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "one input, one try, old failed: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
@@ -163,7 +163,7 @@
   ],
   "one input, one try, new failed: --max-mde 0.2": [
    0,
-   "115440dde9efd7ec796221ba2abe0d6fffb0bc580149eae05ba2e8ee2a28a969",
+   "14326b763ce1e5f206c933ad2d0f0de05dc2efecd4d99eed0f60efc867203346",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "one input, one try, new failed: --max-mde 0.2 --json": [
@@ -173,7 +173,7 @@
   ],
   "one input, one try, new failed: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
    0,
-   "23b14894e56300e4ab08217b22261182a77571806eab6fe81768e7c9979caa05",
+   "dbc5f9372529c0dec4a23e0dc76adfc315f064bc718b2ff6f1209d342c1ead62",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "one input, one try, new failed: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
@@ -183,7 +183,7 @@
   ],
   "every try failed in both: --max-mde 0.2": [
    0,
-   "4585974fdd26133e7e5b922b0eaba3429c35d556645619d73f48e9017e6496bb",
+   "da067e13a3d56f0aff7d6196baaa61a172db14038adf71a46a2c35f10b77cd83",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "every try failed in both: --max-mde 0.2 --json": [
@@ -193,7 +193,7 @@
   ],
   "every try failed in both: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
    0,
-   "ee51443814c3821689691bbc7a87bbba4e34c35fa43f8b114b881ea90ce48042",
+   "29c37b241c5b1c532a3f0938f2c105e442c439d3495989ebaa7a7b925c01f487",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "every try failed in both: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [
@@ -323,7 +323,7 @@
   ],
   "old none on unequal tries: --max-mde 0.2": [
    0,
-   "450fcb7774d5d141c31e9af46bc552a730e0ef3eb02f3c1a498b23c0fe69c346",
+   "c24d69a3f2237df639a1844c383064fd42fe38284b0fe13b38f0f6ddedd613aa",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "old none on unequal tries: --max-mde 0.2 --json": [
@@ -333,7 +333,7 @@
   ],
   "old none on unequal tries: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7": [
    0,
-   "140486b01e9c33041077dd84f292193d237545d48d6bc23f6a7897bb4a54f150",
+   "477efd2927bc749889bb937eb77a355fbb9c21f1e3057725c803a42ddbe1cf56",
    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   ],
   "old none on unequal tries: --max-mde 0.5 --alpha 0.1 --top 2 --seed 7 --json": [

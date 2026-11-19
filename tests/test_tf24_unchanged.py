@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -25,18 +26,27 @@ from tf24_support import EXPORTS, VERSIONS, address, by_status, export, imported
 # ---------- TF24-70 ----------
 
 
-def _prove_reads(root: Path, run: str, missed: int, files: list[str]) -> None:
+@pytest.fixture(scope="module")
+def junit_schema(tmp_path_factory: Any) -> Any:
+    """The Parquet schema of a run the JUnit reader writes, read once from a store of its own
+    that no test writes to."""
+    import pyarrow.parquet as pq
+
+    from tf21_support import do_import
+
+    junit = tmp_path_factory.mktemp("junit") / "st"
+    do_import("junit-a", junit, "j")
+    return pq.read_schema(next((junit / "j").rglob("*.parquet")))
+
+
+def _prove_reads(want_schema: Any, root: Path, run: str, missed: int, files: list[str]) -> None:
     import pyarrow.parquet as pq
     from poisson_prove.store import Store
 
     from poisson_trace.ingest.writer import RECORD_KEYS
-    from tf21_support import do_import
 
     store = Store(root)
     assert run in store.runs()
-    junit = root.parent / f"junit-store-{run}"
-    do_import("junit-a", junit, "j")
-    want_schema = pq.read_schema(next((junit / "j").rglob("*.parquet")))
     manifest = store.manifest(run)
     assert manifest.status == "complete" and manifest.backend == "import:langsmith"
     assert manifest.target_id == "import/langsmith"
@@ -75,17 +85,17 @@ def _prove_reads(root: Path, run: str, missed: int, files: list[str]) -> None:
 
 @pytest.mark.parametrize("version", VERSIONS)
 @pytest.mark.parametrize("kind", EXPORTS)
-def test_tf24_70_prove_reads_every_run_the_reader_writes(tmp_path: Path, version: str, kind: str) -> None:
+def test_tf24_70_prove_reads_every_run_the_reader_writes(tmp_path: Path, junit_schema: Any,version: str, kind: str) -> None:
     files = export(version, kind)
     imported(by_status(files, tmp_path / "st", "r"))
-    _prove_reads(tmp_path / "st", "r", 1, [p.name for p in files])
+    _prove_reads(junit_schema, tmp_path / "st", "r", 1, [p.name for p in files])
 
 
 @pytest.mark.parametrize("version", VERSIONS)
-def test_tf24_70_and_every_run_a_pull_writes(tmp_path: Path, version: str) -> None:
+def test_tf24_70_and_every_run_a_pull_writes(tmp_path: Path, junit_schema: Any,version: str) -> None:
     with pulling() as (_, _waits):
         imported(ls_argv(address(version), tmp_path / "st", "r"))
-    _prove_reads(tmp_path / "st", "r", {"baseline": 4, "candidate": 2}[version], ["raw.jsonl"])
+    _prove_reads(junit_schema, tmp_path / "st", "r", {"baseline": 4, "candidate": 2}[version], ["raw.jsonl"])
     from poisson_prove.store import Store
 
     # the raw copy sits under the store's own folder, which Prove's listing leaves alone

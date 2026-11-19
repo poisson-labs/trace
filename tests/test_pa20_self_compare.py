@@ -66,8 +66,20 @@ CASES = _cases()
 IDS = [f"{k}:{a}+{b}" for k, a, b in CASES]
 
 
-def _store_and_words(tmp_path: Path, kind: str, a: str, b: str) -> tuple[Path, str, str]:
-    store, forms = (_named if kind == "named" else _unnamed)(tmp_path)
+Stores = dict[str, tuple[Path, dict[str, str]]]
+
+
+@pytest.fixture(scope="module")
+def stores(tmp_path_factory: pytest.TempPathFactory) -> Stores:
+    """The two stores every test here reads, each copied once: one with a name of yours, one
+    with none. No test writes into them (a refusal writes nothing, and the verbs run without
+    ``--save`` or ``--out``)."""
+    return {"named": _named(tmp_path_factory.mktemp("named")),
+            "unnamed": _unnamed(tmp_path_factory.mktemp("unnamed"))}
+
+
+def _store_and_words(stores: Stores, kind: str, a: str, b: str) -> tuple[Path, str, str]:
+    store, forms = stores[kind]
     return store, forms[a], forms[b]
 
 
@@ -80,20 +92,10 @@ def _fix_check(store: Path, a: str, b: str) -> Any:
 
 
 @pytest.mark.parametrize(("kind", "a", "b"), CASES, ids=IDS)
-def test_pa20_1_changes_refuses_every_pair_that_reaches_one_run(
-    tmp_path: Path, kind: str, a: str, b: str
-) -> None:
-    store, first, second = _store_and_words(tmp_path, kind, a, b)
-    ran = changes(store, first, second, TAU2_EVENTS)
-    assert ran.code == 1 and ran.out == "", ran.text
-    assert "the two runs compared must differ" in ran.err, ran.text
-
-
-@pytest.mark.parametrize(("kind", "a", "b"), CASES, ids=IDS)
 def test_pa20_2_fix_check_refuses_every_pair_that_reaches_one_run(
-    tmp_path: Path, kind: str, a: str, b: str
+    stores: Stores, kind: str, a: str, b: str
 ) -> None:
-    store, first, second = _store_and_words(tmp_path, kind, a, b)
+    store, first, second = _store_and_words(stores, kind, a, b)
     ran = _fix_check(store, first, second)
     assert ran.code == 1 and ran.out == "", ran.text
     assert "the two runs compared must differ" in ran.err, ran.text
@@ -103,35 +105,36 @@ def test_pa20_2_fix_check_refuses_every_pair_that_reaches_one_run(
 
 @pytest.mark.parametrize(("kind", "a", "b"), CASES, ids=IDS)
 def test_pa20_3_compare_refuses_every_pair_that_reaches_one_run_as_changes_does(
-    tmp_path: Path, kind: str, a: str, b: str
+    stores: Stores, kind: str, a: str, b: str
 ) -> None:
-    store, first, second = _store_and_words(tmp_path, kind, a, b)
+    store, first, second = _store_and_words(stores, kind, a, b)
     ran = _compare(store, first, second)
     twin = changes(store, first, second, TAU2_EVENTS)
     # the same sentence shape (A and B are both ...), next commands and exit code, nothing printed
     assert (ran.code, ran.out, ran.err) == (twin.code, twin.out, twin.err), ran.text
-    assert ran.code == 1 and "the two runs compared must differ" in ran.err, ran.text
+    assert ran.code == 1 and ran.out == "", ran.text
+    assert "the two runs compared must differ" in ran.err, ran.text
 
 
-def test_pa20_4_the_case_in_the_ruling(tmp_path: Path) -> None:
-    store, forms = _named(tmp_path)
+def test_pa20_4_the_case_in_the_ruling(stores: Stores) -> None:
+    store, forms = stores["named"]
     ran = _compare(store, forms["number"], NAME)
     assert ran.code == 1 and ran.out == "", ran.text
     assert ran.err.startswith("error: A and B are both "), ran.text
     assert "too small to tell" not in ran.text
 
 
-def test_pa20_5_the_refusal_comes_before_any_other_check_of_the_runs(tmp_path: Path) -> None:
+def test_pa20_5_the_refusal_comes_before_any_other_check_of_the_runs(stores: Stores) -> None:
     # the run has no traces, which compare refuses for its own reason; two words for it are
     # refused for being one run first, as changes and fix-check refuse them
-    store, forms = _named(tmp_path)
+    store, forms = stores["named"]
     ran = _compare(store, forms["id"], NAME)
     assert "has no traces" not in ran.err, ran.text
     assert "the two runs compared must differ" in ran.err, ran.text
 
 
-def test_pa20_6_two_different_runs_are_not_refused_for_being_one(tmp_path: Path) -> None:
-    store, forms = _named(tmp_path)
+def test_pa20_6_two_different_runs_are_not_refused_for_being_one(stores: Stores) -> None:
+    store, forms = stores["named"]
     for a, b in ((forms["id"], TAU2_B), (NAME, TAU2_B), (forms["number"], TAU2_B)):
         ran = _compare(store, a, b)
         assert "must differ" not in ran.err + ran.out, ran.text
@@ -158,9 +161,9 @@ def _api_refusal(verb: str, store: Path, a: str, b: str) -> Any:
 
 @pytest.mark.parametrize(("kind", "a", "b"), CASES, ids=IDS)
 def test_pa20_7_the_api_refuses_compare_as_it_refuses_changes_and_fix_check(
-    tmp_path: Path, kind: str, a: str, b: str
+    stores: Stores, kind: str, a: str, b: str
 ) -> None:
-    store, first, second = _store_and_words(tmp_path, kind, a, b)
+    store, first, second = _store_and_words(stores, kind, a, b)
     got = _api_refusal("compare", store, first, second)
     twin = _api_refusal("changes", store, first, second)
     fix = _api_refusal("fix_check", store, first, second)

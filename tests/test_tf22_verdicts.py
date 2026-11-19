@@ -9,7 +9,7 @@ string as written, anything else as compact JSON with sorted keys), given as the
 or computed from an ``input`` column. A verdict fills what the source did not record and must
 agree with what it did. Refused, exit 1, nothing written: a file whose rows match nothing, a row
 matching two cases, two rows for one case, a verdict disagreeing with the source, and a file
-that is not one. In TF22 ``--verdicts`` is the import's (FI9).
+that is not one.
 
 The API these tests pin: ``input_case(value) -> str``; ``join(rows, path, inputs=None) ->
 Joined`` with ``rows`` (the joined rows, in order), ``read``, ``by_case``, ``by_input`` and
@@ -38,7 +38,6 @@ from tf22_support import (
     plain_refusal,
     records,
     sha256_of,
-    trace,
     trace_import,
     tree,
 )
@@ -396,18 +395,6 @@ def test_tf22_41_verdicts_join_onto_a_folder_as_onto_its_files(tmp_path: Path) -
     assert a.code == b.code == 0, a.text + b.text
     assert b.out.replace(str(tmp_path / "b"), "<S>") == a.out.replace(str(tmp_path / "a"), "<S>")
     assert records(tmp_path / "b", "v1") == records(tmp_path / "a", "v1")
-
-
-# ---------- TF22-42: not on the verbs, in TF22 ----------
-
-
-def test_tf22_42_the_verbs_do_not_take_verdicts(tmp_path: Path) -> None:
-    skipped, _, _ = _cases()
-    verdicts = _write(tmp_path / "v.csv", f"case,outcome\n{skipped},fail\n")
-    store = tmp_path / "s"
-    assert trace_import("junit", SUITE, "--store", store, "--run", "v1").code == 0
-    ran = trace("where", "v1", "--store", store, "--event", "missed", "--verdicts", verdicts)
-    assert ran.code == 2, ran.text
 
 
 # ---------- TF22-43 and TF22-44: the store ----------

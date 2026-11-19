@@ -170,11 +170,13 @@ def test_tf0_17_a_latin_1_stdout_reads_without_a_traceback() -> None:
 # ---------- TF0-18: a closed pipe ----------
 
 
-def _closed_pipe(command: str, argv: list[str], cwd: Path) -> tuple[int, str]:
+def _closed_pipe(command: str, argv: list[str], cwd: Path, home: Path | None = None) -> tuple[int, str]:
+    """The command's exit code and stderr, its stdout a pipe nobody reads; ``home`` is its ``HOME``."""
     read, write = os.pipe()
     os.close(read)
+    env = None if home is None else dict(os.environ, HOME=str(home))
     try:
-        result = run_sub(command, argv, stdout=write, cwd=cwd)
+        result = run_sub(command, argv, stdout=write, cwd=cwd, env=env)
     finally:
         os.close(write)
     return result.code, result.err
@@ -193,16 +195,25 @@ def _closed_pipe(command: str, argv: list[str], cwd: Path) -> tuple[int, str]:
     ids=["where", "fix-check", "changes json", "help", "version", "import help"],
 )
 def test_tf0_18_a_reader_that_went_away_ends_the_command_quietly(tmp_path: Path, command: str, argv: list[str]) -> None:
-    code, err = _closed_pipe(command, argv, tmp_path)
+    home = tmp_path / "home"
+    home.mkdir()
+    code, err = _closed_pipe(command, argv, tmp_path, home)
     assert "Traceback" not in err and "Exception ignored" not in err and "BrokenPipeError" not in err, err
     assert code in EXIT_CODES, code
     assert all(line.startswith(("error: ", "note: ", "  ")) for line in err.splitlines() if line.strip()), err
+    if argv == where_cs():
+        # the report's work is done: exit 0, nothing on stderr, nothing in the errors log
+        assert (code, err) == (0, ""), err
+        assert not (home / ".cache").exists()
 
 
 def test_tf0_18_an_import_into_a_closed_pipe_still_writes_its_run(tmp_path: Path) -> None:
     from poisson_prove.store import Store
 
-    code, err = _closed_pipe("import", deepeval_import(tmp_path / "store", "v1"), tmp_path)
+    home = tmp_path / "home"
+    home.mkdir()
+    code, err = _closed_pipe("import", deepeval_import(tmp_path / "store", "v1"), tmp_path, home)
     assert "Traceback" not in err and "Exception ignored" not in err, err
-    assert code in EXIT_CODES
+    assert (code, err) == (0, ""), err
+    assert not (home / ".cache").exists()
     assert Store(tmp_path / "store").manifest("v1").status == "complete"

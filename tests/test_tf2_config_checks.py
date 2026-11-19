@@ -77,6 +77,22 @@ def folder(tmp_path: Path) -> Path:
     return place
 
 
+@pytest.fixture(scope="module")
+def shared_store(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """One copy of the tau2 store for the tests that only read it: ``where`` writes nothing
+    under a store."""
+    return tau2_copy(tmp_path_factory.mktemp("tf2-config-checks"))
+
+
+@pytest.fixture
+def reading(tmp_path: Path, shared_store: Path) -> Path:
+    """A folder of the test's own to write ``trace.toml`` in, holding the shared store under
+    the name the config gives it (a link): for a test that reads the store and never writes it."""
+    place = work(tmp_path)
+    (place / S).symlink_to(shared_store, target_is_directory=True)
+    return place
+
+
 def _refused(result) -> str:  # type: ignore[no-untyped-def]
     assert result.code == 1 and result.out == "", result.text
     lines = result.lines()
@@ -85,7 +101,8 @@ def _refused(result) -> str:  # type: ignore[no-untyped-def]
 
 
 @pytest.mark.parametrize("label,wrong,line,right,words", CASES, ids=[c[0] for c in CASES])
-def test_tf2_04_a_wrong_config_is_refused_naming_the_file_and_the_line(folder: Path, label: str, wrong: str, line: int | None, right: str, words: tuple[str, ...]) -> None:
+def test_tf2_04_a_wrong_config_is_refused_naming_the_file_and_the_line(reading: Path, label: str, wrong: str, line: int | None, right: str, words: tuple[str, ...]) -> None:
+    folder = reading
     write_config(folder, wrong)
     error = _refused(here(folder, ["where", "previous", "--json"]))
     assert "trace.toml" in error, error

@@ -68,6 +68,23 @@ one Python's cache is never read by the other:
 .venv311/bin/mypy --strict --cache-dir .mypy_cache_311
 ```
 
+`tools/lane.py` runs any of these for you, with the Python it is started with:
+
+<!-- skip reason="a contributor's commands: shown here, and not run by the docs check" -->
+```
+.venv/bin/python tools/lane.py pr
+.venv/bin/python tools/lane.py slow
+.venv/bin/python tools/lane.py mypy
+.venv311/bin/python tools/lane.py pr tests/test_cli.py
+```
+
+Its first word is the lane (`pr`, `slow`, `math` or `lane_j`), or `ruff` or `mypy`, and every
+word after it goes to that command as written. It takes `CI` out of the environment, gives the
+run a temporary folder of its own and removes the folder when the run ends, and gives mypy the
+cache named for the running Python. Use it when you run a lane more than once, or two
+checkouts side by side: a lane's temporary files are large, and `pyproject.toml` already tells
+pytest to remove a test's folder as soon as the test passes.
+
 ## The docs are tested too
 
 Every command a page shows is run, and what the page says it printed is held to what it
@@ -92,15 +109,24 @@ each a block of a recipe under `docs/recipes/`, so change the recipe and the REA
 
 ## Frozen tests
 
-Most test files are frozen: they were written and agreed before the code they test, and they
-do not change to make a build pass. Each group of them has a guard, a file named
-`test_*_frozen.py`, that holds the SHA-256 digest of every file in the group and fails when
-one is edited.
+The test files are frozen: they were written and agreed before the code they test, and they
+do not change to make a build pass. One list, `tests/frozen.sha256`, holds the SHA-256 digest
+of every one of them, of each support module beside them and of the pins they read, and one
+test, in `tests/test_frozen.py`, fails when a listed file is edited and when a test file is
+not on the list.
 
 A frozen test changes only when its owner rules that it should. The change goes in a commit
-of its own, with the guard's line for that file moved in the same commit, and the commit says
-which ruling it carries out. If a frozen test seems wrong, stop and ask: do not edit it, and
-do not add a test that says the opposite.
+of its own, with that file's line in the list moved in the same commit, and the commit says
+which ruling it carries out. The failing test prints the line to write, and `shasum` checks
+the whole list:
+
+<!-- skip reason="a contributor's commands: shown here, and not run by the docs check" -->
+```
+shasum -a 256 -c tests/frozen.sha256
+```
+
+A new test file joins the list in the commit that adds it. If a frozen test seems wrong, stop
+and ask: do not edit it, and do not add a test that says the opposite.
 
 ## Fixtures
 

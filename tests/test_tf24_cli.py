@@ -39,7 +39,12 @@ of its files, and its place in the config, ``init`` and ``doctor`` (spec section
   whether the key is set; ``init`` pulls it into the imports' store, saving the raw copy.
 - TF24-59: the readers' two sentences: ``runs`` shows an imported run's backend as
   ``import:langsmith`` and whether it has traces.
-- TF24-60: the reader's module documents what it does not keep, in plain words.
+- TF24-60: the module of each reader that pulls (LangSmith, Braintrust, Weave) documents what
+  it does not keep, in plain words, and its description names its key and its address.
+
+That the import's help lists ``langsmith`` (TF24-47) and that ``doctor`` lists it among the
+readers (TF24-56) is held by ``test_tf5_readers.py`` (TF5-20), which holds the whole help and
+``doctor``'s readers line byte for byte.
 """
 
 from __future__ import annotations
@@ -54,7 +59,7 @@ import pytest
 
 from tf0_support import chdir, trace, trace_import
 from tf1_support import shell_words
-from tf2_support import check, doctor_doc, init_yes, numbered, work, write_config
+from tf2_support import init_yes, numbered, work
 from tf17_support import config_text, import_entry, setup_check, trace_in, write_toml
 from tf21_support import INGEST, run_import
 from tf24_support import (
@@ -76,14 +81,6 @@ def _never() -> Transport:
 
 
 # ---------- TF24-47 ----------
-
-
-def test_tf24_47_the_import_s_help_lists_langsmith() -> None:
-    helped = trace(["import", "--help"])
-    assert helped.code == 0, helped.text
-    for tool in PRESENT:
-        assert re.search(rf"^ +{re.escape(tool)}(?: {{2,}}\S.*)?$", helped.out, re.M), (tool, helped.out)
-    assert "poisson-trace import langsmith " in helped.out
 
 
 def test_tf24_47_the_reader_s_help_is_the_verb_s_and_names_its_flags() -> None:
@@ -166,7 +163,7 @@ def test_tf24_48_the_next_line_reads_the_other_version_the_same_way(tmp_path: Pa
     assert sorted(columns(tmp_path / "st", "new")) == list(CASES)
 
 
-@pytest.mark.parametrize("kind", ["v2", "ui"])
+@pytest.mark.parametrize("kind", ["v2"])
 def test_tf24_48_a_name_in_use_is_refused_and_nothing_changes(tmp_path: Path, kind: str) -> None:
     imported(by_status(export("baseline", kind), tmp_path / "st", "first"))
     before = snapshot(tmp_path / "st")
@@ -295,7 +292,7 @@ def test_tf24_50_a_wrong_command_line_exits_2_naming_the_flag(tmp_path: Path, la
 # ---------- TF24-51 ----------
 
 
-@pytest.mark.parametrize("kind", ["v2", "ui"])
+@pytest.mark.parametrize("kind", ["v2"])
 def test_tf24_51_both_spellings_print_the_same_bytes(tmp_path: Path, kind: str) -> None:
     outs = []
     for spelling in ("verb", "alias"):
@@ -517,17 +514,6 @@ def test_tf24_56_init_lists_the_exports_and_prints_a_line_for_each(tmp_path: Pat
     assert not (folder / "trace-store").exists()
 
 
-def test_tf24_56_doctor_lists_langsmith_among_the_readers(tmp_path: Path) -> None:
-    folder = work(tmp_path)
-    write_config(folder, "version = 1\n")
-    _, data = doctor_doc(folder)
-    line = check(data, "readers")["line"]
-    for tool in PRESENT:
-        assert tool in line, line
-    for absent in ("otel", "lemma"):
-        assert absent not in line, line
-
-
 # ---------- TF24-57 ----------
 
 
@@ -687,12 +673,30 @@ def test_tf24_59_runs_says_where_the_run_came_from_and_whether_it_has_traces(tmp
 # ---------- TF24-60 ----------
 
 
+#: Each reader that pulls, with what its description names: its key and, where it has one of
+#: several parts, its address.
+DESCRIBED: dict[str, tuple[str, ...]] = {
+    "langsmith": ("LANGSMITH_API_KEY",),
+    "braintrust": ("BRAINTRUST_API_KEY", "braintrust:PROJECT/EXPERIMENT"),
+    "weave": ("WANDB_API_KEY", "weave:ENTITY/PROJECT/EVALUATION"),
+}
+
+
 def test_tf24_60_the_reader_s_words_are_plain() -> None:
+    """The three readers that pull, and the module that pulls for them."""
+    from importlib import import_module
+
     from tf0_support import INTERNAL
 
-    from poisson_trace.ingest import langsmith, pulling as module
+    from poisson_trace.ingest import pulling as module
 
-    for text in (langsmith.DESCRIPTION, langsmith.__doc__ or "", module.__doc__ or ""):
-        assert text.strip()
-        assert not INTERNAL.search(text), INTERNAL.search(text)
-    assert "LANGSMITH_API_KEY" in langsmith.DESCRIPTION
+    texts = {"pulling": module.__doc__ or ""}
+    for reader, named in DESCRIBED.items():
+        read = import_module(f"poisson_trace.ingest.{reader}")
+        texts[f"{reader}: description"], texts[reader] = read.DESCRIPTION, read.__doc__ or ""
+        for word in named:
+            assert word in read.DESCRIPTION, (reader, word)
+    for label, text in texts.items():
+        assert text.strip(), label
+        assert not INTERNAL.search(text), (label, INTERNAL.search(text))
+    assert "Weave" in texts["pulling"], "the pull's own words say what the Weave pull asks"

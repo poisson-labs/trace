@@ -14,24 +14,23 @@ TF24-57 and TF25-57 hold.
   written, one ``next:`` line an import; ``--import`` is the same refusal; ``--no-import``
   writes the config with no store and prints the same lines. A reader that pulls and has no
   sample here fails this test, so the next such reader (Weave) is decided with these.
-- TF25-81: LangSmith's files with no feedback list among them print what main 729a678 prints,
-  byte for byte: the runs query's answers, and the page's CSV.
+- TF25-81: LangSmith's files with no feedback list among them print what main prints, byte for
+  byte: held by ``test_tf26_init.py`` (TF26-81) on the same files.
 - TF25-82: Braintrust's files are listed as Braintrust's and each has its line: the case is
   ``record`` where every root in the file carries its dataset record's id and ``input`` where
   none can (the page's downloads, an experiment on inline data); the outcome is the user's.
   Each line runs as printed once its capital is filled in, and ``init --force --store`` then
   sets up over the store, as the refusal says.
-- TF25-83: a LangSmith feedback list is shown on the line of the runs it belongs to: what main
-  prints for the runs, with the feedback list's path after the runs file's and no line of its
-  own. That line, its capital filled in, reads the records. A feedback list whose runs are not
-  among the files found has no line.
+- TF25-83: a LangSmith feedback list is shown on the line of the runs it belongs to, with the
+  feedback list's path after the runs file's and no line of its own (the whole output is held
+  byte for byte by TF26-81 in ``test_tf26_init.py``). That line, its capital filled in, reads
+  the records. A feedback list whose runs are not among the files found has no line.
 - TF25-84: files of two of these tools together are refused as files of two tools are, with a
   line for each run under its own reader.
 """
 
 from __future__ import annotations
 
-import json
 import shutil
 from pathlib import Path
 from typing import Any
@@ -41,11 +40,10 @@ import pytest
 from tf1_support import shell_words
 from tf2_support import here, numbered, work
 from tf21_support import INGEST
-from tf25_pins import INIT, PINS, found_folder, ran_init
+from tf25_pins import found_folder
 from tf25_support import columns, export
 
-PINNED: dict[str, Any] = json.loads(PINS.read_text(encoding="utf-8"))
-LS = INGEST / "langsmith"
+LS =INGEST / "langsmith"
 
 #: Each reader that pulls, with two of its files as ``init`` finds them: (source, name, the
 #: case its line fills in).
@@ -114,17 +112,6 @@ def test_tf25_80_no_import_writes_the_config_and_prints_the_same_lines(tmp_path:
     assert (folder / "trace.toml").is_file() and not (folder / "trace-store").exists()
 
 
-# ---------- TF25-81 ----------
-
-
-@pytest.mark.parametrize("label", ["init: langsmith runs", "init: langsmith csv"])
-def test_tf25_81_langsmith_s_files_with_no_feedback_list_print_what_main_prints(tmp_path: Path, label: str) -> None:
-    holds, steps = INIT[label]
-    got = [list(step) for step in ran_init(tmp_path, holds, steps)]
-    assert got == PINNED["init"][label]
-    assert got[0][0] == 1 and got[1][0] == 0
-
-
 # ---------- TF25-82 ----------
 
 BRAINTRUST: dict[str, tuple[Path, str]] = {
@@ -154,13 +141,6 @@ def test_tf25_82_braintrust_s_files_are_listed_and_each_has_its_line(tmp_path: P
         assert "--cut" not in words and "OTHER" not in words, words
 
 
-def test_tf25_82_before_this_reader_init_found_none_of_them() -> None:
-    """What main prints on Braintrust's files, kept in words: it finds no result file there."""
-    refused, written = PINNED["init"]["init: braintrust files"]
-    assert refused[0] == 0 and written[0] == 0
-    assert "found no store and no result file a reader of this install reads" in refused[2]
-
-
 @pytest.mark.parametrize("names", [("old.json", "new-traces.json"), ("old-page.json", "new-page.csv")])
 def test_tf25_82_each_line_runs_once_its_capital_is_filled_in(tmp_path: Path, names: tuple[str, str]) -> None:
     from tf0_support import chdir, trace
@@ -183,36 +163,6 @@ def test_tf25_82_each_line_runs_once_its_capital_is_filled_in(tmp_path: Path, na
 
 
 # ---------- TF25-83 ----------
-
-
-def _folded(text: str) -> str:
-    """Main's output on runs and their feedback lists, as it is with each feedback list on its
-    runs' line: the line of a feedback list alone gone, and its path after its runs file's."""
-    out = []
-    for line in text.split("\n"):
-        if "poisson-trace import langsmith results/" in line and "-feedback.json --store" in line:
-            continue
-        for run in ("old", "new"):
-            line = line.replace(f"import langsmith results/{run}.json --store", f"import langsmith results/{run}.json results/{run}-feedback.json --store")
-        out.append(line)
-    return "\n".join(out)
-
-
-def test_tf25_83_a_feedback_list_is_shown_on_the_line_of_the_runs_it_belongs_to(tmp_path: Path) -> None:
-    label = "init: langsmith runs and feedback"
-    holds, steps = INIT[label]
-    got = [list(step) for step in ran_init(tmp_path, holds, steps)]
-    main = PINNED["init"][label]
-    want = [[code, _folded(out), _folded(err)] for code, out, err in main]
-    assert got == want
-    assert got != main, "main gives the feedback list a line of its own"
-    # main's own lines, to say what moved: four import lines, two of them a feedback list alone
-    assert len(_import_lines(main[0][2], "  next: ")) == 4 and len(_import_lines(got[0][2], "  next: ")) == 2
-    for words in _import_lines(got[0][2], "  next: "):
-        run = words[words.index("--run") + 1]
-        assert words[3:5] == [f"results/{run}.json", f"results/{run}-feedback.json"], words
-    # every file found is still listed
-    assert len(numbered(got[0][2])) == 4
 
 
 def test_tf25_83_the_folded_line_reads_the_feedback_records(tmp_path: Path) -> None:

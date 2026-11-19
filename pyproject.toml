@@ -56,9 +56,8 @@ packages = ["src/poisson_trace"]
 
 [tool.hatch.build.targets.sdist]
 # the repository's own working rules, and (with hatch_build.py) its ignore file, are not part of
-# the source a user gets; nor is test_tf10_fixtures.py, which holds a path from the machine its
-# fixtures were made on (ruled 2026-11-11, the 0.1.0a1 cut; the path itself is owed to 0.1.0)
-exclude = ["docs/repo-hygiene.md", "/.gitignore", "/tests/test_tf10_fixtures.py"]
+# the source a user gets
+exclude = ["docs/repo-hygiene.md", "/.gitignore"]
 
 [tool.hatch.build.targets.sdist.hooks.custom]
 
@@ -94,11 +93,16 @@ ignore_missing_imports = true
 # declares, and a current one (3.12.13 or later). Python 3.12 changed how builtin sum() adds
 # floats and 3.12.7 how argparse lays out a help page, so an output pinned on one is checked on
 # the other before a release and on a pull request that changes how a number or a help is made.
+# A test's temporary folder is removed as soon as the test passes, and a failed test's is kept
+# from the last run alone: a lane writes many gigabytes there, and kept whole it fills the disk.
+# `python tools/lane.py LANE` runs a lane with a temporary folder of its own and removes it after.
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-m", "not lane_j"]
+tmp_path_retention_policy = "failed"
+tmp_path_retention_count = 1
 markers = [
     "lane_j: reads PyPI: runs another tool itself (DeepEval, Ragas) at its pinned version, or installs the Trace wheel into a clean environment; deselected unless -m lane_j",
-    "slow: a test that runs every invocation of a corpus where the pull-request lane keeps a fast test of the same invariant on a few (the clean look over the whole conformance corpus; a statistics scenario at the check's seeds; a wide Hypothesis property check, test_hy_*.py); nightly and before every release",
+    "slow: a test that runs every invocation of a corpus where the pull-request lane keeps a fast test of the same invariant on a few (the clean look over the whole conformance corpus; a statistics scenario at the check's seeds; a wide Hypothesis property check of the signals, test_hy_signals.py; the statistics' wide checks, test_hy_statistics.py, are in the math lane); nightly and before every release",
     "math: the math suite, a statistic's slow property checks against its reference where the pull-request lane keeps a fast test of the same invariant; runs on a pull request that changes the statistics code (src/poisson_trace/paired.py, survival.py), a test of the math suite, or the resolved numpy, scipy, pandas or lifelines, nightly and before every release",
 ]

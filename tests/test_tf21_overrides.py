@@ -261,17 +261,11 @@ def test_tf21_62_a_bad_rule_stops_the_import(tmp_path: Path) -> None:
     assert not (tmp_path / "st").exists() or not (tmp_path / "st" / "t").exists()
 
 
-# ---------- TF21-63: the one sentence TF21 changes: the tables a config may have ----------
+# ---------- TF21-63: a table named nearly as [signals] is asked about ----------
 
 
-def test_tf21_63_an_unknown_table_lists_the_two_new_tables(tmp_path: Path) -> None:
+def test_tf21_63_a_table_named_nearly_as_signals_is_asked_did_you_mean(tmp_path: Path) -> None:
     with pytest.raises(config.ConfigError) as caught:
         parse('version = 1\n[sginals]\ncut = 1\n', tmp_path)
     assert str(caught.value) == (
         "trace.toml line 2: [sginals] is not a table; did you mean [signals]?")
-    with pytest.raises(config.ConfigError) as caught:
-        parse('version = 1\n[colours]\nx = 1\n', tmp_path)
-    assert str(caught.value) == (
-        "trace.toml line 2: [colours] is not a table; a config has version, the tables "
-        "[store], [events], [check], [names], [upload], [signals] and [taxonomy], and "
-        "[[import]] tables")

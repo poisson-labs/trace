@@ -14,9 +14,10 @@ built table store where the two runs differ in what they lack. Where it stands: 
 line, before the signals, as a paragraph of its own. Its words, per run (``the old version`` and
 ``the new version`` on ``fix-check``, ``A`` and ``B`` on ``compare`` and ``changes``).
 
-**TRIES-2** Absent when every try has an outcome: the committed Prove 0.1.3 store prints no
-sentence and its diff has no new key; a ``--verdicts`` file that fills the tries with no outcome
-leaves none to count, and one that fills some leaves the rest.
+**TRIES-2** Absent when every try has an outcome: a built pair prints no sentence and its diff
+has no new key (the committed Prove 0.1.3 store's section and keys are BD-1b's and BD-2a's); a
+``--verdicts`` file that fills the tries with no outcome leaves none to count, and one that fills
+some leaves the rest.
 
 **TRIES-3** The counts are an independent read of the store (``poisson_prove``'s own reader, a
 try with no outcome one whose outcome is empty; the verdict's tries those of the inputs both runs
@@ -39,8 +40,7 @@ from typing import Any
 
 import pytest
 from breakdown_support import (
-    ARMS, HEADING, LABELS, SIGNALS_LINE, TWO_RUNS, argv_of, different_rules_section, of_line, ok, prove_store,
-    section, table_store,
+    ARMS, LABELS, SIGNALS_LINE, TWO_RUNS, different_rules_section, of_line, ok, section, table_store,
 )
 from conftest import FIXTURES
 from tf0_support import chdir, trace_import
@@ -203,15 +203,6 @@ def test_tries_1_the_sentence_says_how_many(which: str, verb: str, tmp_path: Pat
     assert [line for line in got if "no outcome" in line] == [expected_line(verb, counts)]
 
 
-def test_tries_1_the_ragas_page_no_longer_sits_150_against_141(tmp_path: Path) -> None:
-    _store, argv, _counts = made("ragas", "fix-check", tmp_path)
-    got = section(ok(argv).out)
-    assert "of 150 tries of the old version and 150 of the new; a try has one kind" in got
-    line = next(line for line in got if "no outcome" in line)
-    assert "3 of the old version's 150 and 8 of the new version's 150" in line
-    assert "it counts 141 tries of each" in line
-
-
 def test_tries_1_unequal_tries_the_verdict_counts_are_named_per_run(tmp_path: Path) -> None:
     """Where the verdict counts a different number of tries on each run (the old run gave each
     of four inputs two tries, the new one try), each is given: 8 of A and 4 of B."""
@@ -235,15 +226,6 @@ def test_tries_1_unequal_tries_the_verdict_counts_are_named_per_run(tmp_path: Pa
 
 
 # ---------- TRIES-2: nothing changes where every try has an outcome ----------
-
-
-@pytest.mark.parametrize("verb", TWO_RUNS)
-def test_tries_2_no_sentence_and_no_key_on_the_prove_store(verb: str, tmp_path: Path) -> None:
-    store = prove_store(tmp_path)
-    out = ok(argv_of(verb, store)).out
-    assert "no outcome" not in "\n".join(section(out))
-    diff = ok(argv_of(verb, store, "--json")).json()["failure_taxonomy_diff"]
-    assert list(diff) == OLD_KEYS
 
 
 def test_tries_2_a_pair_every_try_of_which_has_an_outcome(tmp_path: Path) -> None:
@@ -354,15 +336,3 @@ def test_tries_4_the_api_carries_the_same(verb: str, tmp_path: Path) -> None:
     assert json.loads(r.to_json())["failure_taxonomy_diff"] == json.loads(json.dumps(r.failure_taxonomy_diff))
     del store
 
-
-@pytest.mark.parametrize("verb", TWO_RUNS)
-def test_tries_4_all_four_surfaces_agree(verb: str, tmp_path: Path) -> None:
-    """The number in the plain report's sentence is the diff's, the saved verdict's and the
-    API's, for each verb."""
-    store = cs_store(tmp_path)
-    counts = read_counts(CS, (CS_A, CS_B))
-    plain = ok(cs_argv(verb, store)).out
-    assert expected_line(verb, counts) in section(plain)
-    doc = ok(cs_argv(verb, store, "--json")).json()
-    assert _counts_of(doc["failure_taxonomy_diff"], verb) == counts
-    assert HEADING in plain

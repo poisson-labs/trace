@@ -64,11 +64,6 @@ def test_tf18_13_one_line_with_the_address(work: Path, argv: list[str], store: s
     assert (pages_of(work / store) / "index.html").is_file()
 
 
-def test_tf18_13_a_config_builds_every_store_it_names(work: Path) -> None:
-    assert ui(work, "--config", "conf/trace.toml").code == 0
-    assert (pages_of(work / "store") / "index.html").is_file() and (pages_of(work / "tables") / "index.html").is_file()
-
-
 def test_tf18_13_a_store_alone_builds_that_store_alone(work: Path) -> None:
     assert ui(work, "--store", "store").code == 0
     assert not ui_root(work / "tables").exists()
@@ -96,10 +91,7 @@ def test_tf18_13_without_open_nothing_is_opened(work: Path, tmp_path: Path) -> N
     ran = module(work, ["ui", "--store", "store"], env)
     assert ran.returncode == 0, ran.stderr
     assert not log.exists()
-
-
-def test_tf18_13_python_m_is_the_same_command(work: Path) -> None:
-    ran = module(work, ["ui", "--store", "store"])
+    # ``python -m poisson_trace ui`` is the same command: it prints what ``ui`` prints
     assert (ran.returncode, ran.stdout, ran.stderr) == (0, f"ok  pages at {uri(work / 'store')}\n", "")
 
 

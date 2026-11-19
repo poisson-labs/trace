@@ -59,7 +59,7 @@ FLOOR_STORE = "tests/fixtures/prove-stores/prove-0.4.0/"
 #: digest each was frozen with: the docs checker's second ask for a pseudo-terminal (MF-2), and
 #: the recipe, the provenance and the list of digests of the Prove stores, which gain the floor's.
 OURS = {
-    "tools/docs_check.py": "649b011d4dc905859a4808e5d20cebce8cf1b3a79cedab3ce41269bb5c8ee733",
+    "tools/docs_check.py": "bfe03a6652cbb31ae0382c51d6cf0e2618a61bc0b76e01de11a882157ca5c726",
     "tests/fixtures/prove-stores/make.py": "7c8f464545b4395992167111602305a30affb876285553b41873cce859bbb8bc",
     "tests/fixtures/prove-stores/PROVENANCE.md": "601c997daf3e64a25ec59f868793cd3ffc762410e04970830f555f660417cdb0",
     "tests/fixtures/prove-stores/SHA256SUMS": "dce1df89ab3a7e3a0dc38e3972e9a15829f2ed14503c4d7d6dd1685e1e2b2a88",

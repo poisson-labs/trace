@@ -71,7 +71,7 @@ import pytest
 
 from tf20_support import (
     EXAMPLE, GENERATE, HORIZON, LEVELS, NETWORK, PROVE_VERSION, PROVENANCE, RUNS, SPECS, TARGETS, TASK_DIR, TASK_FILES, TASKS_PER_LEVEL, TASKS_VERSION, Ran,
-    all_tasks, calls_of, every_command, imported, load, outcomes, pytest_file, rows, run_whole, store_of, tasks, toml,
+    all_tasks, calls_of, every_command, imported, load, outcomes, pytest_file, rows, shared_run, store_of, tasks, toml,
 )
 
 SEEDS = range(200)
@@ -79,7 +79,7 @@ SEEDS = range(200)
 
 @pytest.fixture(scope="module")
 def ran(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Ran]:
-    yield run_whole(tmp_path_factory.mktemp("tf20-page"))
+    yield shared_run(tmp_path_factory)
 
 
 def _verify(task: dict[str, Any], calls: list[tuple[str, dict[str, Any]]]) -> str:
@@ -395,13 +395,14 @@ def _sweep_blocks() -> dict[str, str]:
 
 
 @pytest.mark.parametrize("version", ["before", "after"])
-def test_tf20_34_the_replicates_are_what_the_power_gate_asks(ran: Ran, version: str) -> None:
+def test_tf20_34_the_replicates_are_what_the_power_gate_asks(ran: Ran, tmp_path: Path, version: str) -> None:
     replicates = toml(SPECS[version])["replicates"]
     line = _sweep_blocks()[version]
     dry = re.sub(r'\s--name\s+("[^"]*"|\S+)', "", line)
     dry = re.sub(r"\s--yes\b", "", dry) + " --dry-run"
-    at = ran.run(f"{dry} --replicates {replicates}")
-    below = ran.run(f"{dry} --replicates {replicates - 1}")
+    home = ran.own_home(tmp_path)
+    at = ran.run(f"{dry} --replicates {replicates}", home)
+    below = ran.run(f"{dry} --replicates {replicates - 1}", home)
     assert at.returncode == 0, at.stdout + at.stderr
     assert below.returncode == 1 and re.search(r"(?m)^error: (underpowered design|no single condition)", below.stdout + below.stderr), \
         below.stdout + below.stderr

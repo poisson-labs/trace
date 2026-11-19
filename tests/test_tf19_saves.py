@@ -115,12 +115,11 @@ def test_tf19_4_a_store_that_cannot_be_written(work: Path) -> None:
 
 def test_tf19_4_browsing_writes_nothing_outside_the_stores_poisson(work: Path) -> None:
     before = snapshot(work)
-    s = drive(work, ["r", "down", "up", "escape", "i", "escape", "c", "escape", "f", "escape", "?", "escape"], size=(120, 40))
+    drive(work, ["r", "down", "up", "escape", "i", "escape", "c", "escape", "f", "escape", "?", "escape"], size=(120, 40))
     after = snapshot(work)
     moved = changed(before, after)
     assert all("/.poisson/" in f"/{m}" for m in moved), sorted(moved)
     assert not any("/.poisson/artifacts/" in f"/{m}" for m in moved), sorted(moved)
-    assert s.app is not None
 
 
 def test_tf19_4_showing_verdicts_writes_only_saves_and_pages(work: Path) -> None:
@@ -160,6 +159,8 @@ def test_tf19_4_a_name_after_no_writes_nothing(work: Path, answer: str) -> None:
     assert not any(".poisson/artifacts" in m or "names" in m.split("/")[-1] for m in moved), moved
     assert s.code is None, "q during a question answers no and does not quit"
     assert s.last.title() == "runs"
+    if answer == "q":
+        assert not s.last.message.endswith("[y/N]"), "the question is gone from the message line"
 
 
 # ---------- an import ----------

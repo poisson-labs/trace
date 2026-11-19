@@ -25,9 +25,12 @@ section 17.3 items 1 to 4, the Artifact Format sections 2, 3 and 5; invariants 1
 
 from __future__ import annotations
 
+import atexit
 import json
 import math
 import os
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -76,6 +79,20 @@ def _saved(tmp_path: Path, verb: str, *extra: str) -> tuple[Path, Path]:
     return store, the_artifact(store, verb)
 
 
+_KEPT: dict[tuple[str, ...], Path] = {}
+
+
+def _kept(verb: str, *extra: str) -> Path:
+    """The verb's saved artifact for the tests that only read it: saved once in each process, in
+    a store no test is given. A test that writes, or compares trees, saves its own (``_saved``)."""
+    key = (verb, *extra)
+    if key not in _KEPT:
+        root = Path(tempfile.mkdtemp(prefix="tf6-saved-"))
+        atexit.register(shutil.rmtree, root, ignore_errors=True)
+        _KEPT[key] = _saved(root, verb, *extra)[1]
+    return _KEPT[key]
+
+
 # ---------- TF6-4 ----------
 
 
@@ -118,8 +135,8 @@ def test_tf6_5_save_adds_one_line_and_one_key(tmp_path: Path, verb: str) -> None
 
 
 @pytest.mark.parametrize("verb", VERBS)
-def test_tf6_6_the_descriptor_is_the_formats(tmp_path: Path, verb: str) -> None:
-    _, folder = _saved(tmp_path, verb)
+def test_tf6_6_the_descriptor_is_the_formats(verb: str) -> None:
+    folder = _kept(verb)
     desc = descriptor(folder)
     assert list(desc) == DESCRIPTOR_KEYS
     assert desc["format"] == "poisson.artifact/1" and desc["kind"] == verb
@@ -159,8 +176,8 @@ def test_tf6_6_where_charts_its_curve_as_svg_writes_it(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("verb", VERBS)
-def test_tf6_7_the_id_is_the_formats_formula(tmp_path: Path, verb: str) -> None:
-    _, folder = _saved(tmp_path, verb)
+def test_tf6_7_the_id_is_the_formats_formula(verb: str) -> None:
+    folder = _kept(verb)
     desc = descriptor(folder)
     assert desc["id"] == expected_id(desc)
     assert list(desc["settings"]) == SETTINGS[verb]
@@ -433,8 +450,8 @@ def test_tf6_13_a_note_is_a_list_holding_what_the_json_said(tmp_path: Path) -> N
 
 
 @pytest.mark.parametrize("verb", VERBS)
-def test_tf6_13_runs_carry_their_names_and_numbers_are_numbers(tmp_path: Path, verb: str) -> None:
-    _, folder = _saved(tmp_path, verb)
+def test_tf6_13_runs_carry_their_names_and_numbers_are_numbers(verb: str) -> None:
+    folder = _kept(verb)
     result = result_of(folder)
     heads = [result["run"]] if verb == "where" else [result["runs"][arm] for arm in ARMS[verb]]
     assert all(h["run_id"] in (BEFORE_ID, AFTER_ID) and isinstance(h["run_name"], str) for h in heads)
@@ -496,8 +513,8 @@ def _one(rows: list[dict[str, Any]], **where: Any) -> dict[str, Any]:
 
 
 @pytest.mark.parametrize("verb", VERBS)
-def test_tf6_15_the_table_has_the_formats_columns_and_the_frozen_metrics(tmp_path: Path, verb: str) -> None:
-    _, folder = _saved(tmp_path, verb, "--at", "2") if verb == "compare" else _saved(tmp_path, verb)
+def test_tf6_15_the_table_has_the_formats_columns_and_the_frozen_metrics(verb: str) -> None:
+    folder = _kept(verb, "--at", "2") if verb == "compare" else _kept(verb)
     assert table_schema(folder / "table.parquet") == [
         ("artifact_id", "string"), ("event", "string"), ("condition", "string"), ("condition_hash", "string"),
         ("arm", "string"), ("metric", "string"), ("value", "double"), ("note", "string"), ("level", "double"),
@@ -520,8 +537,8 @@ def test_tf6_15_the_table_has_the_formats_columns_and_the_frozen_metrics(tmp_pat
             assert r["level"] is None, r
 
 
-def test_tf6_15_fix_checks_rows_are_its_json(tmp_path: Path) -> None:
-    _, folder = _saved(tmp_path, "fix-check")
+def test_tf6_15_fix_checks_rows_are_its_json() -> None:
+    folder = _kept("fix-check")
     rows, result = _rows(folder), result_of(folder)
     whole = [r for r in rows if r["condition"] == "{}"]
     assert _one(whole, metric="p", arm="both")["value"] == result["test"]["p"]
@@ -541,8 +558,8 @@ def test_tf6_15_fix_checks_rows_are_its_json(tmp_path: Path) -> None:
         assert _one(mine, metric="p", arm="both")["value"] == input_["p"]
 
 
-def test_tf6_15_compares_rows_are_its_json(tmp_path: Path) -> None:
-    _, folder = _saved(tmp_path, "compare", "--at", "2")
+def test_tf6_15_compares_rows_are_its_json() -> None:
+    folder = _kept("compare", "--at", "2")
     rows, result = _rows(folder), result_of(folder)
     c = result["comparison"]
     whole = [r for r in rows if r["cause"] is None and r["step"] is None]
@@ -557,8 +574,8 @@ def test_tf6_15_compares_rows_are_its_json(tmp_path: Path) -> None:
     assert _one(rows, metric="survival", step=2, arm="b")["value"] == at["survival_b"]
 
 
-def test_tf6_15_wheres_rows_are_its_json(tmp_path: Path) -> None:
-    _, folder = _saved(tmp_path, "where")
+def test_tf6_15_wheres_rows_are_its_json() -> None:
+    folder = _kept("where")
     rows, result = _rows(folder), result_of(folder)
     assert {r["arm"] for r in rows} == {"a"}
     curve = [r for r in rows if r["metric"] == "survival"]
@@ -568,8 +585,8 @@ def test_tf6_15_wheres_rows_are_its_json(tmp_path: Path) -> None:
         assert _one(rows, metric="share", cause=cause["cause"])["value"] == cause["f"]
 
 
-def test_tf6_15_changes_rows_are_its_json(tmp_path: Path) -> None:
-    _, folder = _saved(tmp_path, "changes")
+def test_tf6_15_changes_rows_are_its_json() -> None:
+    folder = _kept("changes")
     rows, result = _rows(folder), result_of(folder)
     for input_ in result["rows"]:
         mine = [r for r in rows if r["condition_hash"] == input_["config_hash"]]

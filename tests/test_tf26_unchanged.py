@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -25,18 +26,27 @@ from tf26_support import API_EXPORTS, EXPORTS, LOOKUP, VERSIONS, address, by_sta
 # ---------- TF26-70 ----------
 
 
-def _prove_reads(root: Path, run: str, rows: int, missed: int, files: list[str], shared: bool, case: str = "example") -> None:
+@pytest.fixture(scope="module")
+def junit_schema(tmp_path_factory: Any) -> Any:
+    """The Parquet schema of a run the JUnit reader writes, read once from a store of its own
+    that no test writes to."""
+    import pyarrow.parquet as pq
+
+    from tf21_support import do_import
+
+    junit = tmp_path_factory.mktemp("junit") / "st"
+    do_import("junit-a", junit, "j")
+    return pq.read_schema(next((junit / "j").rglob("*.parquet")))
+
+
+def _prove_reads(want_schema: Any, root: Path, run: str, rows: int, missed: int, files: list[str], shared: bool, case: str = "example") -> None:
     import pyarrow.parquet as pq
     from poisson_prove.store import Store
 
     from poisson_trace.ingest.writer import RECORD_KEYS
-    from tf21_support import do_import
 
     store = Store(root)
     assert run in store.runs()
-    junit = root.parent / f"junit-store-{run}"
-    do_import("junit-a", junit, "j")
-    want_schema = pq.read_schema(next((junit / "j").rglob("*.parquet")))
     manifest = store.manifest(run)
     assert manifest.status == "complete" and manifest.backend == "import:weave"
     assert manifest.target_id == "import/weave"
@@ -77,32 +87,32 @@ def _prove_reads(root: Path, run: str, rows: int, missed: int, files: list[str],
 
 @pytest.mark.parametrize("version", VERSIONS)
 @pytest.mark.parametrize("kind", EXPORTS)
-def test_tf26_70_prove_reads_every_run_the_reader_writes(tmp_path: Path, version: str, kind: str) -> None:
+def test_tf26_70_prove_reads_every_run_the_reader_writes(tmp_path: Path, junit_schema: Any,version: str, kind: str) -> None:
     files = export(version, kind)
     imported(of(version, kind, tmp_path / "st", "r", mode="status"))
-    _prove_reads(tmp_path / "st", "r", 10, 1, [p.name for p in files], kind in API_EXPORTS, default_case(kind))
+    _prove_reads(junit_schema, tmp_path / "st", "r", 10, 1, [p.name for p in files], kind in API_EXPORTS, default_case(kind))
 
 
 @pytest.mark.parametrize("kind", ["plain", "pages"])
-def test_tf26_70_and_the_candidate_s_plain_answer_and_its_pages(tmp_path: Path, kind: str) -> None:
+def test_tf26_70_and_the_candidate_s_plain_answer_and_its_pages(tmp_path: Path, junit_schema: Any,kind: str) -> None:
     files = export("candidate", kind)
     imported(by_status(files, tmp_path / "st", "r"))
-    _prove_reads(tmp_path / "st", "r", 10, 1, [p.name for p in files], True)
+    _prove_reads(junit_schema, tmp_path / "st", "r", 10, 1, [p.name for p in files], True)
 
 
 @pytest.mark.parametrize("name", LOOKUP)
 @pytest.mark.parametrize("kind", ["pull", "ui-csv"])
-def test_tf26_70_and_a_run_of_two_tries_a_case(tmp_path: Path, name: str, kind: str) -> None:
+def test_tf26_70_and_a_run_of_two_tries_a_case(tmp_path: Path, junit_schema: Any,name: str, kind: str) -> None:
     files = export(name, kind)
     imported(of(name, kind, tmp_path / "st", "r"))
-    _prove_reads(tmp_path / "st", "r", 6, 4 if name == "old" else 0, [p.name for p in files], False, default_case(kind))
+    _prove_reads(junit_schema, tmp_path / "st", "r", 6, 4 if name == "old" else 0, [p.name for p in files], False, default_case(kind))
 
 
 @pytest.mark.parametrize("version", VERSIONS)
-def test_tf26_70_and_every_run_a_pull_writes(tmp_path: Path, version: str) -> None:
+def test_tf26_70_and_every_run_a_pull_writes(tmp_path: Path, junit_schema: Any,version: str) -> None:
     with pulling() as (_, _waits):
         imported(by_status(address(version), tmp_path / "st", "r"))
-    _prove_reads(tmp_path / "st", "r", 10, 1, ["raw.jsonl"], True)
+    _prove_reads(junit_schema, tmp_path / "st", "r", 10, 1, ["raw.jsonl"], True)
     from poisson_prove.store import Store
 
     # the raw copy sits under the store's own folder, which Prove's listing leaves alone

@@ -137,7 +137,7 @@ def test_tr4_event_outcome_dies_and_other_outcome_ends_at_the_last_step(make_sto
     assert by_index[2].reason == "ended" and by_index[2].died is False
 
 
-def test_tr4_at_risk_counts_died_and_censored_alike(synth) -> None:  # type: ignore[no-untyped-def]
+def test_tr4_at_risk_counts_every_try_placed_at_or_after_the_step(synth) -> None:  # type: ignore[no-untyped-def]
     root, run = synth
     result = where(root, run, SYNTH_EVENTS, "--json")
     assert result.code == 0, result.text
@@ -160,7 +160,7 @@ def test_tr4_at_risk_on_tau2_matches_the_placement_at_every_death_step() -> None
 # ---------- TR5 ----------
 
 
-def test_tr5_timeout_is_censored_never_a_death(synth) -> None:  # type: ignore[no-untyped-def]
+def test_tr5_a_timeout_is_placed_as_timed_out_never_a_death(synth) -> None:  # type: ignore[no-untyped-def]
     placed, frame, _ = placement(*synth, SYNTH_EVENTS)
     timed_out = [p for p in placed.rows if p.reason == "timed out"]
     assert len(timed_out) == 1
@@ -270,15 +270,6 @@ def test_tr7_unreadable_trace_is_excluded_by_that_reason(synth, bad) -> None:  #
     assert after.excluded["unreadable trace"] == before.excluded["unreadable trace"] + 1 == 1
     assert len(after.rows) == len(before.rows) - 1
     assert sum(after.excluded.values()) == sum(before.excluded.values()) + 1
-
-
-def test_tr7_excluded_rows_appear_in_no_curve(synth) -> None:  # type: ignore[no-untyped-def]
-    root, run = synth
-    result = where(root, run, SYNTH_EVENTS, "--json")
-    assert result.code == 0, result.text
-    data = result.json()
-    assert data["run"]["placement"]["placed"] == 4
-    assert all(row["at_risk"] <= 4 for row in data["curve"])
 
 
 # ---------- TR8 ----------

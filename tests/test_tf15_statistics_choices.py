@@ -11,6 +11,7 @@ import math
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from fixcheck_support import fix_check, pair_store
 from tf15_support import draw_run, fit_cells
@@ -40,6 +41,7 @@ def test_the_ceiling_offered_holds_a_reliable_range_reaching_past_the_drop_limit
     assert limit_only.json()["verdict"] == "too small to tell"
 
 
+@pytest.mark.math
 def test_the_expected_information_is_the_mean_of_seeded_draws_of_the_model() -> None:
     from poisson_trace.survival import expected_information, logrank_stratified
 

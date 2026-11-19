@@ -26,7 +26,7 @@ from tf0_support import (
     trace, trace_import, where_cs,
 )
 from tf1_support import (
-    T_B, counts_in, first_line, import_he, name, next_line, refused, runs_json, tau2_copy, verdict_parts,
+    counts_in, first_line, import_he, next_line, tau2_copy, verdict_parts,
 )
 
 THREE = ("different", "no significant difference", "too small to tell")
@@ -120,7 +120,7 @@ def test_tf1_09_fix_check_opens_with_its_verdict_and_keeps_the_bold_line(want: s
     assert all(fact in bold for fact in FIX_BOLD[want]), bold
 
 
-def test_tf1_09_where_states_the_deaths_the_kinds_and_the_median() -> None:
+def test_tf1_09_where_states_the_failures_and_the_kinds_of_their_last_steps() -> None:
     """S11 (ruled 2026-10-20) and ST8: the first line drops the median; it states the failures
     and the kinds of their last steps, not the cause."""
     word, sentence = _opens_with_the_verdict(trace(where_cs()))
@@ -163,13 +163,6 @@ def test_tf1_09_import_states_the_run_the_store_and_what_it_wrote(tmp_path: Path
     assert word == "ok"
     assert "he-a" in sentence and str(store) in sentence, sentence
     assert {"10,496", "328"} <= set(counts_in(sentence)), sentence
-
-
-def test_tf1_09_runs_and_name_open_with_their_verdict(tmp_path: Path) -> None:
-    store = tau2_copy(tmp_path)
-    for result in (trace(["runs", "--store", str(store)]), name(store, T_B, "old"), name(store, "--list"), name(store, "old", "--forget")):
-        assert result.code == 0, result.text
-        assert verdict_parts(first_line(result))[0] == "ok"
 
 
 # ---------- TF1-10: the JSON ----------
@@ -248,8 +241,3 @@ def test_tf1_10_ctrl_c_under_json_leaves_one_json_document(monkeypatch: pytest.M
     assert doc["verdict"] == "stopped", doc
     plain = trace(where_cs())
     assert plain.code == 130 and verdict_parts(first_line(plain))[0] == "stopped"
-
-
-def test_tf1_09_a_refusal_prints_no_verdict_line(tmp_path: Path) -> None:
-    refused(trace(["runs", "--store", str(tmp_path / "nothing-here")]))
-    assert runs_json(tau2_copy(tmp_path))["verdict"] == "ok"

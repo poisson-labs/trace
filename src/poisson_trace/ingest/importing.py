@@ -727,10 +727,12 @@ def import_run(ns: argparse.Namespace, settings: Any, folders: Sequence[str]) ->
     store = Path(ns.store)
     if ns.run is not None:
         # what the writer would refuse about the store and the name, before any file is read
-        # or any service pulled
+        # or any service pulled; a pull refuses a name the store holds in its own words
         from poisson_trace.ingest.writer import check_before_reading
 
-        check_before_reading(store, ns.run, form)
+        address = pulls(ns.tool)
+        pulled = address is not None and any(str(f).startswith(address) for f in ns.files or ())
+        check_before_reading(store, ns.run, form, held=not pulled)
     try:
         held = (store / ns.run).exists()
     except OSError:

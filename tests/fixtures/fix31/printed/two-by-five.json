@@ -1,7 +1,7 @@
 {
   "schema": "poisson-trace.fix-check/2",
   "verdict": "too small to tell",
-  "sentence": "too few tries to see a drop of any size",
+  "sentence": "neither version failed, and with fewer than 3 inputs Trace can't say what size of change that rules out",
   "prove": {
     "version": "0.1.3",
     "store": "two-by-five"

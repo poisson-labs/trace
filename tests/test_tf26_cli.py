@@ -42,7 +42,13 @@ the two finished pairs' rules for the same).
   the puller this install still lacks stays refused.
 - TF26-59: the readers' two sentences: ``runs`` shows an imported run's backend as
   ``import:weave`` and whether it has traces.
-- TF26-60: the reader's module documents what it does not keep, in plain words.
+- TF26-60: the reader's module documents what it does not keep, in plain words: held by
+  TF24-60 in ``test_tf24_cli.py``, for the three readers that pull.
+
+That the import's help lists ``weave`` (TF26-47) and that ``doctor`` lists it among the readers
+(TF26-56) is held by ``test_tf5_readers.py`` (TF5-20), which holds the whole help and ``doctor``'s
+readers line byte for byte; that the address of a puller this install lacks stays refused
+(TF26-58) by ``test_tf17_config.py`` (TF17-20).
 """
 
 from __future__ import annotations
@@ -57,13 +63,13 @@ import pytest
 
 from tf0_support import chdir, trace, trace_import
 from tf1_support import shell_words
-from tf2_support import check, doctor_doc, init_yes, numbered, work, write_config
+from tf2_support import init_yes, numbered, work
 from tf17_support import config_text, import_entry, setup_check, trace_in, write_toml
 from tf21_support import INGEST, run_import
 from tf26_support import (
     API, CALL_ID, CASES, EVALUATION, EXPORTS, KEY_VARIABLE, NAMES, PLANTED_KEY, PROJECT_ID, ROOTS_ONLY, UI, UI_EXPORTS, UI_TABLES, WHOLE,
-    WV, address, by_status, calls_of, cells_of, columns, edited_table, evaluation, export, imported, never, of, of_evaluation, outcomes,
-    picked, pulling, raw_folder, recs, refused, snapshot, tally, write_calls, wrong_line, wv_argv,
+    WV, address, by_status, calls_of, columns, edited_table, evaluation, export, imported, never, of, of_evaluation, outcomes,
+    pulling, raw_folder, recs, refused, snapshot, tally, write_calls, wrong_line, wv_argv,
 )
 
 PRESENT = ("deepeval", "ragas", "table", "junit", "promptfoo", "inspect", "openai-evals", "langsmith", "braintrust", "weave")
@@ -87,14 +93,6 @@ def _one_evaluation(tmp: Path, name: str, suffix: str, stem: str = "old") -> Pat
 
 
 # ---------- TF26-47 ----------
-
-
-def test_tf26_47_the_import_s_help_lists_weave() -> None:
-    helped = trace(["import", "--help"])
-    assert helped.code == 0, helped.text
-    for tool in PRESENT:
-        assert re.search(rf"^ +{re.escape(tool)}(?: {{2,}}\S.*)?$", helped.out, re.M), (tool, helped.out)
-    assert "poisson-trace import weave " in helped.out
 
 
 def test_tf26_47_the_reader_s_help_is_the_verb_s_and_names_its_flags() -> None:
@@ -183,7 +181,7 @@ def test_tf26_48_the_next_line_reads_the_other_version_the_same_way(tmp_path: Pa
     assert sorted(columns(tmp_path / "st", "new")) == list(CASES)
 
 
-@pytest.mark.parametrize("kind", ["pull", "ui-json"])
+@pytest.mark.parametrize("kind", ["pull"])
 def test_tf26_48_a_name_in_use_is_refused_and_nothing_changes(tmp_path: Path, kind: str) -> None:
     imported(of("baseline", kind, tmp_path / "st", "first", mode="status"))
     before = snapshot(tmp_path / "st")
@@ -326,7 +324,7 @@ def test_tf26_50_a_wrong_command_line_exits_2_naming_the_flag(tmp_path: Path, la
 # ---------- TF26-51 ----------
 
 
-@pytest.mark.parametrize("kind", ["pull", "ui-tsv"])
+@pytest.mark.parametrize("kind", ["pull"])
 def test_tf26_51_both_spellings_print_the_same_bytes(tmp_path: Path, kind: str) -> None:
     outs = []
     for spelling in ("verb", "alias"):
@@ -580,17 +578,6 @@ def test_tf26_56_init_lists_the_exports_and_prints_a_line_for_each(tmp_path: Pat
     assert not (folder / "trace-store").exists()
 
 
-def test_tf26_56_doctor_lists_weave_among_the_readers(tmp_path: Path) -> None:
-    folder = work(tmp_path)
-    write_config(folder, "version = 1\n")
-    _, data = doctor_doc(folder)
-    line = check(data, "readers")["line"]
-    for tool in PRESENT:
-        assert tool in line, line
-    for absent in ("otel", "lemma"):
-        assert absent not in line, line
-
-
 # ---------- TF26-57 ----------
 
 
@@ -713,16 +700,6 @@ def test_tf26_58_an_address_is_an_entry_of_the_weave_reader(tmp_path: Path) -> N
     assert held.imports[0].file == "weave/old.jsonl"
 
 
-def test_tf26_58_the_address_of_the_puller_this_install_lacks_stays_refused(tmp_path: Path) -> None:
-    from poisson_trace import config
-
-    folder = work(tmp_path)
-    text = config_text(import_entry("lemma:some/name", "table", "pulled", case_column="c", outcome_column="o", failed=["x"]), store="s")
-    with pytest.raises(config.ConfigError) as caught:
-        config.parse(text, folder / "trace.toml", "trace.toml", given=False)
-    assert "lemma" in str(caught.value) and "not in this install" in str(caught.value), str(caught.value)
-
-
 def test_tf26_58_no_verb_and_no_doctor_asks_the_service_anything(tmp_path: Path) -> None:
     from tf17_support import CS
 
@@ -790,19 +767,3 @@ def test_tf26_59_runs_says_where_the_run_came_from_and_whether_it_has_traces(tmp
     assert ran.code == 0, ran.err
     row = json.loads(ran.out)["runs"][0]
     assert row["traced"] is (traces == "yes") and row["backend"] == "import:weave", row
-
-
-# ---------- TF26-60 ----------
-
-
-def test_tf26_60_the_reader_s_words_are_plain() -> None:
-    from tf0_support import INTERNAL
-
-    from poisson_trace.ingest import pulling as module, weave
-
-    for text in (weave.DESCRIPTION, weave.__doc__ or "", module.__doc__ or ""):
-        assert text.strip()
-        assert not INTERNAL.search(text), INTERNAL.search(text)
-    assert "WANDB_API_KEY" in weave.DESCRIPTION and "weave:ENTITY/PROJECT/EVALUATION" in weave.DESCRIPTION
-    assert "Weave" in (module.__doc__ or ""), "the pull's own words say what the Weave pull asks"
-    assert len(cells_of(export("baseline", "ui-csv")[0])[1]) == 32 and len(list(UI.iterdir())) == 8 and picked("old", "ui-csv")

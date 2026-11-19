@@ -13,8 +13,14 @@ for each, where LINE is the first line of the block. Every skipped block is list
 with its reason, and appended to the file ``--summary`` names (a CI job's summary).
 
 How a page is run. Each page gets a scratch folder of its own, laid out as a clone of the
-repository: the checkout's ``tests/fixtures`` and ``examples`` copied in, and an empty
-``docs/figures``. Its command blocks run there with bash, in page order, with whatever
+repository, holding an empty ``docs/figures`` and what the page names of the checkout's
+``tests/fixtures`` and ``examples``, copied in: for each path ``tests/fixtures/NAME`` or
+``examples/NAME`` written anywhere on the page, where NAME is a file or a folder at the top of
+that folder in the checkout, that file or that folder whole. A page that names neither folder
+gets neither. When a block the page runs writes ``fixtures`` or ``examples`` any other way
+(the folder alone, a pattern, a name that is not at its top), the whole of that folder is
+copied, less the folders of ``NOT_COPIED`` the page does not name. Its command blocks run
+there with bash, in page order, with whatever
 ``poisson-trace`` is first on ``PATH`` (and, for the one recipe that runs them, whatever
 ``poisson-tasks``, ``poisson-prove`` and ``pytest``), a home folder of its own and no key in the
 environment. Nothing is written to the
@@ -67,8 +73,8 @@ import termios
 import threading
 import time
 import urllib.parse
-from collections.abc import Callable, Iterator, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -78,8 +84,11 @@ FIXTURES = CHECKOUT / "tests" / "fixtures"
 EXAMPLES = CHECKOUT / "examples"
 INGEST = FIXTURES / "ingest"
 STANDARDS = ("cli-look.md", "repo-hygiene.md")
-#: Fixture folders no page reads: earlier outputs the test suite pins. Left out of the copy.
+#: Fixture folders no page reads: earlier outputs the test suite pins. Left out of a copy of
+#: the whole of ``tests/fixtures``, unless the page names one.
 NOT_COPIED = ("tf5", "tf9", "tf18", "tf19", "tf24", "tf25", "tf26")
+#: The two folders of the checkout a page's commands may read, each by the path a page writes.
+COPIED = {"tests/fixtures": FIXTURES, "examples": EXAMPLES}
 #: How long one block may run, in seconds.
 TIME_LIMIT = 600
 
@@ -394,11 +403,16 @@ class Captures:
 # ---------- running a block ----------
 
 
-def environment(home: Path, addresses: dict[str, str] | None) -> dict[str, str]:
+def environment(
+    home: Path, addresses: dict[str, str] | None, extra: Mapping[str, str] | None = None
+) -> dict[str, str]:
     """What a page's command runs with: the caller's environment with a home of its own, no
     key, and every proxy and service address pointed at a closed port; or, for a block marked
-    ``pull`` (``addresses`` given), the planted keys and the captures' addresses."""
-    env = dict(os.environ, HOME=str(home))
+    ``pull`` (``addresses`` given), the planted keys and the captures' addresses. ``extra`` is
+    the caller's own to add first (the test suite's ``PATH``, with the package under test
+    first on it); nothing of it outlasts what is set here."""
+    env = dict(os.environ, **(extra or {}))
+    env["HOME"] = str(home)
     for name in (*REMOVED, *PLANTED, *ENDPOINTS.values()):
         env.pop(name, None)
     for name in PROXIES:
@@ -509,61 +523,141 @@ class Checked:
     held: int = 0
 
 
-def scratch(tmp: Path) -> tuple[Path, Path]:
-    """A folder laid out as a clone's root, and a home folder, both under ``tmp``."""
-    root, home = tmp / "clone", tmp / "home"
-    shutil.copytree(
-        FIXTURES, root / "tests" / "fixtures", ignore=shutil.ignore_patterns(*NOT_COPIED)
-    )
-    if EXAMPLES.is_dir():
-        shutil.copytree(EXAMPLES, root / "examples", ignore=shutil.ignore_patterns("__pycache__"))
+@dataclass(frozen=True)
+class Shown:
+    """One output or excerpt block of a page that was run, with what it was held against: the
+    text of the command block above it, the exit code that gave, what it printed, and that
+    block."""
+
+    block: Block
+    command: str
+    code: int
+    printed: str
+    ran: Block = field(compare=False, default=Block("command", 0, ""))
+
+
+#: A path a page writes into one of the two folders, and the first name after the folder.
+_NAMED = re.compile(r"(?<![\w-])(tests/fixtures|examples)/([A-Za-z0-9_.-]+)")
+_OTHERWISE = {
+    "tests/fixtures": re.compile(r"(?<![\w-])fixtures(?![\w-])"),
+    "examples": re.compile(r"(?<![\w-])examples(?![\w-])"),
+}
+
+
+def _top(where: str, name: str) -> str | None:
+    """``name`` as a file or folder at the top of that folder of the checkout, or None; a full
+    stop that ends a sentence is not part of a name."""
+    for candidate in (name, name.rstrip(".")):
+        if candidate.strip(".") and (COPIED[where] / candidate).exists():
+            return candidate
+    return None
+
+
+def named(text: str) -> dict[str, set[str]]:
+    """For each of the two folders, the names at its top that a page writes a path to,
+    anywhere on the page."""
+    out: dict[str, set[str]] = {where: set() for where in COPIED}
+    for where, name in _NAMED.findall(text):
+        top = _top(where, name)
+        if top is not None:
+            out[where].add(top)
+    return out
+
+
+def whole(blocks: Sequence[Block]) -> set[str]:
+    """The folders of the two a page gets whole: those a block it runs writes any other way
+    than by a path to a name at the folder's top."""
+    run_text = "\n".join(block.body for block in blocks if block.kind == "command")
+    rest = _NAMED.sub(lambda m: "" if _top(m.group(1), m.group(2)) else m.group(0), run_text)
+    return {where for where, word in _OTHERWISE.items() if word.search(rest)}
+
+
+def lay_out(root: Path, text: str) -> None:
+    """``root`` laid out as a clone's root for the page whose text this is: what the page
+    names of ``tests/fixtures`` and ``examples`` (the module's opening gives the rule), copied,
+    and an empty ``docs/figures``."""
+    names, wholes = named(text), whole(parse(text)[0])
+    for where, source in COPIED.items():
+        if not source.is_dir():
+            continue
+        target = root / where
+        inner = ("__pycache__",) if source == EXAMPLES else ()
+        if where in wholes:
+            left = inner if source == EXAMPLES else tuple(set(NOT_COPIED) - names[where])
+            shutil.copytree(source, target, ignore=shutil.ignore_patterns(*left))
+            continue
+        for name in sorted(names[where]):
+            if (source / name).is_dir():
+                shutil.copytree(source / name, target / name, ignore=shutil.ignore_patterns(*inner))
+            else:
+                target.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source / name, target / name)
     (root / "docs" / "figures").mkdir(parents=True)
+
+
+def scratch(tmp: Path, text: str) -> tuple[Path, Path]:
+    """A folder laid out as a clone's root for the page whose text this is, and a home
+    folder, both under ``tmp``."""
+    root, home = tmp / "clone", tmp / "home"
+    lay_out(root, text)
     home.mkdir()
     return root, home
 
 
-def check_page(page: Path, captures: Captures) -> Checked:
-    blocks, faults = parse(page.read_text(encoding="utf-8"))
+def run_page(
+    page: Path, tmp: Path, captures: Captures, extra: Mapping[str, str] | None = None
+) -> tuple[Checked, list[Shown]]:
+    """The page run in a scratch folder under ``tmp`` (``clone`` for its commands, ``home``
+    for their home), which is left as the commands left it: what the check found, and each
+    output and excerpt that stands under a command that was run, with what that command gave.
+    ``extra`` is added to the environment of every block (``environment``)."""
+    text = page.read_text(encoding="utf-8")
+    blocks, faults = parse(text)
     found = Checked(faults=list(faults), skips=[])
-    with tempfile.TemporaryDirectory(prefix="poisson-trace-docs-check-") as tmp:
-        root, home = scratch(Path(tmp))
-        above: Block | None = None  # the last command or skipped block
-        ran: tuple[int, str] | None = None  # what the last command gave, if it was run
-        for block in blocks:
-            if block.kind == "unmarked":
-                found.faults.append((block.line, "a fenced block with no mark above it"))
-            elif block.kind == "skip":
-                above, ran = block, None
-                found.skips.append((block.line, block.reason))
-                for command in commands(block):
-                    if could_run(command):
-                        found.faults.append(
-                            (
-                                block.line,
-                                f"a command that could be run is skipped: {' '.join(command)}",
-                            )
-                        )
-            elif block.kind == "command":
-                above, ran = block, None
-                asked = [
-                    w for command in commands(block) for w in command if w.startswith(ADDRESSES)
-                ]
-                if block.pull and not asked:
-                    found.faults.append((block.line, "marked pull, and it asks no service"))
-                elif asked and not block.pull:
+    shown: list[Shown] = []
+    root, home = scratch(tmp, text)
+    above: Block | None = None  # the last command or skipped block
+    ran: tuple[int, str] | None = None  # what the last command gave, if it was run
+    for block in blocks:
+        if block.kind == "unmarked":
+            found.faults.append((block.line, "a fenced block with no mark above it"))
+        elif block.kind == "skip":
+            above, ran = block, None
+            found.skips.append((block.line, block.reason))
+            for command in commands(block):
+                if could_run(command):
                     found.faults.append(
                         (
                             block.line,
-                            f"asks {', '.join(asked)} in a block not marked pull; it was not run",
+                            f"a command that could be run is skipped: {' '.join(command)}",
                         )
                     )
-                    continue
-                ran = run(
-                    block, root, environment(home, captures.addresses() if block.pull else None)
+        elif block.kind == "command":
+            above, ran = block, None
+            asked = [w for command in commands(block) for w in command if w.startswith(ADDRESSES)]
+            if block.pull and not asked:
+                found.faults.append((block.line, "marked pull, and it asks no service"))
+            elif asked and not block.pull:
+                found.faults.append(
+                    (
+                        block.line,
+                        f"asks {', '.join(asked)} in a block not marked pull; it was not run",
+                    )
                 )
-            elif block.kind in ("output", "excerpt"):
-                found.held += _shown(block, above, ran, found.faults)
-    return found
+                continue
+            ran = run(
+                block, root, environment(home, captures.addresses() if block.pull else None, extra)
+            )
+        elif block.kind in ("output", "excerpt"):
+            found.held += _shown(block, above, ran, found.faults)
+            if above is not None and above.kind == "command" and ran is not None:
+                shown.append(Shown(block, above.body, ran[0], ran[1], above))
+    return found, shown
+
+
+def check_page(page: Path, captures: Captures) -> Checked:
+    with tempfile.TemporaryDirectory(prefix="poisson-trace-docs-check-") as tmp:
+        return run_page(page, Path(tmp), captures)[0]
 
 
 def _shown(

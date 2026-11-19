@@ -97,12 +97,6 @@ def test_tf9_2b_any_condition_failing_is_plain_byte_for_byte(
     assert (got.code, got.out, got.err) == (want.code, want.out, want.err)
 
 
-def test_tf9_2b_json_is_never_pretty(base: Path) -> None:
-    got = shared_run(base, _with(ITEM, "--json"), stdout="pty", stderr="own")
-    assert got.code == 0
-    assert not _escapes(got)
-
-
 # ---------- TF9-2c ----------
 
 

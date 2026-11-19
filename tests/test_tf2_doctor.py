@@ -88,6 +88,7 @@ def test_tf2_18_each_line_says_what_it_found(tmp_path: Path) -> None:
     assert all(r in readers for r in PRESENT_READERS) and not any(r in readers for r in ABSENT_READERS), readers
 
 
+@pytest.mark.slow
 def test_tf2_18_the_package_line_warns_outside_the_environment_and_stays_ok(ready: Path, tmp_path: Path) -> None:
     """This suite runs the package from outside the interpreter's environment (an editable install,
     or a build on the path). Installed inside a fresh environment, the same package's line is

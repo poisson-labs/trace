@@ -6,8 +6,8 @@ section 8.4). Held by what it does, run as a command, never by how it is written
 With no page it checks the README, the contributing page and every page under ``docs/`` but
 the two standards, of the checkout it sits in. It runs each page's commands with whatever
 ``poisson-trace`` is first on ``PATH`` (in CI, the wheel just installed), in a scratch folder
-of the page's own laid out as a clone, the checkout's fixtures copied in, with a home folder
-of its own. It holds every page to the marks ``tf5_support`` writes out, by the same rules as
+of the page's own laid out as a clone, what the page names of the checkout's fixtures and
+examples copied in, with a home folder of its own. It holds every page to the marks ``tf5_support`` writes out, by the same rules as
 TF5-11 to TF5-16.
 
 - TF5-80: it is in the repository and not in the wheel (TF5-96 holds what the wheel is built

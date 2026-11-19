@@ -185,10 +185,14 @@ def test_tf3_21_never_raises(tmp_path: Path, tool: str) -> None:
 
 def test_tf3_22_no_file_is_claimed_by_two_readers(tmp_path: Path) -> None:
     column = outcome_columns()[0]
+    # DeepEval's latest test run, as it keeps it: wrapped, in a .deepeval folder
+    latest = deepeval_file(tmp_path / ".deepeval" / ".latest_test_run.json")
+    latest.write_text(json.dumps({"testRunData": json.loads(latest.read_text(encoding="utf-8"))}), encoding="utf-8")
     files = [
         TABLE_A, SUITE_1, OWN_1,
-        deepeval_file(tmp_path / "results" / "test_run_20261002_101500.json"),
+        deepeval_file(tmp_path / "results" / "test_run_20261002_101500.json"), latest,
         ragas_file(tmp_path / "scores" / "base.jsonl"), ragas_file(tmp_path / "scores" / "base.csv"),
+        ragas_file(tmp_path / "scores" / "base.json"),
         write_table(tmp_path / "both.csv", [{"case": "a", "faithfulness": 0.5, column: "x"}]),
         write_table(tmp_path / "both.json", [{"case": "a", "answer_relevancy": 0.5, column: "x"}]),
         write_table(tmp_path / "mine.jsonl", [{"case": "a", column: "x"}]),

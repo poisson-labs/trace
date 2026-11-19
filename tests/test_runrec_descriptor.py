@@ -20,7 +20,8 @@ import pytest
 from conftest import FIXTURES
 from runrec_support import (
     DESCRIPTOR_KEYS, FAST, READERS, SECOND, STORE_FORMAT, TOOL, WRITER_KEYS, copy_store, descriptor,
-    descriptor_file, events, import_key, major_minor, manifest_json, prove, trace_version, tree,
+    descriptor_file, events, import_key, imported, major_minor, manifest_json, prove, trace_version,
+    tree,
 )
 from tf21_support import run_import
 
@@ -40,9 +41,9 @@ def _as_prove_writes(path: Path) -> None:
 
 @pytest.mark.parametrize("key", ["junit-a", "ragas-base", "promptfoo-old", "inspect-eval",
                                  "openai-evals-old"])
-def test_runrec_1_an_import_into_a_new_store_writes_the_descriptor(tmp_path: Path, key: str) -> None:
-    root = tmp_path / "store"
-    import_key(key, root, "r")
+def test_runrec_1_an_import_into_a_new_store_writes_the_descriptor(
+        tmp_path_factory: pytest.TempPathFactory, key: str) -> None:
+    root, _ = imported(key, tmp_path_factory)
     doc = descriptor(root)
     assert list(doc) == DESCRIPTOR_KEYS
     assert doc["format"] == STORE_FORMAT
@@ -308,11 +309,10 @@ def test_runrec_7_the_fast_twin_covers_a_fast_key_of_every_reader() -> None:
 # ---------- RUNREC-8: the manifest Trace writes is still Prove's manifest ----------
 
 
-def test_runrec_8_every_key_prove_writes_is_kept(tmp_path: Path) -> None:
+def test_runrec_8_every_key_prove_writes_is_kept(tmp_path_factory: pytest.TempPathFactory) -> None:
     from poisson_prove.store import Store
 
-    root = tmp_path / "store"
-    import_key("junit-a", root, "r")
+    root, _ = imported("junit-a", tmp_path_factory)
     doc = manifest_json(root, "r")
     prove_view = Store(root).manifest("r").to_dict()
     assert {k: doc[k] for k in prove_view} == prove_view

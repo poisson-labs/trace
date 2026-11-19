@@ -39,7 +39,7 @@ from pathlib import Path
 import pytest
 
 from tf1_support import shell_words
-from tf2_support import config_of, doctor, init_yes, refused, scratch_home, tau2_copy, tty, work, write_config  # noqa: F401
+from tf2_support import doctor, init_yes, refused, scratch_home, tty, work  # noqa: F401
 from tf17_support import (
     CS_FAILURES, INIT_KEYS, INIT_SCHEMA, config_text, cs_store, expected_toml, import_lines,
     junit_entry, junit_pair, ragas_entry, ragas_pair, read_toml, rows_of, runs_in, sample_repo,
@@ -204,14 +204,6 @@ def test_tf17_37_nothing_pending_is_refused_as_today_and_force_sets_up_again(tmp
     assert "import" not in doc and doc["store"] == {"path": "store"} and doc["events"] == {"failed": ["unresolved"]}
 
 
-def test_tf17_37_a_plain_config_there_already_is_refused_as_today(tmp_path: Path) -> None:
-    folder = work(tmp_path)
-    tau2_copy(folder, "proofload-runs")
-    write_config(folder, config_of("proofload-runs"))
-    line = refused(init_yes(folder))
-    assert "there already" in line, line
-
-
 # ---------- TF17-38 ----------
 
 
@@ -322,9 +314,10 @@ def test_tf17_41_no_events_with_a_prove_store_takes_the_default_from_its_runs(tm
 def test_tf17_41_nothing_outside_the_config_and_the_store_is_written(tmp_path: Path) -> None:
     repo = pending_repo(tmp_path)
     home = Path(os.environ["HOME"])
-    before = snapshot(repo, home)
+    elsewhere = work(tmp_path, "elsewhere")
+    before = snapshot(repo, home, elsewhere)
     assert init_yes(repo).code == 0
-    after = snapshot(repo, home)
+    after = snapshot(repo, home, elsewhere)
     changed = sorted(k for k in before if after.get(k) != before[k])
     assert changed == ["repo/trace.toml"], changed
     new = sorted(k for k in after if k not in before)

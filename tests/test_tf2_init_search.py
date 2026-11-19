@@ -138,7 +138,12 @@ def test_tf2_06_a_store_in_the_home_folder_beside_is_not_found(tmp_path: Path, s
     assert "store" not in config(folder)
 
 
-@pytest.mark.parametrize("filled", ["one folder of files", "three folders of files", "one folder of folders"])
+# one filling holds the bound on every pull request; the other two ways of reaching it are slow
+@pytest.mark.parametrize("filled", [
+    "one folder of files",
+    pytest.param("three folders of files", marks=pytest.mark.slow),
+    pytest.param("one folder of folders", marks=pytest.mark.slow),
+])
 def test_tf2_06_the_pass_stops_at_10000_entries_and_says_so(tmp_path: Path, filled: str) -> None:
     """Every entry read counts, files and folders alike, across folders: the store past the bound
     is not reached."""

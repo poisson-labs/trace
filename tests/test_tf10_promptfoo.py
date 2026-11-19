@@ -67,15 +67,11 @@ def test_tf10_4_each_prompt_is_one_run_of_its_four_tests(tmp_path: Path, prompt:
     assert data["tool"] == "promptfoo" and data["rows"] == 4 and data["cases"] == 4
     assert data["repeats"] == {"min": 1, "max": 1}
     got = _by_case(tmp_path / "st", "v")
-    assert got == _expected(idx)
+    assert got == _expected(idx) == [{"q1": ["missed"], "q2": ["missed"], "q3": ["met"], "q4": ["met"]},
+                                     {c: ["met"] for c in CASES}][idx]
     assert data["outcomes"] == {"met": sum(v == ["met"] for v in got.values()),
                                 "missed": sum(v == ["missed"] for v in got.values())}
     assert data["no_outcome"] == {}
-
-
-def test_tf10_4_the_old_prompt_fails_q1_and_q2() -> None:
-    assert _expected(0) == {"q1": ["missed"], "q2": ["missed"], "q3": ["met"], "q4": ["met"]}
-    assert _expected(1) == {c: ["met"] for c in CASES}
 
 
 # ---------- TF10-5 ----------

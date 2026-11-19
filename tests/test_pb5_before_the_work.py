@@ -11,10 +11,9 @@ descriptor. The rule these tests hold:
    Each refusal is the sentence the command already gave, word for word.
 2. **The import.** The run's name, against the names the store's runs answer to, and the
    store's ``store.json``, are checked before any file is read and before any pull. Each refusal
-   is the sentence the import already gave. A name the store itself holds is not among them: the
-   import still refuses it once the files are read (a pull, before it asks its service
-   anything), because ``test_look_choices.py`` holds that an import under such a name reaches
-   its reader; moving that test is a ruling asked for, not made here.
+   is the sentence the import already gave. A name the store itself holds is among them (B1-1,
+   ruled 2026-11-18): an import of files refuses it before a file is read, and a pull refuses it
+   before it asks its service anything, in the pull's own words.
 3. **Not ``ui`` and ``report``.** They stay as they are: their work is quick, and nothing is lost
    when they refuse (AR-30).
 
@@ -26,8 +25,8 @@ store's. For a pull, the stand-in for the service counts the requests made: none
 - PB5-1: ``--out`` is refused before any run is read, on every counting verb and for every fault.
 - PB5-2: ``--svg`` is refused before the run is read, for every fault.
 - PB5-3: with ``--svg`` and ``--out`` together and ``--out`` refused, no picture is written.
-- PB5-4: an import whose name another run of the store answers to is refused before its files are
-  read, and before a pull makes a request.
+- PB5-4: an import whose name the store holds, or another run of the store answers to, is refused
+  before its files are read, and before a pull makes a request.
 - PB5-5: an import into a store whose ``store.json`` is not a descriptor, or cannot be read, is
   refused before its files are read, and before a pull makes a request.
 - PB5-6: what the early checks must not do: a store that is not there yet is not made by a refused
@@ -178,6 +177,17 @@ NO_FILE = "no-such-file.xml"
 
 def _import(store: Path, name: str) -> list[str]:
     return ["import", "junit", NO_FILE, "--store", str(store), "--run", name]
+
+
+@pytest.mark.parametrize("command", ["trace", "import"])
+def test_pb5_4_a_name_the_store_holds_is_refused_before_a_file_is_read(tmp_path: Path, command: str) -> None:
+    store = copy(STORE_1_2, tmp_path)
+    before = tree(tmp_path)
+    words = _import(store, A)
+    ran = run(words if command == "trace" else words[1:], tmp_path, command)
+    _only(ran, f"the store at {store} already holds a run named {A}; an import writes a new run and never adds to one, "
+               "so give this one another name")
+    assert tree(tmp_path) == before
 
 
 def test_pb5_4_a_name_a_run_answers_to_is_refused_before_a_file_is_read(tmp_path: Path) -> None:

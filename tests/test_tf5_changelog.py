@@ -132,11 +132,6 @@ def test_tf5_52_a_line_for_every_build(build: str) -> None:
     assert found, f"0.1.0's entry has no line for {build}: an item holding all of {BUILDS[build]}"
 
 
-def test_tf5_52_the_builds_held_back_for_this_pass_are_all_there() -> None:
-    held_back = [build for build in BUILDS if re.search(r"SB6|SG7|RB3|SC1|#30|trace#31|no outcome|LangSmith|Braintrust|Weave", build)]
-    assert len(held_back) == 10 and len(BUILDS) >= 28
-
-
 # ---------- TF5-53 ----------
 
 

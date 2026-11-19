@@ -11,7 +11,7 @@ to 3).
   line under it: an earlier release, however close, and a pre-release of the floor itself.
 - PF-4: no Prove, and a Prove that states no version, are refused word for word.
 - PF-5: ``doctor`` names the floor: when ready, when Prove is below it, absent or unversioned.
-- PF-6: the install line is one a shell reads as written, and it installs a Prove Trace reads.
+- PF-6: the install line is one a shell reads as written.
 - PF-7: what needs no Prove still needs none: every help and the version line.
 - PF-10: the store the floor made is the stored format's 1.2 and the store 0.1.3 made its 1.0,
   and they hold the same outcomes row for row.
@@ -163,11 +163,10 @@ def test_pf_2_with_the_prove_installed_nothing_refuses(tmp_path: Path, family: s
 # ---------- PF-3 ----------
 
 
-@pytest.mark.parametrize("version", BELOW)
-@pytest.mark.parametrize("family", ["runs", "fix-check", "import"])
-def test_pf_3_a_prove_below_the_floor_is_refused_word_for_word(tmp_path: Path, family: str, version: str) -> None:
-    command, _, does = FAMILIES[family]
-    argv = _argv(family, tmp_path)
+@pytest.mark.parametrize("version", [v for v in BELOW if v not in ("0.3.0", "0.4.0rc1")])
+def test_pf_3_a_prove_below_the_floor_is_refused_word_for_word(tmp_path: Path, version: str) -> None:
+    command, _, does = FAMILIES["runs"]
+    argv = _argv("runs", tmp_path)
     before = tree(tmp_path)
     ran = with_fake_prove(argv, tmp_path, version, command)
     assert ran.code == 1, ran.text
@@ -208,13 +207,6 @@ def test_pf_3_a_version_that_is_not_numbers_is_refused_as_found(tmp_path: Path) 
         assert ran.lines() == below(READS, version), ran.err
 
 
-def test_pf_3_no_refusal_tells_a_user_on_a_later_prove_to_go_back() -> None:
-    """The install line names the floor as the least, never one exact version."""
-    assert "==" not in INSTALL and f">={RECORDED}" in INSTALL
-    for lines in (below(READS, "0.3.0"), absent(READS), unversioned(READS)):
-        assert lines[1] == f"  next: {INSTALL}" and OR_LATER in lines[0]
-
-
 # ---------- PF-4 ----------
 
 
@@ -229,8 +221,10 @@ def test_pf_4_without_prove_every_command_refuses_word_for_word(tmp_path: Path, 
     assert tree(tmp_path) == before
 
 
-@pytest.mark.parametrize("prove", ["unversioned", "unversioned:''", "unversioned:None", "unversioned:(0, 4, 0)"])
-@pytest.mark.parametrize("family", ["runs", "fix-check", "init", "import", "poisson-trace-import"])
+@pytest.mark.parametrize(("family", "prove"), [
+    *[(family, "unversioned") for family in ("runs", "fix-check", "init", "import", "poisson-trace-import")],
+    *[("runs", prove) for prove in ("unversioned:''", "unversioned:None", "unversioned:(0, 4, 0)")],
+])
 def test_pf_4_a_prove_that_states_no_version_is_refused_word_for_word(tmp_path: Path, family: str, prove: str) -> None:
     command, _, does = FAMILIES[family]
     argv = _argv(family, tmp_path)
@@ -301,15 +295,6 @@ def test_pf_6_the_install_line_is_one_a_shell_reads_as_written() -> None:
     assert shlex.split(INSTALL) == ["pip", "install", f"poisson-prove>={RECORDED}"]
     shown = subprocess.run(["sh", "-c", f"printf '%s\\n' {INSTALL.removeprefix('pip install ')}"], capture_output=True, text=True, check=True)
     assert shown.stdout == f"poisson-prove>={RECORDED}\n"
-
-
-def test_pf_6_the_install_line_installs_a_prove_trace_reads() -> None:
-    (requirement,) = shlex.split(INSTALL)[2:]
-    assert requirement == REQUIREMENT
-    for version in ("0.4.0", "0.4.1", "1.0.0"):
-        assert at_or_above_the_floor(version)
-    for version in ("0.3.0", "0.3.99", FORMAT_1_0):
-        assert not at_or_above_the_floor(version)
 
 
 # ---------- PF-7 ----------

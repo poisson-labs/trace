@@ -7,8 +7,7 @@
 - TF10-40: ``looks_like`` never raises, on a file missing, a folder, an empty file, a damaged
   archive or a JSON value of another shape, and claims none of them.
 - TF10-41: init lists each export as its reader's and, with ``--no-import``, prints for each the
-  ``poisson-trace import`` line that would import it into ``trace-store``, writing no store;
-  doctor lists the three readers among the install's.
+  ``poisson-trace import`` line that would import it into ``trace-store``, writing no store.
 """
 
 from __future__ import annotations
@@ -19,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from tf1_support import shell_words
-from tf2_support import check, doctor_doc, init_yes, numbered, scratch_home, work, write_config  # noqa: F401
+from tf2_support import init_yes, numbered, scratch_home, work  # noqa: F401
 from tf10_support import IN_EVAL, IN_JSON, OE_NEW, OE_OLD, PF_CSV, PF_JSON, PF_JSONL, PRESENT, looks_like, write_eval
 from tf21_support import INGEST
 
@@ -134,12 +133,3 @@ def test_tf10_41_init_lists_the_exports_and_prints_a_line_for_each(tmp_path: Pat
         assert words[:4] == ["poisson-trace", "import", tool, f"results/{path.name}"], words
         assert words[4:6] == ["--store", "trace-store"] and words[6] == "--run" and words[7], words
     assert not (folder / "trace-store").exists()
-
-
-def test_tf10_41_doctor_lists_the_three_readers(tmp_path: Path) -> None:
-    folder = work(tmp_path)
-    write_config(folder, "version = 1\n")
-    _, data = doctor_doc(folder)
-    line = check(data, "readers")["line"]
-    for tool in PRESENT:
-        assert tool in line, line

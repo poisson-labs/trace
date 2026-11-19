@@ -12,8 +12,7 @@
   measure; a bad value is a wrong command line (exit 2), a bad config value a refusal (exit 1)
   naming its line; ``total_tokens`` takes none (CB2).
 - TF6-27: HY1: a near-zero old mean leaves the relative change out instead of raising, through
-  ``compare`` and through the verb. (``test_hy11_finding_hy1_…`` in ``test_hy_statistics.py`` is a
-  strict expected failure; Session B removes its mark in the commit that fixes it.)
+  ``compare`` and through the verb.
 - TF6-28: the saved verdict of each verb of two runs carries ``continuous_measures`` whether or not
   ``--measures`` was given, the config's ceilings applied, and ``failure_taxonomy_diff``: each
   run's taxonomy digest, whether the rules are the same, the tries, and the count of each failure

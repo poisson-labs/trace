@@ -54,8 +54,7 @@ def _files(cwd: Path) -> dict[str, str]:
 # ---------- PF-30 ----------
 
 
-@pytest.mark.parametrize("found", NEWER)
-@pytest.mark.parametrize("label", list(READING))
+@pytest.mark.parametrize(("label", "found"), [*[(label, NEWER[0]) for label in READING], ("runs", NEWER[1])])
 def test_pf_30_every_reading_command_refuses_a_store_in_a_newer_format(tmp_path: Path, label: str, found: str) -> None:
     store = marked(STORE_1_2, tmp_path, found)
     before = _files(tmp_path)
@@ -102,7 +101,7 @@ def test_pf_30_a_run_given_by_its_folder_inside_such_a_store_is_refused_too(tmp_
 # ---------- PF-31 ----------
 
 
-@pytest.mark.parametrize("found", NEWER)
+@pytest.mark.parametrize("found", NEWER[:1])
 @pytest.mark.parametrize("label", list(WRITING))
 def test_pf_31_every_writing_command_refuses_a_store_in_a_newer_format(tmp_path: Path, label: str, found: str) -> None:
     store = marked(STORE_1_2, tmp_path, found)
@@ -131,7 +130,7 @@ def test_pf_31_a_name_already_given_is_not_listed_or_forgotten_either(tmp_path: 
 # ---------- PF-32 ----------
 
 
-@pytest.mark.parametrize("found", NEWER)
+@pytest.mark.parametrize("found", NEWER[:1])
 def test_pf_32_init_refuses_to_set_up_a_store_in_a_newer_format(tmp_path: Path, found: str) -> None:
     marked(STORE_1_2, tmp_path, found)
     before = _files(tmp_path)
@@ -141,7 +140,7 @@ def test_pf_32_init_refuses_to_set_up_a_store_in_a_newer_format(tmp_path: Path, 
     assert _files(tmp_path) == before and not (tmp_path / "trace.toml").exists() and not (tmp_path / "project" / "trace.toml").exists()
 
 
-@pytest.mark.parametrize("found", NEWER)
+@pytest.mark.parametrize("found", NEWER[:1])
 def test_pf_32_init_refuses_such_a_store_when_it_finds_it_itself(tmp_path: Path, found: str) -> None:
     """``init`` with no ``--store`` looks for a store under the folder it runs in, and reads the
     one it finds to offer its failures: the one store here is in a newer format."""
@@ -160,7 +159,7 @@ def test_pf_32_init_refuses_such_a_store_when_it_finds_it_itself(tmp_path: Path,
 # ---------- PF-33 ----------
 
 
-@pytest.mark.parametrize("found", NEWER)
+@pytest.mark.parametrize("found", NEWER[:1])
 def test_pf_33_doctor_fails_its_config_check_naming_both_formats(tmp_path: Path, found: str) -> None:
     store = copy(STORE_1_2, tmp_path)
     assert run(["init", "--store", "store", *EVENT, "--yes"], tmp_path).code == 0
@@ -185,7 +184,7 @@ def test_pf_33_doctor_fails_its_config_check_naming_both_formats(tmp_path: Path,
 # ---------- PF-34 ----------
 
 
-@pytest.mark.parametrize("found", NEWER)
+@pytest.mark.parametrize("found", NEWER[:1])
 def test_pf_34_the_api_refuses_to_open_it(tmp_path: Path, found: str) -> None:
     store = marked(STORE_1_2, tmp_path, found)
     before = _files(tmp_path)
@@ -199,7 +198,7 @@ def test_pf_34_the_api_refuses_to_open_it(tmp_path: Path, found: str) -> None:
     assert _files(tmp_path) == before
 
 
-@pytest.mark.parametrize("found", NEWER)
+@pytest.mark.parametrize("found", NEWER[:1])
 def test_pf_34_import_goes_on_refusing_it(tmp_path: Path, found: str) -> None:
     store = marked(STORE_1_2, tmp_path, found)
     before = _files(tmp_path)

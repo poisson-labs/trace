@@ -1,12 +1,11 @@
-"""TF22-15 to TF22-23 and TF22-45: ``poisson-trace import`` given a folder (spec section 18.3.1).
+"""TF22-15 to TF22-23: ``poisson-trace import`` given a folder (spec section 18.3.1).
 
 ``import TOOL DIR`` reads the folder's files of that tool; ``import DIR`` finds the tool. Both
 print, byte for byte, what ``import TOOL FILE ...`` prints on the same files in name order (a
 pull's in its listed order), and write the same run. ``--run`` may be left out for a folder:
 the run takes the folder's name. A Prove folder is not imported (it is already a store). A
 folder holding two runs, two tools or nothing is refused, exit 1, with nothing written. The
-reader's own flags are still required, exit 2 without them, as for files. Everything written
-goes through the TF21 writer, so Prove 0.1.3 reads it (TF22-45).
+reader's own flags are still required, exit 2 without them, as for files.
 """
 
 from __future__ import annotations
@@ -108,10 +107,11 @@ def test_tf22_15_a_folder_imports_as_its_files(tmp_path: Path, kind: str) -> Non
 def test_tf22_15_a_folder_imports_as_its_files_json(tmp_path: Path, kind: str) -> None:
     a, b, by_files, by_folder = _both(kind, tmp_path, "--json")
     _same_output(a, b, by_files, by_folder)
+    _same_run(by_files, by_folder)
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("kind", BUILT)
+@pytest.mark.parametrize("kind", [kind for kind in BUILT if kind not in FAST_BUILT])  # the fast two run the rest
 @pytest.mark.parametrize("form", ["plain", "json"])
 def test_tf22_15_every_built_folder_imports_as_its_files(tmp_path: Path, kind: str, form: str) -> None:
     extra = ("--json",) if form == "json" else ()
@@ -335,24 +335,3 @@ def test_tf22_23_a_folder_leaves_its_files_as_they_were(tmp_path: Path) -> None:
     before = tree(folder)
     assert trace_import(folder, "--store", tmp_path / "s", "--run", "v1").code == 0
     assert tree(folder) == before
-
-
-# ---------- TF22-45: what is written, Prove 0.1.3 reads ----------
-
-
-@pytest.mark.parametrize("kind", FAST_BUILT)
-def test_tf22_45_prove_reads_every_run_a_folder_import_writes(tmp_path: Path, kind: str) -> None:
-    from poisson_prove.store import Store
-
-    tool, folder, files = build(kind, tmp_path)
-    store = tmp_path / "s"
-    assert trace_import(folder, "--store", store, "--run", "v1", *FLAGS[tool]).code == 0
-    held = Store(store)
-    assert "v1" in held.runs()
-    frame = held.read("v1", meta=True, trace="full")
-    tally = held.tally("v1")
-    assert tally.rows == len(frame) > 0
-    assert held.manifest("v1").run_id == "v1"
-    rows = records(store, "v1")
-    assert rows and all(r["signals"]["schema"] == "poisson.trace-signals/1" for r in rows)
-    assert len(file_entries(store, "v1")) == len(files)

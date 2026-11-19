@@ -17,13 +17,15 @@ is under the system's temporary folder and gone when it returns.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import pytest
 from tf13_support import (
     IMPORT_ARGV, VERBS_ARGV, api, attempt, call_for, cli, import_call_for, notes_of, outside,
-    python_roots, snapshot, watched, workspace,
+    Outcome, Watch, python_roots, snapshot, watched, workspace,
 )
 
 READING = ["where", "where untraced", "compare", "fix-check measures", "fix-check verdicts", "changes verdicts",
@@ -55,6 +57,40 @@ def _reads(work: Path) -> dict[str, Any]:
     }
 
 
+@dataclass(frozen=True)
+class Watched:
+    """One reading call made once, watched, in a workspace of its own: what it gave, what the
+    watch saw, the workspace before and after, and what was left in the temporary folder."""
+
+    work: Path
+    got: Outcome
+    watch: Watch
+    before: dict[str, str]
+    after: dict[str, str]
+    left: list[Path]
+
+
+@pytest.fixture(scope="module")
+def watched_call(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Watched]:
+    """Each label's call, its result and both its texts read, made once for the three tests that
+    read what the watch saw (TF13-25, TF13-26, TF13-27); none of them writes to what it is given."""
+    made: dict[str, Watched] = {}
+
+    def of(label: str) -> Watched:
+        if label not in made:
+            root = tmp_path_factory.mktemp("watched")
+            work = workspace(root)
+            before = snapshot(work)
+            call = call_for(VERBS_ARGV[label])
+            temp = root / "systemp"
+            with watched(temp) as watch:
+                got = attempt(lambda: (lambda r: (r, r.to_json(), r.to_markdown()))(call()), work)
+            made[label] = Watched(work, got, watch, before, snapshot(work), list(temp.iterdir()))
+        return made[label]
+
+    return of
+
+
 # ---------- TF13-24 ----------
 
 
@@ -73,13 +109,10 @@ def test_tf13_24_the_api_prints_nothing(tmp_path: Path, label: str, capfd: pytes
 
 
 @pytest.mark.parametrize("label", READING)
-def test_tf13_25_the_api_reads_no_environment_variable(tmp_path: Path, label: str) -> None:
-    work = workspace(tmp_path)
-    call = call_for(VERBS_ARGV[label])
-    with watched(tmp_path / "systemp") as watch:
-        got = attempt(lambda: (lambda r: (r, r.to_json(), r.to_markdown()))(call()), work)
-    assert got.refusal is None
-    assert watch.env == [], watch.env
+def test_tf13_25_the_api_reads_no_environment_variable(watched_call: Callable[[str], Watched], label: str) -> None:
+    ran = watched_call(label)
+    assert ran.got.refusal is None
+    assert ran.watch.env == [], ran.watch.env
 
 
 def test_tf13_25_a_the_look_s_variables_change_nothing_the_api_returns(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -110,13 +143,11 @@ def test_tf13_25_b_the_import_and_the_writers_read_no_environment_variable(tmp_p
 
 
 @pytest.mark.parametrize("label", READING)
-def test_tf13_26_the_api_reads_nothing_it_was_not_given(tmp_path: Path, label: str) -> None:
-    work = workspace(tmp_path)
-    call = call_for(VERBS_ARGV[label])
-    with watched(tmp_path / "systemp") as watch:
-        got = attempt(lambda: (lambda r: (r, r.to_json(), r.to_markdown()))(call()), work)
-    assert got.refusal is None
-    allowed = [*_given(work, label), *python_roots()]
+def test_tf13_26_the_api_reads_nothing_it_was_not_given(watched_call: Callable[[str], Watched], label: str) -> None:
+    ran = watched_call(label)
+    watch = ran.watch
+    assert ran.got.refusal is None
+    allowed = [*_given(ran.work, label), *python_roots()]
     assert outside(watch.opened, allowed) == [], outside(watch.opened, allowed)
     assert outside(watch.listed, allowed) == [], outside(watch.listed, allowed)
 
@@ -157,17 +188,12 @@ def test_tf13_26_b_a_config_and_names_in_the_current_folder_change_nothing(tmp_p
 
 
 @pytest.mark.parametrize("label", READING)
-def test_tf13_27_the_reading_functions_write_nothing(tmp_path: Path, label: str) -> None:
-    work = workspace(tmp_path)
-    before = snapshot(work)
-    call = call_for(VERBS_ARGV[label])
-    temp = tmp_path / "systemp"
-    with watched(temp) as watch:
-        got = attempt(lambda: (lambda r: (r, r.to_json(), r.to_markdown()))(call()), work)
-    assert got.refusal is None
-    assert watch.written == [], watch.written
-    assert snapshot(work) == before
-    assert list(temp.iterdir()) == []
+def test_tf13_27_the_reading_functions_write_nothing(watched_call: Callable[[str], Watched], label: str) -> None:
+    ran = watched_call(label)
+    assert ran.got.refusal is None
+    assert ran.watch.written == [], ran.watch.written
+    assert ran.after == ran.before
+    assert ran.left == []
 
 
 def test_tf13_27_a_each_writer_writes_only_where_it_was_pointed(tmp_path: Path) -> None:

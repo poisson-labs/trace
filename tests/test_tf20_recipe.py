@@ -79,13 +79,13 @@ import pytest
 from tf5_support import RECIPES, Block, expected_pages, read
 from tf20_support import (
     FIX_CHECK, GENERATE, NAME, PAGE, PROVE_VERSION, RUNS, SPECS, TASKS_PIN, TASKS_VERSION, Ran, blocks, every_command, first_line, page_prose,
-    page_sections, rows, run_whole, sentences, store_of,
+    page_sections, rows, run_whole, sentences, shared_run, store_of,
 )
 
 
 @pytest.fixture(scope="module")
 def ran(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Ran]:
-    yield run_whole(tmp_path_factory.mktemp("tf20-page"))
+    yield shared_run(tmp_path_factory)
 
 
 def _commands() -> list[tuple[int, Block, list[str]]]:
@@ -279,7 +279,7 @@ def test_tf20_5_a_sweep_run_again_stores_the_same_tries(ran: Ran, tmp_path: Path
     (_, block, _), = _story()["sweep before"]
     shutil.copytree(ran.root / "examples", tmp_path / "examples",
                     ignore=shutil.ignore_patterns("prove-runs", "tests-runs", "*.xml", "trace.toml", "__pycache__"))
-    proc = subprocess.run(["bash", "-c", block.body.replace("\\\n", " ").strip()], cwd=tmp_path, env=ran.env(), capture_output=True,
+    proc = subprocess.run(["bash", "-c", block.body.replace("\\\n", " ").strip()], cwd=tmp_path, env=ran.env(ran.own_home(tmp_path)), capture_output=True,
                           text=True, timeout=900, stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stdout + proc.stderr
     again, first = store_of(tmp_path, RUNS["before"]), store_of(ran.root, RUNS["before"])
@@ -302,11 +302,11 @@ def _held(text: str) -> str:
 
 
 @pytest.mark.slow
-def test_tf20_5_two_whole_runs_of_the_page_print_the_same_counts(tmp_path: Path) -> None:
+def test_tf20_5_two_whole_runs_of_the_page_print_the_same_counts(ran: Ran, tmp_path: Path) -> None:
+    """The first whole run is the one every test of the page reads; the second is made here."""
     printed = []
-    for n in (1, 2):
-        (tmp_path / f"run-{n}").mkdir()
-        whole = run_whole(tmp_path / f"run-{n}")
+    (tmp_path / "run-2").mkdir()
+    for whole in (ran, run_whole(tmp_path / "run-2")):
         printed.append({c.command: c.printed for c in whole.checked
                         if re.search(r"poisson-trace (fix-check|where) ", c.command)})
     assert printed[0] and set(printed[0]) == set(printed[1])

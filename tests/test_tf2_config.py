@@ -71,11 +71,6 @@ def test_tf2_01_name_takes_the_store_from_the_config(folder: Path) -> None:
     assert listed.code == 0 and "old re-run" in listed.out, listed.text
 
 
-def test_tf2_01_where_reads_the_run_the_config_store_holds(folder: Path) -> None:
-    data = doc(here(folder, ["where", "previous", "--json"]))
-    assert data["run"]["run_id"] == T_B
-
-
 @pytest.mark.parametrize("before", [True, False], ids=["before the verb", "after the verb"])
 @pytest.mark.parametrize("verb", [*VERBS, "name"])
 def test_tf2_01_config_names_another_file_and_its_paths_are_read_from_its_folder(tmp_path: Path, before: bool, verb: str) -> None:

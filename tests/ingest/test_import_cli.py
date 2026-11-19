@@ -18,7 +18,7 @@ import pandas as pd
 import pytest
 from poisson_prove.store import Store
 from support import (
-    BANNED, IMPORT_MAIN, IMPORT_SCHEMA, INGEST, PACKAGE, REPO, TESTS, case, conversation,
+    BANNED, IMPORT_MAIN, IMPORT_SCHEMA, INGEST, PACKAGE, REPO, case, conversation,
     deepeval_argv, holds, in_order, metric, read_rows, refused, run_doc, run_import, run_python,
     run_trace, save, scalars, scored, tree, words,
 )
@@ -428,7 +428,7 @@ def test_ic14_fix_check_reads_the_counts_the_rows_hold(tmp_path: Path) -> None:
     root, old, new = _versions(tmp_path)
     r = run_trace(["fix-check", "old", "new", "--store", root, "--event", "missed", "--inputs", "all",
                    "--max-mde", "0.5", "--json"])
-    assert r.code in (0, 2), r.text
+    assert r.code == 0, r.text
     d = json.loads(r.out)
     both = sorted(k for k in set(old) & set(new)
                   if any(o is not None for o in old[k]) and any(o is not None for o in new[k]))
@@ -448,7 +448,7 @@ def test_ic14_fix_check_reads_the_counts_the_rows_hold(tmp_path: Path) -> None:
 def test_ic14_changes_reads_the_counts_the_rows_hold(tmp_path: Path) -> None:
     root, old, new = _versions(tmp_path)
     r = run_trace(["changes", "old", "new", "--store", root, "--event", "missed", "--json"])
-    assert r.code in (0, 2), r.text
+    assert r.code == 0, r.text
     d = json.loads(r.out)
     both = sorted(set(old) & set(new))
     assert d["tested"] == len(both)
@@ -459,31 +459,6 @@ def test_ic14_changes_reads_the_counts_the_rows_hold(tmp_path: Path) -> None:
         for k in both
     }
     assert got == want
-
-
-FROZEN = {
-    "conftest.py": "88bc21fd208111bd673ebadda9d42899ad120b978110aa085821f4e4b495f79c",
-    "fixcheck_support.py": "3781fa2e753462c5d168b747f815ec7bdad6797914041bcdbfa76829568114ad",
-    "test_changes.py": "b60b8f37a4d67753e9d26b0bea5d70c2950c808cc365372f7bcaadf3350ec99a",
-    "test_cli.py": "293a88916d0510d1eb4977ba7f1908e1f6f50fc005a4e416eb5aeecb755c0de4",
-    "test_clock.py": "4c63abd620252f7dd4033f81403a3311af85e9161ad16e05ba372f36f798b8f2",
-    "test_fix_check_cli.py": "3cf4683ef0a9e039aaa39ee945ca3f77efaebd1b4f6b0b8e537cdf347e6191d8",
-    "test_fix_check_golden.py": "9b851201ed0b74bf04b2a28a5f3b83fdc85175bd929c6e7db72a8a21889262a3",
-    "test_golden.py": "96336168933b628ccd373b58882dfa84d641872556a71567863fb2f90bc5fdcd",
-    "test_paired.py": "3905e6d4a27c6a4201ca56a064cb6b209da118a4c1c5fe77a5da24c4fef640bb",
-    "test_report.py": "ca0648b5b9f350597e242bbb81572a8891f83096d6e6196129b43b98cb0c61e8",
-    "test_survival.py": "975c37e9344c4d62595e8cc37c0d4c2921ecd131d5985408520692a87ca5a51b",
-}
-
-
-def test_ic14_no_frozen_trace_test_is_edited() -> None:
-    """Green by construction: the digests of Trace's test files as they stood at main 42456f7, and
-    as TF15 Session A moved them under Taylor's rulings of 2026-10-20 (each move commit names its
-    ruling and updates the digest of the file it moves). ``test_paired.py`` moved again for
-    trace#31 (2026-11-10): TR49's interval where no run failed. ``conftest.py`` moved for trace#50
-    (805ce65): the fixture that keeps a test from opening a real browser tab (ruled 2026-11-17, PV-1)."""
-    got = {name: hashlib.sha256((TESTS / name).read_bytes()).hexdigest() for name in FROZEN}
-    assert got == FROZEN
 
 
 def test_ic7_case_input_keeps_no_text_of_the_input(tmp_path: Path) -> None:

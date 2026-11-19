@@ -97,6 +97,7 @@ def _tau2_rows(run: str) -> list[tuple[str, int, bool]]:
     return [(p.config_hash, p.index, p.died) for p in placed.rows]
 
 
+@pytest.mark.math
 def test_tf15_s24_a_change_at_the_printed_limit_is_caught_about_four_times_in_five() -> None:
     """The statistics check's model fitted to the two tau2 runs (tf15_support.fit_cells), 4 tries
     per input per version, the after version's failing clock multiplied by the printed limit; 1,000

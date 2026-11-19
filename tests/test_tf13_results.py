@@ -146,19 +146,6 @@ def test_tf13_10_a_counting_result_carries_what_its_bundle_saves(tmp_path: Path,
     assert jsonable(r.settings) == artifact["settings"], label
 
 
-def test_tf13_10_a_the_failure_types_and_signals_are_counted_per_run(tmp_path: Path) -> None:
-    """TF21's kinds and signals reach the result as TF6's diff: each run's digest, the tries, and
-    each kind and signal counted in each arm, on the Prove store whose kinds TF6-28 pins."""
-    work = workspace(tmp_path)
-    r = _through_api(work, VERBS_ARGV["fix-check"])
-    diff = jsonable(r.failure_taxonomy_diff)
-    assert diff["same_rules"] is True and set(diff["tries"]) == {"old", "new"}
-    kinds = {k["failure_kind"]: (k["old"], k["new"]) for k in diff["kinds"]}
-    assert kinds["loop_detected"] == (6, 15) and kinds["tool_error"] == (66, 21)
-    measures = jsonable(r.continuous_measures)
-    assert measures, "the continuous measures, saved on every verb of two runs"
-
-
 # ---------- TF13-11 ----------
 
 

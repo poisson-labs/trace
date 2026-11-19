@@ -24,9 +24,9 @@ A mark is an HTML comment alone on the line just above a fenced block. The three
 already use keep their meaning; the rest are new here.
 
 ``<!-- command -->``
-    The block is run with bash, in a folder laid out as a clone (the committed fixtures under
-    ``tests/fixtures/``, the committed examples under ``examples/``, an empty ``docs/figures/``),
-    with a home folder of its own, no key in the environment, and stdin, stdout and stderr not
+    The block is run with bash, in a folder laid out as a clone (what the page names of the
+    committed fixtures under ``tests/fixtures/`` and of the committed examples under
+    ``examples/``, and an empty ``docs/figures/``), with a home folder of its own, no key in the environment, and stdin, stdout and stderr not
     a terminal; the commands of the environment under test (``poisson-prove``,
     ``poisson-tasks``, ``pytest``) come first on PATH after Trace's own. Blocks of one page run
     in page order in one folder.
@@ -51,21 +51,21 @@ holds (``DATA_LANGUAGES``: a config, a JSON document, a Python example, plain te
 first line is not a shell command needs no mark. A block that runs ``poisson-trace`` may be
 skipped only if it holds a word in capitals that is the reader's to fill in or ``…``, or is
 the bare command, which opens the terminal app.
+
+The marks are read and a page is run by ``tools/docs_check.py`` alone, loaded here from the
+repository (``docs_check``): the names below that read a mark, lay a page's folder out, run a
+block or hold a block against what was printed are that file's own, under the names the tests
+use.
 """
 
 from __future__ import annotations
 
-import contextlib
 import os
 import re
-import shutil
 import stat
 import subprocess
 import sys
-import termios
-import threading
-from collections.abc import Iterator, Mapping, Sequence
-from dataclasses import dataclass, field
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -163,92 +163,53 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-# ---------- the marks ----------
+# ---------- the marks: the docs checker's own ----------
 
-FENCE = re.compile(r"^```(.*)$")
-MARK = re.compile(
-    r'^<!-- (?:(?P<command>command)(?: (?P<pull>pull)| tty answers="(?P<answers>[^"]*)")?'
-    r'|(?P<shown>output|excerpt) exit=(?P<code>\d+)(?P<varies> varies)?'
-    r'|skip reason="(?P<reason>[^"]+)") -->$'
-)
+
+def _checker() -> Any:
+    """``tools/docs_check.py`` as a module, loaded from the repository by its path, once (it is
+    not on the import path: it is not in the wheel)."""
+    import importlib.util
+
+    name = "docs_check"
+    if name not in sys.modules:
+        assert CHECKER.is_file(), "tools/docs_check.py is not written"
+        spec = importlib.util.spec_from_file_location(name, CHECKER)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        try:
+            spec.loader.exec_module(module)
+        except BaseException:
+            del sys.modules[name]
+            raise
+    return sys.modules[name]
+
+
+#: The docs checker: the one reader of the marks and the one runner of a page.
+docs_check = _checker()
+MARK = docs_check.MARK
 #: A comment that means to be a mark, whether or not it is well formed.
-MARKISH = re.compile(r"^<!--\s*(command|output|excerpt|skip|docs-check)\b")
-DATA_LANGUAGES = ("toml", "json", "jsonl", "python", "text", "yaml", "markdown", "csv", "xml", "diff")
-SHELLISH = re.compile(r"^\s*(?:\$ )?(?:poisson-trace(?:-import)?|pip3?|python3?(?:\.\d+)?|git|cd|mkdir|cp|tar|gunzip|export|shasum|sha256sum|source|uv|pytest|ruff|mypy|\.)(?:\s|$)")
-PLACEHOLDER = re.compile(r"(?<![\w-])[A-Z][A-Z_]{2,}(?![\w])|…|\.\.\.")
+MARKISH = docs_check.MARKISH
+DATA_LANGUAGES = docs_check.DATA_LANGUAGES
+SHELLISH = docs_check.SHELLISH
+PLACEHOLDER = docs_check.PLACEHOLDER
 #: What ``…`` may stand for in a block marked ``varies``: a path or a file address, a time or
 #: a date, a span of time, an id in hexadecimal, a run's id, or a version written whole (three
 #: numbers: a figure with one point in it is a result, never a version).
-VARIES = re.compile(
-    r"(?:file://)?(?:~|\.{0,2})?/[^\s]*"
-    r"|\d{4}-\d\d-\d\d(?:[T ]\d\d:\d\d(?::\d\d(?:\.\d+)?)?(?:Z|[+-]\d\d:\d\d| UTC)?)?"
-    r"|\d+(?:\.\d+)? ?(?:ms|s|min|h)"
-    r"|[0-9a-f]{8,64}"
-    r"|\d{8}T\d{6}Z-[0-9a-f]{4}"
-    r"|\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?"
-)
-
-
-@dataclass(frozen=True)
-class Block:
-    kind: str  # command, output, excerpt, skip, data (a named block that needs no mark) or unmarked
-    line: int  # the first line of the body, counting from 1
-    body: str
-    language: str = ""
-    code: int | None = None
-    pull: bool = False
-    answers: tuple[str, ...] | None = None
-    varies: bool = False
-    reason: str = ""
+VARIES = docs_check.VARIES
+#: One fenced block of a page, with its mark read: its ``kind`` (command, output, excerpt, skip,
+#: data or unmarked), the ``line`` its body starts at, its ``body``, and what its mark says
+#: (``code``, ``pull``, ``answers``, ``varies``, ``reason``).
+Block = docs_check.Block
 
 
 def parse(text: str) -> tuple[list[Block], list[tuple[int, str]]]:
     """Every fenced block of a page in order, each with its mark read, and the page's faults:
     (line, what is wrong) for a comment that means to be a mark and is not one, a mark with no
     block under it, and a fence never closed."""
-    lines = text.split("\n")
-    found: list[Block] = []
-    faults: list[tuple[int, str]] = []
-    pending: tuple[int, re.Match[str]] | None = None
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        opened = FENCE.match(line)
-        if opened:
-            k = i + 1
-            while k < len(lines) and not lines[k].startswith("```"):
-                k += 1
-            if k >= len(lines):
-                faults.append((i + 1, "a fence that is never closed"))
-                break
-            body, language = "\n".join(lines[i + 1:k]), opened.group(1).strip()
-            mark = pending[1] if pending is not None and pending[0] == i - 1 else None
-            if mark is None:
-                first = next((b for b in body.split("\n") if b.strip()), "")
-                kind = "data" if language in DATA_LANGUAGES and not SHELLISH.match(first) else "unmarked"
-                found.append(Block(kind, i + 2, body, language))
-            elif mark.group("command"):
-                answers = mark.group("answers")
-                found.append(Block("command", i + 2, body, language, pull=bool(mark.group("pull")),
-                                   answers=None if answers is None else tuple(answers.split("|")) if answers else ()))
-            elif mark.group("shown"):
-                found.append(Block(mark.group("shown"), i + 2, body, language, code=int(mark.group("code")), varies=bool(mark.group("varies"))))
-            else:
-                found.append(Block("skip", i + 2, body, language, reason=mark.group("reason")))
-            pending = None
-            i = k + 1
-            continue
-        if pending is not None and pending[0] == i - 1:
-            faults.append((pending[0] + 1, "a mark with no block under it"))
-            pending = None
-        if MARKISH.match(line):
-            m = MARK.match(line)
-            if m:
-                pending = (i, m)
-            else:
-                faults.append((i + 1, f"not a mark this page's checker reads: {line}"))
-        i += 1
-    return found, faults
+    found: tuple[list[Block], list[tuple[int, str]]] = docs_check.parse(text)
+    return found
 
 
 def outside(text: str) -> list[tuple[int, str]]:
@@ -311,15 +272,7 @@ def words(block: Block) -> list[list[str]]:
     """The commands of a command block, each as its words; a line ending in a backslash joins
     the next. A line that is not a simple command (a loop, a pipe) is kept as bash would split
     it, which is enough to see what it runs."""
-    import shlex
-
-    out = []
-    for line in block.body.replace("\\\n", " ").split("\n"):
-        if line.strip() and not line.lstrip().startswith("#"):
-            try:
-                out.append(shlex.split(line))
-            except ValueError:
-                out.append(line.split())
+    out: list[list[str]] = docs_check.commands(block)
     return out
 
 
@@ -339,192 +292,112 @@ def trace_commands(text: str, kinds: Sequence[str] = ("command",)) -> list[list[
 
 # ---------- running a page ----------
 
-_PLANTED = {
-    "LANGSMITH_API_KEY": "lsv2_pt_0f1e2d3c4b5a69788796a5b4c3d2e1f0_planted00",
-    "BRAINTRUST_API_KEY": "sk-0f1e2d3c4b5a69788796a5b4c3d2e1f0PlantedKey00",
-    "WANDB_API_KEY": "0f1e2d3c4b5a69788796a5b4c3d2e1f0aa55planted0",
-}
-_SERVICE_VARIABLES = ("LANGSMITH_ENDPOINT", "LANGCHAIN_API_KEY", "LANGCHAIN_ENDPOINT", "BRAINTRUST_API_URL", "WF_TRACE_SERVER_URL",
-                      "WANDB_BASE_URL", "WANDB_ENTITY", "WANDB_PROJECT", "WEAVE_DISABLED")
-_CLOSED = "http://127.0.0.1:9"
-PULL_SWITCH = "POISSON_TRACE_TF5_ANSWERED"
+#: Put on the import path of every Python a page's command starts: every connection to an
+#: address that is not this machine's is refused, so a page's command cannot reach the network
+#: (a pull is answered on this machine's loopback address).
+_NO_NETWORK = (
+    "import socket\n"
+    "_connect = socket.socket.connect\n"
+    "def _guarded(self, address):\n"
+    "    host = address[0] if isinstance(address, tuple) else address\n"
+    "    if isinstance(host, bytes):\n"
+    "        host = host.decode('utf-8', 'replace')\n"
+    "    if isinstance(host, str) and (host in ('localhost', '::1') or host.startswith('127.') or host.startswith('/')"
+    " or host.startswith('\\x00')):\n"
+    "        return _connect(self, address)\n"
+    "    raise OSError('a page\\'s command reached for the network: ' + repr(address))\n"
+    "socket.socket.connect = _guarded\n"
+)
+_CAPTURES: list[Any] = []
 
 
-@contextlib.contextmanager
-def answered() -> Iterator[list[str]]:
-    """The pull's one sending function replaced for the block by the three earlier pairs'
-    transports, each answering its own service from the committed captures; its wait replaced
-    by nothing; every socket connection refused. Yields the addresses asked."""
-    import socket
-    from importlib import import_module
-
-    from tf24_support import HOST as LS_HOST, Transport as LangSmith
-    from tf25_support import HOST as BT_HOST, Transport as Braintrust
-    from tf26_support import HOST as WV_HOST, Transport as Weave
-
-    module = import_module("poisson_trace.ingest.pulling")
-    services = {LS_HOST: LangSmith(), BT_HOST: Braintrust(), WV_HOST: Weave()}
-    asked: list[str] = []
-
-    def send(method: str, url: str, headers: Mapping[str, str], body: bytes | None, timeout: float) -> Any:
-        asked.append(url)
-        for host, service in services.items():
-            if url.startswith(host + "/"):
-                return service(method, url, headers, body, timeout)
-        raise AssertionError(f"a request went to {url}, which is none of the three services")
-
-    def no_network(*args: Any, **kwargs: Any) -> Any:
-        raise AssertionError("a page's command reached for the network")
-
-    old = (module.send, module.sleep, socket.socket.connect, socket.create_connection)
-    try:
-        module.send, module.sleep = send, lambda seconds: None
-        socket.socket.connect = no_network  # type: ignore[method-assign]
-        socket.create_connection = no_network
-        yield asked
-    finally:
-        module.send, module.sleep = old[0], old[1]
-        socket.socket.connect = old[2]  # type: ignore[method-assign]
-        socket.create_connection = old[3]
+def _captures() -> Any:
+    """The checker's stand-in for the three services (``docs_check.Captures``: their committed
+    answers served on this machine's loopback address), started once for the process."""
+    if not _CAPTURES:
+        _CAPTURES.append(docs_check.Captures())
+    return _CAPTURES[0]
 
 
 def shims(folder: Path) -> Path:
     """A folder holding ``poisson-trace`` and ``poisson-trace-import`` as small scripts that run
-    this interpreter on the package under test, whatever console scripts are installed. Under
-    ``PULL_SWITCH`` each runs inside ``answered()``; without it, as it is."""
+    this interpreter on the package under test, whatever console scripts are installed, and the
+    ``sitecustomize`` module that refuses the network (``_NO_NETWORK``)."""
     folder.mkdir(parents=True, exist_ok=True)
     bodies = {"poisson-trace": "from poisson_trace.cli import main", "poisson-trace-import": "from poisson_trace.ingest.cli import main"}
     for name, line in bodies.items():
         path = folder / name
-        path.write_text(
-            f"#!{sys.executable}\nimport os\nimport sys\n{line}\n"
-            f"if os.environ.get({PULL_SWITCH!r}):\n"
-            f"    sys.path.insert(0, {str(TESTS)!r})\n"
-            "    from tf5_support import answered\n"
-            "    with answered():\n"
-            "        code = main(sys.argv[1:])\n"
-            "    sys.exit(code)\n"
-            "sys.exit(main(sys.argv[1:]))\n", encoding="utf-8")
+        path.write_text(f"#!{sys.executable}\nimport sys\n{line}\nsys.exit(main(sys.argv[1:]))\n", encoding="utf-8")
         path.chmod(path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    (folder / "sitecustomize.py").write_text(_NO_NETWORK, encoding="utf-8")
     return folder
 
 
-def page_root(tmp: Path) -> Path:
-    """A folder laid out as a clone's root for a page's commands: the committed fixtures and
-    the committed examples, copied, and an empty ``docs/figures/``, so nothing a page runs can
-    touch the repository."""
+def page_root(tmp: Path, text: str = "") -> Path:
+    """A folder laid out as a clone's root for the commands of the page whose text this is, by
+    the checker's rule (``docs_check.lay_out``: what the page names of the committed fixtures
+    and examples, copied, and an empty ``docs/figures/``), so nothing a page runs can touch the
+    repository."""
     root = tmp / "clone"
-    shutil.copytree(FIXTURES, root / "tests" / "fixtures", ignore=shutil.ignore_patterns("tf5", "tf9", "tf18", "tf19", "tf20", "tf24", "tf25", "tf26"))
-    if EXAMPLES.is_dir():
-        shutil.copytree(EXAMPLES, root / "examples", ignore=shutil.ignore_patterns("__pycache__"))
-    (root / "docs" / "figures").mkdir(parents=True)
+    docs_check.lay_out(root, text)
     return root
 
 
+def _first(bin_dir: Path) -> dict[str, str]:
+    """What the tests add to the checker's environment for a block: the shims, then this
+    interpreter's commands, first on ``PATH``; and the shims' folder first on the import path."""
+    path = os.environ.get("PYTHONPATH")
+    return {"PATH": f"{bin_dir}{os.pathsep}{Path(sys.executable).parent}{os.pathsep}{os.environ.get('PATH', '')}",
+            "PYTHONPATH": f"{bin_dir}{os.pathsep}{path}" if path else str(bin_dir)}
+
+
 def page_env(home: Path, bin_dir: Path, *, pull: bool) -> dict[str, str]:
-    env = dict(os.environ, PATH=f"{bin_dir}{os.pathsep}{Path(sys.executable).parent}{os.pathsep}{os.environ.get('PATH', '')}", HOME=str(home))
-    for name in ("VIRTUAL_ENV", "BROWSER", "CI", "FORCE_COLOR", "POISSON_TRACE_STYLE", PULL_SWITCH, *_PLANTED, *_SERVICE_VARIABLES):
-        env.pop(name, None)
-    for name in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY"):
-        env[name] = _CLOSED
-    if pull:
-        env.update(_PLANTED)
-        env[PULL_SWITCH] = "1"
-    else:
-        for name in ("LANGSMITH_ENDPOINT", "BRAINTRUST_API_URL", "WF_TRACE_SERVER_URL"):
-            env[name] = _CLOSED
+    """The checker's environment for a block (``docs_check.environment``), with the shims first."""
+    env: dict[str, str] = docs_check.environment(home, _captures().addresses() if pull else None, _first(bin_dir))
     return env
 
 
 def run_block(block: Block, root: Path, env: dict[str, str]) -> tuple[int, str]:
-    command = block.body.replace("\\\n", " ")
-    if block.answers is None:
-        proc = subprocess.run(["bash", "-c", command], cwd=root, env=env, capture_output=True, text=True, timeout=300, stdin=subprocess.DEVNULL)
-        return proc.returncode, (proc.stdout + proc.stderr).rstrip("\n")
-    # asked again when macOS fails the open with its own "ask again" (tf9_support.open_terminal; ruled 2026-11-18, MF-2)
-    from tf9_support import open_terminal
-
-    controller, user = open_terminal()
-    attrs = termios.tcgetattr(user)
-    attrs[3] &= ~termios.ECHO
-    termios.tcsetattr(user, termios.TCSANOW, attrs)
-    try:
-        started = subprocess.Popen(["bash", "-c", command], cwd=root, env=env, stdin=user, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        os.write(controller, "".join(answer + "\n" for answer in block.answers).encode("utf-8"))
-        got: dict[str, bytes] = {}
-
-        def drain(name: str, pipe: Any) -> None:
-            got[name] = pipe.read()
-
-        readers = [threading.Thread(target=drain, args=(name, pipe), daemon=True) for name, pipe in (("out", started.stdout), ("err", started.stderr))]
-        for reader in readers:
-            reader.start()
-        try:
-            code = started.wait(timeout=300)
-        except subprocess.TimeoutExpired:
-            started.kill()
-            code = started.wait()
-        for reader in readers:
-            reader.join(timeout=10)
-    finally:
-        os.close(controller)
-        os.close(user)
-    return code, (got.get("out", b"") + got.get("err", b"")).decode("utf-8", "replace").rstrip("\n")
+    """The block run as the checker runs it (``docs_check.run``)."""
+    ran: tuple[int, str] = docs_check.run(block, root, env)
+    return ran
 
 
-@dataclass(frozen=True)
-class Checked:
-    block: Block
-    command: str
-    code: int
-    printed: str
-    ran: Block = field(compare=False, default=Block("command", 0, ""))
+#: One output or excerpt block of a page that was run, with what it was held against: its
+#: ``block``, the ``command`` block's text above it, the ``code`` that gave, what it ``printed``,
+#: and the command block itself (``ran``).
+Checked = docs_check.Shown
 
 
 def run_page(page: Path, tmp: Path) -> list[Checked]:
-    """Every command block of the page run in page order in one folder of the page's own; each
-    output and excerpt block paired with the command above it, its exit code and what it
-    printed."""
-    root, home = page_root(tmp), tmp / "home"
-    home.mkdir()
-    bin_dir = shims(tmp / "bin")
-    out: list[Checked] = []
-    last: tuple[str, int, str, Block] | None = None
-    for block in parse(read(page))[0]:
-        if block.kind == "command":
-            code, printed = run_block(block, root, page_env(home, bin_dir, pull=block.pull))
-            last = (block.body, code, printed.replace("\r\n", "\n"), block)
-        elif block.kind in ("output", "excerpt"):
-            assert last is not None, f"{rel(page)}:{block.line}: an {block.kind} with no command above it"
-            out.append(Checked(block, last[0], last[1], last[2], last[3]))
+    """The page run by the checker (``docs_check.run_page``) under ``tmp``, which keeps what the
+    commands left (``clone``, ``home``) and the shims (``bin``): each output and excerpt block
+    paired with the command above it, its exit code and what it printed. An output or excerpt
+    the checker held against no command fails here, with the checker's faults."""
+    blocks = parse(read(page))[0]
+    found, shown = docs_check.run_page(page, tmp, _captures(), _first(shims(tmp / "bin")))
+    out: list[Checked] = list(shown)
+    held = [c.block for c in out]
+    for block in blocks:
+        if block.kind in ("output", "excerpt"):
+            assert block in held, f"{rel(page)}:{block.line}: this {block.kind} was held against no command: {sorted(found.faults)}"
     return out
 
 
-def _line_holds(shown: str, printed: str) -> bool:
-    """One line of a block marked ``varies`` against the line printed: equal, or equal once each
-    ``…`` of the shown line is given a path, a time, an id or a version to stand for."""
-    if shown == printed:
-        return True
-    if "…" not in shown:
-        return False
-    pattern = "(.+?)".join(re.escape(part) for part in shown.split("…"))
-    found = re.fullmatch(pattern, printed)
-    return found is not None and all(VARIES.fullmatch(group.strip().rstrip(".,;:)")) for group in found.groups())
+def line_holds(shown: str, printed: str, varies: bool) -> bool:
+    """One shown line against the line printed, by the checker's rule (``docs_check.line_holds``):
+    equal, or, under ``varies``, equal once each ``…`` of the shown line is given a path, a time,
+    an id or a version to stand for."""
+    same: bool = docs_check.line_holds(shown, printed, varies)
+    return same
 
 
 def holds(checked: Checked) -> bool:
     """An output block is the whole of what the command printed; an excerpt a run of whole lines
     of it; both with the exit code the mark names, and under ``varies`` line by line by that
-    rule."""
-    block = checked.block
-    if checked.code != block.code:
-        return False
-    shown, printed = block.body.split("\n"), checked.printed.split("\n")
-    same = _line_holds if block.varies else (lambda a, b: a == b)
-    if block.kind == "output":
-        return len(shown) == len(printed) and all(same(a, b) for a, b in zip(shown, printed, strict=True))
-    return any(all(same(a, b) for a, b in zip(shown, printed[at:at + len(shown)], strict=True))
-               for at in range(len(printed) - len(shown) + 1))
+    rule: the checker's own (``docs_check.holds``)."""
+    same: bool = docs_check.holds(checked.block, checked.code, checked.printed)
+    return same
 
 
 def why(page: Path, checked: Checked) -> str:

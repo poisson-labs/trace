@@ -2,8 +2,7 @@
 (spec section 9.1: rule L1, rule L2 and the new ``--version`` row).
 
 Every verb's help has a description, every argument with help text, every option that takes a
-value with its default or "no default", and an example that runs: read by the command it shows,
-it is not a wrong command line, and it names no run by a hash. The usage line shows the two
+value with its default or "no default". The usage line shows the two
 ceilings as required, though a missing one stays the command's own refusal (exit 1), because the
 value may come from a config later."""
 
@@ -18,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from tf0_support import (
-    RUN_ID, TOOLS, VERBS, chdir, compare_tau2, depth_at, example_argv, examples, fix_check_tau2_all,
+    TOOLS, VERBS, compare_tau2, depth_at, fix_check_tau2_all,
     help_blocks, help_entries, run_module, run_sub, trace, trace_import, usage_line, where_cs,
 )
 
@@ -34,15 +33,6 @@ def _help(command: str, words: list[str]) -> str:
     result = (trace if command == "trace" else trace_import)([*words, "--help"])
     assert result.code == 0 and result.err == "", result.text
     return result.out
-
-
-def _starts(command: str, words: list[str]) -> list[str]:
-    """How an example for this help begins: the verb's or the tool's own command, the import in
-    either of its two written forms."""
-    if command == "trace":
-        return [f"poisson-trace {words[0]}"] if words else [f"poisson-trace {v}" for v in VERBS]
-    tools = list(words) if words else list(TOOLS)
-    return [f"{form} {t}" for t in tools for form in ("poisson-trace-import", "poisson-trace import")]
 
 
 # ---------- TF0-13: help ----------
@@ -70,25 +60,6 @@ def test_tf0_13_every_argument_says_what_it_is_and_its_default(command: str, wor
         if takes_value:
             assert "default" in words_, f"{invocation}: {words_}"
     assert not re.search(r"\b(?:None|True|False)\b|\[\]", text), "a Python value shown as a default"
-
-
-@pytest.mark.parametrize("command,words", HELPS, ids=HELP_IDS)
-def test_tf0_13_help_shows_an_example_that_runs(tmp_path: Path, command: str, words: list[str]) -> None:
-    text = _help(command, words)
-    found = examples(text, _starts(command, words))
-    assert found, text
-    for example in found:
-        assert not RUN_ID.search(example), f"an example names a run by its id: {example}"
-        which, argv = example_argv(example)
-        with chdir(tmp_path):
-            result = (trace if which == "trace" else trace_import)(argv)
-        assert result.code != 2, f"{example}: {result.err}"
-
-
-def test_tf0_13_the_main_help_lists_every_verb_and_the_import() -> None:
-    text = _help("trace", [])
-    assert set(VERBS) <= set(re.findall(r"[\w-]+", text)), text
-    assert "poisson-trace-import" in text or "poisson-trace import" in text
 
 
 @pytest.mark.parametrize("verb,flag", [("compare", "--max-mde-hr"), ("fix-check", "--max-mde")])

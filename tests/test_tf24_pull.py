@@ -41,8 +41,11 @@ request (``api/requests.json``), and every socket connection is refused while it
 - TF24-44: the key is printed nowhere and written nowhere; ``LANGSMITH_ENDPOINT`` moves every
   request to that host, https or this machine alone.
 - TF24-45: ``pulling.send`` is the only code in the package that reaches the network, standard
-  library only; an import of files calls it never.
-- TF24-46: ``--json`` on a pull is one document; on a failure the stopped document.
+  library only; an import of files calls it never. The scan of the package holds this for the
+  three readers that pull (LangSmith, Braintrust, Weave), none of which imports its service's
+  SDK.
+- TF24-46: ``--json`` on a pull is one document; a pull that failed exits 3 with nothing on
+  stdout and the error in a line on stderr.
 """
 
 from __future__ import annotations
@@ -415,8 +418,7 @@ def test_tf24_41_no_project_of_that_name(tmp_path: Path) -> None:
     assert not (tmp_path / "st" / "r").exists() and _raw_dirs(tmp_path / "st") in ([], ["langsmith"])
 
 
-@pytest.mark.parametrize("status", [401, 403])
-@pytest.mark.parametrize("at", [1, 2, 3])
+@pytest.mark.parametrize(("at", "status"), [(1, 401), (1, 403), (2, 401), (3, 401)])
 def test_tf24_41_a_key_the_service_refuses(tmp_path: Path, status: int, at: int) -> None:
     body = json.dumps({"detail": f"Invalid token {PLANTED_KEY}"}).encode()
     with pulling(Transport({at: (status, {}, body)})) as (sent, _):
@@ -439,8 +441,13 @@ FAILURES: dict[str, Any] = {
 }
 
 
-@pytest.mark.parametrize("label", list(FAILURES))
-@pytest.mark.parametrize("at", [2, 3])
+#: Every failure at the first request after the pull began; at the next, one the transport
+#: answers and the two this reader's own reading of the answer gives.
+FAILED_AT = [*((2, label) for label in FAILURES),
+             *((3, label) for label in ("a 500", "an answer that is not JSON", "an answer of another shape"))]
+
+
+@pytest.mark.parametrize(("at", "label"), FAILED_AT)
 def test_tf24_42_a_failure_after_the_pull_began_exits_3_and_saves_nothing(tmp_path: Path, label: str, at: int) -> None:
     with pulling(Transport({at: FAILURES[label]})) as (sent, _):
         result = run_import(ls_argv(address("baseline"), tmp_path / "st", "r"))
@@ -527,11 +534,22 @@ def _imports(path: Path) -> set[str]:
     return found
 
 
+#: Each reader that pulls, with the packages of its service's own SDK, none of which it imports.
+SDKS: dict[str, tuple[str, ...]] = {
+    "langsmith": ("langsmith", "langchain", "langchain_core", "poisson_prove"),
+    "braintrust": ("braintrust", "braintrust_core", "autoevals", "openai", "poisson_prove"),
+    "weave": ("weave", "wandb", "openai", "poisson_prove"),
+}
+
+
 def test_tf24_45_one_function_reaches_the_network(tmp_path: Path) -> None:
+    """The package is scanned once for the three readers that pull (TF25-45's and TF26-45's
+    copies of this test are here)."""
     import sys
+    from importlib import import_module
 
     import poisson_trace
-    from poisson_trace.ingest import langsmith, pulling as module
+    from poisson_trace.ingest import pulling as module
 
     package = Path(poisson_trace.__file__).parent
     reaching = sorted(
@@ -540,11 +558,12 @@ def test_tf24_45_one_function_reaches_the_network(tmp_path: Path) -> None:
     )
     assert reaching == ["ingest/pulling.py"], reaching
     stdlib = set(sys.stdlib_module_names)
-    for path in (Path(module.__file__), Path(langsmith.__file__)):
-        for name in _imports(path):
-            top = name.split(".")[0]
-            assert top in stdlib or top == "poisson_trace", (path.name, name)
-            assert top not in ("langsmith", "langchain", "langchain_core", "poisson_prove"), (path.name, name)
+    for reader, sdk in SDKS.items():
+        for path in (Path(module.__file__), Path(import_module(f"poisson_trace.ingest.{reader}").__file__ or "")):
+            for name in _imports(path):
+                top = name.split(".")[0]
+                assert top in stdlib or top == "poisson_trace", (path.name, name)
+                assert top not in sdk, (path.name, name)
     assert callable(module.send) and callable(module.sleep)
     # the module's top level reaches for nothing: the network is imported inside send
     top = {n for node in ast.parse(Path(module.__file__).read_text(encoding="utf-8")).body for n in _top(node)}

@@ -84,6 +84,19 @@ def built(tmp_path_factory: pytest.TempPathFactory) -> Path:
     work = build_work(tmp_path_factory.mktemp("tf18-pages"))
     ran = ui(work, "--config", "conf/trace.toml")
     assert ran.code == 0, ran.text
+    # the controls: the workspace holds a saved verdict of every kind (two of where) ...
+    got = artifacts(work / "store")
+    assert [k for k in KINDS if got[k]] == list(KINDS)
+    assert len(got["where"]) == 2
+    # ... and the fixtures reach every section the tests below read
+    fix = cli(work, measures_argv(SAVES["fix-check"][1])).out
+    tables = cli(work, measures_argv(SAVES["fix-check tables"][1])).out
+    for heading in ("## Failures by kind", "## Time, length, tokens and cost", "## Inputs that changed", "## What it could not have detected"):
+        assert heading in fix.splitlines(), heading
+    assert "Signals seen on tries, failed or not:" in fix
+    assert any(line.startswith("Tries with no outcome: ") for line in tables.splitlines())
+    for label in ("compare", "changes"):
+        assert "## Failures by kind" in cli(work, SAVES[label][1]).out.splitlines(), label
     return work
 
 
@@ -114,12 +127,6 @@ def test_tf18_1_each_store_has_its_pages_and_nothing_more(built: Path, store: st
     root = built / store
     assert files_under(pages_of(root)) == expected_files(root)
     assert sorted(os.listdir(ui_root(root))) == ["trace"]
-
-
-def test_tf18_1_every_kind_has_its_pages(built: Path) -> None:
-    got = artifacts(built / "store")
-    assert [k for k in KINDS if got[k]] == list(KINDS)
-    assert len(got["where"]) == 2
 
 
 def test_tf18_1_no_page_for_proves_own_comparison(built: Path) -> None:
@@ -278,17 +285,6 @@ def test_tf18_3_the_reports_headings_in_the_reports_order(built: Path, ids: dict
     got = read_file(page_of(built, store, kind, ident)).headings()
     it = iter(got)
     assert all(any(h == g for g in it) for h in want), (want, got)
-
-
-def test_tf18_3_the_fixtures_reach_every_section_the_brief_names(built: Path) -> None:
-    fix = cli(built, measures_argv(SAVES["fix-check"][1])).out
-    tables = cli(built, measures_argv(SAVES["fix-check tables"][1])).out
-    for heading in ("## Failures by kind", "## Time, length, tokens and cost", "## Inputs that changed", "## What it could not have detected"):
-        assert heading in fix.splitlines(), heading
-    assert "Signals seen on tries, failed or not:" in fix
-    assert any(line.startswith("Tries with no outcome: ") for line in tables.splitlines())
-    for label in ("compare", "changes"):
-        assert "## Failures by kind" in cli(built, SAVES[label][1]).out.splitlines(), label
 
 
 @pytest.mark.parametrize("label", ["fix-check", "changes", "fix-check tables", "changes tables"])

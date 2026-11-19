@@ -1,14 +1,9 @@
 """Choices the look leaves to the build, pinned where a plausible wrong build would harm a user.
 
-- A closed pipe is the command's work done: exit 0, nothing on stderr, nothing in the errors
-  log. The wrong build reads the broken pipe as an unexpected failure (exit 3, an error line,
-  a log entry).
-- An SVG into a folder that cannot be written is refused before any work: exit 1, nothing on
-  stdout. The wrong build finds out at the write, after the report is computed (exit 3).
-- An import stopped by Ctrl-C under a run name the store already held has written nothing, and
-  says so as an import stopped before writing does. The wrong builds tell what was left from the
-  run's folder: one tells the user to remove the folder of a run that was whole before the import
-  began, the other that the import wrote it whole.
+- An import under a run name the store already holds is refused before its reader runs, so
+  Ctrl-C never stops it there. The wrong build reads every file first and refuses the name after.
+  An import stopped by Ctrl-C while it reads, under a new name, has written nothing and says so.
+  The wrong builds tell what was left from a folder the import never made.
 - An errors log that cannot be written still leaves the details where the user can read them,
   as continuation lines on stderr, and exits 3. The wrong build appends without a guard and
   ends in the traceback the log was for.
@@ -35,34 +30,9 @@ from conftest import CS, CS_RECORD, TAU2, TAU2_A, TAU2_B
 from tf0_support import RAGAS, deepeval_import, ragas_import, run_sub, trace, trace_import, where_cs
 
 
-def test_a_closed_pipe_exits_zero_with_nothing_on_stderr(tmp_path: Path) -> None:
-    home = tmp_path / "home"
-    home.mkdir()
-    env = dict(os.environ, HOME=str(home))
-    for command, argv in (("trace", where_cs()), ("import", deepeval_import(tmp_path / "store", "v1"))):
-        read, write = os.pipe()
-        os.close(read)
-        try:
-            result = run_sub(command, argv, stdout=write, env=env, cwd=tmp_path)
-        finally:
-            os.close(write)
-        assert (result.code, result.err) == (0, ""), result.err
-    assert not (home / ".cache").exists()
-
-
-@pytest.mark.skipif(os.geteuid() == 0, reason="a folder is never read-only to root")
-def test_an_svg_into_a_folder_that_cannot_be_written_is_a_refusal(tmp_path: Path) -> None:
-    folder = tmp_path / "read-only"
-    folder.mkdir()
-    folder.chmod(0o500)
-    try:
-        result = trace(where_cs("--svg", str(folder / "curve.svg")))
-    finally:
-        folder.chmod(0o700)
-    assert (result.code, result.out) == (1, ""), result.text
-
-
-def test_ctrl_c_under_a_name_the_store_held_says_nothing_was_written(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_held_name_is_refused_before_the_reader_and_ctrl_c_under_a_new_name_says_nothing_was_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     import poisson_trace.ingest.deepeval as reader
 
     store = tmp_path / "store"
@@ -73,11 +43,16 @@ def test_ctrl_c_under_a_name_the_store_held_says_nothing_was_written(tmp_path: P
         raise KeyboardInterrupt
 
     monkeypatch.setattr(reader, "read", stop)
-    result = trace_import(deepeval_import(store, "v1"))
+    held = trace_import(deepeval_import(store, "v1"))
     fresh = trace_import(deepeval_import(store, "v2"))
-    assert result.code == fresh.code == 130, result.text
-    first = result.lines("out")[0]
-    assert first.startswith("stopped  ") and first == fresh.lines("out")[0], (first, fresh.out)
+    # the held name is refused before the reader is reached, so its Ctrl-C is never raised
+    assert (held.code, held.out) == (1, ""), held.text
+    assert held.lines("err") == [
+        f"error: the store at {store} already holds a run named v1; an import writes a new run and never adds to one, "
+        "so give this one another name"
+    ], held.err
+    assert fresh.code == 130, fresh.text
+    assert fresh.lines("out")[0] == "stopped  interrupted; nothing was written", fresh.out
     assert sorted((p.relative_to(store), p.stat().st_mtime_ns) for p in store.rglob("*")) == before
     assert Store(store).manifest("v1").status == "complete"
 

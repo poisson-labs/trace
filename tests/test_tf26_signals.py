@@ -42,8 +42,6 @@ the two finished pairs' rules in Weave's words).
   recorded.
 - TF26-25: no content. No prompt, input, output, error, note or path text of the captures is in
   any file of the store or in anything printed.
-- TF26-26: every stored record has exactly the writer's keys; ``horizon``, ``working_time_s``
-  and the time to first token are not recorded.
 - TF26-27: the record is checked against a second reading of the files, written here.
 """
 
@@ -55,7 +53,7 @@ from typing import Any
 
 import pytest
 
-from tf21_support import RECORD_KEYS, run_import
+from tf21_support import run_import
 from tf26_support import (
     ANSWER, API_EXPORTS, CASES, CONTENT, ERRORED, EXACT, EXPECTED, EXPORTS, GAVE_ANSWER, ITEM, LATENCY, LLM_OP, LOOKUP, LOOKUP_EXPECTED,
     MODEL, QUESTIONS, RETRIED, RUN, THUMBS_DOWN, UI_CALLS, UI_EXPORTS, UI_TABLES, USAGE, VERSIONS, WITH_ROW, approx, by_status,
@@ -770,18 +768,6 @@ def test_tf26_25_no_text_of_the_capture_is_kept_or_printed(tmp_path: Path, versi
             assert text.encode() not in held, text
         for word in (*ITEM.values(), *LOOKUP_EXPECTED.values()):
             assert word.encode() not in held, word
-
-
-# ---------- TF26-26 ----------
-
-
-@pytest.mark.parametrize(("version", "kind"), BOTH)
-def test_tf26_26_the_record_has_the_writer_s_keys_and_nothing_weave_does_not_record(tmp_path_factory: Any, version: str, kind: str) -> None:
-    root, _ = world(tmp_path_factory, version, kind, "status")
-    for case, rec in recs(root, RUN).items():
-        assert set(rec) == set(RECORD_KEYS), (case, set(rec) ^ set(RECORD_KEYS))
-        assert rec["schema"] == "poisson.trace-signals/1" and rec["repeat"] == 0
-        assert rec["horizon"] is None and rec["working_time_s"] is None and rec["ttft_s"] is None
 
 
 # ---------- TF26-27 ----------

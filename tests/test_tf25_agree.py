@@ -12,10 +12,8 @@ sections 18.3.2 and 18.3.4; the captures' gap that the page's files carry no id)
   nothing; (c) of the case that errored, the summary holds no class (its traceback is cut) and
   the rolled-up rows no span, only the count of tool errors, so the kind differs as TF25-20
   pins. The page's JSON and its CSV give the same record, key for key.
-- TF25-30: both versions pair. Read by the dataset record's id, the API's answers of the two
-  versions hold the same ten cases; read by the input, every export does, and the same keys as
-  every other export, so a page's download of one version pairs with an API answer of the
-  other. The page's files pair by input only: the record is refused there, and a metadata key
+- TF25-30: both versions pair. Read by the input, a page's download of one version pairs
+  with an API answer of the other. The page's files pair by input only: the record is refused there, and a metadata key
   drops each version's errored case.
 - TF25-31: a fix check counts the same from every export, by the root's error and by the
   score: the same tries, the same failures, the same rows with no outcome, the same verdict.
@@ -35,7 +33,7 @@ import pytest
 from tf0_support import trace
 from tf21_support import RECORD_KEYS, run_import
 from tf25_support import (
-    CASES, ERRORED, EXPORTS, KEY, PAGED, ROW_EXPORTS, RUN, SPAN_EXPORTS, USAGE, VERSIONS, approx, bt_argv, by_error, columns,
+    CASES, ERRORED, EXPORTS, PAGED, ROW_EXPORTS, RUN, SPAN_EXPORTS, USAGE, VERSIONS, approx, bt_argv, by_error, columns,
     export, imported, outcomes, recs, refused, tally, tries, world,
 )
 
@@ -178,25 +176,6 @@ def test_tf25_29_the_stored_columns_agree_but_for_the_steps(tmp_path_factory: An
 # ---------- TF25-30 ----------
 
 
-@pytest.mark.parametrize("kind", [*SPAN_EXPORTS, "summary"])
-def test_tf25_30_by_the_record_the_api_s_answers_of_the_two_versions_hold_the_same_cases(tmp_path: Path, kind: str) -> None:
-    for version, run in (("baseline", "old"), ("candidate", "new")):
-        imported(by_error(export(version, kind), tmp_path / "st", run, case="record"))
-    old, new = outcomes(tmp_path / "st", "old"), outcomes(tmp_path / "st", "new")
-    assert sorted(old) == sorted(new) == list(CASES)
-
-
-@pytest.mark.parametrize("kind", EXPORTS)
-def test_tf25_30_by_the_input_every_export_pairs_the_two_versions(tmp_path: Path, kind: str) -> None:
-    from tf21_support import records
-
-    for version, run in (("baseline", "old"), ("candidate", "new")):
-        imported(by_error(export(version, kind), tmp_path / "st", run, case="input"))
-    old = sorted(r["case"] for r in records(tmp_path / "st", "old"))
-    new = sorted(r["case"] for r in records(tmp_path / "st", "new"))
-    assert old == new == sorted(KEY[case] for case in CASES)
-
-
 @pytest.mark.parametrize(("old_kind", "new_kind"), [("ui-json", "fetch"), ("summary", "ui-csv"), ("ui-csv", "ui-json"), ("fetch", "summary")])
 def test_tf25_30_one_export_of_one_version_pairs_with_another_of_the_other(tmp_path: Path, old_kind: str, new_kind: str) -> None:
     imported(by_error(export("baseline", old_kind), tmp_path / "st", "old", case="input"))
@@ -236,10 +215,21 @@ def _fix_check(tmp: Path, kind: str, mode: str, name: tuple[str, str] = VERSIONS
     return doc
 
 
+_FIRST: dict[str, dict[str, Any]] = {}
+
+
+def _first(factory: Any, mode: str) -> dict[str, Any]:
+    """The fix check of the fetch, which every other export's is compared with: made once in a
+    store of its own. Read-only."""
+    if mode not in _FIRST:
+        _FIRST[mode] = _fix_check(factory.mktemp(f"bt-first-{mode}"), "fetch", mode)
+    return _FIRST[mode]
+
+
 @pytest.mark.parametrize("kind", EXPORTS)
-def test_tf25_31_a_fix_check_by_the_error_counts_the_same_from_every_export(tmp_path: Path, kind: str) -> None:
+def test_tf25_31_a_fix_check_by_the_error_counts_the_same_from_every_export(tmp_path: Path, tmp_path_factory: Any, kind: str) -> None:
     doc = _fix_check(tmp_path / kind, kind, "error")
-    first = _fix_check(tmp_path / "first", "fetch", "error")
+    first = _first(tmp_path_factory, "error")
     for key in COMPARED:
         assert _same(doc[key], first[key]), (kind, key, doc[key], first[key])
     assert (doc["rows"]["old"]["failed"], doc["rows"]["old"]["runs"]) == (1, 10)
@@ -248,9 +238,9 @@ def test_tf25_31_a_fix_check_by_the_error_counts_the_same_from_every_export(tmp_
 
 
 @pytest.mark.parametrize("kind", EXPORTS)
-def test_tf25_31_by_the_score_every_export_counts_the_same_and_says_which_tries_have_no_outcome(tmp_path: Path, kind: str) -> None:
+def test_tf25_31_by_the_score_every_export_counts_the_same_and_says_which_tries_have_no_outcome(tmp_path: Path, tmp_path_factory: Any, kind: str) -> None:
     doc = _fix_check(tmp_path / kind, kind, "exact")
-    first = _fix_check(tmp_path / "first", "fetch", "exact")
+    first = _first(tmp_path_factory, "exact")
     for key in COMPARED:
         assert _same(doc[key], first[key]), (kind, key)
     for run, failed in (("old", 3), ("new", 1)):

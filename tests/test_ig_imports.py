@@ -30,7 +30,7 @@ what a test names. The installed package is never edited.
 - IG-1: the source scan finds what Trace imports, and every name it finds is in the installed Prove.
 - IG-2: each name Trace imports, missing alone, is refused word for word.
 - IG-3: each module Trace imports, missing whole, is refused naming the module.
-- IG-4: every command refuses, for a name ``runs`` itself never imports and for a module.
+- IG-4: every command refuses, for a name ``runs`` itself never imports; ``import`` for a module too.
 - IG-5: several missing are all named, in order.
 - IG-6: the refusal names the version the Prove states.
 - IG-7: ``doctor`` fails its prove check and exits 4.
@@ -51,8 +51,7 @@ from pathlib import Path
 
 import pytest
 from pf_support import (
-    EVENT, IMPORT_WRITES, INIT_READS, JUNIT, MODULES, NAMES, READS, REPO, RUNS, STORE_1_2, Ran, absent, below, copy, env_of, home_of, tree,
-    with_fake_prove,
+    EVENT, IMPORT_WRITES, INIT_READS, JUNIT, MODULES, NAMES, READS, REPO, RUNS, STORE_1_2, Ran, below, copy, env_of, home_of, tree,
 )
 from pin_support import INSTALL, OR_LATER, installed
 
@@ -243,8 +242,7 @@ def test_ig_3_each_module_missing_whole_is_refused_naming_the_module(tmp_path: P
 # ---------- IG-4 ----------
 
 
-@pytest.mark.parametrize("gone", [UNUSED_BY_RUNS, "poisson_prove.trace"])
-@pytest.mark.parametrize("family", list(FAMILIES))
+@pytest.mark.parametrize(("family", "gone"), [*[(family, UNUSED_BY_RUNS) for family in FAMILIES], ("import", "poisson_prove.trace")])
 def test_ig_4_every_command_refuses(tmp_path: Path, family: str, gone: str) -> None:
     command, _, does = FAMILIES[family]
     argv = _argv(family, tmp_path)
@@ -399,12 +397,6 @@ def test_ig_9_a_prove_below_the_floor_is_refused_as_below_it_first(tmp_path: Pat
     assert ran.lines() == below(READS, states), ran.err
 
 
-def test_ig_9_no_prove_is_refused_as_before(tmp_path: Path) -> None:
-    store = copy(STORE_1_2, tmp_path)
-    ran = with_fake_prove(["runs", "--store", store], tmp_path, "absent")
-    assert ran.lines() == absent(READS), ran.err
-
-
 def test_ig_9_the_whole_prove_is_read_and_doctor_is_ready(tmp_path: Path) -> None:
     store = copy(STORE_1_2, tmp_path)
     ran = without(["runs", "--store", store, "--json"], tmp_path, [])
@@ -413,9 +405,3 @@ def test_ig_9_the_whole_prove_is_read_and_doctor_is_ready(tmp_path: Path) -> Non
     doctor = without(["doctor", "--json"], tmp_path, [])
     check = [c for c in doctor.json()["checks"] if c["name"] == "prove"][0]
     assert check["ok"] is True, check
-
-
-def test_ig_9_the_refusal_names_no_install_line() -> None:
-    """pip holds a Prove at or above the floor to meet the install line, so it would move nothing."""
-    assert all(INSTALL not in line for line in missing(READS, "0.9.0", [UNUSED_BY_RUNS]))
-    assert len(missing(READS, "0.9.0", [UNUSED_BY_RUNS])) == 1

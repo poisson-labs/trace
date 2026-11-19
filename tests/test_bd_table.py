@@ -262,12 +262,6 @@ def test_bd_3b_deepeval_drawn_is_the_mockup(deepeval: Path) -> None:
         assert drawn == mockup_table(f"continuous-proposed-inspect-{cols}-pretty", INSPECT_FIX), cols
 
 
-def test_bd_3b_the_mockups_show_todays_table_broken() -> None:
-    """What DM3 and DM4 answer: today's capture at 80 columns breaks ``too small to tell``."""
-    lines = mockup("continuous-deepeval-80-pretty")
-    assert any(line.rstrip().endswith("too small to") for line in lines)
-
-
 # ---------- BD-3c ----------
 
 

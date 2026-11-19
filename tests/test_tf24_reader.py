@@ -33,7 +33,7 @@ and IT5 to IT10, on the real captures; TF22's FI18 and FI19).
 - TF24-13: rows come in the order their roots started, whatever order the file holds them, so
   the tries of a case are its repeats in the order they ran.
 - TF24-14: the start: the earliest run's start, read as UTC whether or not it carries a zone
-  (v1 writes none), from ``earliest span``; ``--started`` wins; the CSV carries no time, so its
+  (v1 writes none), from ``earliest span``; the CSV carries no time, so its
   start is the file's time and the summary says so.
 - TF24-15: a root still pending has no outcome under ``status`` and the reason ``pending``.
 """
@@ -53,7 +53,7 @@ from tf21_support import run_import
 from tf24_support import (
     CASES, ERRORED, EXACT, EXPORTS, ITEM, LATE, RUN, RUNS, TRACE_EXPORTS, VERSIONS, by_status, columns, example_ids,
     export, feedback_file, feedback_pages, imported, ls_argv, passed, recs, refused, roots, rows_of, run_id, trace_rows,
-    tally, world, write_csv, write_rows,
+    tally, world, write_rows,
 )
 
 SHAPE = {"v1": "run", "v2": "query", "v2-subtree": "query", "cli-runs": "cli", "cli-traces": "cli", "ui": "ui"}
@@ -90,12 +90,6 @@ def test_tf24_4_every_export_reads_as_ten_rows_on_the_ten_cases(tmp_path_factory
     assert data["counts"]["traces"] == 10
     if kind != "ui":
         assert data["counts"]["runs"] == RUNS[version]
-
-
-def test_tf24_4_the_reader_names_its_shapes() -> None:
-    from poisson_trace.ingest import langsmith
-
-    assert tuple(langsmith.SHAPES) == ("run", "query", "cli", "ui")
 
 
 # ---------- TF24-5 ----------
@@ -532,11 +526,6 @@ def test_tf24_14_a_time_with_no_zone_is_utc_whatever_the_machine_s_zone(tmp_path
     assert json.loads(ran.stdout)["started"]["at"].startswith("2026-11-09T20:38:00"), ran.stdout
 
 
-def test_tf24_14_started_given_wins(tmp_path: Path) -> None:
-    data = imported(by_status(export("baseline", "v2"), tmp_path / "st", "r", "--started", "2026-11-01T00:00:00Z"))
-    assert data["started"] == {"at": "2026-11-01T00:00:00Z", "from": "given"}
-
-
 @pytest.mark.parametrize("version", VERSIONS)
 def test_tf24_14_the_csv_carries_no_time_so_its_start_is_the_file_s(tmp_path_factory: Any, version: str) -> None:
     _, data = world(tmp_path_factory, version, "ui", "status")
@@ -562,11 +551,3 @@ def test_tf24_15_a_root_still_pending_has_no_outcome(tmp_path: Path, kind: str) 
     assert got["outcome"] is None and got["error"] == "pending"
     rec = recs(tmp_path / "st", "r")["c02"]
     assert rec["outcome"] is None and rec["wall_time_s"] is None
-
-
-def test_tf24_15_the_csv_s_rows_are_edited_as_the_page_writes_them(tmp_path: Path) -> None:
-    """The helper that edits the CSV keeps it readable: an unedited copy reads as the file does."""
-    path = write_csv(tmp_path / "copy.csv", export("baseline", "ui")[0])
-    imported(by_status(path, tmp_path / "a", "r"))
-    imported(by_status(export("baseline", "ui"), tmp_path / "b", "r"))
-    assert recs(tmp_path / "a", "r") == recs(tmp_path / "b", "r")

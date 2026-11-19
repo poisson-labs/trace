@@ -50,7 +50,7 @@ def test_tf16_8_a_run_named_at_sweep_time_goes_by_that_name(tmp_path: Path) -> N
     for argv in (["fix-check", "agent before", "agent after", *FIX_CHECK],
                  ["where", "agent before", "--event", EVENT]):
         ran = trace([*argv, "--store", new, "--json"])
-        assert ran.code in (0, 2), ran.text
+        assert ran.code == 0, ran.text
         doc = ran.json()
         runs = [doc["run"]] if "run" in doc else [doc["runs"]["old"], doc["runs"]["new"]]
         assert [(r["run_id"], r["run_name"]) for r in runs] == [

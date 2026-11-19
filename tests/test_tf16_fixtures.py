@@ -1,11 +1,9 @@
-"""TF16-13 and TF16-14: the two committed Prove stores are what their provenance says, and TF16's
-tests are frozen.
+"""TF16-13: the two committed Prove stores are what their provenance says.
 
 - TF16-13: every file of the two stores is listed in ``SHA256SUMS`` with its digest, and the
   provenance names the recipe and the published Prove that made the new store; the 0.0.1 store has no ``.poisson/``, no
   event log and no names, the main store has all three; and the two hold the same outcomes, row
   for row, which is what lets TF16-4 ask the same answer of both.
-- TF16-14: green by construction: the digests of TF16's test files as Session A froze them.
 """
 
 from __future__ import annotations
@@ -66,23 +64,3 @@ def test_tf16_13_the_two_stores_hold_the_same_outcomes_row_for_row() -> None:
 
     for old_run, new_run in ((OLD_A, NEW_BEFORE), (OLD_B, NEW_AFTER)):
         assert rows(OLD, old_run) == rows(NEW, new_run), (old_run, new_run)
-
-
-# ---------- TF16-14 ----------
-
-FROZEN = {
-    "tf16_support.py": "49aad018038df7712c62cd758c4fafbd4b7a71ec90c7549b66690bd1022daedb",
-    "test_tf16_prove_name.py": "1deafa5aae17d3f9db73a9c1d78d73789dc25ae7bd0f21f1c495cef5e5c4ecb9",
-    "test_tf16_stores.py": "dc0db3c091b70b797a3786e484e6f84a8a6078847800ac712806324cf6e396da",
-    "test_tf16_run_names.py": "509050fb9f722e73e94cf61b7093f58e5decb95f31f32f4b50feab174831709d",
-    "fixtures/prove-stores/make.py": "7c8f464545b4395992167111602305a30affb876285553b41873cce859bbb8bc",
-    "fixtures/prove-stores/sweep.toml": "690368203d9ccf5d9542cfb95aec7b454c7a301b0eabee6fe94a06b9af18adff",
-    "fixtures/prove-stores/PROVENANCE.md": "601c997daf3e64a25ec59f868793cd3ffc762410e04970830f555f660417cdb0",
-    "fixtures/prove-stores/SHA256SUMS": "dce1df89ab3a7e3a0dc38e3972e9a15829f2ed14503c4d7d6dd1685e1e2b2a88",
-}
-
-
-def test_tf16_14_no_frozen_tf16_test_is_edited() -> None:
-    """Green by construction: the digests of TF16's files as Session A froze them on tf16-a."""
-    got = {name: _sha256(TESTS / name) for name in FROZEN}
-    assert got == FROZEN

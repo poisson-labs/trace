@@ -2,8 +2,7 @@
 
 - **TF9-1a** Every test that existed when TF9 was frozen is unchanged, byte for byte: the plain
   output those tests pin is pinned still, and the clean look is built without moving one of them.
-  The list is ``fixtures/tf9/frozen-tests.sha256``; a later pair that changes a frozen test on a
-  ruling changes its line there in the same commit.
+  ``test_frozen.py`` holds it, with the one list of every frozen file.
 - **TF9-1b** Piped, the build with the pretty rendering prints the plain rendering byte for byte:
   every invocation of the conformance corpus (``tf0_support.corpus``), run in a process of its
   own on two pipes under an environment where every other condition of the switch holds, prints
@@ -22,27 +21,7 @@ from pathlib import Path
 import pytest
 
 from tf0_support import Item, chdir, corpus, prepare, run_item, trace, trace_import
-from tf9_support import REPO, child_env, sha256_of
-
-TESTS = REPO / "tests"
-FROZEN = TESTS / "fixtures" / "tf9" / "frozen-tests.sha256"
-
-
-def _frozen() -> dict[str, str]:
-    out = {}
-    for line in FROZEN.read_text(encoding="utf-8").splitlines():
-        digest, name = line.split("  ", 1)
-        out[name] = digest
-    return out
-
-
-def test_tf9_1a_every_test_frozen_before_the_look_is_unchanged() -> None:
-    frozen = _frozen()
-    assert len(frozen) > 100, "the list of frozen tests is not the whole suite"
-    moved = {name: "missing" for name in frozen if not (REPO / name).exists()}
-    moved |= {name: "changed" for name in frozen if (REPO / name).exists() and sha256_of(REPO / name) != frozen[name]}
-    assert moved == {}, moved
-
+from tf9_support import child_env
 
 # ---------- TF9-1b: piped, pretty is plain ----------
 

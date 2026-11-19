@@ -10,8 +10,8 @@
   pending files), and stops with nothing but ``trace.toml`` and the skill's own files written,
   no store, no byte code and no connection. The person's command then imports the four runs,
   doctor reads ready, and doctor's ``next:`` is the first fix-check on the named pair.
-- TF17-45: nothing is written outside the repository the person named (``HOME`` is untouched by
-  ``init --agent``, ``doctor --setup`` and the hand-over).
+- TF17-45: nothing is written outside the repository the person named: held by TF17-1
+  (``init --agent``), TF17-29 (``doctor --setup``) and TF17-41 (the hand-over).
 - TF17-46: no existing verb's output changes: ``init --yes`` on a store, ``runs`` and the
   import print byte for byte what main prints today (their stdout pinned here, apart from the
   lines that name this machine).
@@ -28,7 +28,7 @@ from tf2_support import doctor, init_yes, no_network, scratch_home, work  # noqa
 from tf17_support import (
     CHECK, COMMAND, CS_FAILURES, FOUR, NEXT_COMMAND, RAGAS, STEP_TITLES, agent, commands,
     config_text, detail, expected_toml, import_lines, ragas_entry, ragas_pair, refusal,
-    sample_repo, setup_check, snapshot, split_frontmatter, steps_of, trace_in, write_toml,
+    sample_repo, snapshot, split_frontmatter, steps_of, trace_in, write_toml,
 )
 
 
@@ -123,20 +123,6 @@ def test_tf17_44_doctors_next_after_the_hand_over_is_the_first_fix_check_on_the_
     words = shell_words(d.out.splitlines()[-1][len("next: "):])
     assert words == [COMMAND, "fix-check", "old", "new"], words
     assert detail(d.out, "config"), d.out
-
-
-# ---------- TF17-45 ----------
-
-
-def test_tf17_45_nothing_is_written_outside_the_repository(tmp_path: Path) -> None:
-    repo = sample_repo(tmp_path, with_expected=True)
-    home = Path(os.environ["HOME"])
-    elsewhere = work(tmp_path, "elsewhere")
-    before = snapshot(home, elsewhere)
-    assert agent(repo).code == 0
-    assert setup_check(repo).code == 0
-    assert init_yes(repo).code == 0
-    assert snapshot(home, elsewhere) == before
 
 
 # ---------- TF17-46 ----------

@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import shutil
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -62,29 +63,35 @@ def _ran(tmp: Path, verb: str, *extra: Any, labels: str | None = None, failed: l
     return plain.out, doc.json()
 
 
+@pytest.fixture(scope="module")
+def ran_once(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], tuple[str, dict[str, Any]]]:
+    """What ``_ran`` gives for a verb on the store of ``_store`` with no table, each verb run
+    once for the tests that read it: the verbs read the store and write nothing, and no test
+    changes what it is given."""
+    tmp = tmp_path_factory.mktemp("pl-section")
+    held: dict[str, tuple[str, dict[str, Any]]] = {}
+
+    def of(verb: str) -> tuple[str, dict[str, Any]]:
+        if verb not in held:
+            held[verb] = _ran(tmp, verb)
+        return held[verb]
+
+    return of
+
+
 # ---------- PL-20: the words ----------
 
 
-def test_pl_20_the_words_for_one_label() -> None:
-    assert note(["unsolved"]) == (
-        "Trace has no kind for the label unsolved, so its failed tries count as unclassified_error. To name a label's kind, "
-        'add it to trace.toml under [taxonomy.labels], as unsolved = "KIND", where KIND is timeout, rate_limit, '
-        "context_overflow, loop_detected, step_limit, guardrail_blocked, tool_error, retrieval_error, format_error, abstained, "
-        "crash or wrong_answer."
-    )
-
-
-def test_pl_20_the_words_for_several_labels() -> None:
-    assert note(["unsolved", "forbidden_action", "app error"]).startswith(
-        "Trace has no kind for the labels app error, forbidden_action and unsolved, so their failed tries count as "
-        'unclassified_error. To name a label\'s kind, add it to trace.toml under [taxonomy.labels], as "app error" = "KIND", '
-    )
-
-
 @pytest.mark.parametrize("verb", VERBS)
-def test_pl_20_each_verb_says_it(tmp_path: Path, verb: str) -> None:
-    out, _ = _ran(tmp_path, verb)
+def test_pl_20_each_verb_says_it(ran_once: Callable[[str], tuple[str, dict[str, Any]]], verb: str) -> None:
+    out, _ = ran_once(verb)
     assert note(["forbidden_action", "unsolved"]) in section(out)
+    assert (
+        "Trace has no kind for the labels forbidden_action and unsolved, so their failed tries count as unclassified_error. "
+        'To name a label\'s kind, add it to trace.toml under [taxonomy.labels], as forbidden_action = "KIND", where KIND is '
+        "timeout, rate_limit, context_overflow, loop_detected, step_limit, guardrail_blocked, tool_error, retrieval_error, "
+        "format_error, abstained, crash or wrong_answer."
+    ) in section(out)
 
 
 def test_pl_20_a_label_that_is_no_bare_key(tmp_path: Path) -> None:
@@ -100,8 +107,8 @@ def test_pl_20_a_label_that_is_no_bare_key(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("verb", VERBS)
-def test_pl_21_after_the_tries_line_before_the_signals(tmp_path: Path, verb: str) -> None:
-    out, _ = _ran(tmp_path, verb)
+def test_pl_21_after_the_tries_line_before_the_signals(ran_once: Callable[[str], tuple[str, dict[str, Any]]], verb: str) -> None:
+    out, _ = ran_once(verb)
     lines = section(out)
     said = note(["forbidden_action", "unsolved"])
     at = lines.index(said)
@@ -127,8 +134,8 @@ def test_pl_21_after_the_no_outcome_sentence(tmp_path: Path, verb: str) -> None:
 
 
 @pytest.mark.parametrize("verb", VERBS)
-def test_pl_22_named_once_in_the_whole_report(tmp_path: Path, verb: str) -> None:
-    out, _ = _ran(tmp_path, verb)
+def test_pl_22_named_once_in_the_whole_report(ran_once: Callable[[str], tuple[str, dict[str, Any]]], verb: str) -> None:
+    out, _ = ran_once(verb)
     said = note(["forbidden_action", "unsolved"])
     assert out.count(said) == 1
     assert out.count("Trace has no kind for") == 1
@@ -140,24 +147,14 @@ def test_pl_22_named_once_in_the_whole_report(tmp_path: Path, verb: str) -> None
 
 
 @pytest.mark.parametrize("verb", VERBS)
-def test_pl_23_the_json_names_each_label_and_its_counts(tmp_path: Path, verb: str) -> None:
-    _, doc = _ran(tmp_path, verb)
+def test_pl_23_the_json_names_each_label_and_its_counts(ran_once: Callable[[str], tuple[str, dict[str, Any]]], verb: str) -> None:
+    _, doc = ran_once(verb)
     diff = doc["failure_taxonomy_diff"]
     a, b = ARMS[verb]
     assert list(diff) == [*MAIN_KEYS, "labels_without_kind"]
     assert diff["labels_without_kind"] == [{"label": "forbidden_action", a: 2, b: 1}, {"label": "unsolved", a: 1, b: 0}]
     kinds = {k["failure_kind"]: (k[a], k[b]) for k in diff["kinds"]}
     assert kinds == {"unclassified_error": (3, 1), "wrong_answer": (1, 0), "timeout": (1, 0)}
-
-
-def test_pl_23_after_the_no_outcome_counts(tmp_path: Path) -> None:
-    old = [Try("t1", "unsolved"), Try("t2", None, error="infra: lost"), Try("t3", "passed")]
-    new = [Try("t1", "passed"), Try("t2", None, error="infra: lost"), Try("t3", "passed")]
-    root = two_runs(tmp_path, old, new)
-    path = config(tmp_path, root.name, ["unsolved"])
-    diff = run([*ARGS["changes"], "--config", path, "--json"]).json()["failure_taxonomy_diff"]
-    assert list(diff) == ["taxonomy_sha256", "same_rules", "tries", "no_outcome", "verdict_tries", "kinds", "signals",
-                          "labels_without_kind"]
 
 
 #: Eight labels with no kind, written out of order (LK-38): left unsorted, they come out sorted
@@ -224,8 +221,10 @@ def test_pl_24_one_named_one_not(tmp_path: Path, verb: str) -> None:
 # ---------- PL-25: the plain words ----------
 
 
-@pytest.mark.parametrize("word", ["fail", "failed", "failure", "missed"])
-@pytest.mark.parametrize("verb", VERBS)
+@pytest.mark.parametrize(("verb", "word"), [
+    *[(VERBS[0], word) for word in ("fail", "failed", "failure", "missed")],
+    *[(verb, "fail") for verb in VERBS[1:]],
+])
 def test_pl_25_a_plain_word_is_never_named(tmp_path: Path, verb: str, word: str) -> None:
     root = two_runs(tmp_path, [Try("t", word), Try("u", "passed")], [Try("t", "passed"), Try("u", "passed")])
     path = config(tmp_path, root.name, [word])

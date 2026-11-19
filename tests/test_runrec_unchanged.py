@@ -152,7 +152,7 @@ MAIN_FAST: dict[str, str] = {
     "changes promptfoo-old promptfoo-new --event missed --json":
         "5c79f2f9972df2fc48b8d68668c3d2b1a91ff74cdc09f5fe6227b0d96e07c547",
     "fix-check openai-evals-old openai-evals-new --event missed --inputs all --max-mde 0.5":
-        "2a2919ad1a730eb78dabd3570b10ed0f0084abfdd50c5aca2ad1aff957d43216",
+        "83db41fc74332dae4c176310e43f09752d4761662ab3c5d54188e6d55c56aba7",
     "fix-check openai-evals-old openai-evals-new --event missed --inputs all --max-mde 0.5 --json":
         "0634e28ddb2b7707a88ec855101e2bd085279631b3b40c0e837dfbc76f3c8afc",
     "changes openai-evals-old openai-evals-new --event missed":

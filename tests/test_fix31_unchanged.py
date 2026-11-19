@@ -18,7 +18,10 @@ no failed run in either version:
 - and ``changes``, ``where`` and ``runs`` on runs that never failed, which trace#31 leaves as
   they are.
 
-Green on main by construction; it is here to stay green.
+Green on main by construction; it is here to stay green. Sixteen pins of the synthetic pairs
+have since moved with two sentences of the report, and with nothing else: where the old version
+failed no try the caveat says there is no drop to look for, and where the difference has no range
+the comparison says ``no range: Sato's formula gives none on these counts (its variance is zero)``.
 """
 
 from __future__ import annotations

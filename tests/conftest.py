@@ -250,6 +250,55 @@ def _no_real_browser(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     return opened
 
 
+def _this_machine(family: int, address: object) -> bool:
+    """Whether a socket of ``family`` asked to connect to ``address`` stays on this machine."""
+    import socket
+
+    if family == getattr(socket, "AF_UNIX", None):
+        return True
+    host = address[0] if isinstance(address, tuple) and address else address
+    if isinstance(host, bytes | bytearray):
+        host = bytes(host).decode("ascii", "replace")
+    return isinstance(host, str) and (host in ("localhost", "::1") or host.startswith("127."))
+
+
+@pytest.fixture(autouse=True)
+def _no_network(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test opens a connection to another machine, and none looks a name up. The suite answers
+    LangSmith, Braintrust and Weave from committed captures, in-process or on this machine's
+    loopback address; here a connection anywhere else, or a look-up of any other name, fails the
+    test that made it, whatever catches errors on the way. Lane J is let through: it is the one
+    lane that reaches the package index. A command run in a process of its own is not held here;
+    the docs checker runs those with every proxy and endpoint closed."""
+    if request.node.get_closest_marker("lane_j") is not None:
+        return
+    import socket
+
+    connect, connect_ex, lookup = socket.socket.connect, socket.socket.connect_ex, socket.getaddrinfo
+
+    def refused(what: str) -> None:
+        pytest.fail(f"a test reached for the network: {what}. Only lane J may (tests/conftest.py)", pytrace=False)
+
+    def guarded_connect(self: socket.socket, address: Any) -> Any:
+        if not _this_machine(self.family, address):
+            refused(f"a connection to {address!r}")
+        return connect(self, address)
+
+    def guarded_connect_ex(self: socket.socket, address: Any) -> Any:
+        if not _this_machine(self.family, address):
+            refused(f"a connection to {address!r}")
+        return connect_ex(self, address)
+
+    def guarded_lookup(host: Any, *args: Any, **kwargs: Any) -> Any:
+        if host is not None and not _this_machine(-1, host):
+            refused(f"a look-up of {host!r}")
+        return lookup(host, *args, **kwargs)
+
+    monkeypatch.setattr(socket.socket, "connect", guarded_connect)
+    monkeypatch.setattr(socket.socket, "connect_ex", guarded_connect_ex)
+    monkeypatch.setattr(socket, "getaddrinfo", guarded_lookup)
+
+
 @pytest.fixture
 def synth(tmp_path: Path) -> tuple[Path, str]:
     root = tmp_path / "synth"

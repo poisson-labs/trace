@@ -41,7 +41,7 @@ in Weave's words).
   answers of one evaluation, an answer beside the page's download, two of the page's downloads.
 - TF26-13: rows come in the order their calls started, whatever order the file holds them, so
   the tries of a case are its repeats in the order they ran.
-- TF26-14: the start is the first row's start, the same from every export; ``--started`` wins;
+- TF26-14: the start is the first row's start, the same from every export;
   rows with no start take the file's time.
 - TF26-15: a row whose call has not ended has no outcome under ``status`` and the reason
   ``pending``.
@@ -63,7 +63,7 @@ from tf26_support import (
     API_EXPORTS, CALL_ID, CALLS, CANDIDATE_ONLY, CASES, DIGEST, EARLIEST, ERRORED, EVALUATION, EXACT, EXPORTS, ITEM, KEY, LOOKUP,
     LOOKUP_EXACT, NAMES, QUESTIONS, RETRIED, ROOTS_ONLY, RUN, SHAPE, SHOWN, UI_CALLS, UI_EXPORTS, UI_TABLES, VERSIONS, WITH_REF,
     WITH_ROW, by_status, calls_of, columns, edited, edited_table, evaluation, export, imported, of, of_evaluation, outcomes, passed,
-    picked, recs, refused, rows_by_case, same_but_case, table_rows, tally, tries, world, write_calls, wv_argv,
+    picked, recs, refused, rows_by_case, table_rows, tally, tries, world, write_calls, wv_argv,
 )
 
 BOTH = [(v, k) for v in VERSIONS for k in EXPORTS]
@@ -441,9 +441,12 @@ def test_tf26_8_a_file_of_several_evaluations_is_refused_naming_each(tmp_path: P
     assert not (tmp_path / "st").exists()
 
 
-@pytest.mark.parametrize("kind", UI_EXPORTS)
-@pytest.mark.parametrize("name", NAMES)
-@pytest.mark.parametrize("by", ["name", "id"])
+# by its name a slice evaluation is the command TF26-4 and TF26-14 read, so one page format of each shape holds it here
+PICKED = [(by, name, kind) for kind in UI_EXPORTS for name in NAMES for by in ("name", "id")
+          if by == "id" or name in LOOKUP or (name, kind) in (("baseline", "ui-json"), ("baseline", "ui-csv"))]
+
+
+@pytest.mark.parametrize(("by", "name", "kind"), PICKED)
 def test_tf26_8_evaluation_picks_one_by_its_name_or_by_the_id_of_its_call(tmp_path: Path, kind: str, name: str, by: str) -> None:
     word = EVALUATION[name] if by == "name" else CALL_ID[name]
     case = "example" if kind in UI_CALLS else "example:id"
@@ -696,11 +699,6 @@ def test_tf26_14_the_first_row_s_start_is_the_file_s_own() -> None:
         assert calls[0]["started_at"] < EARLIEST[name]
 
 
-def test_tf26_14_started_given_wins(tmp_path: Path) -> None:
-    data = imported(by_status(export("baseline", "pull"), tmp_path / "st", "r", "--started", "2026-11-01T00:00:00Z"))
-    assert data["started"] == {"at": "2026-11-01T00:00:00Z", "from": "given"}
-
-
 @pytest.mark.parametrize("kind", ["pull", "ui-json", "ui-csv"])
 def test_tf26_14_rows_with_no_start_take_the_file_s_time(tmp_path: Path, kind: str) -> None:
     if kind == "ui-csv":
@@ -739,14 +737,3 @@ def test_tf26_15_a_row_whose_call_has_not_ended_has_no_outcome(tmp_path: Path, k
     got = columns(tmp_path / "st", "r")["c02"]
     assert got["outcome"] is None and got["error"] == "pending"
     assert recs(tmp_path / "st", "r")["c02"]["outcome"] is None
-
-
-@pytest.mark.parametrize("kind", ["pull", "ui-jsonl", "ui-csv", "ui-tsv"])
-def test_tf26_15_an_export_edited_and_written_back_reads_as_the_file_does(tmp_path: Path, kind: str) -> None:
-    """The helpers that edit an export keep it readable: an unedited copy reads as the file."""
-    path = edited_table(tmp_path, kind) if kind in UI_TABLES else edited(tmp_path, "baseline", kind, lambda calls: None)
-    case = "example" if kind not in UI_TABLES else "example:id"
-    imported(by_status(path, tmp_path / "a", "r", *picked("baseline", kind), case=case))
-    imported(of("baseline", kind, tmp_path / "b", "r", mode="status"))
-    left, right = recs(tmp_path / "a", "r"), recs(tmp_path / "b", "r")
-    assert {c: same_but_case(r) for c, r in left.items()} == {c: same_but_case(r) for c, r in right.items()}

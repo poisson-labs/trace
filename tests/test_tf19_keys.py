@@ -5,7 +5,8 @@ A13, DM9).
 focused row's screen; Esc goes back with the focus where it was; ``/`` filters the rows and Esc
 clears the filter; ``s`` moves the runs and imports screens to the config's next store (DM9); the
 picker's ``space`` chooses before then after, ``l`` previous and latest. ``q`` exits 0 on every
-screen and the app leaves nothing to print; during a question it answers no and the app stays.
+screen and the app leaves nothing to print (during a question it answers no and the app stays:
+held with the name question, TF19-4; ``q`` on a pseudo-terminal: TF19-1).
 Ctrl-C exits 130 and the app leaves one line saying what it kept (A12), on every screen and
 during work, through the pilot and on a pseudo-terminal. Help lists every key of every screen's
 key bar, and each screen's own letters mean one thing.
@@ -22,6 +23,7 @@ from tf19_support import (
     KEPT_NONE,
     NAV_KEYS,
     OWN,
+    Grid,
     Quick,
     Resize,
     Step,
@@ -46,6 +48,43 @@ def world(tmp_path_factory: pytest.TempPathFactory) -> Path:
 @pytest.fixture
 def work(world: Path, tmp_path: Path) -> Path:
     return copy_world(world, tmp_path)
+
+
+def _tour(world: Path, tmp: Path, size: tuple[int, int], *, help_too: bool) -> dict[str, list[Grid]]:
+    """Every screen opened in turn in one run of the app, in a copy of its own, each reached from
+    home by its keys and left by as many Esc: what each screen showed when it opened and, with
+    ``help_too``, what ``?`` then showed and what Esc came back to. Nothing a tour presses writes
+    but the verdict screens' own saves, into the tour's copy."""
+    work = copy_world(world, tmp)
+    steps: list[object] = []
+    counts: dict[str, int] = {}
+    for screen, keys in NAV_KEYS.items():
+        steps += [*keys, "<snap>"]
+        counts[screen] = 1
+        if help_too and screen != "help":
+            steps += ["?", "<snap>", "escape", "<snap>"]
+            counts[screen] = 3
+        steps += ["escape"] * len(keys)
+    grids = drive(work, steps, size=size).grids
+    assert len(grids) >= sum(counts.values()), [g.title() for g in grids]
+    out: dict[str, list[Grid]] = {}
+    at = 0
+    for screen, n in counts.items():
+        out[screen] = grids[at:at + n]
+        at += n
+    return out
+
+
+@pytest.fixture(scope="module")
+def toured(world: Path, tmp_path_factory: pytest.TempPathFactory) -> dict[str, list[Grid]]:
+    """Each screen at 120 x 40: as it opened, with help over it, and back from help."""
+    return _tour(world, tmp_path_factory.mktemp("tf19-keys-tour"), (120, 40), help_too=True)
+
+
+@pytest.fixture(scope="module")
+def toured_wide(world: Path, tmp_path_factory: pytest.TempPathFactory) -> dict[str, list[Grid]]:
+    """Each screen at 160 x 40, as it opened: wide enough for every word of its key bar."""
+    return _tour(world, tmp_path_factory.mktemp("tf19-keys-tour-wide"), (160, 40), help_too=False)
 
 
 # ---------- moving ----------
@@ -203,22 +242,10 @@ def test_tf19_6_ctrl_c_during_work(work: Path) -> None:
     assert not (work / "store" / ".poisson" / "artifacts").exists()
 
 
-def test_tf19_6_q_during_a_question_answers_no(work: Path) -> None:
-    s = drive(work, ["r", "n", Type("x"), "enter", "q", "<snap>", "q"], size=(120, 40))
-    assert s.grids[0].title() == "runs" and not s.grids[0].message.endswith("[y/N]")
-    assert s.code == 0
-
-
 # ---------- on a terminal ----------
 
 
 HOME = "poisson-trace · home"
-
-
-def test_tf19_6_q_on_a_terminal(work: Path, tmp_path: Path) -> None:
-    run = run_pty([], home=tmp_path, cwd=work, steps=(Step(b"r", until=HOME), Step(b"q", until="poisson-trace · runs")))
-    assert run.code == 0
-    assert after_app(run.out).strip() == ""
 
 
 def test_tf19_6_ctrl_c_on_a_terminal(work: Path, tmp_path: Path) -> None:
@@ -256,19 +283,18 @@ def test_tf19_6_help_lists_every_key(work: Path) -> None:
 
 
 @pytest.mark.slow
-def test_tf19_6_help_lists_every_key_of_every_key_bar(work: Path) -> None:
+def test_tf19_6_help_lists_every_key_of_every_key_bar(work: Path, toured: dict[str, list[Grid]]) -> None:
     """Every key on every screen's key bar is on help (fast twin: the one above, from A6's table)."""
     s = drive(work, ["?"], size=(120, 80))
     seen: set[str] = set()
-    for keys in NAV_KEYS.values():
-        seen.update(drive(work, keys, size=(120, 40)).last.keys())
+    for screen in NAV_KEYS:
+        seen.update(toured[screen][0].keys())
     assert _listed(s.last.body, seen) == [], (seen, s.last.text())
 
 
-def _one_meaning(work: Path, screens: list[str]) -> dict[str, set[str]]:
+def _one_meaning(grids: list[Grid]) -> dict[str, set[str]]:
     words: dict[str, set[str]] = {}
-    for screen in screens:
-        g = drive(work, NAV_KEYS[screen], size=(160, 40)).last
+    for g in grids:
         for key, word in g.bar():
             if len(key) == 1 and key.isalpha() and word:
                 words.setdefault(key, set()).add(word)
@@ -277,13 +303,14 @@ def _one_meaning(work: Path, screens: list[str]) -> dict[str, set[str]]:
 
 def test_tf19_6_a_letter_means_one_thing_on_a_few_screens(work: Path) -> None:
     """Fast twin of the next: home, runs, run and compare's verdict share ``c`` and ``f``."""
-    assert _one_meaning(work, ["home", "runs", "run", "verdict compare"]) == {}
+    screens = ["home", "runs", "run", "verdict compare"]
+    assert _one_meaning([drive(work, NAV_KEYS[screen], size=(160, 40)).last for screen in screens]) == {}
 
 
 @pytest.mark.slow
-def test_tf19_6_a_letter_means_one_thing(work: Path) -> None:
+def test_tf19_6_a_letter_means_one_thing(toured_wide: dict[str, list[Grid]]) -> None:
     """Each letter's word is the same on every key bar that has it (the look file)."""
-    assert _one_meaning(work, list(NAV_KEYS)) == {}
+    assert _one_meaning([toured_wide[screen][0] for screen in NAV_KEYS]) == {}
 
 
 @pytest.mark.parametrize("screen", ["runs", "verdict compare"])
@@ -295,13 +322,13 @@ def test_tf19_6_help_from_a_screen_and_back(work: Path, screen: str) -> None:
 
 
 @pytest.mark.slow
-def test_tf19_6_help_from_every_screen_and_back(work: Path) -> None:
-    for screen, keys in NAV_KEYS.items():
+def test_tf19_6_help_from_every_screen_and_back(toured: dict[str, list[Grid]]) -> None:
+    for screen in NAV_KEYS:
         if screen == "help":
             continue
-        s = drive(work, [*keys, "<snap>", "?", "<snap>", "escape"], size=(120, 40))
-        assert s.grids[1].title() == "help", screen
-        assert s.last.title() == s.grids[0].title(), screen
+        opened, with_help, back = toured[screen]
+        assert with_help.title() == "help", screen
+        assert back.title() == opened.title(), screen
 
 
 # ---------- the limit asked for, when trace.toml has none ----------

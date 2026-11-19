@@ -134,22 +134,18 @@ def test_tf22_24_a_verb_on_folders_prints_what_it_prints_on_them_imported(
 ) -> None:
     by_store, by_folder, _, _ = _routes("junit", verb, tmp_path, form)
     _same(by_store, by_folder, form)
+    if (verb, form) == ("fix-check", "json"):
+        # the fast twin is not two refusals that agree: fix-check on the JUnit pair answers
+        assert by_store.code == 0, by_store.text
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("tool", ["junit", "table", "ragas", "deepeval"])
+@pytest.mark.parametrize("tool", ["table", "ragas", "deepeval"])  # junit is the fast test above
 @pytest.mark.parametrize("verb", list(VERBS))
 @pytest.mark.parametrize("form", ["plain", "json"])
 def test_tf22_24_every_tool_and_verb_prints_the_same(tmp_path: Path, tool: str, verb: str, form: str) -> None:
     by_store, by_folder, _, _ = _routes(tool, verb, tmp_path, form)
     _same(by_store, by_folder, form)
-
-
-def test_tf22_24_the_fast_pair_reads_a_real_answer(tmp_path: Path) -> None:
-    """The fast twin is not two refusals that agree: fix-check on the JUnit pair answers."""
-    by_store, by_folder, _, _ = _routes("junit", "fix-check", tmp_path, "json")
-    assert by_store.code == by_folder.code == 0, by_folder.text
-    assert by_folder.json()["verdict"] == by_store.json()["verdict"]
 
 
 # ---------- TF22-25: the commands ----------
@@ -182,7 +178,7 @@ def _check_commands(by_store: Ran, by_folder: Ran, store_words: list[str], typed
     return ran
 
 
-@pytest.mark.parametrize("verb", ["fix-check", "changes", "where", "compare"])
+@pytest.mark.parametrize("verb", ["fix-check", "where", "compare"])
 def test_tf22_25_the_commands_name_the_folders_and_run_as_printed(tmp_path: Path, verb: str) -> None:
     by_store, by_folder, store_words, typed = _routes("junit", verb, tmp_path, "plain")
     _check_commands(by_store, by_folder, store_words, typed, FLAGS["junit"], tmp_path, "plain")

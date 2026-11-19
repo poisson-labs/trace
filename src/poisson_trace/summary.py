@@ -446,6 +446,14 @@ def _shared_caveats(p: _Pair) -> list[str]:
             f"difference about {d['_level']:g} times in 100, if tries are independent), which "
             f"{kept} {a_or_an(p.asked)} {p.asked}-point drop."
         )
+    elif d.get("_none_failed"):
+        # nothing failed, so there is no drop in these results to fit: say what could still
+        # differ, and that even that figure is rough here
+        said.append(
+            "Neither version failed here. Their true failure rates could still differ by about "
+            f"{num(100.0 * max(-lo, hi))} points either way, and with {d['_rough'][0]} even that "
+            "figure is rough: don't use it to rule any size in or out."
+        )
     else:
         why = [
             "the range and the test disagree" if w.endswith("disagree") else w for w in d["_rough"]
@@ -472,7 +480,14 @@ def _shared_caveats(p: _Pair) -> list[str]:
         f"Tries of the same input are counted as separate chances{here}, and if they are near "
         "copies the answer is more confident than it should be."
     )
-    if p.ceiling >= 0.8 * p.old_share and not d.get("_none_failed"):
+    if d.get("_none_failed"):
+        pass
+    elif d["rows"]["old"]["failed"] == 0:
+        said.append(
+            "The old version did not fail on these inputs, so there is no drop to look for: this "
+            "check can only show whether the new version fails more."
+        )
+    elif p.ceiling >= 0.8 * p.old_share:
         said.append(
             f"The {p.asked} points you asked about is close to the most these inputs could drop "
             f"(the old version failed {percent(p.old_share)} of tries)."
@@ -679,6 +694,16 @@ def _too_small(p: _Pair) -> tuple[str, str, str, str | None, list[str]]:
                 f"Can't tell yet. {p.counts}; {fit}, so a change of {asked} points or more still "
                 "fits them"
             )
+    elif d.get("_none_failed") and d["_rough"]:
+        # neither version failed, on a range too rough to read: no drop was there to see
+        sentence = (
+            f"neither version failed, and with {d['_rough'][0]} Trace can't say what size of "
+            "change that rules out"
+        )
+        answer = (
+            f"Can't tell. {p.counts}, but with {d['_rough'][0]} Trace can't say what size of "
+            "change these tries rule out"
+        )
     elif limits["drop"] is None:
         sentence = "too few tries to see a drop of any size"
         answer = (
@@ -737,6 +762,15 @@ def _too_small(p: _Pair) -> tuple[str, str, str, str | None, list[str]]:
             plan = f"run each version {count(g['repeats'])} times on {on}{also} {then}"
         elif g is not None and g["inputs"] is not None:
             plan = f"run each version on {inputs(g['inputs'])} like these {then}"
+        elif d.get("_none_failed") and d["_rough"]:
+            # what is short is inputs, or tries that match, and not tries as such
+            plan = (
+                "run both versions with the same number of tries on every input, then run "
+                "`poisson-trace fix-check` on it."
+                if d["_rough"][0] == "unequal tries"
+                else "run both versions on at least 3 inputs, with the same number of tries on "
+                "each, then run `poisson-trace fix-check` on it."
+            )
         else:
             plan = (
                 "plan a bigger run with your own harness (more tries per input on both "

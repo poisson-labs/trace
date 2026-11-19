@@ -31,7 +31,7 @@ suite carries no YAML reader.
   ``release.yml`` does, and the lanes are the four ``pyproject.toml`` names, mark for mark.
 - TF5-96: the packaging (section 8.5): both commands and ``python -m poisson_trace``;
   Python 3.11 to 3.13 declared and classified, macOS and Linux classified; ``pyarrow``
-  declared at the floor Prove declares, since Trace imports it itself; the setup skill and the
+  declared at a floor of Trace's own, since Trace imports it itself, and the one installed at or above it; the setup skill and the
   pages' fixed files in the wheel, and neither ``tools/`` nor the tests; the description not
   the one that says Trace reads Prove's stored runs alone.
 - TF5-97: the release workflow still runs the same lanes by the same marks, so CI and the
@@ -237,11 +237,13 @@ def test_tf5_96_the_pythons_and_systems_declared() -> None:
 def test_tf5_96_pyarrow_is_declared() -> None:
     import importlib.metadata
 
-    prove = [r for r in importlib.metadata.requires("poisson-prove") or [] if r.replace(" ", "").startswith("pyarrow")]
-    assert prove, "Prove no longer declares pyarrow: the floor is Trace's own to state"
-    floor = re.search(r">=\s*([\d.]+)", prove[0])
-    assert floor and f"pyarrow>={floor.group(1)}" in [d.replace(" ", "") for d in PROJECT["dependencies"]], PROJECT["dependencies"]
-    assert len(PROJECT["dependencies"]) == 7
+    declared = [d.replace(" ", "") for d in PROJECT["dependencies"] if d.replace(" ", "").startswith("pyarrow")]
+    assert len(declared) == 1 and re.fullmatch(r"pyarrow>=\d+(?:\.\d+)*", declared[0]), PROJECT["dependencies"]
+    installed = [r.replace(" ", "") for r in importlib.metadata.requires("poisson-trace") or [] if r.replace(" ", "").startswith("pyarrow")]
+    assert installed == declared, installed
+    floor = [int(n) for n in declared[0].removeprefix("pyarrow>=").split(".")]
+    found = [int(n) for n in re.findall(r"\d+", importlib.metadata.version("pyarrow"))[:len(floor)]]
+    assert found >= floor, importlib.metadata.version("pyarrow")
 
 
 def test_tf5_96_the_description_is_not_the_one_of_one_source() -> None:

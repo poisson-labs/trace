@@ -15,7 +15,6 @@ import io
 import json
 import os
 import re
-import shlex
 import subprocess
 import sys
 import traceback
@@ -282,18 +281,6 @@ def examples(text: str, starts: Sequence[str]) -> list[str]:
     return found
 
 
-def example_argv(command: str) -> tuple[str, list[str]]:
-    """``("trace" | "import", argv)`` for an example command, in either of the import's two
-    written forms."""
-    words = shlex.split(command)
-    if words[0] == "poisson-trace-import":
-        return "import", words[1:]
-    if words[:2] == ["poisson-trace", "import"]:
-        return "import", words[2:]
-    assert words[0] == "poisson-trace", command
-    return "trace", words[1:]
-
-
 def usage_line(text: str) -> str:
     """The usage block as one line."""
     block = help_blocks(text)[0]
@@ -442,3 +429,19 @@ def corpus() -> list[Item]:
 
 def run_item(item: Item) -> Ran:
     return (trace if item.command == "trace" else trace_import)(item.argv)
+
+
+_CORPUS_RAN: dict[str, Ran] = {}
+
+
+def corpus_ran(tmp_path_factory: Any) -> dict[str, Ran]:
+    """What every invocation of the corpus gave, by label: run once in a process, in a folder
+    ``prepare`` made, however many modules ask. The results are values nothing writes to, and
+    the folder is the run's own, so each module that reads them sees what a run of its own
+    would give."""
+    if not _CORPUS_RAN:
+        work = prepare(tmp_path_factory.mktemp("tf0-corpus"))
+        with chdir(work):
+            results = {item.label: run_item(item) for item in corpus()}
+        _CORPUS_RAN.update(results)
+    return dict(_CORPUS_RAN)

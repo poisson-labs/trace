@@ -45,7 +45,7 @@ TIMES = {"created_at", "started", "gap_seconds"}
 
 def _read(store: Path, verb: str) -> tuple[int, Any]:
     ran = trace([*VERBS[verb], "--store", store, "--json"])
-    assert ran.code in (0, 2), ran.text  # 2: a verdict a reader must act on is still an answer
+    assert ran.code == 0, ran.text
     return ran.code, json.loads(ran.out)
 
 
@@ -103,7 +103,7 @@ def test_tf16_5_a_store_with_runs_of_both_versions_compares_across_them(tmp_path
     fix_check = ["fix-check", "--event", EVENT, "--inputs", "all", "--max-mde", "0.5", "--json"]
     across = trace([*fix_check[:1], OLD_A, NEW_AFTER, *fix_check[1:], "--store", mixed])
     within = trace([*fix_check[:1], OLD_A, OLD_B, *fix_check[1:], "--store", old_store])
-    assert across.code == within.code and across.code in (0, 2), across.text
+    assert across.code == within.code == 0, across.text
     a, w = across.json(), within.json()
     assert (a["runs"]["old"]["run_id"], a["runs"]["new"]["run_id"]) == (OLD_A, NEW_AFTER)
     # the same outcomes, so the same counts, test, difference and limits; only the start times
@@ -124,7 +124,7 @@ def test_tf16_6_reading_writes_nothing_and_name_writes_only_the_names_file(tmp_p
     before = snapshot(store)
     for argv in [*READS, ["name", "--list"]]:
         ran = trace([*argv, "--store", store])
-        assert ran.code in (0, 2), (argv, ran.text)
+        assert ran.code == 0, (argv, ran.text)
     assert snapshot(store) == before
     assert (store / POISSON).exists() == (source == NEW)
     ran = trace(["name", "#1", "the newer", "--store", store])

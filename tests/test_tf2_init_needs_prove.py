@@ -27,5 +27,6 @@ def test_tf2_17_without_prove_init_refuses_before_it_searches(tmp_path: Path, pr
     result = run(["init", "--yes"], cwd=folder, prove=prove)
     error = refused(result)
     assert result.lines() == [error, f"  next: {INSTALL_PROVE}"], result.err
+    assert INSTALL_PROVE not in error, error
     assert numbered(result.err) == {} and "proofload-runs" not in result.err
     assert tree(folder) == before and not (folder / CONFIG).exists()

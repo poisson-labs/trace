@@ -280,11 +280,12 @@ def test_tf17_21_every_verb_checks_the_entries_and_none_but_doctor_and_init_open
     write_toml(folder, config_text(ragas_entry("evals/missing.jsonl", "r"), store="proofload-runs", events=("unsolved",)))
     r = trace_in(folder, ["runs"])
     assert r.code == 0 and "3 runs in proofload-runs" in r.out, r.text
-    write_toml(folder, config_text(import_entry("evals/missing.jsonl", "langsmith", "r"), store="proofload-runs", events=("unsolved",)))
+    write_toml(folder, config_text(import_entry("evals/missing.jsonl", "otel", "r"), store="proofload-runs", events=("unsolved",)))
     for argv in (["runs"], ["where", "20260915T210140Z-4847"], ["compare", "20260915T210140Z-4847", "20260915T211148Z-965d"], ["doctor"]):
         r = trace_in(folder, argv)
         assert r.code in (1, 4), (argv, r.text)
-        assert "langsmith" in r.text and "line" in r.text, (argv, r.text)
+        assert "otel" in r.text and "line" in r.text, (argv, r.text)
+        assert "not in this install" in r.text, (argv, r.text)
     base, _ = ragas_pair(folder)
     write_toml(folder, config_text(ragas_entry(base, "r"), store="proofload-runs", events=("unsolved",)))
     assert trace_in(folder, ["where", "20260915T210140Z-4847"]).code == 0

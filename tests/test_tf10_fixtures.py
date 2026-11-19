@@ -127,8 +127,6 @@ def test_tf10_2_the_inspect_eval_is_zstandard_and_its_json_is_version_2() -> Non
         assert sorted(n for n in names if n.startswith("samples/")) == sorted(
             f"samples/q{q}_epoch_{e}.json" for q in (1, 2, 3) for e in (1, 2))
         assert any(n.startswith("_journal/") for n in names)
-        with pytest.raises(NotImplementedError):
-            z.read("header.json")
     header = eval_members()["header.json"]
     assert header["status"] == "success" and header["eval"]["model"] == "mockllm/model"
     doc = json.loads(IN_JSON.read_text(encoding="utf-8"))

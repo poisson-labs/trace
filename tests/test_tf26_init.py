@@ -11,10 +11,11 @@ frozen tests.
 
 - TF26-80: Weave's files are refused as the other two readers' are: exit 1, nothing written,
   one ``next:`` line an import; ``--import`` is the same refusal; ``--no-import`` writes the
-  config with no store and prints the same lines.
+  config with no store and prints the same lines. Held by TF25-80 in ``test_tf25_init.py`` on
+  Weave's sample.
 - TF26-81: what does not move. LangSmith's and Braintrust's files print what main bfda500
-  prints, byte for byte (the feedback list on its runs' line among them). On Weave's files
-  main finds no result file at all, kept here in words.
+  prints, byte for byte (the feedback list on its runs' line among them). Weave's files are
+  found now.
 - TF26-82: Weave's files are listed as Weave's and each run has its line. The case is
   ``example`` where every row of the file carries the reference to its dataset row (the
   service's answers, the page's JSON and JSON Lines) and ``input`` where none can (the page's
@@ -73,47 +74,6 @@ def _tree(folder: Path) -> list[str]:
     return sorted(str(p.relative_to(folder)) for p in folder.rglob("*"))
 
 
-# ---------- TF26-80 ----------
-
-
-def test_tf26_80_weave_s_sample_is_among_the_readers_that_pull() -> None:
-    from poisson_trace.ingest.importing import present, pulls
-    from test_tf25_init import SAMPLES
-
-    pullers = [tool for tool in present() if pulls(tool) is not None]
-    assert pullers == ["langsmith", "braintrust", "weave"] and set(pullers) == set(SAMPLES), pullers
-    assert [(str(source), name, case) for source, name, case in SAMPLES["weave"]] == [(str(source), name, case) for source, name, case in SAMPLE]
-
-
-@pytest.mark.parametrize("flags", [(), ("--import",)])
-def test_tf26_80_init_refuses_weave_s_files_and_prints_a_line_for_each(tmp_path: Path, flags: tuple[str, ...]) -> None:
-    folder = _folder(tmp_path, SAMPLE)
-    before = _tree(folder)
-    ran = here(folder, ["init", "--yes", *flags])
-    assert ran.code == 1 and ran.out == "", ran.text
-    error = next(line for line in ran.err.splitlines() if line.startswith("error: "))
-    assert "written by weave" in error and "--case-from and --outcome-from" in error and "does not ask for" in error, error
-    assert "imported none" in error and "[[import]]" in error and "--no-import" in error, error
-    lines = _import_lines(ran.err, "  next: ")
-    assert len(lines) == len(SAMPLE), ran.err
-    for _, name, case in SAMPLE:
-        words = next(w for w in lines if f"results/{name}" in w)
-        assert words[:4] == ["poisson-trace", "import", "weave", f"results/{name}"], words
-        assert words[words.index("--store") + 1] == "trace-store" and words[words.index("--run") + 1] == name.split(".")[0], words
-        assert words[words.index("--case-from") + 1] == case and words[words.index("--outcome-from") + 1] == "OUTCOME", words
-        assert "--evaluation" not in words and "--cut" not in words, words
-    assert _tree(folder) == before, "a refusal writes nothing"
-
-
-def test_tf26_80_no_import_writes_the_config_and_prints_the_same_lines(tmp_path: Path) -> None:
-    folder = _folder(tmp_path, SAMPLE)
-    refused = here(folder, ["init", "--yes"])
-    ran = here(folder, ["init", "--yes", "--no-import"])
-    assert ran.code == 0 and ran.out.startswith("ok  wrote trace.toml with no store yet"), ran.text
-    assert _import_lines(ran.out, "    ") == _import_lines(refused.err, "  next: ")
-    assert (folder / "trace.toml").is_file() and not (folder / "trace-store").exists()
-
-
 # ---------- TF26-81 ----------
 
 
@@ -123,14 +83,6 @@ def test_tf26_81_the_other_readers_files_print_what_main_prints(tmp_path: Path, 
     got = [list(step) for step in ran_init(tmp_path, holds, steps)]
     assert got == PINNED["init"][label]
     assert got[0][0] == 1 and got[1][0] == 0
-
-
-@pytest.mark.parametrize("label", ["init: weave files", "init: weave tables"])
-def test_tf26_81_before_this_reader_init_found_none_of_weave_s_files(label: str) -> None:
-    """What main prints on Weave's files, kept in words: it finds no result file there."""
-    refused, written = PINNED["init"][label]
-    assert refused[0] == 0 and written[0] == 0
-    assert "found no store and no result file a reader of this install reads" in refused[2]
 
 
 def test_tf26_81_and_now_it_finds_them(tmp_path: Path) -> None:

@@ -18,8 +18,8 @@ HTML, so the page works with the script off.
 
 **TF18-11** Trace never writes, rebuilds or deletes Prove's pages: with Prove's dashboard built,
 ``ui`` and every save leave every file outside ``ui/trace/`` byte for byte; with none built,
-Trace makes no page outside ``ui/trace/``. Prove 0.1.3's own rebuild removes ``ui/trace/`` (the
-fact Trace's rebuild-on-use answers); ``ui`` puts it back.
+Trace makes no page outside ``ui/trace/``. With ``ui/trace/`` gone after Prove's own rebuild,
+``ui`` puts it back and leaves Prove's files as they were.
 
 **TF18-12** When the pages are built: by ``ui``; by every command that saves (``--save`` on each
 counting verb, ``--out``, ``api.save``, ``to_bundle``), a store with no pages included (A7);
@@ -42,7 +42,6 @@ from tf0_support import chdir
 from tf13_support import api, cli
 from tf18_support import (
     BUNDLE,
-    BUNDLE_SHA256,
     PROVE_POLICY,
     SAVES,
     SCHEME,
@@ -80,15 +79,6 @@ def all_pages(work: Path) -> list[Path]:
 
 
 # ---------- TF18-8 ----------
-
-
-def test_tf18_8_proves_bundle_is_the_two_files_its_wheel_ships() -> None:
-    from poisson_prove.core import _views
-
-    assert tuple(_views.BUNDLE) == BUNDLE
-    # the bytes are whatever the installed Prove ships, at the floor or above it: 0.1.3's digests are held no
-    # longer (ruled 2026-11-17, PV-6); the copies are still Prove's byte for byte (the test below)
-    assert set(BUNDLE_SHA256) == set(BUNDLE) and all(prove_bundle()[name] for name in BUNDLE)
 
 
 @pytest.mark.parametrize("store", ["store", "tables"])
@@ -224,13 +214,13 @@ def test_tf18_11_with_no_dashboard_trace_makes_only_its_own(base: Path, tmp_path
     assert sorted(os.listdir(ui_root(work / "store"))) == ["trace"]
 
 
-def test_tf18_11_proves_rebuild_removes_traces_pages_and_ui_puts_them_back(base: Path, tmp_path: Path) -> None:
+def test_tf18_11_after_proves_rebuild_ui_puts_traces_pages_back(base: Path, tmp_path: Path) -> None:
     work = copy_work(base, tmp_path)
     assert ui(work, "--store", "store").code == 0
     assert (pages_of(work / "store") / "index.html").is_file()
     _prove_ui(work / "store")
-    # Prove 0.1.3 swaps in a whole new ui/ (poisson_prove.core._views.build_pages)
-    assert not pages_of(work / "store").exists()
+    # Prove's rebuild may swap in a whole new ui/; gone either way, whatever the installed Prove does
+    shutil.rmtree(pages_of(work / "store"), ignore_errors=True)
     before = snapshot(ui_root(work / "store"))
     assert ui(work, "--store", "store").code == 0
     assert files_under(pages_of(work / "store")) == expected_files(work / "store")

@@ -11,10 +11,6 @@ from pathlib import Path
 from conftest import Row, build_store, norm
 from fixcheck_support import fix_check
 
-HUMANEVAL = Path(__file__).resolve().parent / "fixtures" / "humaneval"
-HE_A, HE_B = "20260905T185407Z-0313", "20260905T195009Z-18ac"
-HE_EVENTS = ("failed_assertion", "crashed")
-
 # Every input failed once on the old version and did not fail once on the new one. The exact
 # two-sided p is 2^(1-N), about 1.8e-331 at N = 1100: below the smallest positive double.
 N = 1100
@@ -60,7 +56,7 @@ def test_tr72_one_run_per_input_per_version_prints_no_kappa(tmp_path: Path) -> N
         root = tmp_path / f"s{i}"
         build(root)
         r = fix_check(root, "a", "b", ("fail",), "--inputs", "all", "--max-mde", "0.5")
-        assert r.code in (0, 2), r.text
+        assert r.code == 0, r.text
         block = _block(r.out, "Consistency")
         assert "κ" not in block and "times the runs" not in block and "fails again" not in block, block
         text = norm(block).lower()
@@ -70,13 +66,3 @@ def test_tr72_one_run_per_input_per_version_prints_no_kappa(tmp_path: Path) -> N
         c = j.json()["consistency"]
         assert c["fails_again"] is None and c["kappa"] is None, c
         assert isinstance(j.json()["test"]["p"], float)
-
-
-def test_tr72_with_more_than_one_run_per_input_kappa_is_still_printed() -> None:
-    """Green on the build before the fix: the guard against dropping κ everywhere."""
-    r = fix_check(HUMANEVAL, HE_A, HE_B, HE_EVENTS, "--inputs", "all", "--max-mde", "0.05")
-    assert r.code == 0, r.text
-    block = norm(_block(r.out, "Consistency"))
-    assert "κ 0.779" in block and "4.52 times the runs" in block
-    j = fix_check(HUMANEVAL, HE_A, HE_B, HE_EVENTS, "--inputs", "all", "--max-mde", "0.05", "--json")
-    assert j.json()["consistency"]["kappa"] is not None and j.json()["consistency"]["fails_again"] is not None

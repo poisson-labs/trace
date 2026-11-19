@@ -11,21 +11,18 @@ The renderer has two faces, and every table goes through both:
   table for a terminal ``width`` wide, drawn with escapes.
 
 **TF9-8** A table nobody has printed before, of continuous measures keyed by inputs of three
-fields with units in its cells, rendered through the renderer: plain is the markdown with no
-escape; pretty, at every width from 60 to 160, has no line wider than the width, colours no
-digit and draws only the escapes the look allows, and holds every word and number the plain
-table holds, in the same row order; folded (at 60) it moves each unit every cell of a column
-repeats into the header and prints the key one field per line; unfolded (at 160) it keeps the
-key on its row's line.
+fields with units in its cells, rendered through the pretty face: folded (at 60) it moves each
+unit every cell of a column repeats into the header and prints the key one field per line;
+unfolded (at 160) it keeps the key on its row's line. The plain face and the look's rules at
+every width from 60 to 160 are held on the continuous-measures table itself, by TF23-34
+(``test_tf23_table.py``).
 """
 
 from __future__ import annotations
 
 import re
 
-import pytest
-
-from tf9_support import cells, odd_escapes, strip, tokens
+from tf9_support import strip
 
 HEADER = ("input", "old median", "new median", "change", "p")
 ROWS = (
@@ -33,32 +30,6 @@ ROWS = (
     ('{"task":"checkout","seed":3,"temperature":0.7}', "880 ms", "860 ms", "-20 ms", "0.640"),
     ('{"task":"refund","seed":11,"temperature":0.0}', "2,045 ms", "2,990 ms", "+945 ms", "2.3e-08"),
 )
-
-
-def test_tf9_8_the_plain_face_is_the_markdown_the_reports_print() -> None:
-    from poisson_trace import look
-
-    assert look.table(HEADER, ROWS) == (
-        "| input | old median | new median | change | p |\n"
-        "|---|---|---|---|---|\n"
-        + "".join("| " + " | ".join(row) + " |\n" for row in ROWS)
-    )
-
-
-@pytest.mark.parametrize("width", [60, 80, 100, 120, 160])
-def test_tf9_8_a_new_table_gets_the_rules(width: int) -> None:
-    from poisson_trace import _pretty, look
-
-    plain = look.table(HEADER, ROWS)
-    assert "\x1b" not in plain
-    drawn = _pretty.table(HEADER, ROWS, width=width)
-    lines = strip(drawn).split("\n")
-    assert [line for line in lines if len(line) > width] == []
-    assert odd_escapes(drawn, live=False) == []
-    assert not any(c.char.isdigit() and c.fg is not None for line in cells(drawn) for c in line), "a coloured digit"
-    assert tokens(drawn) == tokens(plain)
-    order = [next(i for i, line in enumerate(lines) if task in line) for task in ("search", "checkout", "refund")]
-    assert order == sorted(order), "the rows are not in plain's order"
 
 
 FIELDS = ("task", "seed", "temperature")

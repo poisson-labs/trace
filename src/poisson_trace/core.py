@@ -2789,7 +2789,13 @@ def fix_check(ns: argparse.Namespace) -> Counted:
         verdict_line = f"no significant difference ({p_is}); {limit}"
     else:
         verdict, decided = "too small to tell", "limit"
-        if drop is None:
+        if paired.none_failed(counts) and rough:
+            # neither version failed and the range is rough: there is no drop to speak of
+            sentence = (
+                f"neither version failed, and the range is too rough to read ({rough[0]}); "
+                f"{asked} points was asked for"
+            )
+        elif drop is None:
             sentence = (
                 "could not have detected a drop in failure share below or "
                 f"at {_points(largest_drop)} points, which is every failure gone, and {asked} "
@@ -2884,6 +2890,13 @@ def fix_check(ns: argparse.Namespace) -> Counted:
         "_tries_enough": enough,
         # no run failed in either version on the inputs compared
         "_none_failed": none_failed,
+        # neither version failed and the range is rough: the tries per input that bring the
+        # range inside the size asked on the fewest inputs a range is reliable on
+        "_clean_tries": (
+            paired.clean_repeats_on(paired.CLEAN_FEW_INPUTS, ns.max_mde, alpha=ns.alpha)
+            if none_failed and not reliable
+            else None
+        ),
         # the size asked, where a reliable range leaves out a drop (or a rise) of that size or more
         "_drop_ruled_out": ns.max_mde if reliable and lo is not None and lo > -ns.max_mde else None,
         "_rise_ruled_out": ns.max_mde if reliable and hi is not None and hi < ns.max_mde else None,

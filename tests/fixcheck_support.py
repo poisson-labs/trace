@@ -115,8 +115,8 @@ def one_sentence(result: CliResult) -> None:
 
 
 def ok(result: CliResult) -> CliResult:
-    """A report printed: exit 0 or 2 (fix-check's too small to tell), nothing on stderr."""
-    assert result.code in (0, 2), result.text
+    """A report printed: exit 0, too small to tell included."""
+    assert result.code == 0, result.text
     assert result.out, result.text
     return result
 

@@ -1,9 +1,6 @@
 """TF17-43: ``init`` imports promptfoo, Inspect and OpenAI Evals files on a yes (RD9, deferred to
 TF17 by TF10 Session A's ruling; RB2, TF10 Session B's refusal that stands until this is built).
 
-Every test here skips when the three readers are not in the install (TF10's branch is not on
-main as this is frozen), so the file collects on main and runs once TF10 lands.
-
 - A yes (``--yes`` with the answers, ``--import``, or ``y`` on a terminal) imports these files
   as it imports DeepEval's, Ragas's, the tables and the JUnit reports: one run per file, named
   after the file, into ``trace-store`` beside ``trace.toml``, the failures from the imported
@@ -21,20 +18,12 @@ main as this is frozen), so the file collects on main and runs once TF10 lands.
 from __future__ import annotations
 
 import shutil
-from importlib.util import find_spec
 from pathlib import Path
-
-import pytest
 
 from tf0_support import FIXTURES
 from tf1_support import shell_words
 from tf2_support import init_yes, refused, scratch_home, tty, work  # noqa: F401
 from tf17_support import RAGAS, read_toml, rows_of, runs_in
-
-pytestmark = pytest.mark.skipif(
-    any(find_spec(f"poisson_trace.ingest.{m}") is None for m in ("promptfoo", "inspect", "openai_evals")),
-    reason="the promptfoo, Inspect and OpenAI Evals readers are not in this install (TF10's branch)",
-)
 
 PROMPTFOO = FIXTURES / "ingest" / "promptfoo" / "results.json"
 INSPECT_EVAL = FIXTURES / "ingest" / "inspect" / "2026-10-07T04-23-47-00-00_trace-fixture_CV3jq8f7FTjwkaYb3zj3m2.eval"

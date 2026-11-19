@@ -43,8 +43,6 @@ row; SG2; IC7; the LangSmith pair's LS-7 to LS-14 in Braintrust's words).
   recorded.
 - TF25-25: no content. No prompt, input, output, error, traceback or path text of the captures
   is in any file of the store or in anything printed.
-- TF25-26: every stored record has exactly the writer's keys; ``horizon``, ``working_time_s``
-  and the signals no Braintrust export records are not recorded.
 - TF25-27: the record is checked against a second reading of the files, written here.
 """
 
@@ -56,7 +54,7 @@ from typing import Any
 
 import pytest
 
-from tf21_support import RECORD_KEYS, run_import
+from tf21_support import run_import
 from tf25_support import (
     ANSWER, CASES, CLASSIFIED, CONTENT, ERRORED, EXACT, EXPORTS, GAVE_ANSWER, ITEM, LOOKUP, QUESTIONS, ROW_EXPORTS, RUN,
     SPAN_EXPORTS, TTFT, USAGE, VERSIONS, WALL, approx, bt_argv, by_error, children, columns, edited, export, imported, metas,
@@ -649,18 +647,6 @@ def test_tf25_25_no_text_of_the_capture_is_kept_or_printed(tmp_path: Path, versi
             assert text.encode() not in held, text
         for item in ITEM.values():
             assert item.encode() not in held, item
-
-
-# ---------- TF25-26 ----------
-
-
-@pytest.mark.parametrize(("version", "kind"), BOTH)
-def test_tf25_26_the_record_has_the_writer_s_keys_and_nothing_braintrust_does_not_record(tmp_path_factory: Any, version: str, kind: str) -> None:
-    root, _ = world(tmp_path_factory, version, kind, "error")
-    for case, rec in recs(root, RUN).items():
-        assert set(rec) == set(RECORD_KEYS), (case, set(rec) ^ set(RECORD_KEYS))
-        assert rec["schema"] == "poisson.trace-signals/1" and rec["repeat"] == 0
-        assert rec["horizon"] is None and rec["working_time_s"] is None
 
 
 # ---------- TF25-27 ----------

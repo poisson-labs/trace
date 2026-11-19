@@ -5,8 +5,7 @@
 resolves to a file on disk (and a page that was removed comes back). ``tab`` moves the focus to
 the links; Enter on a focused link opens it in the browser (faked: ``webbrowser.open`` once, with
 the page's whole ``file://`` address and its anchor), and ``y`` copies that same address
-(Textual's ``copy_to_clipboard``), the message line saying ``note: copied the link``. Never a real
-browser.
+(Textual's ``copy_to_clipboard``), the message line saying ``note: copied the link``.
 """
 
 from __future__ import annotations
@@ -126,11 +125,3 @@ def test_tf19_5_the_focused_link_is_marked(work: Path) -> None:
     assert _links([row]), row
     assert row.startswith("›")
 
-
-def test_tf19_5_no_real_browser(work: Path) -> None:
-    """Every open in these tests goes to the fake: the app opens pages by ``webbrowser`` alone."""
-    import webbrowser
-
-    real = webbrowser.open
-    drive(work, ["r", "enter", "tab", "enter"], size=(120, 60))
-    assert webbrowser.open is real

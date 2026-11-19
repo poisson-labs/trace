@@ -2,8 +2,7 @@
 rules 15 and 16).
 
 - **TF9-7a** ``docs/cli-look.md`` is Prove's look file byte for byte, as poisson-prove 0.1.2
-  publishes it (tag ``v0.1.2``): 275 lines, the digest below. When Prove's file moves, the session
-  that moves Trace's pin copies the new bytes and moves this digest in one commit.
+  publishes it (tag ``v0.1.2``): its digest is held by TF5-69 (``test_tf5_docs.py``).
 - **TF9-7b** In a pseudo-terminal, with escapes removed, the first line carries the same verdict
   word and sentence as plain's, and the exit code is plain's.
 - **TF9-7c** The same facts, in the same order: on each stream, the pretty rendering holds the
@@ -27,7 +26,7 @@ from pathlib import Path
 import pytest
 
 from tf9_support import (
-    CORPUS, LOOK, LOOK_LINES, LOOK_SHA256, REPORTS, Item, piped, plain_on_terminal, pretty, sha256_of, shared_base, shared_run, strip,
+    CORPUS, REPORTS, Item, piped, plain_on_terminal, pretty, shared_base, shared_run, strip,
     tokens, unwrap,
 )
 
@@ -35,11 +34,6 @@ from tf9_support import (
 @pytest.fixture(scope="module")
 def base(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return shared_base(tmp_path_factory)
-
-
-def test_tf9_7a_the_look_file_is_prove_0_1_2s_byte_for_byte() -> None:
-    assert sha256_of(LOOK) == LOOK_SHA256
-    assert len(LOOK.read_bytes().split(b"\n")) - 1 == LOOK_LINES
 
 
 @pytest.mark.parametrize("item", CORPUS, ids=lambda i: i.label)

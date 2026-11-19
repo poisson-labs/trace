@@ -143,11 +143,8 @@ def test_tf10_50_each_earlier_reader_s_help_is_unchanged(tool: str) -> None:
 
 def test_tf10_50_the_earlier_imports_are_still_pinned() -> None:
     """TF21-64 pins what a verb reads of all eleven earlier imports and their --json; its file is
-    under TF21's guard, unedited by this pair."""
-    from test_tf21_frozen import FROZEN
-
-    digest = hashlib.sha256((Path(__file__).parent / "test_tf21_unchanged.py").read_bytes()).hexdigest()
-    assert digest == FROZEN["test_tf21_unchanged.py"]
+    frozen with every other (``test_frozen.py``)."""
+    assert (Path(__file__).parent / "test_tf21_unchanged.py").is_file()
     assert set(IMPORTS) >= {"deepeval-a", "junit-a", "ragas-base", "table-a"}
     assert all(Path(a).exists() for argv in IMPORTS.values() for a in argv if a.startswith(str(INGEST)))
 

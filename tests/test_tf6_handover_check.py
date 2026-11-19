@@ -14,7 +14,10 @@
 
 from __future__ import annotations
 
+import atexit
 import json
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -23,10 +26,19 @@ from tf0_support import trace
 from tf6_support import VERBS, argv012, reseal, reseal_descriptor, run_ok, store012
 
 
+_WRITTEN: dict[str, Path] = {}
+
+
 def _bundle(tmp_path: Path, verb: str = "fix-check") -> Path:
-    store = store012(tmp_path)
+    """A copy, the test's own to break, of the bundle the verb writes: each verb's is written
+    once in each process, in a folder no test is given, and nothing in a bundle names its place."""
+    if verb not in _WRITTEN:
+        root = Path(tempfile.mkdtemp(prefix="tf6-bundle-"))
+        atexit.register(shutil.rmtree, root, ignore_errors=True)
+        run_ok(argv012(verb, store012(root), "--out", str(root / "bundle")))
+        _WRITTEN[verb] = root / "bundle"
     bundle = tmp_path / "bundle"
-    run_ok(argv012(verb, store, "--out", str(bundle)))
+    shutil.copytree(_WRITTEN[verb], bundle)
     return bundle
 
 

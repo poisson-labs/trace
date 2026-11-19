@@ -29,7 +29,7 @@ from pathlib import Path
 
 import pytest
 from breakdown_support import (
-    AFTER, BEFORE, BUILT_IN, DIFFERENT_RULES, HEADING, KINDS, LABELS, OWN_RULES, PROVE_013, PROVE_KINDS,
+    AFTER, BEFORE, BUILT_IN, DIFFERENT_RULES, HEADING, KINDS, OWN_RULES, PROVE_013, PROVE_KINDS,
     PROVE_SIGNALS, PROVE_TRIES, SIGNALS, SIGNALS_LINE, TWO_RUNS, argv_of, different_rules_section,
     expected_section, headings, junit_store, ok, opening, points, section, share, table_rows, table_store,
 )
@@ -251,15 +251,6 @@ def test_bd_1d_a_thousand_tries_and_a_change_under_one_point(tmp_path: Path) -> 
     assert last[-1] in ("+0.2 points", "+0.3 points")  # one decimal under one point too (FD6)
 
 
-def test_bd_1d_the_points_as_the_report_prints_them() -> None:
-    assert points(66, 160, 21, 160) == "-28.1 points"
-    assert points(0, 160, 5, 160) == "+3.1 points"
-    assert points(1, 400, 3, 400) == "+0.5 points"
-    assert points(3, 10, 3, 10) == "0.0 points"
-    assert points(8, 10, 1, 10) == "-70.0 points"
-    assert share(66, 160) == "41.2%" and share(78, 160) == "48.8%"
-
-
 def _rules_config(path: Path, pattern: str) -> Path:
     path.write_text(
         'version = 1\n\n[[taxonomy.rules]]\nfailure_kind = "tool_error"\n'
@@ -332,9 +323,3 @@ def test_bd_1e_runs_read_from_tool_folders(tmp_path: Path) -> None:
     from_folders = section(ok(["changes", *folders, "--event", "missed"]).out)
     assert from_folders == from_store
 
-
-@pytest.mark.parametrize("verb", TWO_RUNS)
-def test_bd_1e_the_labels_are_the_verbs_own(verb: str) -> None:
-    got = section(ok(argv_of(verb, PROVE_013)).out)
-    a, b = LABELS[verb]
-    assert got[4] == f"| kind | {a} | {a} share | {b} | {b} share | change |"

@@ -85,12 +85,23 @@ def run_python(code: str, args: Sequence[Any] = (), *, env: Mapping[str, str] | 
 
 
 IMPORT_MAIN = "import sys\nfrom poisson_trace.ingest.cli import main\nsys.exit(main(sys.argv[1:]))\n"
-TRACE_MAIN = "import sys\nfrom poisson_trace.cli import main\nsys.exit(main(sys.argv[1:]))\n"
 
 
 def run_trace(argv: Sequence[Any]) -> Result:
-    """Trace's own verbs, in a subprocess."""
-    return run_python(TRACE_MAIN, argv)
+    """Trace's own verbs: ``poisson_trace.cli.main`` in-process, both streams captured apart; a
+    ``SystemExit`` is read as the exit code it carries, as the console script would. Nothing
+    its callers hold needs a process of its own."""
+    from poisson_trace.cli import main
+
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        try:
+            code = main([str(a) for a in argv])
+        except SystemExit as e:
+            if e.code is not None and not isinstance(e.code, int):
+                print(e.code, file=sys.stderr)
+            code = e.code if isinstance(e.code, int) else (0 if e.code is None else 1)
+    return Result(code=int(code or 0), out=out.getvalue(), err=err.getvalue())
 
 
 def deepeval_argv(files: Sequence[Path] | Path, store: Path, run: str, *, metric: str = "Score",

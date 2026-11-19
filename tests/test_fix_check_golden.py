@@ -1,7 +1,8 @@
 """TR66 to TR69: the goldens on the committed fixtures. Every figure was recomputed from the
 stored runs by the spec's definitions (sections 2 and 3) before it was pinned; the recomputation
 and its comparison with the spec's section 6 are in the Session A log. Counts are exact; other
-figures are to 1e-4 unless the invariant says otherwise. By-input p-values from seeded draws are
+figures are to 1e-4 unless the invariant says otherwise (the HumanEval pair's difference, its
+interval and its limits are held tighter). By-input p-values from seeded draws are
 not pinned to a number (spec section 10)."""
 
 from __future__ import annotations
@@ -163,6 +164,8 @@ def test_tr69_the_humaneval_pair_reads_different_failed_more() -> None:
     d = _json(fix_check(HUMANEVAL, HE_A, HE_B, HE_EVENTS, *ALL, "--max-mde", "0.05", "--json"), 0)
     assert (d["rows"]["old"]["failed"], d["rows"]["old"]["runs"]) == (1338, 10496)
     assert (d["rows"]["new"]["failed"], d["rows"]["new"]["runs"]) == (1387, 10496)
+    assert (d["inputs"]["compared"], d["inputs"]["informative"]) == (328, 58)
+    assert sum(d["inputs"]["left_out"].values()) == 0
     t = d["test"]
     assert t["observed_new"] == 1387
     assert t["expected_new"] == pytest.approx(1362.5, abs=1e-4)
@@ -171,11 +174,13 @@ def test_tr69_the_humaneval_pair_reads_different_failed_more() -> None:
     assert (d["verdict"], d["direction"]) == ("different", "failed more in new")
     assert d["gap_seconds"] == pytest.approx(3361.826296, abs=1e-6)
     diff = d["difference"]
-    assert diff["points"] == pytest.approx(0.004668, abs=1e-4)
+    assert diff["points"] == pytest.approx(0.004668, abs=1e-6)
     # ST3: simlib.mn_stratified on the dump he-fixcheck
-    assert diff["lo"] == pytest.approx(0.000378, abs=1e-4)
-    assert diff["hi"] == pytest.approx(0.009263, abs=1e-4)
-    assert d["limits"]["drop"] == pytest.approx(0.006436, abs=1e-4)
+    assert diff["lo"] == pytest.approx(0.000378, abs=2e-6)
+    assert diff["hi"] == pytest.approx(0.009263, abs=2e-6)
+    assert d["limits"]["drop"] == pytest.approx(0.006436, abs=1e-6)
+    assert d["limits"]["rise"] == pytest.approx(0.006575, abs=1e-6)
+    assert d["by_input"]["moved"] == 47
     c = d["consistency"]
     assert (c["failure_share"], c["fails_again"], c["kappa"]) == (
         pytest.approx(0.1298, abs=1e-4), pytest.approx(0.8075, abs=1e-4), pytest.approx(0.7788, abs=1e-4))
@@ -183,6 +188,7 @@ def test_tr69_the_humaneval_pair_reads_different_failed_more() -> None:
     text = norm(fix_check(HUMANEVAL, HE_A, HE_B, HE_EVENTS, *ALL, "--max-mde", "0.05").out)
     assert "different: the new version failed more on these inputs" in text
     assert "56 min" in text
+    assert "κ 0.779" in text and "4.52 times the runs" in text
 
 
 def test_tr69_without_humaneval_129_the_paired_test_reads_no_difference() -> None:

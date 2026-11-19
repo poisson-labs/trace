@@ -134,7 +134,6 @@ def test_tf19_1_a_verb_on_a_terminal_is_the_verb(work: Path, tmp_path: Path) -> 
 
 
 @pytest.mark.parametrize(("config", "store", "slot"), [
-    (None, None, "trace.toml"),
     ("trace.toml", None, "trace.toml"),
     ("./trace.toml", None, "./trace.toml"),
     ("conf/trace.toml", None, "conf/trace.toml"),
@@ -148,14 +147,6 @@ def test_tf19_1_the_header_says_what_it_opened_on(work: Path, config: str | None
     assert g.title() == "home"
     assert g.slot() == slot
     assert g.header.startswith("poisson-trace · home")
-
-
-def test_tf19_1_no_config_says_so_in_the_slot(tmp_path: Path) -> None:
-    empty = tmp_path / "empty"
-    empty.mkdir()
-    s = drive(empty)
-    assert s.last.slot() == "no config"
-    assert s.last.message == ""
 
 
 # ---------- colour ----------

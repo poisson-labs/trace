@@ -1,4 +1,4 @@
-too small to tell  too few tries to see a drop of any size
+too small to tell  neither version failed, and with fewer than 3 inputs Trace can't say what size of change that rules out
 
 # Poisson Trace · fix check · synthetic 2026-01-01 a (old) and synthetic 2026-01-01 b (new)
 
@@ -6,14 +6,14 @@ too small to tell  too few tries to see a drop of any size
 
 - Compared: old synthetic 2026-01-01 a against new synthetic 2026-01-01 b, on the same 2 inputs: 10 tries of each. A try counts as failed when it ended fail.
 - Question: Did the new version fail more or less often than the old? You asked that the run be able to catch a 20-point drop in how often it fails.
-- Answer: Can't tell. The new version failed 0 of 10 tries and the old 0 of 10, and with these tries Trace can't reliably catch a drop of any size.
-- Next: Plan a bigger run with your own harness (more tries per input on both versions), then run `poisson-trace fix-check` on it.
+- Answer: Can't tell. The new version failed 0 of 10 tries and the old 0 of 10, but with fewer than 3 inputs Trace can't say what size of change these tries rule out.
+- Next: Run both versions on at least 3 inputs, with the same number of tries on each, then run `poisson-trace fix-check` on it.
 
 ## Before you act on this
 
 - They started 1 h 0 min apart. Trace can't tell whether they were run side by side, so anything else that changed between them (the provider, the model behind the API, the day) may be part of the difference, in either direction.
 - Both runs name the same target (synthetic/target); Trace can't tell what differs between them, only what you tell it.
-- These results fit anything from 30 fewer failures per 100 tries to 30 more, but that range is only a rough guide here and may be off either way (fewer than 3 inputs): don't use it to rule sizes in or out.
+- Neither version failed here. Their true failure rates could still differ by about 30 points either way, and with fewer than 3 inputs even that figure is rough: don't use it to rule any size in or out.
 - Tries of the same input are counted as separate chances, and if they are near copies the answer is more confident than it should be.
 
 ## Runs
@@ -72,15 +72,13 @@ proportional change on every input, 80% power, α = 0.05, continuity-corrected n
 - a drop in failure share: no limit; neither version failed on these inputs, so there is no failure to drop
 - a rise in failure share: could not have detected one below 64.8 points
 
-**too small to tell: could not have detected a drop in failure share below or at 0.00 points, which is every failure gone, and 20 was asked for**
+**too small to tell: neither version failed, and the range is too rough to read (fewer than 3 inputs); 20 points was asked for**
 
 ## Guidance
 
-- no number of repeats on these inputs reaches 20 points
-- no number of inputs at the present repeats reaches 20 points
-- ceiling: no value of --max-mde accepts this design as it stands
+- on 3 inputs or more, with the same number of tries on each, 6 tries per input on each version bring the range inside 20 points
 
-These numbers assume the next runs fail at the rates these did, input by input, and that new inputs resemble the present ones: for failing inputs chosen by a rule, chosen by the same rule. It is a guide to the next design and not a promise about it: a design built to the number has an expected limit at the ceiling asked for, so about half the time its own limit will land a little above.
+These numbers hold if neither version fails in the next runs either, and if new inputs resemble the present ones. A run in which either version fails is read as any other.
 
 ## Inputs that changed
 

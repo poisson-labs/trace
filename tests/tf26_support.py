@@ -411,12 +411,6 @@ def recs(root: Path, run: str) -> dict[str, dict[str, Any]]:
     return out
 
 
-def same_but_case(rec: Mapping[str, Any]) -> dict[str, Any]:
-    """A stored record without its case's own spelling, to compare two readings that name the
-    case differently."""
-    return {key: value for key, value in rec.items() if key != "case"}
-
-
 def tries(root: Path, run: str) -> dict[tuple[str, int], dict[str, Any]]:
     """The stored signals record of each try of each case."""
     return {(named(rec["case"]), rec["repeat"]): rec for rec in records(root, run)}

@@ -531,21 +531,22 @@ def _verdict_pairs(tmp_path: Path) -> dict[str, tuple[Path, str]]:
 
 
 EXPECT = {
-    "less": ("different", "failed less in new", 0, "different: the new version failed less on these inputs"),
-    "more": ("different", "failed more in new", 0, "different: the new version failed more on these inputs"),
+    "less": ("different", "failed less in new", "different: the new version failed less on these inputs"),
+    "more": ("different", "failed more in new", "different: the new version failed more on these inputs"),
     # ST2 (ruled 2026-10-20): a reliable range inside plus or minus the size asked decides it
-    "nsd": ("no significant difference", None, 0, "lies inside ±50"),
-    "small": ("too small to tell", None, 0, "too small to tell: could not have detected a drop in failure share below"),  # R17
-    "nolimit": ("too small to tell", None, 0, "too small to tell:"),  # R17
+    "nsd": ("no significant difference", None, "lies inside ±50"),
+    "small": ("too small to tell", None, "too small to tell: could not have detected a drop in failure share below"),
+    "nolimit": ("too small to tell", None, "too small to tell:"),
 }
 
 
 def test_tr54_the_verdict_table_is_exhaustive_and_exclusive(tmp_path: Path) -> None:
     for name, (root, x) in _verdict_pairs(tmp_path).items():
-        verdict, direction, code, phrase = EXPECT[name]
+        verdict, direction, phrase = EXPECT[name]
         j = fix_check(root, "old", "new", ["fail"], *ALL, "--max-mde", x, "--json")
         md = fix_check(root, "old", "new", ["fail"], *ALL, "--max-mde", x)
-        assert j.code == md.code == code, (name, md.text)
+        # a result exits 0, too small to tell included
+        assert j.code == md.code == 0, (name, md.text)
         d = j.json()
         assert d["verdict"] == verdict, name
         assert d["direction"] in ("failed less in new", "failed more in new", "no direction")
@@ -851,7 +852,7 @@ def test_tr65_the_interval_and_test_sentence(tmp_path: Path) -> None:
     assert DISAGREE not in norm(fix_check(strong, "old", "new", ["fail"], *ALL, *MAX).out)
 
 
-NO_INTERVAL = "no interval: Sato's variance is not positive on these counts"
+NO_INTERVAL = "no range: Sato's formula gives none on these counts (its variance is zero)"
 
 
 def test_tr49_the_no_interval_sentence_prints_exactly_when_the_variance_is_null(tmp_path: Path) -> None:

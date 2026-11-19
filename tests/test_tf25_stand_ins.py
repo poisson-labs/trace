@@ -109,8 +109,8 @@ def test_tf25_73_a_value_the_flag_would_not_take_is_refused_as_the_flag_s(tmp_pa
 # ---------- TF25-74 ----------
 
 
-@pytest.mark.parametrize("score_field", ["exact", "score:exact", "scores.exact"])
-@pytest.mark.parametrize("kind", KINDS)
+# the spelling is settled before a file is opened: one spelling on every format, every spelling on one
+@pytest.mark.parametrize(("kind", "score_field"), [*[(kind, "exact") for kind in KINDS], (KINDS[0], "score:exact"), (KINDS[0], "scores.exact")])
 def test_tf25_74_score_field_names_the_score(tmp_path: Path, kind: str, score_field: str) -> None:
     config = _config(tmp_path, case_field="input", score_field=score_field, cut=0.5)
     data = imported(_bare(export("candidate", kind), tmp_path / "st", "r", config))
@@ -296,8 +296,8 @@ def _billed(kind: str) -> Any:
     return add
 
 
-@pytest.mark.parametrize("kind", KINDS)
-@pytest.mark.parametrize("named", ["billed", "metrics.billed"])
+# the prefix is dropped before a row is read: the plain name on every format, the prefixed one on one
+@pytest.mark.parametrize(("named", "kind"), [*[("billed", kind) for kind in KINDS], ("metrics.billed", KINDS[0])])
 def test_tf25_79_cost_field_names_the_metric_the_cost_is_read_from(tmp_path: Path, kind: str, named: str) -> None:
     path = edited(tmp_path, "baseline", kind, _billed(kind))
     config = _config(tmp_path, cost_field=named)
@@ -313,8 +313,7 @@ def test_tf25_79_cost_field_names_the_metric_the_cost_is_read_from(tmp_path: Pat
             assert held[case]["import"]["cost_from"] == where
 
 
-@pytest.mark.parametrize("kind", KINDS)
-@pytest.mark.parametrize("named", ["estimated_cost", "metrics.estimated_cost"])
+@pytest.mark.parametrize(("named", "kind"), [*[("estimated_cost", kind) for kind in KINDS], ("metrics.estimated_cost", KINDS[0])])
 def test_tf25_79_the_default_is_the_estimated_cost_and_naming_it_changes_nothing(tmp_path: Path, kind: str, named: str) -> None:
     config = _config(tmp_path, cost_field=named)
     imported([*by_error(export("baseline", kind), tmp_path / "named", "r"), "--config", config])

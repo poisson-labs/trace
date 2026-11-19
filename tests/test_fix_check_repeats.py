@@ -82,7 +82,7 @@ def _block(out: str) -> list[str]:
 def _check(root: Path, *, full: bool = False) -> Any:
     """The Consistency block and the JSON, from one store; with ``full``, the markdown too."""
     r = fix_check(root, "a", "b", ("fail",), "--inputs", "all", "--max-mde", "0.5")
-    assert r.code in (0, 2), r.text
+    assert r.code == 0, r.text
     j = fix_check(root, "a", "b", ("fail",), "--inputs", "all", "--max-mde", "0.5", "--json")
     assert j.code == r.code, j.text
     return (_block(r.out), j.json(), r.out) if full else (_block(r.out), j.json())

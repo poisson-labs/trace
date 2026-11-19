@@ -212,7 +212,7 @@ FLAGS_CAPTION = (
     "Fisher's exact test per input, Benjamini-Hochberg at q = {alpha} over {tested} "
     "{input_word}; {flagged} flagged"
 )
-NO_INTERVAL = "no interval: Sato's variance is not positive on these counts"
+NO_INTERVAL = "no range: Sato's formula gives none on these counts (its variance is zero)"
 DISAGREE = "the interval and the test disagree; the line above follows the test"
 ONE_RUN = (
     "consistency cannot be measured with one run per input per version: it takes two or more "
@@ -947,6 +947,21 @@ class FixCheckReport:
                     f"- ceiling: --max-mde {g['accepts_at']:.4f} accepts this design as it stands"
                 )
             return lines + ["", CLEAN_GUIDANCE]
+        if d.get("_none_failed") and not d.get("_reliable"):
+            # no run failed in either version and the range is rough: what would make it one
+            # to read, since no drop limit is there to bring anywhere
+            tries = d.get("_clean_tries")
+            reach = (
+                f"{count(tries)} tries per input on each version bring"
+                if tries is not None
+                else "no number of tries per input on each version brings"
+            )
+            return lines + [
+                f"- on 3 inputs or more, with the same number of tries on each, {reach} the "
+                f"range inside {asked} points",
+                "",
+                CLEAN_GUIDANCE,
+            ]
         if g["repeats"] is None:
             lines.append(f"- no number of repeats on these inputs reaches {asked} points")
         else:

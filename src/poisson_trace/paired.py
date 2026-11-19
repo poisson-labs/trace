@@ -620,7 +620,12 @@ def clean_repeats_needed(
     """For inputs on which no run failed in either version: the smallest number of runs per
     arm on these inputs at which, with still no failure, the range lies inside plus or minus
     ``max_mde``."""
-    inputs = len(_checked(counts))
+    return clean_repeats_on(len(_checked(counts)), max_mde, alpha=alpha)
+
+
+def clean_repeats_on(inputs: int, max_mde: float, *, alpha: float = 0.05) -> int | None:
+    """The smallest number of runs per arm on each of ``inputs`` inputs at which, with no
+    failure in either version, the range lies inside plus or minus ``max_mde``."""
 
     def reaches(n: int) -> bool:
         runs = np.full(inputs, float(n))
