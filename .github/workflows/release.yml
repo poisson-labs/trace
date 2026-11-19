@@ -197,7 +197,7 @@ jobs:
           python -m venv .venv
           .venv/bin/python -m pip install --quiet -c ".github/release/lanes-${{ matrix.python }}.txt" -e ".[dev]"
           env -u CI .venv/bin/python -m pytest -q -p no:cacheprovider -m lane_j \
-            "tests/test_prove_pin.py::test_pin_1_a_clean_install_of_the_wheel_brings_the_recorded_prove"
+            "tests/test_pf_ci.py::test_pf_72_installed_by_one_line_the_wheel_brings_a_prove_at_or_above_the_floor"
 
   testpypi:
     if: github.event_name == 'push'

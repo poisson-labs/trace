@@ -18,7 +18,7 @@ FROZEN = {
     "test_runrec_unchanged.py": "5667a36bae0a263adadad5dde84ce7a795c4b368b0275c27d2af20733eae8758",
     # PACE-20's file: besides the pacing pair's digests it holds a test of this guard's own lines
     # (RUNREC-11, RUNREC-12 and their shared check), and no guard held it
-    "test_pacing_frozen.py": "81f719657513616f43bc02bfb729622916c028aa5da980687154bb1cddba6264",
+    "test_pacing_frozen.py": "f9861a4aabd39d025fac187e962f7ffc626626dd50a6e2c6fe4279c06d81a194",
 }
 
 

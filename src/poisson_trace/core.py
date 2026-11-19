@@ -1638,7 +1638,7 @@ def save(c: Counted, d: Delivered, out: str | None, force: bool) -> Delivered:
                         rebuild_pages(ns)
                     except OSError as e:
                         held_notes.append(f"the pages were not rebuilt: {look.why(e)}")
-                    except _Refusal as e:
+                    except look.Refused as e:
                         held_notes.append(f"the pages were not rebuilt: {e}")
         if out is not None:
             held = None if ns.from_folders else saved.short(ns.store, absolute)
@@ -3522,12 +3522,15 @@ def build_store_pages(
     """Write a store's pages: every view rendered into a staging folder under the store's
     ``ui/`` with Prove's bundle beside them, then renamed into ``ui/trace/`` last, so an
     interrupted build leaves the previous pages and nothing of Prove's is touched (section 17.3
-    item 7, A18). Raises ``OSError`` where the pages cannot be written. Returns the index."""
+    item 7, A18). Raises ``OSError`` where the pages cannot be written, and a refusal where the
+    installed Prove lacks the bundle. Returns the index."""
     import shutil
     import tempfile
 
     from poisson_trace import pages
 
+    # a Prove installed without its bundle is refused before the store is touched
+    pages.check_bundle()
     views = store_views(root, listing, events, others)
     name = root.name or Path(os.path.abspath(root)).name
     ui = root / ".poisson" / "ui"

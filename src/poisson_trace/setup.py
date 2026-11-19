@@ -1653,7 +1653,7 @@ def _hand_over_summary(
     indexes = [_index(p, held.names_from)[1] for _, p in stores]
     runs = {p: len(i.runs) + len(i.unreadable) for (_, p), i in zip(stores, indexes, strict=True)}
     lines = [f"ok  {sentence}"]
-    lines.append("  prove    poisson-prove is installed at the version Trace reads")
+    lines.append("  prove    poisson-prove is installed at a version Trace reads")
     entries = {e.name: e for e in held.imports}
     for item in made:
         entry = entries[item.run.name]
@@ -1955,7 +1955,7 @@ def _summary(
     lines = [f"ok  {sentence}"]
     if indexes:
         lines.append(f"  names    {_names_line(indexes[0])}")
-    lines.append("  prove    poisson-prove is installed at the version Trace reads")
+    lines.append("  prove    poisson-prove is installed at a version Trace reads")
     for item in made:
         lines.append(f"  import   {import_line(item, stores[0][1])}")
     if left:

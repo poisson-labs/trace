@@ -21,6 +21,9 @@ PV-13; ``pf_support``'s opening, items 4 to 6).
   way, and nothing says ``the verdict was not saved: OSError``.
 - PF-42: where a verdict is printed and cannot be saved, the note gives the system's own words.
 - PF-43: a broken descriptor is not healed or replaced by a refused save.
+- PF-44: ``import`` into a store whose ``store.json`` is there and cannot be read refuses in one
+  line that names the file and gives the system's own words, exit 1, under both spellings of the
+  command; nothing is written, and no "unexpected failure" (FB-5, ruled 2026-11-18).
 - PF-50: a word that reaches no run, in a store with a run whose manifest cannot be read, is
   refused naming that run by its id and that Prove could not read it, not as an unknown run.
 - PF-51: by its id, that run is refused as one Prove could not read; the readable run still
@@ -338,6 +341,30 @@ def test_pf_43_a_refused_save_leaves_the_broken_descriptor_as_it_is(tmp_path: Pa
         assert run(argv_of(SAVING[label], store, STORE_1_2), tmp_path).code == 1
     assert descriptor_file(store).read_bytes() == held
     assert sorted(p.name for p in (store / ".poisson").iterdir()) == ["artifacts", "store.json"]
+
+
+# ---------- PF-44 ----------
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="the system refuses root nothing")
+@pytest.mark.parametrize("command", ["trace", "import"])
+def test_pf_44_import_refuses_a_store_json_it_cannot_read_in_one_line(tmp_path: Path, command: str) -> None:
+    store = copy(STORE_1_2, tmp_path)
+    file = descriptor_file(store)
+    before = _files(tmp_path)
+    mode = stat.S_IMODE(file.stat().st_mode)
+    file.chmod(0)
+    words = ["junit", str(JUNIT), "--store", str(store), "--run", "suite"]
+    try:
+        ran = run(words if command == "import" else ["import", *words], tmp_path, command)
+    finally:
+        file.chmod(mode)
+    assert ran.code == 1, ran.text  # refused, where main crashed with exit 3
+    refused_one_line(ran, "store.json")
+    assert ran.lines() == [f"error: cannot read {file} (Permission denied); nothing was written"], ran.err
+    assert _files(tmp_path) == before
+    assert not (store / "suite").exists()
+    assert not (home_of(tmp_path) / ".cache").exists(), "a refusal is no failure to log"
 
 
 # ---------- PF-50 ----------

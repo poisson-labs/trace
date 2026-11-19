@@ -12,8 +12,8 @@ TESTS = Path(__file__).resolve().parent
 FROZEN = {
     "tf5_support.py": "c9fb7f7fa4b7968bb13bcc06bc1806379c0a835960515815661d8a3398b5418b",
     "tf5_pins.py": "de21957269747c522c62d068d66e61245c3eb6037e93bf3cc238a47a4249a8a4",
-    "test_tf5_unchanged.py": "111165aaa3c0d4b8e5734ff270e9bd42dafb7ab94885ccb65ca330a50349efad",
-    "test_tf5_blocks.py": "5ba9df36a8e7049a2dc442af51a35d69f3d00eaec9360747d40d8cd4217b25c8",
+    "test_tf5_unchanged.py": "88d8ca7fd7d41e854e38b1da4716a5632df5c8e9822053ef07f182fc2caafab4",
+    "test_tf5_blocks.py": "9598e236223aea7f745298bdb6872e861ffe44f06276dcd72f8174afe583334d",
     "test_tf5_readers.py": "f216740c2ee2c2879ed280d0805f237f4e557380b6e04d9e451a8a7e70022a80",
     "test_tf5_stale.py": "c54f706c1956a2c2f46dab7867f3076f90ab7b7c0f3fc2248d548dc079cf3e2d",
     "test_tf5_readme.py": "d665ddb2d71fd2e13fcc76402b60f55d6861765882715d1baecf73dc09769cf6",

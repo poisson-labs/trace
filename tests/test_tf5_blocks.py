@@ -150,6 +150,19 @@ def test_tf5_14_every_marked_block_of_the_page_holds(tmp_path: Path, page: Path)
     commands = [block for block in _blocks(page) if block.kind == "command"]
     if commands:
         assert checked, f"{rel(page)} runs commands and shows nothing they print"
+    if rel(page) == "README.md":
+        # the figures the README's commands write (--svg docs/figures/... --force) are written in the copy and equal the
+        # committed ones, so the README shows the curve where prints (TF15's S40 held this; moved here on the ruling of
+        # 2026-11-18, AR-7)
+        assert len(checked) >= 20, len(checked)
+        written = sorted((tmp_path / "clone" / "docs" / "figures").glob("*.svg"))
+        assert written, "the README writes no figure"
+        from pin_support import as_pinned
+
+        for svg in written:
+            # a figure's footer names the Prove that drew it: the committed ones were drawn with 0.1.3, and Prove's
+            # version is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
+            assert as_pinned(svg.read_text(encoding="utf-8")).encode("utf-8") == (DOCS / "figures" / svg.name).read_bytes(), svg.name
 
 
 def test_tf5_14_a_short_page_of_its_kind_stands_for_each_slow_one() -> None:

@@ -469,7 +469,7 @@ cd from-ragas && poisson-trace init --yes --metric faithfulness --cut 0.5 --belo
 ```
 ok  wrote trace.toml and imported 1 run into trace-store, failures missed
   names    1 run, named at import (rag-base)
-  prove    poisson-prove is installed at the version Trace reads
+  prove    poisson-prove is installed at a version Trace reads
   import   poisson-trace import ragas rag-base.jsonl --store trace-store --run rag-base --metric faithfulness --cut 0.5 --below --case-column case
   the same setup, without questions:
     poisson-trace init --yes --import --metric faithfulness --cut 0.5 \

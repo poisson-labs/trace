@@ -298,12 +298,53 @@ class _Log:
 
 
 def _check_descriptor(root: Path) -> None:
-    """Refuse a store whose descriptor is in a newer major than Trace writes, or is not a
-    descriptor at all (the format's sections 3 and 9), before anything is written."""
+    """Refuse a store whose descriptor is in a newer major than Trace writes, is not a
+    descriptor at all (the format's sections 3 and 9), or is there and cannot be read, before
+    anything is written."""
     try:
         saved.check_store_descriptor(root)
     except saved.Unwritable as e:
         raise Refusal(f"{e}; nothing was written") from e
+    except OSError as e:
+        file = saved.descriptor_path(root)
+        raise Refusal(f"cannot read {file} ({why(e)}); nothing was written") from e
+
+
+def _check_name(store: Store, root: Path, name: str, form: str, *, held: bool = True) -> None:
+    """Refuse a run named ``name`` that the store at ``root`` already holds, or that another
+    of its runs answers to, the names from the manifests in ``form``. With ``held`` False a
+    name the store holds is passed over, for the caller that refuses it later."""
+    try:
+        stored = store.runs()
+        there = name in stored or (root / name).exists()
+    except OSError as e:
+        raise Refusal(
+            f"the store at {root} cannot take a run named {name} ({why(e)}); nothing was written"
+        ) from e
+    if there and not held:
+        return
+    if there:
+        raise Refusal(
+            f"the store at {root} already holds a run named {name}; an import writes a "
+            "new run and never adds to one, so give this one another name"
+        )
+    # the import's name is the word for its run, so no other run may answer to it
+    in_use = taken(store, stored, root, name, form) if stored else None
+    if in_use is not None:
+        raise Refusal(in_use)
+
+
+def check_before_reading(root: Path, name: str, form: str = "target") -> None:
+    """What ``write`` refuses about the store and the run's name, asked before any file is read
+    and before any service is pulled, in the same sentences: a name another run of the store
+    answers to, and a ``store.json`` that is not a descriptor, is in a newer format, or cannot
+    be read. ``write`` asks again, since it is also called on its own. A store that is not
+    there yet holds no run, and nothing of it is made here. A name the store itself holds is
+    not refused here: ``write`` refuses it once the files are read, and a pull before it asks
+    its service anything, each in its own words."""
+    if root.is_dir():
+        _check_name(Store(root), root, name, form, held=False)
+    _check_descriptor(root)
 
 
 def _produced_by(run: Run, verdicts: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -388,23 +429,7 @@ def write(
     if run.started_from not in STARTED_FROM:
         raise Refusal(f"the start time's source is one of {', '.join(STARTED_FROM)}")
     store = Store(root)
-    try:
-        stored = store.runs()
-        held = run.name in stored or (Path(root) / run.name).exists()
-    except OSError as e:
-        raise Refusal(
-            f"the store at {root} cannot take a run named {run.name} ({why(e)}); nothing was "
-            "written"
-        ) from e
-    if held:
-        raise Refusal(
-            f"the store at {root} already holds a run named {run.name}; an import writes a "
-            "new run and never adds to one, so give this one another name"
-        )
-    # the import's name is the word for its run, so no other run may answer to it
-    in_use = taken(store, stored, Path(root), run.name, form) if stored else None
-    if in_use is not None:
-        raise Refusal(in_use)
+    _check_name(store, Path(root), run.name, form)
     _check_descriptor(Path(root))
     log = _Log(Path(root), run.name)
     total = len(run.rows)

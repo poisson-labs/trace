@@ -13,10 +13,8 @@ opening for what each section holds).
 - PL-54: ``doctor`` and ``init`` on a store (the machine's own words written out), and the setup
   skill, as main prints them.
 - PL-55: the pages ``ui`` writes, and the terminal app's screens, as main gives them.
-- PL-56: every file of the repository a user is given is main's but the five modules of the
-  rule and ``docs/config.md`` (PL-60 holds what it gains); none is gone, and no file is added
-  to the package, the docs, the tools, the workflows, the examples or the fixtures but this
-  pair's pins.
+- PL-56 (every other file of the repository is main's) was cut on the ruling of 2026-11-18
+  (AR-4): it held this pair's build to its brief, and the pair is merged.
 - PL-57: ``unmoved``, which the earlier pairs' amended tests use, takes out what the rule adds
   and nothing else.
 """
@@ -28,11 +26,11 @@ import json
 from typing import Any
 
 import pytest
-from pl_pins import CHANGED, EXTRA, MAIN, MOVED_SHARED, PINS, REPO, BUILT, moved, pin_corpus, pin_slow, pinned_paths, tracked, unmoved
+from pl_pins import CHANGED, EXTRA, MAIN, MOVED_SHARED, PINS, BUILT, moved, pin_corpus, pin_slow, unmoved
 from pl_support import note
 from tf5_pins import app_pins, machine, ran_case, ran_every_tool, ran_init
 from tf19_support import make_world, pages_pins
-from tf20_pins import EVERY_LABEL, INIT, SETUP, SKILL, digest_text_steps, file_digest
+from tf20_pins import EVERY_LABEL, INIT, SETUP, SKILL, digest_text_steps
 
 PINNED: dict[str, Any] = json.loads(PINS.read_text(encoding="utf-8"))
 CORPUS = pin_corpus()
@@ -184,41 +182,6 @@ def test_pl_55_the_pages(tmp_path: Any) -> None:
 
 def test_pl_55_the_app(tmp_path: Any) -> None:
     assert app_pins(make_world(tmp_path)) == PINNED["app"]
-
-
-# ---------- PL-56 ----------
-
-
-def test_pl_56_every_other_file_is_main_s() -> None:
-    moved_files = []
-    for name, digest in PINNED["files"].items():
-        path = REPO / name
-        assert path.is_file(), f"{name} is gone"
-        # TF9's list of frozen tests moves when a frozen test moves on a ruling (test_tf9_plain.py, TF9-1a, holds
-        # each line of it): tests/conftest.py for trace#50, ruled 2026-11-17 (PV-1)
-        if name == "tests/fixtures/tf9/frozen-tests.sha256":
-            continue
-        # the Prove floor pair builds the floor in these, and its frozen commits change or add those
-        # (test_pf_unchanged.py, PF-90, holds every other file)
-        from pf_pins import BUILT as FLOOR_BUILT, OURS as FLOOR_OURS
-
-        if name in FLOOR_BUILT or name in FLOOR_OURS:
-            continue
-        if name not in BUILT and file_digest(path) != digest:
-            moved_files.append(name)
-    assert moved_files == [], moved_files
-
-
-def test_pl_56_no_file_is_added_but_the_tests() -> None:
-    # the Prove floor pair adds its own pins and the store the floor made (test_pf_unchanged.py, PF-90, holds them)
-    from pf_pins import FLOOR_STORE
-
-    floor = ("tests/fixtures/pf/", FLOOR_STORE)
-    added = sorted(n for n in set(pinned_paths(tracked())) - set(PINNED["files"]) if not n.startswith(floor))
-    assert added == [], added
-    new = sorted(set(tracked()) - set(PINNED["tracked"]))
-    assert all(n.startswith("tests/") for n in new), new
-    assert not any(n.startswith(("tests/fixtures/",)) and not n.startswith(("tests/fixtures/pl/", *floor)) for n in new), new
 
 
 # ---------- PL-57 ----------

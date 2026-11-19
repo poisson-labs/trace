@@ -9,6 +9,9 @@ ruled 2026-10-12: every documented example uses ``poisson-trace import``).
 - TF3-33: no command or output block of the README or of any page under ``docs/`` spells
   ``poisson-trace-import``; a page may say in words that the alias exists.
 - TF3-34: the JUnit page names the pytest version that wrote its fixture.
+
+TF3-32's run of the four pages' marked blocks was cut on the ruling of
+2026-11-18 (AR-7): ``test_tf5_blocks.py`` (TF5-14) runs the same page through the same runner.
 """
 
 from __future__ import annotations
@@ -19,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from tf3_support import OLD, PAGES, REPO, blocks, fenced, holds_block, page_root, run_page, shims
+from tf3_support import OLD, PAGES, REPO, blocks, fenced
 
 FIXTURE = {"table": "tests/fixtures/ingest/table/humaneval-a.csv", "junit": "tests/fixtures/ingest/junit/humaneval-a.xml"}
 INSTALL = ("pip install poisson-trace",)  # one line: it brings the Prove Trace reads
@@ -42,18 +45,6 @@ def test_tf3_32_each_new_reader_has_a_page_showing_its_fixture(tool: str) -> Non
             following = marked[i + 1] if i + 1 < len(marked) else None
             shown = shown or (following is not None and following.kind == "output" and following.code == 0)
     assert shown, f"{page.name} shows no import of {FIXTURE[tool]} with its output"
-
-
-@pytest.mark.parametrize("page", ["deepeval.md", "ragas.md", "table.md", "junit.md"])
-def test_tf3_32_every_marked_block_of_the_page_holds(tmp_path: Path, page: str) -> None:
-    path = PAGES / page
-    assert path.is_file(), path
-    home = tmp_path / "home"
-    home.mkdir()
-    checked = run_page(path, page_root(tmp_path), home, shims(tmp_path / "bin"))
-    assert checked, f"{page} has no marked output"
-    for c in checked:
-        assert holds_block(c), f"{page}:{c.block.line}: {c.command} -> exit {c.code}\n--- block\n{c.block.body}\n--- printed\n{c.printed}"
 
 
 @pytest.mark.parametrize("tool", ["table", "junit"])

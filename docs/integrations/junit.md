@@ -203,7 +203,7 @@ cd from-junit && poisson-trace init --yes --case name
 ```
 ok  wrote trace.toml and imported 2 runs into trace-store, failures missed
   names    2 runs, named at import (humaneval-b, humaneval-a)
-  prove    poisson-prove is installed at the version Trace reads
+  prove    poisson-prove is installed at a version Trace reads
   import   poisson-trace import junit humaneval-a.xml --store trace-store --run humaneval-a --case name
   import   poisson-trace import junit humaneval-b.xml --store trace-store --run humaneval-b --case name
   the same setup, without questions:

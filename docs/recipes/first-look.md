@@ -35,7 +35,7 @@ and what it did:
 ```
 ok  wrote trace.toml: store prove-runs (2 runs), failures app_error, forbidden_action, unresolved, max_turns
   names    2 runs, named from their manifests (cs_agents 2026-09-25 b, cs_agents 2026-09-25 a); none named by you yet: poisson-trace name RUN "a name"
-  prove    poisson-prove is installed at the version Trace reads
+  prove    poisson-prove is installed at a version Trace reads
 ```
 
 `init` wrote one file, `trace.toml`, which names the store and the outcomes that count as a

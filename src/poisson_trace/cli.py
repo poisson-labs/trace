@@ -1010,6 +1010,9 @@ def _counting(
     the options typed and the reader's flags for runs given as folders; then its deliveries,
     the result's own methods (PA4); then what it gives, printed."""
     _own_checks(ns)
+    # where the deliveries write is looked at before any run is read; each asks again when it
+    # writes, as the API's own callers need
+    api._check_deliveries(svg=getattr(ns, "svg", None), out=ns.out, force=ns.force)
     kwargs = _with_config(_given(ns, parser, typed, "--store"))
     positionals = {a.dest: getattr(ns, a.dest) for a in parser._actions if not a.option_strings}
     reader_flags: dict[str, Any] = {}

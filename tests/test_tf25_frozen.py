@@ -18,13 +18,13 @@ FROZEN = {
     "test_tf25_agree.py": "159081a93dafe840e068045a6b5876645a18143825098d830231baab2b872596",
     "test_tf25_pull.py": "0762b6f5f9e32fe28a19fc1bbc254df09a7e183a5c1b4950347158e5f46fc8c0",
     "test_tf25_cli.py": "110400494bebb5779cd06d64cbcc0b3cef0826a444537ce7d85a852fe88ca654",
-    "test_tf25_pages.py": "6956c712714f44af69e2f43618ed2f291d21f15f955e2bc2882be48d4a6fa959",
-    "test_tf25_unchanged.py": "417afc241a8cdbf739136259ae03310331b69d33187858556a2a9863b3871ab7",
+    "test_tf25_pages.py": "78b17aa8dfdc16e4ea6e8d6dcdc78838fa94d62424d18eae0f916c3f3354702e",
+    "test_tf25_unchanged.py": "44d289863a345b9c2139c559181f04bb076659799b08283a8d1a5db0c12ab9cf",
     "test_tf25_stand_ins.py": "392cf150a87423fd7b51fa4450059e43767d6e03a26a9aa5bfe8a1b6def48625",
     "test_tf25_init.py": "01c8ba4bc409acb56fc70d703c7a88505cbf523ea0e646f85a068a5c25a7e867",
     "test_tf25_listing.py": "bd6dc3b2993b77bf04f1353d86ce44b7153e0bc50d8829f014febc01fcfa768d",
     "fixtures/tf25/make_main_pins.py": "1640073aa1db9863ac1bb2a36c07ba11126e57a6a7f1550d5607492dffb39ea2",
-    "fixtures/tf25/main-pins.json": "d8a2fde477c0f1bd7efb10f26474e17bf20b1b70b328798a9e91cdf72a9aa968",
+    "fixtures/tf25/main-pins.json": "d825695be66dbe5e9de8caf0454d1c7f74267d051d4b1cecd2c2428ebd92c96e",
 }
 
 

@@ -78,6 +78,11 @@ def test_pf_1_the_declaration_is_a_floor_and_nothing_more() -> None:
     assert not re.search(r"[<~!,;]|==", prove[0]), prove
     for wanted in project.get("optional-dependencies", {}).values():
         assert not [d for d in wanted if re.match(r"\s*poisson[-_.]prove\b", d, re.IGNORECASE)], wanted
+    # the dependencies are written in the file, not worked out by the build, and Prove's old name is never asked for
+    # (PIN-1's two lines, moved here on the ruling of 2026-11-18, AR-6)
+    assert "dependencies" not in project.get("dynamic", []), project.get("dynamic")
+    asked = [*project["dependencies"], *(d for wanted in project.get("optional-dependencies", {}).values() for d in wanted)]
+    assert not [d for d in asked if re.match(r"\s*proofload\b", d, re.IGNORECASE)], asked
 
 
 def test_pf_1_the_floor_trace_checks_is_the_declared_one() -> None:

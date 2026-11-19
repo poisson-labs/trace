@@ -17,6 +17,9 @@ facts the captures correct, which the page must not repeat).
   captures, importing twice and running ``fix-check``, every ``poisson-trace`` block marked and
   holding when run, no run named by its id, ending with ``What this does not do``; both files
   are in plain words.
+
+TF24-63's and TF24-65's runs of the page's and the recipe's marked blocks were cut on the ruling of
+2026-11-18 (AR-7): ``test_tf5_blocks.py`` (TF5-14) runs the same page through the same runner.
 """
 
 from __future__ import annotations
@@ -28,7 +31,7 @@ from pathlib import Path
 import pytest
 
 from tf0_support import INTERNAL
-from tf3_support import OLD, PAGES, REPO, blocks, fenced, holds_block, page_root, run_page, shims
+from tf3_support import OLD, PAGES, REPO, blocks, fenced
 
 TOOL = "langsmith"
 PAGE = PAGES / "langsmith.md"
@@ -62,16 +65,6 @@ def _imports_shown(text: str, kinds: tuple[str, ...] = ("output",)) -> list[int]
 def _last_section(text: str) -> tuple[str, list[str]]:
     last = text.rstrip("\n").split("\n## ")[-1].split("\n")
     return last[0], [line for line in last[1:] if line.strip()]
-
-
-def _no_network_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Every command of a page runs with no key and with every proxy pointed at a closed port
-    of this machine, so a command that reached for LangSmith would fail."""
-    for name in ("LANGSMITH_API_KEY", "LANGCHAIN_API_KEY"):
-        monkeypatch.delenv(name, raising=False)
-    monkeypatch.setenv("LANGSMITH_ENDPOINT", "http://127.0.0.1:9")
-    for name in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY"):
-        monkeypatch.setenv(name, "http://127.0.0.1:9")
 
 
 # ---------- TF24-61 ----------
@@ -113,16 +106,6 @@ def test_tf24_62_the_page_says_how_the_runs_get_out_as_the_captures_show() -> No
 
 
 # ---------- TF24-63 ----------
-
-
-def test_tf24_63_every_marked_block_of_the_page_holds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _no_network_env(tmp_path, monkeypatch)
-    home = tmp_path / "home"
-    home.mkdir()
-    checked = run_page(PAGE, page_root(tmp_path), home, shims(tmp_path / "bin"))
-    assert checked, "langsmith.md has no marked output"
-    for c in checked:
-        assert holds_block(c), f"langsmith.md:{c.block.line}: {c.command} -> exit {c.code}\n--- block\n{c.block.body}\n--- printed\n{c.printed}"
 
 
 def test_tf24_63_no_marked_command_pulls() -> None:
@@ -179,16 +162,6 @@ def test_tf24_65_the_recipe_imports_twice_and_checks_the_fix() -> None:
             assert body in marked, body
     for words in commands:
         assert not any(RUN_ID.search(w) for w in words), words
-
-
-def test_tf24_65_every_marked_block_of_the_recipe_holds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _no_network_env(tmp_path, monkeypatch)
-    home = tmp_path / "home"
-    home.mkdir()
-    checked = run_page(RECIPE, page_root(tmp_path), home, shims(tmp_path / "bin"))
-    assert checked, "from-langsmith.md has no marked output"
-    for c in checked:
-        assert holds_block(c), f"from-langsmith.md:{c.block.line}: {c.command} -> exit {c.code}\n--- block\n{c.block.body}\n--- printed\n{c.printed}"
 
 
 @pytest.mark.parametrize("path", [PAGE, RECIPE], ids=["langsmith.md", "from-langsmith.md"])

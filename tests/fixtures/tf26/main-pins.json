@@ -2130,7 +2130,7 @@
    ],
    [
     0,
-    "ok  wrote trace.toml with no store yet; 2 result files of 1 tool not imported\n  prove    poisson-prove is installed at the version Trace reads\n  left out 2 result files, not imported; the lines below import them. To compare two, run the pair's lines (a word in capitals is yours to fill in), then run poisson-trace init --force --store trace-store:\n    poisson-trace import langsmith results/new.json --store trace-store --run new --case-from example --outcome-from OUTCOME\n    poisson-trace import langsmith results/old.json --store trace-store --run old --case-from example --outcome-from OUTCOME\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-trace import --help\n",
+    "ok  wrote trace.toml with no store yet; 2 result files of 1 tool not imported\n  prove    poisson-prove is installed at a version Trace reads\n  left out 2 result files, not imported; the lines below import them. To compare two, run the pair's lines (a word in capitals is yours to fill in), then run poisson-trace init --force --store trace-store:\n    poisson-trace import langsmith results/new.json --store trace-store --run new --case-from example --outcome-from OUTCOME\n    poisson-trace import langsmith results/old.json --store trace-store --run old --case-from example --outcome-from OUTCOME\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-trace import --help\n",
     "Poisson Trace setup. This writes trace.toml and runs nothing. Ctrl-C stops without writing.\n\nLooking for results under <ROOT> \u2026\n  found 2 result files:\n    1) results/new.json          LangSmith runs, as the runs query returns them\n    2) results/old.json          LangSmith runs, as the runs query returns them\n"
    ]
   ],
@@ -2142,7 +2142,7 @@
    ],
    [
     0,
-    "ok  wrote trace.toml with no store yet; 4 result files of 1 tool not imported\n  prove    poisson-prove is installed at the version Trace reads\n  left out 4 result files, not imported; the lines below import them. To compare two, run the pair's lines (a word in capitals is yours to fill in), then run poisson-trace init --force --store trace-store:\n    poisson-trace import langsmith results/new.json results/new-feedback.json --store trace-store --run new --case-from example --outcome-from OUTCOME\n    poisson-trace import langsmith results/old.json results/old-feedback.json --store trace-store --run old --case-from example --outcome-from OUTCOME\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-trace import --help\n",
+    "ok  wrote trace.toml with no store yet; 4 result files of 1 tool not imported\n  prove    poisson-prove is installed at a version Trace reads\n  left out 4 result files, not imported; the lines below import them. To compare two, run the pair's lines (a word in capitals is yours to fill in), then run poisson-trace init --force --store trace-store:\n    poisson-trace import langsmith results/new.json results/new-feedback.json --store trace-store --run new --case-from example --outcome-from OUTCOME\n    poisson-trace import langsmith results/old.json results/old-feedback.json --store trace-store --run old --case-from example --outcome-from OUTCOME\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-trace import --help\n",
     "Poisson Trace setup. This writes trace.toml and runs nothing. Ctrl-C stops without writing.\n\nLooking for results under <ROOT> \u2026\n  found 4 result files:\n    1) results/new-feedback.json  LangSmith feedback records\n    2) results/new.json           LangSmith runs, as the runs query returns them\n    3) results/old-feedback.json  LangSmith feedback records\n    4) results/old.json           LangSmith runs, as the runs query returns them\n"
    ]
   ],
@@ -2154,7 +2154,7 @@
    ],
    [
     0,
-    "ok  wrote trace.toml with no store yet; 2 result files of 1 tool not imported\n  prove    poisson-prove is installed at the version Trace reads\n  left out 2 result files, not imported; the lines below import them. To compare two, run the pair's lines (a word in capitals is yours to fill in), then run poisson-trace init --force --store trace-store:\n    poisson-trace import langsmith results/new.csv --store trace-store --run new --case-from example --outcome-from OUTCOME\n    poisson-trace import langsmith results/old.csv --store trace-store --run old --case-from example --outcome-from OUTCOME\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-trace import --help\n",
+    "ok  wrote trace.toml with no store yet; 2 result files of 1 tool not imported\n  prove    poisson-prove is installed at a version Trace reads\n  left out 2 result files, not imported; the lines below import them. To compare two, run the pair's lines (a word in capitals is yours to fill in), then run poisson-trace init --force --store trace-store:\n    poisson-trace import langsmith results/new.csv --store trace-store --run new --case-from example --outcome-from OUTCOME\n    poisson-trace import langsmith results/old.csv --store trace-store --run old --case-from example --outcome-from OUTCOME\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-trace import --help\n",
     "Poisson Trace setup. This writes trace.toml and runs nothing. Ctrl-C stops without writing.\n\nLooking for results under <ROOT> \u2026\n  found 2 result files:\n    1) results/new.csv           a LangSmith experiment's CSV\n    2) results/old.csv           a LangSmith experiment's CSV\n"
    ]
   ],
@@ -2166,31 +2166,31 @@
    ],
    [
     0,
-    "ok  wrote trace.toml with no store yet; 4 result files of 1 tool not imported\n  prove    poisson-prove is installed at the version Trace reads\n  left out 4 result files, not imported; the lines below import them. To compare two, run the pair's lines (a word in capitals is yours to fill in), then run poisson-trace init --force --store trace-store:\n    poisson-trace import braintrust results/new-ui.json --store trace-store --run new-ui --case-from input --outcome-from OUTCOME\n    poisson-trace import braintrust results/new.json --store trace-store --run new --case-from record --outcome-from OUTCOME\n    poisson-trace import braintrust results/old-ui.csv --store trace-store --run old-ui --case-from input --outcome-from OUTCOME\n    poisson-trace import braintrust results/old.json --store trace-store --run old --case-from record --outcome-from OUTCOME\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-trace import --help\n",
+    "ok  wrote trace.toml with no store yet; 4 result files of 1 tool not imported\n  prove    poisson-prove is installed at a version Trace reads\n  left out 4 result files, not imported; the lines below import them. To compare two, run the pair's lines (a word in capitals is yours to fill in), then run poisson-trace init --force --store trace-store:\n    poisson-trace import braintrust results/new-ui.json --store trace-store --run new-ui --case-from input --outcome-from OUTCOME\n    poisson-trace import braintrust results/new.json --store trace-store --run new --case-from record --outcome-from OUTCOME\n    poisson-trace import braintrust results/old-ui.csv --store trace-store --run old-ui --case-from input --outcome-from OUTCOME\n    poisson-trace import braintrust results/old.json --store trace-store --run old --case-from record --outcome-from OUTCOME\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-trace import --help\n",
     "Poisson Trace setup. This writes trace.toml and runs nothing. Ctrl-C stops without writing.\n\nLooking for results under <ROOT> \u2026\n  found 4 result files:\n    1) results/new-ui.json       a Braintrust experiment's rows, as its page downloads them\n    2) results/new.json          Braintrust spans, as the experiment fetch returns them\n    3) results/old-ui.csv        a Braintrust experiment's CSV\n    4) results/old.json          Braintrust spans, as the experiment fetch returns them\n"
    ]
   ],
   "init: weave files": [
    [
     0,
-    "ok  wrote trace.toml with no store yet\n  prove    poisson-prove is installed at the version Trace reads\nTrace reads runs Prove stored, or the result files of the tools poisson-trace import --help lists.\n  the same setup, without questions:\n    poisson-trace init --yes\nnext: poisson-prove sweep \u2026 (see https://github.com/poisson-labs/prove) \u00b7 or \u00b7 poisson-trace import --help\n",
+    "ok  wrote trace.toml with no store yet\n  prove    poisson-prove is installed at a version Trace reads\nTrace reads runs Prove stored, or the result files of the tools poisson-trace import --help lists.\n  the same setup, without questions:\n    poisson-trace init --yes\nnext: poisson-prove sweep \u2026 (see https://github.com/poisson-labs/prove) \u00b7 or \u00b7 poisson-trace import --help\n",
     "Poisson Trace setup. This writes trace.toml and runs nothing. Ctrl-C stops without writing.\n\nLooking for results under <ROOT> \u2026\n  found no store and no result file a reader of this install reads\n"
    ],
    [
     0,
-    "ok  wrote trace.toml with no store yet\n  prove    poisson-prove is installed at the version Trace reads\nTrace reads runs Prove stored, or the result files of the tools poisson-trace import --help lists.\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-prove sweep \u2026 (see https://github.com/poisson-labs/prove) \u00b7 or \u00b7 poisson-trace import --help\n",
+    "ok  wrote trace.toml with no store yet\n  prove    poisson-prove is installed at a version Trace reads\nTrace reads runs Prove stored, or the result files of the tools poisson-trace import --help lists.\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-prove sweep \u2026 (see https://github.com/poisson-labs/prove) \u00b7 or \u00b7 poisson-trace import --help\n",
     "Poisson Trace setup. This writes trace.toml and runs nothing. Ctrl-C stops without writing.\n\nLooking for results under <ROOT> \u2026\n  found no store and no result file a reader of this install reads\n"
    ]
   ],
   "init: weave tables": [
    [
     0,
-    "ok  wrote trace.toml with no store yet\n  prove    poisson-prove is installed at the version Trace reads\nTrace reads runs Prove stored, or the result files of the tools poisson-trace import --help lists.\n  the same setup, without questions:\n    poisson-trace init --yes\nnext: poisson-prove sweep \u2026 (see https://github.com/poisson-labs/prove) \u00b7 or \u00b7 poisson-trace import --help\n",
+    "ok  wrote trace.toml with no store yet\n  prove    poisson-prove is installed at a version Trace reads\nTrace reads runs Prove stored, or the result files of the tools poisson-trace import --help lists.\n  the same setup, without questions:\n    poisson-trace init --yes\nnext: poisson-prove sweep \u2026 (see https://github.com/poisson-labs/prove) \u00b7 or \u00b7 poisson-trace import --help\n",
     "Poisson Trace setup. This writes trace.toml and runs nothing. Ctrl-C stops without writing.\n\nLooking for results under <ROOT> \u2026\n  found no store and no result file a reader of this install reads\n"
    ],
    [
     0,
-    "ok  wrote trace.toml with no store yet\n  prove    poisson-prove is installed at the version Trace reads\nTrace reads runs Prove stored, or the result files of the tools poisson-trace import --help lists.\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-prove sweep \u2026 (see https://github.com/poisson-labs/prove) \u00b7 or \u00b7 poisson-trace import --help\n",
+    "ok  wrote trace.toml with no store yet\n  prove    poisson-prove is installed at a version Trace reads\nTrace reads runs Prove stored, or the result files of the tools poisson-trace import --help lists.\n  the same setup, without questions:\n    poisson-trace init --yes --no-import\nnext: poisson-prove sweep \u2026 (see https://github.com/poisson-labs/prove) \u00b7 or \u00b7 poisson-trace import --help\n",
     "Poisson Trace setup. This writes trace.toml and runs nothing. Ctrl-C stops without writing.\n\nLooking for results under <ROOT> \u2026\n  found no store and no result file a reader of this install reads\n"
    ]
   ]

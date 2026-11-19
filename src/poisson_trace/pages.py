@@ -123,8 +123,31 @@ def esc(value: Any) -> str:
     return _html.escape(str(value), quote=True)
 
 
+def bundle_missing() -> list[str]:
+    """What of Prove's UI bundle the installed package lacks, as paths inside the package: the
+    folder alone where it holds none of the files, else each file that is not there."""
+    folder = resources.files("poisson_prove") / "_ui_bundle"
+    gone = [name for name in BUNDLE if not (folder / name).is_file()]
+    if len(gone) == len(BUNDLE):
+        return ["poisson_prove/_ui_bundle"]
+    return [f"poisson_prove/_ui_bundle/{name}" for name in gone]
+
+
+def check_bundle() -> None:
+    """Refuse a Prove that is installed without the bundle the pages are built with, naming
+    what it lacks, before any page is written: the fault is the install's, not the store's or
+    the folder's a page would be written into."""
+    gone = bundle_missing()
+    if gone:
+        raise look.Refused(
+            f"poisson-prove {look.prove_found()} is installed and has no {look.listed(gone)}, "
+            "which Trace builds its pages with"
+        )
+
+
 def bundle_files() -> dict[str, bytes]:
-    """Prove's UI bundle as the installed package ships it."""
+    """Prove's UI bundle as the installed package ships it; a refusal where it ships none."""
+    check_bundle()
     folder = resources.files("poisson_prove") / "_ui_bundle"
     return {name: (folder / name).read_bytes() for name in BUNDLE}
 

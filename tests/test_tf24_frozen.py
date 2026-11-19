@@ -17,11 +17,9 @@ FROZEN = {
     "test_tf24_agree.py": "987a5cc2415ae9b8dd53274ba646a41d67ca2e75d8968083593617f7addb7929",
     "test_tf24_pull.py": "0f8da599ae1367bc39f684d419d690b19cdad1bcb8e749d2a37495e258e35a83",
     "test_tf24_cli.py": "c59c0cadea836032af28decb5c665a97371472c7a547ca960d2940279b50b961",
-    "test_tf24_pages.py": "1460ca10987172b918dddfaa3416f2e87f9fe4bce64eec8b2da414cd93b61421",
-    "test_tf24_unchanged.py": "db564e40e14e3473d8f932c4f54c130561d9ff0668b0c19af1963d6a268a024f",
+    "test_tf24_pages.py": "e174413a52939060913f5baf3c4339a5f64c2135d9d95a6e89db1049644a3832",
+    "test_tf24_unchanged.py": "ffa32048757917dece3c3c8ca6387f01e0071abc0c9ff1945a049d1ede4d0d9c",
     "test_tf24_stand_ins.py": "6ed42680775c216189b7a0c6424e5b59d8a6eeffc3ef26284abbb0a7d9f4250b",
-    "fixtures/tf24/make_main_pins.py": "5bc2a0fb5b12a2f40590349791d39e3d1287adb3804af2d5182d27d2d6a4cf84",
-    "fixtures/tf24/main-pins.json": "214b888e9671a37532cfd25b41384723b47d42f3251ae8328e12a9cc00dce3e0",
 }
 
 

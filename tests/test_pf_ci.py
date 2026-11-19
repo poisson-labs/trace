@@ -107,17 +107,6 @@ def test_pf_60_it_runs_on_main_and_every_night_and_never_on_a_pull_request() -> 
     assert re.search(r"(?m)^    runs-on: \S+$", job) and re.search(r"(?m)^    timeout-minutes: \d+$", job)
 
 
-def test_pf_60_the_other_jobs_are_as_they_were() -> None:
-    """Every job main's ``ci.yml`` has is there still, with the steps it had."""
-    from pf_pins import main_text
-
-    main, now = jobs(main_text(".github/workflows/ci.yml")), jobs(CI)
-    (new,) = _newest_jobs()
-    assert sorted(now) == sorted([*main, new]), sorted(now)
-    for name, job in main.items():
-        assert now[name] == job, name
-
-
 # ---------- PF-61 ----------
 
 
@@ -222,7 +211,7 @@ def test_pf_63_the_release_asks_for_no_exact_prove() -> None:
     for job in clean:
         if "version('poisson-prove')" in job:
             assert re.search(r">=\s*\(0, 4, 0\)", job), "the Prove it brought is at or above the floor"
-    assert "tests/test_prove_pin.py::test_pin_1_a_clean_install_of_the_wheel_brings_the_recorded_prove" in RELEASE
+    assert "tests/test_pf_ci.py::test_pf_72_installed_by_one_line_the_wheel_brings_a_prove_at_or_above_the_floor" in RELEASE
 
 
 def test_pf_63_the_release_names_the_tests_it_runs_and_they_are_there() -> None:

@@ -151,7 +151,7 @@ def test_tf17_46_init_yes_on_a_store_prints_what_main_prints(tmp_path: Path) -> 
         "ok  wrote trace.toml: store proofload-runs (3 runs), failures unsolved\n"
         "  names    3 runs, named from their manifests (tau2-airline 2026-09-17 a, tau2-airline "
         '2026-09-15 b, tau2-airline 2026-09-15 a); none named by you yet: poisson-trace name RUN "a name"\n'
-        "  prove    poisson-prove is installed at the version Trace reads\n"
+        "  prove    poisson-prove is installed at a version Trace reads\n"
         "  the same setup, without questions:\n"
         "    poisson-trace init --yes --store proofload-runs --event unsolved\n"
         "next: poisson-trace runs\n"

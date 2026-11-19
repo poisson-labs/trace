@@ -172,7 +172,7 @@ and on a yes it imports them and says what it did, on stdout:
 <!-- excerpt exit=0 -->
 ```
 ok  imported 4 runs into trace-store, failures forbidden_action, unresolved, max_turns, app_error; [store.imported] added to trace.toml
-  prove    poisson-prove is installed at the version Trace reads
+  prove    poisson-prove is installed at a version Trace reads
   import   poisson-trace import ragas evals/results/rag-base.jsonl --store trace-store --run rag-base --metric faithfulness --cut 0.5 --below --case-column case
   import   poisson-trace import ragas evals/results/rag-raft.jsonl --store trace-store --run rag-raft --metric faithfulness --cut 0.5 --below --case-column case
   import   poisson-trace import junit reports/junit-old.xml --store trace-store --run tests-old --case name

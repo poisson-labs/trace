@@ -290,6 +290,17 @@ def _calling(ns: argparse.Namespace | None = None) -> Iterator[None]:
         raise _refusal_of(e, notes) from None
 
 
+def _check_deliveries(*, svg: str | None, out: str | None, force: bool) -> None:
+    """What ``--svg FILE`` and ``--out DIR`` refuse about their paths, for the command line to
+    ask before a verb reads a run: ``write_svg`` and ``to_bundle`` ask the same when they
+    write, in the same sentences."""
+    with _calling():
+        if svg is not None:
+            core._check_svg(svg, force)
+        if out is not None:
+            core._check_out(out, force)
+
+
 # ---------- the call as the core takes it ----------
 
 

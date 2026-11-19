@@ -725,6 +725,12 @@ def import_run(ns: argparse.Namespace, settings: Any, folders: Sequence[str]) ->
             if hole is not None:
                 raise Refusal(f"the folder's name is the run's when --run is not given, and {hole}")
     store = Path(ns.store)
+    if ns.run is not None:
+        # what the writer would refuse about the store and the name, before any file is read
+        # or any service pulled
+        from poisson_trace.ingest.writer import check_before_reading
+
+        check_before_reading(store, ns.run, form)
     try:
         held = (store / ns.run).exists()
     except OSError:

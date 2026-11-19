@@ -17,6 +17,9 @@ the DeepEval page's shape; 6.4a, the four sentences; 7.1, the recipes; 7.2, plai
   ending with ``What this does not do``.
 - TF10-46: the six files are in plain words: no internal id, no session or ruling word, and no
   block spells the import's old name.
+
+TF10-43's and TF10-45's runs of the pages' and the recipes' marked blocks were cut on the ruling of
+2026-11-18 (AR-7): ``test_tf5_blocks.py`` (TF5-14) runs the same page through the same runner.
 """
 
 from __future__ import annotations
@@ -28,7 +31,7 @@ from pathlib import Path
 import pytest
 
 from tf0_support import INTERNAL
-from tf3_support import OLD, PAGES, REPO, blocks, fenced, holds_block, page_root, run_page, shims
+from tf3_support import OLD, PAGES, REPO, blocks, fenced
 
 TOOLS = ("promptfoo", "inspect", "openai-evals")
 RECIPES = REPO / "docs" / "recipes"
@@ -37,7 +40,7 @@ FIXTURE = {"promptfoo": ("tests/fixtures/ingest/promptfoo/results.json", "tests/
                        "tests/fixtures/ingest/inspect/2026-10-07T04-23-51-00-00_trace-fixture_2nSEDuHHzKiTUjJW3kXknY.json"),
            "openai-evals": ("tests/fixtures/ingest/openai-evals/old.jsonl", "tests/fixtures/ingest/openai-evals/new.jsonl")}
 VERSION = {"promptfoo": "promptfoo 0.120.19", "inspect": "inspect_ai 0.3.277", "openai-evals": "evals 3.0.1.post1"}
-# every page's Install section is the one line (the Prove pin's ruling, test_prove_pin.py); the
+# every page's Install section is the one line (the Prove pin's ruling, test_pf_pages_and_stores.py); the
 # Inspect page shows the extra a .eval log needs in a block of its own after it
 INSTALL = "pip install poisson-trace"
 EXTRA = "pip install 'poisson-trace[inspect]'"
@@ -104,19 +107,6 @@ def test_tf10_42_the_promptfoo_page_names_the_json_export_and_the_csv() -> None:
     assert "-o results.json" in text and "--prompt" in text and ".csv" in text
 
 
-# ---------- TF10-43 ----------
-
-
-@pytest.mark.parametrize("tool", TOOLS)
-def test_tf10_43_every_marked_block_of_the_page_holds(tmp_path: Path, tool: str) -> None:
-    home = tmp_path / "home"
-    home.mkdir()
-    checked = run_page(_page(tool), page_root(tmp_path), home, shims(tmp_path / "bin"))
-    assert checked, f"{tool}.md has no marked output"
-    for c in checked:
-        assert holds_block(c), f"{tool}.md:{c.block.line}: {c.command} -> exit {c.code}\n--- block\n{c.block.body}\n--- printed\n{c.printed}"
-
-
 # ---------- TF10-44 ----------
 
 
@@ -162,16 +152,6 @@ def test_tf10_45_each_recipe_imports_twice_and_checks_the_fix(tool: str) -> None
             assert body in marked, body
     for words in commands:
         assert not any(RUN_ID.search(w) for w in words), words
-
-
-@pytest.mark.parametrize("tool", TOOLS)
-def test_tf10_45_every_marked_block_of_the_recipe_holds(tmp_path: Path, tool: str) -> None:
-    home = tmp_path / "home"
-    home.mkdir()
-    checked = run_page(_recipe(tool), page_root(tmp_path), home, shims(tmp_path / "bin"))
-    assert checked, f"from-{tool}.md has no marked output"
-    for c in checked:
-        assert holds_block(c), f"from-{tool}.md:{c.block.line}: {c.command} -> exit {c.code}\n--- block\n{c.block.body}\n--- printed\n{c.printed}"
 
 
 # ---------- TF10-46 ----------

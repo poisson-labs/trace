@@ -17,7 +17,7 @@ FROZEN = {
     "test_tf17_config.py": "df5dde51c3d58b26864de200b680d4815da34a056324507451410baa981ac6ba",
     "test_tf17_setup_check.py": "d428c42a7ab17c170c8a497a9d6c4ec89b84f29e613f70d74a5d8fe5fe6bad35",
     "test_tf17_handover.py": "2be418fef5aa1cfa4033cec0aae689f0b213228fbce57bbe7cf04c514e488914",
-    "test_tf17_scripted.py": "2b3680b7c0b31c324dcb63b3eb31e4c65180657a5aba5878989c461769baa860",
+    "test_tf17_scripted.py": "5e3bccf42aa5a45e058ed082a29551e0f1f05370701c7bc08eb412b6d5c98d1a",
     "test_tf17_signals.py": "7ed74db201ad99e14d9b7cc6922529af4ad3e159bf446aa2eab95e2c71382b36",
     "test_tf17_readers.py": "3d56c9660212b9a44d430cb72ff340692942500bd903c9811e325ea5ab5b5034",
     "fixtures/setup-agent/setup-file-format-1.txt": "19ebfd4e5974de468e666eb821fd04cab9624105dddf4611ca38a6caf72956e8",

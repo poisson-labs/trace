@@ -11,41 +11,21 @@ of section 9.7 print (ST10: "TF15 builds the ruled fixes and rewrites the README
   median that counted finished tries ("median step: 50"); the figures included.
 - TF15-S42: the README's verdict list does not read *no significant difference* as "no difference
   was seen" nor *too small to tell* as a statement about what happened ("whatever happened").
+
+TF15-S40's run of the README's marked blocks was cut on the ruling of
+2026-11-18 (AR-7): ``test_tf5_blocks.py`` (TF5-14) runs the same page through the same runner, and now holds
+that the figures the README writes equal the committed ones.
 """
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 import pytest
 
-from conftest import FIXTURES
-from tf3_support import REPO, holds_block, run_page, shims
+from tf3_support import REPO
 
 DOCS = [REPO / "README.md", *sorted((REPO / "docs" / "integrations").glob("*.md")), *sorted((REPO / "docs" / "figures").glob("*.svg"))]
-
-
-def test_tf15_s40_every_marked_block_of_the_readme_holds(tmp_path: Path) -> None:
-    """The figures the README's where block writes (--svg docs/figures/... --force) are written
-    in the copy and must equal the committed ones, so the README shows the curve where prints."""
-    root = tmp_path / "clone"
-    shutil.copytree(FIXTURES, root / "tests" / "fixtures")
-    (root / "docs" / "figures").mkdir(parents=True)
-    home = tmp_path / "home"
-    home.mkdir()
-    checked = run_page(REPO / "README.md", root, home, shims(tmp_path / "bin"))
-    assert len(checked) >= 20, len(checked)
-    for c in checked:
-        assert holds_block(c), f"README.md:{c.block.line}: {c.command} -> exit {c.code}\n--- block\n{c.block.body}\n--- printed\n{c.printed}"
-    written = sorted((root / "docs" / "figures").glob("*.svg"))
-    assert written, "the README writes no figure"
-    from pin_support import as_pinned
-
-    for svg in written:
-        # a figure's footer names the Prove that drew it: the committed ones were drawn with 0.1.3
-        # Prove's version, where Trace prints it, is written as the pins hold it (pin_support.as_pinned; ruled 2026-11-17, PV-5)
-        assert as_pinned(svg.read_text(encoding="utf-8")).encode("utf-8") == (REPO / "docs" / "figures" / svg.name).read_bytes(), svg.name
 
 
 # compare's 1.457 as the limit and the ceiling it offered; its per-kind column is left to the

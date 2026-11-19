@@ -1,21 +1,13 @@
-"""PACE-10 to PACE-13: nothing else moves (the brief's rule 6). The pacing fix changes only the
-times written in a run's ``events.jsonl``; every verb's plain and ``--json`` output, ``init``'s,
-the pages and the terminal app stay byte for byte as main 2ff191b prints them.
+"""PACE-10: three cases of what main 2ff191b printed that no later list runs.
 
-**PACE-10** Every invocation of ``pacing_pins.pin_corpus()`` prints, piped, what main 2ff191b
-printed, byte for byte: the exit code, stdout and stderr of each step. That is TF26's corpus
-whole, TF26's three changed invocations as main now prints them, and what main gained with the
-Weave reader: its help under both spellings, its imports of each kind of export in text and
-``--json``, the verbs over two imported versions, its refusals, and a pull through TF26's
-transport. Pinned by ``fixtures/pacing/make_main_pins.py`` on Python 3.12.13, checked on 3.11.
+**PACE-10** Each of the three invocations prints, piped, what main 2ff191b printed, byte for
+byte: the exit code, stdout and stderr of each step. They are the refusal of ``weave`` as a tool
+the install lacks, the import of Weave's paged pull, and the Weave reader's refusals as this pair
+ran them. Pinned by ``fixtures/pacing/make_main_pins.py`` on Python 3.12.13, checked on 3.11.
 
-**PACE-11** ``init`` on the files it finds (TF26's six folders, each with and without its
-imports), as main printed it.
-
-**PACE-12** The pages, as main builds them: ``ui`` over TF19's workspace writes every page file
-main wrote, byte for byte once the save times are set aside, and no other.
-
-**PACE-13** The terminal app, as main shows it: every screen over that workspace, row for row.
+The other 190 cases of PACE-10, its tests of its own pins, and PACE-11 to PACE-13 (``init``, the
+pages and the terminal app as main gave them) were cut on the rulings of 2026-11-18 (AR-1, AR-3):
+``test_pl_unchanged.py`` (PL-51 to PL-55) holds each at today's bytes.
 """
 
 from __future__ import annotations
@@ -26,95 +18,22 @@ from typing import Any
 
 import pytest
 
-from pacing_pins import MAIN, PINS, READERS, WEAVE, app_pins, digest_steps, init_corpus, pin_corpus, pin_slow, ran_case, ran_init
-from tf19_support import make_world, pages_pins
+from pacing_pins import PINS, digest_steps, pin_corpus, ran_case
 
 PINNED: dict[str, Any] = json.loads(PINS.read_text(encoding="utf-8"))
 CORPUS = pin_corpus()
-INIT = init_corpus()
-SLOW = pin_slow()
 
 
 # ---------- PACE-10 ----------
 
 
-def test_pace_10_every_case_is_pinned_on_main() -> None:
-    assert PINNED["main"] == MAIN == "2ff191b"
-    assert set(PINNED["piped"]) == set(CORPUS) and len(CORPUS) >= 193
-    assert set(PINNED["init"]) == set(INIT) and len(INIT) == 6
-    assert len(PINNED["pages"]) >= 23 and len(PINNED["app"]) >= 11
-    for tool in READERS:
-        assert f"help: import {tool}" in PINNED["piped"] and f"help: alias {tool}" in PINNED["piped"], tool
-    assert {"help: import", "import refusal: a tool not in this install", "import refusal: weave"} <= set(PINNED["piped"])
-    assert set(WEAVE) <= set(PINNED["piped"])
-    from tf26_pins import pin_corpus as before
-
-    assert set(before()) <= set(PINNED["piped"])
+#: The three cases no later list runs: the newest list (``pl_pins``, PL-51) runs every other case of this corpus whole,
+#: at today's bytes, so only these are still held here (ruled 2026-11-18, AR-1).
+HELD_HERE = ("import refusal: weave", "weave: import the paged pull", "weave: refusals")
 
 
-@pytest.mark.parametrize("label", [pytest.param(k, marks=pytest.mark.slow) if k in SLOW else k for k in CORPUS])
+@pytest.mark.parametrize("label", HELD_HERE)
 def test_pace_10_as_main_prints_it(tmp_path: Path, label: str) -> None:
     place, kind, steps = CORPUS[label]
-    from tf5_pins import as_main_printed
-
-    # the docs pair (TF5) renamed the helps' example store, made the top help's first sentence and list of tools
-    # whole, and lists the verbs of both refusals in the top help's order (ruled 2026-11-13: DOC-14, DOC-33, DOC-35);
-    # TF5-3 holds those changes, and this goes on holding every other byte, as TF26-66 does
-    # the Prove label kinds pair names, in these five, the labels that have no kind (test_pl_unchanged.py, PL-52, holds
-    # that); this goes on holding every other byte of them
-    from pl_pins import MOVED_SHARED, unmoved
-
-    found = ran_case(tmp_path, place, kind, steps)
-    found = unmoved(found) if label in MOVED_SHARED else found
-    ran = [(code, as_main_printed(label, out), as_main_printed(label, err) if not label.startswith("help") else err)
-           for code, out, err in found]
-    assert digest_steps(ran) == PINNED["piped"][label], label
-
-
-def test_pace_10_a_fast_case_stands_for_each_slow_one() -> None:
-    """The slow cases are the larger fixtures and the DeepEval import (TF18's); each kind of
-    invocation among them has a case in the pull-request lane."""
-    fast = [label for label in CORPUS if label not in SLOW]
-    twin = {"fixture": "verb", "import": "import", "import json": "import json"}
-    assert SLOW & set(CORPUS)
-    for label in SLOW & set(CORPUS):
-        family, _, rest = label.partition(": ")
-        verb = rest.split()[0]
-        assert any(other.startswith(f"{twin[family]}: ") and (family != "fixture" or verb in other) for other in fast), label
-
-
-def test_pace_10_every_pinned_weave_case_runs_as_main_ran_it() -> None:
-    """The exit codes main gave the Weave cases, written out: the pins hold a reader that worked,
-    and each refusal is the one meant."""
-    codes = {label: [step[0] for step in PINNED["piped"][label]] for label in WEAVE}
-    assert codes["weave: import"] == [0, 0, 1] and codes["weave: import json"] == [0, 0]
-    assert codes["weave: refusals"] == [1, 2, 2, 1, 1, 1]
-    assert codes["weave: a pull"] == [0, 0, 1, 0, 0]
-    assert all(code == 0 for label in ("help: import weave", "help: alias weave", "weave: the verbs", "weave: import by status",
-                                       "weave: import the page's files", "weave: import the paged pull") for code in codes[label])
-
-
-# ---------- PACE-11 ----------
-
-
-@pytest.mark.parametrize("label", list(INIT))
-def test_pace_11_init_as_main_prints_it(tmp_path: Path, label: str) -> None:
-    holds, steps = INIT[label]
-    assert digest_steps(ran_init(tmp_path, holds, steps)) == PINNED["init"][label], label
-
-
-# ---------- PACE-12 ----------
-
-
-def test_pace_12_the_pages_as_main_builds_them(tmp_path: Path) -> None:
-    assert pages_pins(make_world(tmp_path)) == PINNED["pages"]
-
-
-# ---------- PACE-13 ----------
-
-
-def test_pace_13_the_app_as_main_shows_it(tmp_path: Path) -> None:
-    got = app_pins(make_world(tmp_path))
-    assert sorted(got) == sorted(PINNED["app"])
-    for screen, text in PINNED["app"].items():
-        assert got[screen] == text, screen
+    # none of the three is a case a later ruling moved, so each is held as it prints, with nothing written back
+    assert digest_steps(ran_case(tmp_path, place, kind, steps)) == PINNED["piped"][label], label

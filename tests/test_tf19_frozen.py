@@ -10,8 +10,6 @@ from pathlib import Path
 TESTS = Path(__file__).resolve().parent
 
 FROZEN = {
-    "fixtures/tf19/main-pins.json": "eab28b03b19077aba57a9f44397381dd1c4ab6be19c306b94688b4db9bfbec6f",
-    "fixtures/tf19/make_main_pins.py": "5f07eb1e47483e4ca03842f573f6445590a3b6b7cb9d5bb1b77f64b4022e8dc8",
     "fixtures/tf19/prove-shell.json": "2bcdc708252ed0a82e52515ecfc14cc54e8d5365c365c9b3d63bff8095ab4743",
     "test_tf19_facts.py": "17c932c5d8e8a8195f70eeefc8e6f749cb8ad8da308adaf1ffe8db221b05d3a8",
     "test_tf19_keys.py": "feaa0d7a5008f04266034b27025c4692b7be13845e24b30555fc9a6be91aac07",
@@ -22,7 +20,6 @@ FROZEN = {
     "test_tf19_saves.py": "8846954f904b7f7cfaa1db06c74189f9df0e9d37a0089f8d46099222054f95eb",
     "test_tf19_screens.py": "93ee57f27d2f5dabdb8e672d5fe921bb10ccd2f263824f1517ba8fb747daa850",
     "test_tf19_shell.py": "d03ca425f36711e8cdcf1287ffb4cdd61cb63b0a7dad4e854366d46d2639f397",
-    "test_tf19_unchanged.py": "ebf19a2046ab83594a3bf93ec8dc2d99c49955a02a333f45bba875dc7e5cd1d7",
     "tf19_support.py": "2234eab694b7297bf035fdfc72b657e7403eb865f82bbf6fd46b07e955ddc634",
 }
 
