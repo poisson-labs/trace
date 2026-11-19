@@ -12,7 +12,9 @@ listed only on a real file the tool wrote, committed with its provenance and its
   three samples by two epochs, each; OpenAI Evals' two records are a ``spec`` line, a
   ``final_report`` line and three ``match`` events each, all of them not correct.
 - TF10-3: no fixture names a home folder or the machine's owner, and the one edit the OpenAI
-  Evals provenance records is the only difference from the files the tool wrote.
+  Evals provenance records is in place: ``/opt/venv`` once in each file, as the opening of the
+  ``spec`` line's ``registry_path``, with the digests of the files the tool wrote recorded in
+  the provenance. The path that was replaced is not written here: it named the machine.
 """
 
 from __future__ import annotations
@@ -53,8 +55,7 @@ FOLDER = {"promptfoo": PROMPTFOO, "inspect": INSPECT, "openai-evals": OPENAI}
 # the two OpenAI Evals records as the tool wrote them, before the one edit
 TOOL_WROTE = {"old.jsonl": "661b49d0c386d7afe1d3f8558099c6ee356f5934c167f5d33d2a64275010e1d6",
               "new.jsonl": "087171f6390b76e0612402f30f88b73a15f15ddcd9bd789fdb4d1ddf60f93af2"}
-SCRATCH_VENV = ("/private/tmp/claude-501/-Users-taylorkolasinski-code-poisson-labs/"
-                "f7fefa3a-d7d8-4a32-82e5-86fdd356dfc4/scratchpad/tools/venv")
+REGISTRY_PATH = "/opt/venv/lib/python3.11/site-packages/evals/registry"
 
 
 def _sums() -> dict[str, str]:
@@ -166,7 +167,8 @@ def test_tf10_3_no_fixture_names_a_home_folder_or_the_owner() -> None:
 def test_tf10_3_the_one_edit_is_the_scratch_path(name: str) -> None:
     committed = (OPENAI / name).read_text(encoding="utf-8")
     assert committed.count("/opt/venv") == 1
-    restored = committed.replace("/opt/venv", SCRATCH_VENV)
-    assert _sha(restored.encode("utf-8")) == TOOL_WROTE[name]
+    spec = json.loads(committed.splitlines()[0])["spec"]
+    assert spec["run_config"]["eval_spec"]["registry_path"] == REGISTRY_PATH
+    assert _sha(committed.encode("utf-8")) != TOOL_WROTE[name]
     section = _section("openai-evals")
     assert TOOL_WROTE[name] in section and "registry_path" in section

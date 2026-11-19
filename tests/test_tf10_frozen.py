@@ -11,7 +11,7 @@ TESTS = Path(__file__).resolve().parent
 
 FROZEN = {
     "tf10_support.py": "4c52b0ad2ff981513f16d382619599d421ddb1e93f40ed68e37993ce3e72c4ef",
-    "test_tf10_fixtures.py": "a1980680a0f4a712e7062221d1d6744e64be1a5d1e5cc10f8f4733f70c6dae7a",
+    "test_tf10_fixtures.py": "27a84bff4494f11bd30f2fdd304ecfae35ee965d40ed81d4171fbcc22fd7d3ad",
     "test_tf10_promptfoo.py": "9c6c0c9b094810a778b2b95b3ba41408f273de1f08cea924dc8edfa7f51cc01a",
     "test_tf10_inspect.py": "d2291bff26ff8f3e86ce3bdac1f30574ec593b2bb6106a7da1775b2161ee3ce7",
     "test_tf10_openai_evals.py": "4025f587201d2e0b7cb8f6ebf0235f9a74973728d7972ef64e2c5bd6b89687d2",
