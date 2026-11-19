@@ -181,14 +181,14 @@ def prepare(ns: argparse.Namespace) -> None:
     _from_config(ns, folders=bool(words) and len(folders) == len(words))
     refusal = look.prove_refusal(DOES)
     if refusal is not None:
-        raise _Refusal(refusal, look.INSTALL_PROVE)
+        raise _Refusal(refusal, *look.prove_nexts())
     _validate(ns)
 
 
 def prove_present(does: str = DOES) -> None:
     refusal = look.prove_refusal(does)
     if refusal is not None:
-        raise _Refusal(refusal, look.INSTALL_PROVE)
+        raise _Refusal(refusal, *look.prove_nexts())
 
 
 def _validate(ns: argparse.Namespace) -> None:

@@ -773,10 +773,11 @@ def _read_and_write(
 
 
 def _prove_present() -> None:
-    """Refused when ``poisson_prove`` is not present at the version this package reads."""
+    """Refused when ``poisson_prove`` is not present at a version this package reads, or lacks
+    what it imports."""
     refusal = look.prove_refusal(_DOES)
     if refusal is not None:
-        raise Refusal(refusal, look.INSTALL_PROVE)
+        raise Refusal(refusal, *look.prove_nexts())
 
 
 def _resolved(path: str, tool: str | None) -> Resolved:

@@ -69,6 +69,15 @@ def _prove() -> dict[str, Any]:
     found = look.prove_found()
     if look.prove_refusal("Trace reads stores") is None:
         return _check("prove", True, f"poisson-prove {found} (Trace reads {look.PROVE_READ})")
+    gone = look.prove_missing() if found is not None and look.at_or_above_the_floor(found) else []
+    if gone:
+        # at or above the floor and lacking what Trace imports: the floor's install line would
+        # move nothing, so the check names no command
+        line = (
+            f"poisson-prove {found} is installed and has no {look.listed(gone)}, "
+            "which Trace imports from it"
+        )
+        return _check("prove", False, line)
     if found is None:
         try:
             import poisson_prove  # noqa: F401
@@ -435,13 +444,14 @@ def setup_check(given: str | None) -> dict[str, Any]:
         assert held is not None
         if not prove["ok"]:
             checks += _config_and_names(given, False)
+            # the prove check names no command when the Prove found lacks what Trace imports
+            because = (
+                "poisson-prove lacks what Trace imports from it"
+                if prove["next"] is None
+                else "poisson-prove is not at a version Trace reads"
+            )
             import_checks = [
-                _check(
-                    "import",
-                    False,
-                    f"{e.file}: not read, since poisson-prove is not at a version Trace reads",
-                    look.INSTALL_PROVE,
-                )
+                _check("import", False, f"{e.file}: not read, since {because}", prove["next"])
                 for e in held.imports
             ]
         else:

@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import ast
 import contextlib
+import importlib
 import importlib.metadata
 import os
 import re
@@ -331,7 +332,55 @@ def prove_refusal(does: str) -> str | None:
         return f"{wanted} and found a poisson-prove that states no version"
     if not _at_or_above(found, PROVE_VERSION):
         return f"{wanted} and found poisson-prove {found}"
+    gone = prove_missing()
+    if gone:
+        return f"{wanted} and found poisson-prove {found}, which has no {listed(gone)}"
     return None
+
+
+# Every module of Prove this package imports, and every name it imports from each, wherever in
+# the package it imports them. The floor says which versions are read; a later one that drops or
+# renames one of these is refused by the same check, before any command imports it.
+PROVE_IMPORTS: dict[str, tuple[str, ...]] = {
+    "poisson_prove.steps": ("declaration_check",),
+    "poisson_prove.store": ("EpisodeRecord", "RunManifest", "RunTally", "Store", "config_hash"),
+    "poisson_prove.trace": ("CONTENT_KEYS", "KINDS", "OBSERVATION_KEYS", "Trace", "from_otel"),
+}
+
+
+def prove_missing() -> list[str]:
+    """What of ``PROVE_IMPORTS`` the Prove this interpreter imports does not have, dotted and in
+    order: a module that does not import is named as the module, not as its names. Asked only
+    once Prove itself imports at or above the floor."""
+    gone: list[str] = []
+    for module, names in PROVE_IMPORTS.items():
+        try:
+            held = importlib.import_module(module)
+        except ImportError:
+            gone.append(module)
+            continue
+        gone.extend(f"{module}.{name}" for name in names if not hasattr(held, name))
+    return sorted(gone)
+
+
+def prove_nexts() -> tuple[str, ...]:
+    """The commands under ``prove_refusal``'s sentence: the floor's install line, unless the
+    Prove found is at or above the floor and lacks what Trace imports, where pip holds that line
+    met and installing it would move nothing."""
+    found = prove_found()
+    if found is not None and at_or_above_the_floor(found) and prove_missing():
+        return ()
+    return (INSTALL_PROVE,)
+
+
+def at_or_above_the_floor(found: str) -> bool:
+    """Whether the version ``found`` is one this package reads by its number alone."""
+    return _at_or_above(found, PROVE_VERSION)
+
+
+def listed(items: Sequence[str]) -> str:
+    """``A``, ``A and B``, ``A, B and C``: the items as given."""
+    return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} and {items[-1]}"
 
 
 def prove_found() -> str | None:

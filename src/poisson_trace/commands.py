@@ -143,7 +143,7 @@ def init(
 
         refusal = look.prove_refusal("poisson-trace init reads stores")
         if refusal is not None:
-            raise look.Refused(refusal, look.INSTALL_PROVE)
+            raise look.Refused(refusal, *look.prove_nexts())
         line = [setup.STOPPED]
 
         def written(said: str) -> None:
