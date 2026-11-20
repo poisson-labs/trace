@@ -17,8 +17,8 @@ from pathlib import Path
 from conftest import TAU2
 from poisson_prove.store import Store
 
-from tf2_support import CONFIG, NUMBERED, config, copy_tree, here, init_yes, refused, scratch_home, summary_command, tty, work  # noqa: F401
-from tf3_support import SUITE_1, SUITE_2, TABLE_A, TABLE_B
+from setup_support import CONFIG, NUMBERED, config, copy_tree, here, init_yes, refused, scratch_home, summary_command, tty, work  # noqa: F401
+from junit_table_support import SUITE_1, SUITE_2, TABLE_A, TABLE_B
 
 # what pytest 9.1.1 writes with --junitxml when it collects no test (exit 5), its host name changed
 EMPTY = (

@@ -32,8 +32,8 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from tf0_support import chdir, ragas_import, trace, trace_import
-from tf1_support import (
+from look_support import chdir, ragas_import, trace, trace_import
+from names_support import (
     NAMES_FILE, T_B, R, make_runs, name, next_line, refused, resolved, runs_json, shell_words, stamp,
     tau2_copy,
 )

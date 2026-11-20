@@ -651,12 +651,12 @@ def test_tr56_compare_guidance_and_the_pointer_line(two_run_store) -> None:  # t
     """The guidance is the smallest number of tries per input per version
     whose expected log-rank information, under the per-input model fitted to the two runs, reaches
     ((z_0.975 + z_0.8) / ln 1.3)^2; Schoenfeld's deaths do not size it. Checked here with the
-    statistics check's model (tf15_support) at 1,000 seeded draws: one try more adds about 0.375 to
+    statistics check's model (summaries_support) at 1,000 seeded draws: one try more adds about 0.375 to
     the expected information on this store, and the allowance of 0.6 admits a seeded estimate one
     try either side of the exact answer, about 304, and nothing Schoenfeld's rule gives (about 265,
     whose expected information is 99)."""
     from poisson_trace.survival import logrank_stratified
-    from tf15_support import draw_run, fit_cells, z_sum
+    from summaries_support import draw_run, fit_cells, z_sum
 
     root = two_run_store(deaths_rows(list(range(2, 12))) + deaths_rows([12, 13, 14], died=False, start_rep=20),
                          deaths_rows(list(range(3, 11)) + [4, 6]) )

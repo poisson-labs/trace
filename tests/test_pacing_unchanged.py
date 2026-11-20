@@ -7,7 +7,7 @@ pacing corpus runs them. Pinned by ``fixtures/pacing/make_main_pins.py`` on Pyth
 checked on 3.11.
 
 The rest of the pacing corpus, with ``init``, the pages and the terminal app, is held by
-``test_pl_unchanged.py`` (PL-51 to PL-55) at today's bytes.
+``test_label_kinds_unchanged.py`` (PL-51 to PL-55) at today's bytes.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ CORPUS = pin_corpus()
 # ---------- PACE-10 ----------
 
 
-#: The three cases no later list runs: the newest list (``pl_pins``, PL-51) runs every other case of this corpus whole,
+#: The three cases no later list runs: the newest list (``label_kinds_pins``, PL-51) runs every other case of this corpus whole,
 #: at today's bytes, so only these are held here.
 HELD_HERE = ("import refusal: weave", "weave: import the paged pull", "weave: refusals")
 

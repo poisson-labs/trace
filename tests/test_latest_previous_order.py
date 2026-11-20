@@ -13,8 +13,8 @@ import os
 import shutil
 from pathlib import Path
 
-from tf2_support import here, import_here, init_yes, scratch_home, work  # noqa: F401
-from tf3_support import JUNIT, TABLE_A, TABLE_B, refusal
+from setup_support import here, import_here, init_yes, scratch_home, work  # noqa: F401
+from junit_table_support import JUNIT, TABLE_A, TABLE_B, refusal
 
 COLUMNS = ["--case-column", "case", "--outcome-column", "outcome", "--failed", "failed_assertion", "--failed", "crashed"]
 COMPARE = ["--inputs", "all", "--max-mde", "0.02"]

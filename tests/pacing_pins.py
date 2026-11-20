@@ -22,7 +22,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from tf21_support import FIXTURES, INGEST
+from signals_support import FIXTURES, INGEST
 
 PACING = FIXTURES / "pacing"
 PINS = PACING / "main-pins.json"
@@ -91,8 +91,8 @@ WEAVE: dict[str, tuple[str, str, list[list[str]]]] = {
 def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
     """Every invocation whose plain and ``--json`` output the pacing fix leaves as main prints
     it, piped (see the module's opening)."""
-    from tf26_pins import CHANGED
-    from tf26_pins import pin_corpus as tf26_corpus
+    from weave_pins import CHANGED
+    from weave_pins import pin_corpus as tf26_corpus
 
     out = dict(tf26_corpus())
     out.update(CHANGED)
@@ -102,13 +102,13 @@ def pin_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
 
 def init_corpus() -> dict[str, tuple[str, list[list[str]]]]:
     """``init`` on the files it finds, as TF26 ran it: label to (what the folder holds, steps)."""
-    from tf26_pins import INIT
+    from weave_pins import INIT
 
     return dict(INIT)
 
 
 def pin_slow() -> frozenset[str]:
-    from tf19_support import slow
+    from app_support import slow
 
     return slow()
 
@@ -118,12 +118,12 @@ def ran_case(tmp: Path, place: str, kind: str, steps: Sequence[Sequence[str]]) -
     workspace's path written ``<ROOT>``. ``wv`` is the workspace with the Weave captures copied
     in as ``wv/``; ``wv-pull`` the same with the pull answered by TF26's transport and no
     network; every other place is TF26's."""
-    from tf26_pins import ran_case as tf26_ran
+    from weave_pins import ran_case as tf26_ran
 
     if place not in ("wv", "wv-pull"):
         return tf26_ran(tmp, place, kind, steps)
-    from tf13_support import workspace
-    from tf19_support import normal, run_steps
+    from api_support import workspace
+    from app_support import normal, run_steps
 
     work = workspace(tmp)
     shutil.copytree(INGEST / "weave", work / "wv")
@@ -131,7 +131,7 @@ def ran_case(tmp: Path, place: str, kind: str, steps: Sequence[Sequence[str]]) -
     try:
         if place == "wv":
             return [(r.code, normal(r.out, work), normal(r.err, work)) for r in run_steps(work, "work", kind, [list(s) for s in steps])]
-        from tf26_support import pulling
+        from weave_support import pulling
 
         with pulling():
             return [(r.code, normal(r.out, work), normal(r.err, work)) for r in run_steps(work, "work", kind, [list(s) for s in steps])]
@@ -140,18 +140,18 @@ def ran_case(tmp: Path, place: str, kind: str, steps: Sequence[Sequence[str]]) -
 
 
 def ran_init(tmp: Path, holds: str, steps: Sequence[Sequence[str]]) -> list[tuple[int, str, str]]:
-    from tf26_pins import ran_init as tf26_init
+    from weave_pins import ran_init as tf26_init
 
     return tf26_init(tmp, holds, steps)
 
 
 def app_pins(work: Path) -> dict[str, str]:
-    from tf26_pins import app_pins as tf26_app
+    from weave_pins import app_pins as tf26_app
 
     return tf26_app(work)
 
 
 def digest_steps(got: Sequence[tuple[int, str, str]]) -> list[list[Any]]:
-    from tf19_support import digest
+    from app_support import digest
 
     return [[code, digest(out), digest(err)] for code, out, err in got]

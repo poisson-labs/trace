@@ -27,7 +27,7 @@ import pytest
 from poisson_prove.store import Store
 
 from conftest import CS, CS_RECORD, TAU2, TAU2_A, TAU2_B
-from tf0_support import RAGAS, deepeval_import, ragas_import, run_sub, trace, trace_import, where_cs
+from look_support import RAGAS, deepeval_import, ragas_import, run_sub, trace, trace_import, where_cs
 
 
 def test_a_held_name_is_refused_before_the_reader_and_ctrl_c_under_a_new_name_says_nothing_was_written(

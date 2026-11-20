@@ -44,7 +44,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from conftest import FIXTURES
-from tf0_support import Ran, trace, trace_import
+from look_support import Ran, trace, trace_import
 
 BD = FIXTURES / "breakdown"
 MOCKUPS = BD / "mockups"
@@ -362,8 +362,8 @@ def piped_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
     ``work`` runs inside TF13's workspace, ``repo`` on the committed fixtures by their paths.
     TF13-32's corpus (every verb on each kind of store, each option, the refusals, the imports,
     the names) and TF6-1's larger fixtures, plain and ``--json``."""
-    from tf0_support import changes_he, compare_tau2, fix_check_he, fix_check_tau2, fix_check_tau2_all, where_cs
-    from tf13_support import IMPORT_ARGV, IMPORT_REFUSALS_ARGV, REFUSALS_ARGV, VERBS_ARGV
+    from look_support import changes_he, compare_tau2, fix_check_he, fix_check_tau2, fix_check_tau2_all, where_cs
+    from api_support import IMPORT_ARGV, IMPORT_REFUSALS_ARGV, REFUSALS_ARGV, VERBS_ARGV
 
     out: dict[str, tuple[str, str, list[list[str]]]] = {}
     for label, argv in VERBS_ARGV.items():
@@ -376,7 +376,7 @@ def piped_corpus() -> dict[str, tuple[str, str, list[list[str]]]]:
     for label, (argv, _code) in IMPORT_REFUSALS_ARGV.items():
         if label == "a tool not in this install":
             # it names every reader in the install, so it moves with each new reader, whose
-            # tests hold it (for LangSmith, test_tf24_unchanged.py)
+            # tests hold it (for LangSmith, test_langsmith_unchanged.py)
             continue
         out[f"import refusal: {label}"] = ("work", "import", [argv, [*argv, "--json"]])
     out["names"] = ("work", "trace", [
@@ -399,7 +399,7 @@ SLOW_PIPED = frozenset({"import: deepeval", "import json: deepeval", "fixture: w
 def pty_corpus() -> dict[str, list[str]]:
     """The verbs of one run (``where``, ``runs``), inside TF13's workspace, held on a terminal:
     their pretty and ``--plain`` bytes at each of :data:`PTY_WIDTHS` are main's."""
-    from tf13_support import VERBS_ARGV
+    from api_support import VERBS_ARGV
 
     return {label: argv for label, argv in VERBS_ARGV.items() if argv[0] in ("where", "runs")}
 

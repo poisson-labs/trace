@@ -1,4 +1,4 @@
-# The packages the release lanes ran green with on Python 3.12 (macOS, arm64), 2026-11-11.
+# The packages the release lanes ran green with on Python 3.12 (macOS, arm64).
 # Written from that environment's freeze, Trace itself left out; used as pip constraints.
 ast-serialize==0.13.1
 autograd==1.9.1

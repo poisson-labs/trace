@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from conftest import TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, compare, where
-from tf2_support import here, import_here, work
-from tf3_support import TABLE_A, TABLE_B
+from setup_support import here, import_here, work
+from junit_table_support import TABLE_A, TABLE_B
 
 COLUMNS = ["--case-column", "case", "--outcome-column", "outcome", "--failed", "failed_assertion", "--failed", "crashed"]
 

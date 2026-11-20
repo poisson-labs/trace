@@ -2,7 +2,7 @@
 bar, the focus marker, the message line, the width and line-break rules, and the moves over a
 screen's rows and links. Copied from Prove's ``main`` at the commit ``PROVE_COMMIT`` names, whose
 two app files (``_cli_app_pages.py`` and ``_cli_app.py``) are byte for byte those of the Prove
-release Trace pins; ``tests/test_tf19_shell.py`` holds each definition here to that commit's,
+release Trace pins; ``tests/test_app_shell.py`` holds each definition here to that commit's,
 syntax tree for syntax tree, with ``poisson-prove`` read as ``poisson-trace``. Prove's private
 modules are not imported; the screens are Trace's own (``_app.py``) and sit on this shell.
 

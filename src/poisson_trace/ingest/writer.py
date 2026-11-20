@@ -10,7 +10,7 @@ record's ``meta["trace_signals"]`` as the ``poisson.trace-signals/1`` record: ``
 written where a cost was recorded, a row without an outcome stays an errored record, and the digest
 of the rules that classified the run is recorded in the manifest beside what the import declared.
 
-The run record (the artifact format's sections 2 to 4): the store descriptor ``.poisson/store.json``
+The run record: the store descriptor ``.poisson/store.json``
 is written on the first write into a store, or Trace is added to its ``writers`` once, as a saved
 verdict writes it (``saved.write_store_descriptor``), after a descriptor in a newer major, or one
 that is not a descriptor, has been refused with nothing written. The run's ``events.jsonl`` is
@@ -296,7 +296,7 @@ class _Log:
 
 def _check_descriptor(root: Path) -> None:
     """Refuse a store whose descriptor is in a newer major than Trace writes, is not a
-    descriptor at all (the format's sections 3 and 9), or is there and cannot be read, before
+    descriptor at all, or is there and cannot be read, before
     anything is written."""
     try:
         saved.check_store_descriptor(root)
@@ -345,7 +345,7 @@ def check_before_reading(root: Path, name: str, form: str = "target", *, held: b
 
 
 def _produced_by(run: Run, verdicts: Mapping[str, Any] | None) -> dict[str, Any]:
-    """The manifest's ``produced_by`` (the format's section 4.1): the shared ``version`` and
+    """The manifest's ``produced_by``: the shared ``version`` and
     ``from``, then Trace's own ``tool``, ``reader`` and ``options``."""
     made_from = [{"name": str(f["name"]), "sha256": str(f["sha256"])} for f in run.files]
     if verdicts is not None:

@@ -49,11 +49,11 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-from tf0_support import REPO
-from tf9_support import cells, runs_of, strip
-from tf9_support import run as pty
-from tf13_support import cli, workspace
-from tf18_support import SAVES, copy_work, recording_browser, redigest, sha256
+from look_support import REPO
+from terminal_support import cells, runs_of, strip
+from terminal_support import run as pty
+from api_support import cli, workspace
+from pages_support import SAVES, copy_work, recording_browser, redigest, sha256
 
 FIX = SAVES["fix-check"][1]
 SENTENCE = "the fix-check verdict in fb as one page that opens from disk with nothing else present"

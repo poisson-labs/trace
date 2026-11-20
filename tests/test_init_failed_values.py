@@ -14,10 +14,10 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from tf2_support import (  # noqa: F401
+from setup_support import (  # noqa: F401
     CONFIG, check, doctor_doc, here, import_here, init_yes, outcome_runs, refused, scratch_home, work, write_config,
 )
-from tf3_support import TABLE_A, TABLE_B, outcome_rows, write_table
+from junit_table_support import TABLE_A, TABLE_B, outcome_rows, write_table
 
 COLUMNS = ["--case-column", "case", "--outcome-column", "outcome"]
 

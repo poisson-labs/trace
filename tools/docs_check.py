@@ -86,7 +86,7 @@ INGEST = FIXTURES / "ingest"
 STANDARDS = ("cli-look.md",)
 #: Fixture folders no page reads: earlier outputs the test suite pins. Left out of a copy of
 #: the whole of ``tests/fixtures``, unless the page names one.
-NOT_COPIED = ("tf5", "tf9", "tf18", "tf19", "tf24", "tf25", "tf26")
+NOT_COPIED = ("app", "docs", "weave-reader")
 #: The two folders of the checkout a page's commands may read, each by the path a page writes.
 COPIED = {"tests/fixtures": FIXTURES, "examples": EXAMPLES}
 #: How long one block may run, in seconds.
@@ -435,7 +435,7 @@ def _open_terminal(tries: int = 50) -> tuple[int, int]:
     """A new pseudo-terminal: its controlling end and the end a command is given. On macOS, while
     other processes open and close pseudo-terminals, ``os.openpty`` now and then fails with
     ``OSError: [Errno -6]``; that one error is asked again, a moment later each time, and any
-    other, and this one ``tries`` times running, is raised (as ``tests/tf9_support.py`` does)."""
+    other, and this one ``tries`` times running, is raised (as ``tests/terminal_support.py`` does)."""
     for attempt in range(tries):
         try:
             return os.openpty()

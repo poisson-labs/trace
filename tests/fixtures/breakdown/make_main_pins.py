@@ -1,5 +1,5 @@
 """Takes the pins of what main prints before the failure breakdown, for the tests that hold every
-other output to it (``tests/test_bd_unchanged.py``): run on main (the commit
+other output to it (``tests/test_breakdown_unchanged.py``): run on main (the commit
 ``breakdown_support.MAIN`` names), from the repository's root, with the package installed::
 
     python tests/fixtures/breakdown/make_main_pins.py
@@ -25,10 +25,10 @@ sys.path.insert(0, str(TESTS))
 from breakdown_support import (  # noqa: E402
     MAIN, PINS, PTY_WIDTHS, normal, outside_new_parts, piped_corpus, pty_corpus,
 )
-from tf0_support import REPO  # noqa: E402
-from tf9_support import run as pty_run  # noqa: E402
-from tf13_support import cli, cli_import, workspace  # noqa: E402
-from tf0_support import chdir  # noqa: E402
+from look_support import REPO  # noqa: E402
+from terminal_support import run as pty_run  # noqa: E402
+from api_support import cli, cli_import, workspace  # noqa: E402
+from look_support import chdir  # noqa: E402
 
 
 def digest(text: str) -> str:
@@ -42,7 +42,7 @@ def piped_case(tmp: Path, place: str, kind: str, steps: list[list[str]]) -> list
         if place == "work":
             ran = (cli if kind == "trace" else cli_import)(work, step)
         else:
-            from tf0_support import trace
+            from look_support import trace
 
             with chdir(REPO):
                 ran = trace(step)

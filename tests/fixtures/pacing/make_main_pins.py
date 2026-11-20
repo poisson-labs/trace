@@ -23,7 +23,7 @@ TESTS = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(TESTS))
 
 from pacing_pins import MAIN, PINS, app_pins, digest_steps, init_corpus, pin_corpus, ran_case, ran_init  # noqa: E402
-from tf19_support import make_world, pages_pins  # noqa: E402
+from app_support import make_world, pages_pins  # noqa: E402
 
 
 def main() -> None:

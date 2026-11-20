@@ -30,7 +30,7 @@ another clock.
 row; a one-row import writes the first-row progress and the closing one.
 **PACE-8** An import stopped by Ctrl-C after its run folder exists: the paced lines before it
 are a second apart by the times written, then the closing progress and ``interrupted``.
-**PACE-9** The run record's own check of the log (``runrec_support.check_finished``, which
+**PACE-9** The run record's own check of the log (``run_record_support.check_finished``, which
 RUNREC-10 and RUNREC-11 apply) holds on RUNREC-11's import, the rows with no outcome first, under
 each loaded script: the frozen tests' floor is met whatever the load.
 """
@@ -211,7 +211,7 @@ def test_pace_8_an_interrupted_import_paces_its_lines_before_the_stop(
 @pytest.mark.parametrize("script", LOADED)
 def test_pace_9_the_run_record_s_check_holds_under_load(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, script: str) -> None:
-    from runrec_support import check_finished
+    from run_record_support import check_finished
 
     root = tmp_path / "store"
     write_under(Clock(SCRIPTS[script]()), 2_000, root, monkeypatch, errored_first=1_000)

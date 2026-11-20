@@ -347,11 +347,11 @@ temperatures, the replicate numbers and the three outcome words. Read back throu
 reader and Prove with `--case-column case --outcome-column outcome --failed failed_assertion
 --failed crashed`, each file gives its source run's failures case by case, and the fix check and
 the changes on the two imported runs give the source runs' numbers
-(`tests/test_tf3_fixtures.py`).
+(`tests/test_junit_table_fixtures.py`).
 
 **What each cannot express.** One outcome column of words, no score, no empty cell, no other
 format than CSV. Every other shape (JSON Lines, JSON, Parquet, gzip, scores at a cut, empty
-cells, true and false, refusals) is built in the tests (`tests/test_tf3_table.py`).
+cells, true and false, refusals) is built in the tests (`tests/test_junit_table.py`).
 
 ## Added for the JUnit import
 
@@ -406,13 +406,13 @@ addresses: no hit. The only text is test names, class names, the replay suite's 
 messages and tracebacks (its own file and line), the skip's reason and location, and the
 statistics. Read back through the JUnit reader and Prove, each report of Trace's own tests is
 91 test cases, 90 passed and 1 skipped; each replay report gives its run's failures problem by
-problem (`tests/test_tf3_fixtures.py`).
+problem (`tests/test_junit_table_fixtures.py`).
 
 **What each cannot express.** Trace's own tests fail nothing, so `--event missed` names no
 outcome on that pair, and each test runs once. The replay pair has one error (in the first run
 only), no skip and no test case without a class name. Suites nested in suites, a lone
 `<testsuite>` root, a timestamp with no zone, a test case with no name, and every refusal are
-built in the tests (`tests/test_tf3_junit.py`).
+built in the tests (`tests/test_junit_table_junit.py`).
 
 ## Added for the promptfoo import
 
@@ -447,7 +447,7 @@ owner's name and email addresses: no hit.
 **What it cannot express.** One provider; no error row; no assertion other than `contains`; no
 named scores; no token, cost or latency a model gave. The other assertion types, an error row, a
 second provider and every refusal are built in the tests from this file with one field changed
-(`tests/test_tf10_promptfoo.py`).
+(`tests/test_three_tools_promptfoo.py`).
 
 ## Added for the Inspect import
 
@@ -479,7 +479,7 @@ material, home-directory paths, the machine owner's name and email addresses: no
 
 **What it cannot express.** One scorer with letter values; no sample error, no limit, no tool
 call, no stop reason but `stop`, no log whose status is `error`. Those and every refusal are built
-in the tests from these files with one field changed (`tests/test_tf10_inspect.py`).
+in the tests from these files with one field changed (`tests/test_three_tools_inspect.py`).
 
 ## Added for the OpenAI Evals import
 
@@ -509,17 +509,17 @@ paths, the machine owner's name and email addresses: no hit.
 
 **What it cannot express.** No passing sample, no repeat of a sample, no `sampling` or `metrics`
 event, no empty answer. Those and every refusal are built in the tests from these files with one
-line added or changed (`tests/test_tf10_openai_evals.py`).
+line added or changed (`tests/test_three_tools_openai_evals.py`).
 
 ## Added for the setup agent
 
 `setup-agent/setup-file-format-1.txt` is the shared text of the Poisson setup file, format 1
 (the rules, the check, the prompt and the hand-over opening), byte for byte as the shared page
 writes it, with the placeholders a tool fills; the same text Prove's copy carries.
-`tests/test_tf17_skill.py` checks the skill `poisson-trace init --agent` writes against it.
+`tests/test_setup_agent_skill.py` checks the skill `poisson-trace init --agent` writes against it.
 
 `setup-agent/sample-repo/` is a small repository written by hand for the scripted run of
-`tests/test_tf17_scripted.py`: a stand-in support agent that calls no model (`agent/`, naming the
+`tests/test_setup_agent_scripted.py`: a stand-in support agent that calls no model (`agent/`, naming the
 failure outcomes), a scoring module naming the cut a Ragas row must reach (`evals/score_rag.py`),
 the agent's own tests (`tests/agent_checks.py`), a `pyproject.toml` naming the tools, and a
 README saying which results are old and which new. The store and the result files are not
@@ -540,7 +540,7 @@ imports of the committed `ingest/deepeval/humaneval-{a,b}.json.gz` and `ingest/i
 `tests/test_bd_*.py` hold Trace's output to them (with one cell corrected).
 
 `breakdown/main-pins.json` holds the digests of what an earlier main, `7e6fef6`, printed, so that
-`tests/test_bd_unchanged.py` can check every other output stays as it was; taken by
+`tests/test_breakdown_unchanged.py` can check every other output stays as it was; taken by
 `breakdown/make_main_pins.py` on that commit, twice, with the same result. Paths are written
 `<ROOT>`. No key, no model and no network were used.
 

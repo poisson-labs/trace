@@ -41,7 +41,7 @@ from breakdown_support import (
     ARMS, LABELS, SIGNALS_LINE, TWO_RUNS, different_rules_section, of_line, ok, section, table_store,
 )
 from conftest import FIXTURES
-from tf0_support import chdir, trace_import
+from look_support import chdir, trace_import
 
 CS = FIXTURES / "cs"
 CS_A, CS_B = "20260925T234602Z-3ea0", "20260925T235434Z-af48"
@@ -192,7 +192,7 @@ def test_tries_1_the_sentence_says_how_many(which: str, verb: str, tmp_path: Pat
     assert got[at + 1] == "" and got[at + 2] == expected_line(verb, counts)
     # a paragraph of its own: the signals' table, where there is one, follows after a blank line
     rest = got[at + 3:]
-    # after it come the labels that have no kind, if any (test_pl_section.py, PL-21, holds that)
+    # after it come the labels that have no kind, if any (test_label_kinds_section.py, PL-21, holds that)
     if len(rest) >= 2 and rest[0] == "" and rest[1].startswith("Trace has no kind for the label"):
         rest = rest[2:]
     assert rest == [] or (rest[0] == "" and rest[1] == SIGNALS_LINE)
@@ -294,7 +294,7 @@ def test_tries_4_json_carries_the_counts_after_the_tries(verb: str, tmp_path: Pa
     store = cs_store(tmp_path)
     counts = read_counts(CS, (CS_A, CS_B))
     diff = ok(cs_argv(verb, store, "--json")).json()["failure_taxonomy_diff"]
-    # last comes the key for the labels that have no kind (test_pl_section.py, PL-23, holds that)
+    # last comes the key for the labels that have no kind (test_label_kinds_section.py, PL-23, holds that)
     assert [k for k in diff if k != "labels_without_kind"] == KEYS and list(diff)[-1] == "labels_without_kind"
     assert _counts_of(diff, verb) == counts
     assert set(diff["no_outcome"]) == set(diff["verdict_tries"]) == set(ARMS[verb])
