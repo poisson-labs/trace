@@ -70,6 +70,10 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
   Prove can read a store Trace wrote.
 - In that event log, the lines that report an import's progress are at least a second apart
   by the times written on them, however busy the machine is.
+- An import checks the run's name and the store's `store.json` before it reads a file or asks
+  a service for anything, so a name already taken, or a `store.json` that is not a store
+  descriptor, is refused before the work. A `store.json` the import may not read is refused in
+  one line with the system's reason, and nothing is written.
 
 ### Saving a result, and showing it
 
@@ -78,6 +82,11 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
   checks that folder file by file (`docs/handover.md`).
 - `poisson-trace ui` builds pages over a store's runs and saved verdicts, and
   `poisson-trace report DIR` writes one result as a single HTML page that opens from disk.
+- `--out DIR` and `where --svg FILE` are checked before any run is read, so a folder or file
+  they cannot write is refused before the counting, not after it.
+- If the installed Prove lacks the files Trace builds its pages with, `ui` and `report` refuse
+  in one line that names what is missing, and `--save` keeps the verdict and says the same in
+  its note.
 - `poisson-trace` with no verb opens the terminal app: the runs, the imports, a comparison, a
   fix check and the verdict, a screen each.
 - `poisson_trace.api` has a function for each command, with typed results
@@ -102,17 +111,25 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
 ### Installing
 
 - `pip install poisson-trace` brings `poisson-prove`, which Trace reads stored runs through,
-  at one exact version. Any other version of it is refused, with the command that mends it.
+  at version 0.4.0 or later. An older version, or none, is refused, with the command that
+  mends it.
+- If the installed Prove lacks something Trace imports from it, every command that reads
+  through Prove refuses in one line that names what is missing, and `doctor`'s Prove check
+  says the same. No command is offered: installing that Prove again would change nothing.
 - `pyarrow` is a declared dependency: Trace uses it to write a saved result's table.
 
 ### If you used a pre-release
 
 - The examples in `--help` name the store folder `prove-runs`, the folder the published Prove
   writes. They named `proofload-runs` before. Nothing else a command prints has moved but
-  the two items below.
+  the four items below.
 - The help of the command now says Trace reads the results of ten other tools, and names all
   of them.
 - The two refusals that list the verbs now list them in the order the help does.
+- `init`'s summary says `poisson-prove` is installed at a version Trace reads, where it said
+  the version.
+- The refusal when Prove is missing, or is not a version Trace reads, names the package as
+  `version 0.4.0 or later`, where 0.1.0a1 named `version 0.1.3`.
 
 ## 0.1.0a1 — pre-release
 

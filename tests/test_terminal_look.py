@@ -1,8 +1,8 @@
 """TF9, invariant 7: what else the look file requires (the look file's
 rules 15 and 16).
 
-- ``docs/cli-look.md`` is Prove's look file byte for byte, as poisson-prove 0.1.2
-  publishes it (tag ``v0.1.2``): its digest is held by TF5-69 (``test_docs.py``).
+- ``docs/cli-look.md`` is Prove's look file byte for byte, as poisson-prove 0.2.0 and later
+  publish it (tag ``v0.2.0``): its digest is held by TF5-69 (``test_docs.py``).
 - **TF9-7b** In a pseudo-terminal, with escapes removed, the first line carries the same verdict
   word and sentence as plain's, and the exit code is plain's.
 - **TF9-7c** The same facts, in the same order: on each stream, the pretty rendering holds the

@@ -42,9 +42,9 @@ from look_support import Ran, chdir, trace
 
 # the commit of main the pins were taken at
 MAIN = "a4bc065"
-FIX31 = FIXTURES / "no-failures"
-PINS = FIX31 / "main-pins.json"
-BREAK_CASE = FIX31 / "break-case.json"
+NO_FAILURES_FIXTURES = FIXTURES / "no-failures"
+PINS = NO_FAILURES_FIXTURES / "main-pins.json"
+BREAK_CASE = NO_FAILURES_FIXTURES / "break-case.json"
 # Break's arms, as its confirm stage names them, and what it asks (confirm._command)
 CONTROL, CANDIDATE_1, CANDIDATE_2 = "confirm-control", "confirm-1", "confirm-2"
 BREAK_CASES, BREAK_REPEATS = 6, 5
@@ -568,7 +568,7 @@ def worst_clean_chance(design: Sequence[tuple[int, int]], share: float) -> float
 
 # ---------- what fix-check prints for the pairs that never failed ----------
 
-PRINTED = FIX31 / "printed"
+PRINTED = NO_FAILURES_FIXTURES / "printed"
 
 
 def printed(tmp: Path) -> dict[str, str]:

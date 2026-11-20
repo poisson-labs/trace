@@ -78,15 +78,12 @@ _MARK = (
     "7512%27%20width%3D%27416%27%20height%3D%27192%27%20fill%3D%27%23fff%27%2F%3E%3C%"
     "2Fsvg%3E"
 )
-_SANS = 'system-ui,-apple-system,"Segoe UI",sans-serif'
 PAGE_CSS = (
     # the header's mark: Trace's tile
     f"header .tool::before{{background:{MARK_COLOUR} url({_MARK}) center/100% no-repeat;"
     "box-shadow:none}"
-    # prose everywhere but code: a table cell, a detail line's value and the crumbs read in the
-    # page's face; ids, addresses, identifiers and commands keep the monospace
-    f"td,dd,nav{{font-family:{_SANS}}}"
-    "td .mono,dd .mono,td code,dd code{font-family:ui-monospace,Menlo,Consolas,monospace}"
+    # the type is Prove's stylesheet's, as the look sets it: table cells, detail values and the
+    # crumbs in the monospace, labels in the sans
     ".chart .dimt{fill:var(--dim)}"
     ".chart .axis{stroke:var(--rule);stroke-width:1}"
     ".chart .thr{stroke:var(--text);stroke-width:1}"

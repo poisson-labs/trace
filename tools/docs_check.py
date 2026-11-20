@@ -435,7 +435,8 @@ def _open_terminal(tries: int = 50) -> tuple[int, int]:
     """A new pseudo-terminal: its controlling end and the end a command is given. On macOS, while
     other processes open and close pseudo-terminals, ``os.openpty`` now and then fails with
     ``OSError: [Errno -6]``; that one error is asked again, a moment later each time, and any
-    other, and this one ``tries`` times running, is raised (as ``tests/terminal_support.py`` does)."""
+    other, and this one ``tries`` times running, is raised (as ``tests/terminal_support.py``
+    does)."""
     for attempt in range(tries):
         try:
             return os.openpty()

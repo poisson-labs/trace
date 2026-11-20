@@ -1,5 +1,5 @@
 {
- "about": "trace#31's case: the arms of one confirm stage of Poisson Break on a sound agent, as the issue describes its run. Each arm is cases by repeats rows, every row with an outcome (ok or failed) and none with a trace; an arm's first `failed` rows fail, case by case. no_failures_support.break_case writes these arms into a store through Prove's own Store; they are shaped as the issue's run was and are not the output of Break itself.",
+ "about": "Case: the arms of one confirm stage of Poisson Break on a sound agent, as in Break's run. Each arm is cases by repeats rows, every row with an outcome (ok or failed) and none with a trace; an arm's first `failed` rows fail, case by case. no_failures_support.break_case writes these arms into a store through Prove's own Store; they are shaped as Break's run was and are not the output of Break itself.",
  "target": "sound-agent",
  "cases": 6,
  "repeats": 5,

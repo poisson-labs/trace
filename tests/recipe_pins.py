@@ -1,6 +1,5 @@
 """What main prints, builds and holds, pinned for TF20: the pinned main (``MAIN``) is the
 release candidate of the TF5 docs work, and the three-tools recipe moves none of it. Not collected.
-``fixtures/tf20/make_main_pins.py`` takes the pins with this module alone.
 
 What is pinned, each as the pinned main gives it:
 
@@ -43,15 +42,13 @@ from docs_pins import CHANGED, EVERY_LABEL, INIT, READERS_SAID, SETUP, SKILL, pi
 
 TESTS = Path(__file__).resolve().parent
 REPO = TESTS.parent
-TF20 = TESTS / "fixtures" / "tf20"
-PINS = TF20 / "main-pins.json"
 MAIN = "901e845"
 
 #: The files the recipe changes, pinned as text as well, so that a test can say what moved in
 #: them without the repository's history (a shallow clone has none).
 TEXTS = ("README.md", "CHANGELOG.md", "CONTRIBUTING.md", "pyproject.toml", ".github/workflows/ci.yml", ".github/workflows/release.yml")
 #: The files of the repository pinned whole: these paths, and every tracked file under these
-#: folders. ``tests/fixtures/tf20/`` (TF20's own pins) is not among them.
+#: folders.
 PINNED_FILES = ("README.md", "CHANGELOG.md", "CONTRIBUTING.md", "pyproject.toml", "hatch_build.py", "LICENSE", "NOTICE")
 PINNED_FOLDERS = ("src/", "docs/", "tools/", ".github/", "tests/fixtures/")
 
@@ -94,5 +91,5 @@ def digest_text_steps(got: list[tuple[int, str, str]]) -> list[list[Any]]:
     return [[code, text_digest(out), text_digest(err)] for code, out, err in got]
 
 
-__all__ = ["TEXTS", "CHANGED", "EVERY_LABEL", "INIT", "MAIN", "PINS", "READERS_SAID", "SETUP", "SKILL", "file_digest", "pin_corpus", "pin_slow",
+__all__ = ["TEXTS", "CHANGED", "EVERY_LABEL", "INIT", "MAIN", "READERS_SAID", "SETUP", "SKILL", "file_digest", "pin_corpus", "pin_slow",
            "pinned_paths", "text_digest", "tracked"]

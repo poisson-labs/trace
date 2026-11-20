@@ -49,12 +49,14 @@ class InitResult:
 class DoctorResult:
     """What ``doctor`` found: the report, its verdict and sentence, the exit code the command
     gives (0 ready; 4 not ready; with ``setup``, 1 not ready), and, for a setup check that is
-    not ready, the refusal the plain command prints in place of the report."""
+    not ready, the refusal the plain command prints in place of the report. ``next`` is None
+    where no command would move anything: the only check that fails is a Prove that lacks what
+    Trace imports."""
 
     report: dict[str, Any]
     verdict: str
     sentence: str
-    next: str
+    next: str | None
     exit_code: int
     refusal: api.Refusal | None
     _text: str = field(repr=False, compare=False)

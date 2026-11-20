@@ -793,9 +793,9 @@ c4f3bbbdbb4a5a6dd9c5fddd66712dca39c63fae68280eb55268197ddb6651e4  ./setup-agent/
 c6385e6e6ade8886e2a0a3a5544acf60eb633964382ca0e3c463a6eadaba3fe7  ./setup-agent/sample-repo/pyproject.toml
 9d8c5d8adf69490b77839d19b49c5cf42378baf75baec686c5bb2b2d09b2cfd0  ./setup-agent/sample-repo/README.md
 9f0a4c81153ed71c8d1803a05fcee66a59f73a47f2a2af8dcbe949af0306aaa2  ./setup-agent/sample-repo/tests/agent_checks.py
-19ebfd4e5974de468e666eb821fd04cab9624105dddf4611ca38a6caf72956e8  ./setup-agent/setup-file-format-1.txt
+75000224cd2813eb86c7d64510cc5d8f29dc6b9c7ccc8755139773b74c8d9b0b  ./setup-agent/setup-file-format-1.txt
 a79f6f3c77d83524eaa4a5aebcac1bfa4c41046d094cc047f8002399623506e7  ./breakdown/main-pins.json
-1afcdc657791797c278827998b9b1b8ac73e97c9c5d1a37ad155a7632e2a9cd2  ./breakdown/make_main_pins.py
+0deb74a23ae68a6e4cf8b93bfe4722c5f2fa42f11b139b02203449ca3d4600d3  ./breakdown/make_main_pins.py
 a1c31c7b7739d38ce1a196875d9adbf94d269bf96608eb4bfd20cf9684d998c6  ./breakdown/mockups/breakdown-prove-140-plain.txt
 53527a3a055d58bf7f8947e6e914173c0c1702767bda2a19048ac3e1a7e822af  ./breakdown/mockups/breakdown-prove-140-pretty.txt
 a753b5f8f30df562a2536d994a02cbbb24364c16c3112c1deb4cc35719aac1de  ./breakdown/mockups/breakdown-prove-80-plain.txt

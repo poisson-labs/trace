@@ -28,6 +28,14 @@ verb needs that nothing gives; exit code 3 for a failure after work started) and
 refuse (a wrong type, a choice it lacks, a flag the verb or the reader does not take) is a
 `ValueError`, raised before anything is read.
 
+A store written in a newer format than this Trace reads is refused before anything in it is
+read, with the message
+`the store at store holds poisson.store/2, a newer format than this Trace reads (poisson.store/1)`.
+An installed Prove that lacks something Trace imports from it is refused by every function
+that reads through Prove, with exit code 1, no `next` and the message
+`Poisson Trace reads stored runs through Prove (the poisson-prove package, version 0.4.0 or later) and found poisson-prove 0.9.0, which has no poisson_prove.store.RunTally`;
+on the command line, `poisson-trace doctor`'s Prove check fails on it and exits 4.
+
 The API prints nothing, reads no environment variable, reads no file and lists no folder it was
 not given a path to, and writes only in `import_run`, `name`, `forget_name`, `save`,
 `to_bundle`, `write_svg` and `build_pages`, each only where it is pointed. It does not look for a `trace.toml`:
@@ -317,7 +325,7 @@ api.save(result)
 
 `--save`: the verdict saved as an artifact in the runs' store, under `.poisson/artifacts`. The result it returns is of the same type, with `saved` set and the `saved` line the command prints; a store that cannot be written to is a note on `notes`, and the result goes on with `saved` None.
 
-**Refusals.** `api.Refusal` as the verb's own; `ValueError` when given anything but the result of `where`, `compare`, `fix_check` or `changes`.
+**Refusals.** `api.Refusal` as the verb's own; `ValueError` when given anything but the result of `where`, `compare`, `fix_check` or `changes`. `api.Refusal` also, with exit code 1 and nothing written, when the store's `.poisson/store.json` is not a store descriptor: `store/.poisson/store.json is not a store descriptor (not a JSON object); nothing was written`, or `(JSONDecodeError)` in the brackets for a file that is not JSON.
 
 ```python
 from poisson_trace import api

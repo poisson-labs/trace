@@ -29,8 +29,8 @@ from recipe_pins import file_digest, pinned_paths as tf20_pinned, tracked
 
 TESTS = Path(__file__).resolve().parent
 REPO = TESTS.parent
-PF = TESTS / "fixtures" / "prove-floor"
-PINS = PF / "main-pins.json"
+PROVE_FLOOR_FIXTURES = TESTS / "fixtures" / "prove-floor"
+PINS = PROVE_FLOOR_FIXTURES / "main-pins.json"
 MAIN = "4bb4b95"
 
 #: The files outside the package whose text main's pins hold, each with a test of what moves in it.

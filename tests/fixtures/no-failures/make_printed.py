@@ -18,13 +18,13 @@ from pathlib import Path
 TESTS = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(TESTS))
 
-from no_failures_support import FIX31, printed  # noqa: E402
+from no_failures_support import NO_FAILURES_FIXTURES, printed  # noqa: E402
 
 
 def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         for name, text in printed(Path(tmp).resolve()).items():
-            (FIX31 / "printed" / name).write_text(text, encoding="utf-8")
+            (NO_FAILURES_FIXTURES / "printed" / name).write_text(text, encoding="utf-8")
             print(name, file=sys.stderr)
 
 

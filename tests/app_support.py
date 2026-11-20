@@ -179,9 +179,9 @@ from conftest import FIXTURES
 from look_support import REPO, Ran, chdir, trace
 from terminal_support import open_terminal
 
-TF19 = FIXTURES / "app"
-PINS = TF19 / "main-pins.json"
-PROVE_SHELL = TF19 / "prove-shell.json"
+APP_FIXTURES = FIXTURES / "app"
+PINS = APP_FIXTURES / "main-pins.json"
+PROVE_SHELL = APP_FIXTURES / "prove-shell.json"
 MAIN = "b988bd3"
 PACKAGE = REPO / "src" / "poisson_trace"
 TOOL = "poisson-trace"

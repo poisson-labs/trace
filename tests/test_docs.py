@@ -423,4 +423,4 @@ def test_tf5_69_the_look_standard_is_as_main_has_it() -> None:
     import hashlib
 
     got = {name: hashlib.sha256((DOCS / name).read_bytes()).hexdigest() for name in STANDARDS}
-    assert got == {"cli-look.md": "92e71488c2824c056252be9a7b340e7fc138d15359fbcb7431bcfc6fa267d85f"}
+    assert got == {"cli-look.md": "c6765e0efe58ad202204774185587b24192ce6d981eb1cf06f6f6edbe6909338"}

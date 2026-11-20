@@ -21,8 +21,8 @@ from typing import Any
 
 from signals_support import FIXTURES, INGEST
 
-TF26 = FIXTURES / "weave-reader"
-PINS = TF26 / "main-pins.json"
+WEAVE_READER_FIXTURES = FIXTURES / "weave-reader"
+PINS = WEAVE_READER_FIXTURES / "main-pins.json"
 MAIN = "bfda500"
 #: The readers main has, whose helps stay as main prints them.
 EARLIER = ("deepeval", "ragas", "table", "junit", "promptfoo", "inspect", "openai-evals", "langsmith", "braintrust")

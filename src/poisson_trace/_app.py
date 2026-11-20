@@ -703,7 +703,7 @@ class TraceApp(Shell):
             details = [
                 Detail("stores", stores_words),
                 Detail("failures", ", ".join(self.events()) or "none"),
-                Detail("next", doctor.next, code=True),
+                Detail("next", doctor.next, code=True) if doctor.next is not None else None,
             ]
             if built:
                 details.append(Detail("pages", "trace/index.html", link="trace/index.html"))

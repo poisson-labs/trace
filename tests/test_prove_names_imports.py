@@ -18,7 +18,8 @@ drops or renames a module or a name Trace imports would otherwise crash every co
    nothing, since pip holds the Prove found to meet it.
 3. **doctor.** Its prove check fails, ``poisson-prove 0.9.0 is installed and has no
    poisson_prove.store.RunTally, which Trace imports from it``, with no command of its own;
-   ``doctor`` exits 4.
+   ``doctor`` exits 4, and where that check is the only one that fails, its report ends with no
+   ``next:`` line. ``doctor --setup`` names no command next either, in its JSON too.
 4. **The floor's refusals stand.** A Prove below the floor, absent or stating no version is
    refused as such. ``--help`` and ``--version`` need nothing from Prove.
 
@@ -32,7 +33,8 @@ what a test names. The installed package is never edited.
 - IG-4: every command refuses, for a name ``runs`` itself never imports; ``import`` for a module too.
 - IG-5: several missing are all named, in order.
 - IG-6: the refusal names the version the Prove states.
-- IG-7: ``doctor`` fails its prove check and exits 4.
+- IG-7: ``doctor`` fails its prove check and exits 4, naming no command where only that check fails;
+  ``doctor --setup`` the same.
 - IG-8: the API and the terminal app refuse too.
 - IG-9: help and the version line need nothing; the floor's own refusals come first.
 """
@@ -318,6 +320,52 @@ def test_ig_7_doctor_reads_no_store_through_the_prove_it_refused(tmp_path: Path)
         assert ran.code == 4, ran.text
         assert "Traceback" not in ran.text and "unexpected failure" not in ran.text, ran.text
     assert tree(tmp_path) == before
+    _no_errors_log(tmp_path)
+
+
+def test_ig_7_doctor_ends_with_no_next_line_when_only_its_prove_check_fails(tmp_path: Path) -> None:
+    """Where the prove check is the only one that fails, ``doctor`` names no command to run next:
+    the check names none, and running ``doctor`` again would move nothing. ``--json`` gives
+    ``"next": null``."""
+    copy(STORE_1_2, tmp_path)
+    (tmp_path / "trace.toml").write_text(f'version = 1\n\n[store]\npath = "store"\n\n[events]\nfailed = ["{EVENT[1]}"]\n',
+                                         encoding="utf-8")
+    ran = without(["doctor", "--json"], tmp_path, [UNUSED_BY_RUNS])
+    assert ran.code == 4, ran.text
+    doc, check = _prove_check(ran)
+    assert [c["name"] for c in doc["checks"] if not c["ok"]] == ["prove"], doc
+    assert check == {"name": "prove", "ok": False, "line": doctor_line(installed(), [UNUSED_BY_RUNS]), "next": None}, check
+    assert doc["next"] is None, doc
+    plain = without(["doctor"], tmp_path, [UNUSED_BY_RUNS])
+    assert plain.code == 4 and plain.err == "", plain.text
+    lines = plain.out.splitlines()
+    assert lines[0] == f"not ready  prove fails: {doctor_line(installed(), [UNUSED_BY_RUNS])}", plain.out
+    assert lines[-1].startswith("  readers ") and not any(line.startswith("next:") for line in lines), plain.out
+    _no_errors_log(tmp_path)
+
+
+@pytest.mark.parametrize("imports", [False, True], ids=["no import", "an import"])
+def test_ig_7_doctor_setup_names_no_next_command_when_only_the_prove_lacks(tmp_path: Path, imports: bool) -> None:
+    """``doctor --setup --json`` gives ``"next": null`` where the only cause is the Prove that lacks
+    what Trace imports: the prove check names no command, nor does each ``[[import]]`` line it
+    leaves unread, and running the check again would move nothing. The plain check prints no
+    ``next:`` line."""
+    copy(STORE_1_2, tmp_path)
+    toml = f'version = 1\n\n[store]\npath = "store"\n\n[events]\nfailed = ["{EVENT[1]}"]\n'
+    if imports:
+        shutil.copy(JUNIT, tmp_path / "suite.xml")
+        toml += '\n[[import]]\nfile = "suite.xml"\ntool = "junit"\nname = "suite"\n'
+    (tmp_path / "trace.toml").write_text(toml, encoding="utf-8")
+    ran = without(["doctor", "--setup", "--json"], tmp_path, [UNUSED_BY_RUNS])
+    assert ran.code == 1, ran.text
+    doc, check = _prove_check(ran)
+    failing = [c["name"] for c in doc["checks"] if not c["ok"]]
+    assert failing == ["prove", "import"] if imports else ["prove"], doc
+    assert check == {"name": "prove", "ok": False, "line": doctor_line(installed(), [UNUSED_BY_RUNS]), "next": None}, check
+    assert doc["next"] is None, doc
+    plain = without(["doctor", "--setup"], tmp_path, [UNUSED_BY_RUNS])
+    assert plain.code == 1 and plain.out == "", plain.text
+    assert plain.lines() == [f"error: {doctor_line(installed(), [UNUSED_BY_RUNS])}"], plain.err
     _no_errors_log(tmp_path)
 
 

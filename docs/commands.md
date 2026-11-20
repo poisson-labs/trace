@@ -121,7 +121,18 @@ such as `--ev` for `--event`, is refused.
 
 **Refusals.** A refusal or a mistake in the command line is one line on stderr that opens
 `error:`, with nothing on stdout. Where a command would move you on, it follows on a line of
-its own that opens `next:`.
+its own that opens `next:`. A store written in a newer format than this Trace reads is refused
+before anything in it is read, in one line such as
+`error: the store at prove-runs holds poisson.store/2, a newer format than this Trace reads (poisson.store/1)`.
+An installed Prove that lacks something Trace imports from it is refused in one line with exit
+code 1 and no `next:` line, such as
+`error: Poisson Trace reads stored runs through Prove (the poisson-prove package, version 0.4.0 or later) and found poisson-prove 0.9.0, which has no poisson_prove.store.RunTally`,
+and `doctor`'s Prove check fails on it with
+`poisson-prove 0.9.0 is installed and has no poisson_prove.store.RunTally, which Trace imports from it`
+and exit code 4. `--save` into a store whose `.poisson/store.json` is not a store descriptor is
+refused in one line with exit code 1, and nothing is saved:
+`error: prove-runs/.poisson/store.json is not a store descriptor (not a JSON object); nothing was written`,
+or `(JSONDecodeError)` in the brackets for a file that is not JSON.
 
 ## Exit codes
 

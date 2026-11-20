@@ -251,7 +251,7 @@ def shared_text() -> dict[str, str]:
     """The shared page's byte-fixed text (format 1), parts by name, with Trace's names filled."""
     raw = FORMAT.read_text(encoding="utf-8")
     parts = re.split(r"^==> ([a-z-]+) <==\n", raw, flags=re.M)
-    assert "2026-10-23" in parts[0], parts[0]
+    assert "as the shared page writes it (Prove's copy is the same text)" in " ".join(parts[0].split()), parts[0]
     texts = dict(zip(parts[1::2], parts[2::2], strict=True))
     assert set(texts) == {"rules", "check", "prompt", "hand-over"}, sorted(texts)
     filled = {}

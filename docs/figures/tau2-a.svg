@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="672" viewBox="0 0 760 672" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12">
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="672" viewBox="0 0 760 672" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12">
 <rect x="0" y="0" width="760" height="672" fill="#fcfcfb"/>
 <text x="64" y="22" fill="#0b0b0b" font-size="14" font-weight="600">tau2-airline 2026-09-15 a · tau2-airline/gpt-4.1-mini-2025-04-14@v0</text>
 <text x="64" y="40" fill="#52514e">placed 200 · died 110 · ended 90 · timed out 0 · capped 0 · excluded 0 · events: unsolved</text>

@@ -64,7 +64,7 @@ BUILDS: dict[str, tuple[str, ...]] = {
     "fix-check and changes": (r"`fix-check`", r"`changes`", r"(?i)control"),
     "the docs of this release": (r"docs/recipes/", r"docs/commands\.md", r"docs/config\.md", r"docs/how-it-decides\.md", r"docs/handover\.md"),
     "the examples' store folder": (r"prove-runs",),
-    "the Prove it reads": (r"poisson-prove", r"(?i)exact"),
+    "the Prove it reads": (r"poisson-prove", r"(?i)\bor later\b"),
 }
 
 

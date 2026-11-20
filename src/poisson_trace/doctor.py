@@ -368,6 +368,7 @@ def check(given: str | None) -> dict[str, Any]:
     prove = _prove()
     checks = [_python(), _package(), prove, *_config_and_names(given, prove["ok"]), _readers()]
     failing = [c for c in checks if not c["ok"]]
+    following: str | None
     if not failing:
         reach = [look.option("--config", given)] if given is not None else []
         verdict, sentence = "ok", "this environment is ready"
@@ -376,7 +377,10 @@ def check(given: str | None) -> dict[str, Any]:
         verdict = "not ready"
         which = " and ".join(c["name"] for c in failing)
         sentence = f"{which} {'fails' if len(failing) == 1 else 'fail'}: {failing[0]['line']}"
-        following = next(
+        # a Prove that lacks what Trace imports names no command, and when it is all that fails,
+        # running doctor again would move nothing, so the report names none either
+        lacks = [c["name"] for c in failing] == ["prove"] and failing[0]["next"] is None
+        following = None if lacks else next(
             (c["next"] for c in failing if c["next"] is not None), "poisson-trace doctor"
         )
     return {
@@ -460,10 +464,17 @@ def setup_check(given: str | None) -> dict[str, Any]:
     checks.append(_readers())
     checks += import_checks
     failing = [c for c in checks if not c["ok"]]
+    following: str | None
     if failing:
         verdict = "not ready"
         sentence = str(failing[0]["line"])
-        following = next((c["next"] for c in failing if c["next"] is not None), SETUP)
+        # as in check: a Prove that lacks what Trace imports, and the import lines it leaves
+        # unread, name no command, and the check again would move nothing
+        lacks = not prove["ok"] and prove["next"] is None
+        only = {c["name"] for c in failing} <= {"prove", "import"}
+        following = None if lacks and only else next(
+            (c["next"] for c in failing if c["next"] is not None), SETUP
+        )
     else:
         verdict, sentence = "ok", f"{shown} {READY}"
         following = init if pending else look.command("poisson-trace", "runs", *reach)
@@ -587,7 +598,8 @@ def _whose(stores: bool, pending: bool) -> str:
 
 
 def text(report: dict[str, Any]) -> str:
-    """The report as text: the verdict line, one line for each check, then the next command."""
+    """The report as text: the verdict line, one line for each check, then the next command,
+    where there is one."""
     lines = [f"{report['verdict']}  {report['sentence']}"]
     width = max(len(name) for name in CHECKS) + 1
     for item in report["checks"]:
@@ -595,5 +607,6 @@ def text(report: dict[str, Any]) -> str:
         if item["next"] is not None:
             line += f"; run {item['next']}"
         lines.append(line)
-    lines.append(f"next: {report['next']}")
+    if report["next"] is not None:
+        lines.append(f"next: {report['next']}")
     return "\n".join(lines) + "\n"

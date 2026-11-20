@@ -37,8 +37,8 @@ from typing import Any
 
 from signals_support import FIXTURES, INGEST
 
-TF5 = FIXTURES / "docs"
-PINS = TF5 / "main-pins.json"
+DOCS_FIXTURES = FIXTURES / "docs"
+PINS = DOCS_FIXTURES / "main-pins.json"
 MAIN = "2ff191b"
 #: The ten tools main reads beside Prove's own stores, in the order every listing gives them.
 TOOLS = ("deepeval", "ragas", "table", "junit", "promptfoo", "inspect", "openai-evals", "langsmith", "braintrust", "weave")

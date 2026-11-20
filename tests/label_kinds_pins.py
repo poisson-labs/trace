@@ -44,8 +44,8 @@ from recipe_pins import pin_corpus as tf20_corpus
 
 TESTS = Path(__file__).resolve().parent
 REPO = TESTS.parent
-PL = TESTS / "fixtures" / "label-kinds"
-PINS = PL / "main-pins.json"
+LABEL_KINDS_FIXTURES = TESTS / "fixtures" / "label-kinds"
+PINS = LABEL_KINDS_FIXTURES / "main-pins.json"
 MAIN = "c981832"
 
 TAU2_A, TAU2_B = "20260915T210140Z-4847", "20260915T211148Z-965d"
