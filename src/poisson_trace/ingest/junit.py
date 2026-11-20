@@ -3,12 +3,12 @@
 A report is a ``<testsuites>`` root holding ``<testsuite>`` elements, or a lone ``<testsuite>``
 root, suites possibly nested in suites; each ``<testcase>`` is one row. A test case with a
 ``<failure>`` or an ``<error>`` missed, one ``<skipped>`` has no outcome, and any other met. The
-case is the class name and the name, or the name alone. Of each test case the signals read are
-its ``time`` as the wall time (``0.000`` is a recorded zero), and of a failure or an error the
-exception class, from its ``type`` or the start of its ``message``: a ``<failure>`` is the
-grader's word and an ``<error>`` a crash of the test's lifecycle (spec section 18.1.1 row 4, SA3
-reading 5). Nothing of a message, a failure's text, a test's output or a property is kept, and a
-report that declares a document type is refused before anything it names is read.
+case is the class name and the name, or the name alone. Of each test case the signals read are its
+``time`` as the wall time (``0.000`` is a recorded zero), and of a failure or an error the exception
+class, from its ``type`` or the start of its ``message``: a ``<failure>`` is the grader's word and
+an ``<error>`` a crash of the test's lifecycle. Nothing of a message, a failure's text, a test's
+output or a property is kept, and a report that declares a document type is refused before anything
+it names is read.
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ _MISSED_BY = ("failure", "error")
 UNZONED = "a suite timestamp carries no zone, so it was read as UTC"
 # the exception class a message opens with, as pytest and JUnit runners write it
 EXCEPTION = re.compile(r"^([A-Za-z_][\w.]*(?:Error|Exception|Exit|Interrupt|Failure|Warning)):")
-# where the error happened, by the kind of child that missed the test (SA3 reading 5)
+# where the error happened, by the kind of child that missed the test
 _SPAN_KIND = {"failure": "grader", "error": "lifecycle"}
 
 

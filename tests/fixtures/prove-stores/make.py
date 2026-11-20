@@ -13,8 +13,8 @@ so a second run stores the same outcomes, and only the run ids, the times and th
 carry them differ.
 
 The two stores beside it are not made here. ``prove-0.1.3/`` is kept as poisson-prove 0.1.3
-wrote it on 2026-11-04, by this recipe as it then was (the same sweeps, with no notes): it is the
-fixture of the stored format's 1.0. ``prove-0.0.1/`` is kept as Prove wrote it in October under
+wrote it, by this recipe as it then was (the same sweeps, with no notes): it is the
+fixture of the stored format's 1.0. ``prove-0.0.1/`` is kept as Prove wrote it under
 its old name, ``proofload`` 0.0.1, which was never on a package index (see PROVENANCE.md).
 """
 

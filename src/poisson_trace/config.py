@@ -71,12 +71,12 @@ _TOP = ("version", *_SETTINGS, _IMPORT)
 _ENTRY = ("file", "tool", "name")
 # the import's own flags, which are never a reader's option
 _IMPORTS_OWN = ("run", "store", "config", "started", "verdicts", "json", "debug", "plain", "files")
-# the pullers that fetch results from a service, by the prefix of an address (section 18.3.2 of
-# the spec); none is in this install yet, so an address is refused naming the puller
+# the pullers that fetch results from a service, by the prefix of an address; none is in this
+# install yet, so an address is refused naming the puller
 PULLERS: tuple[str, ...] = ("langsmith", "braintrust", "weave", "lemma")
 # the [signals] settings that name a field or column of the source
 _FIELDS = ("case_field", "outcome_field", "score_field", "cost_field")
-# a word the spec once used for a budget, and the budget it means (SA9)
+# another name a user may write for a budget, and the budget it means
 _BUDGET_ALIASES = {"max_tokens": "max_total_tokens"}
 # the most edits between a word written and the setting it is taken to mean
 _NEAR = 2
@@ -114,13 +114,13 @@ class Config:
     max_mde: float | None = None
     max_mde_hr: float | None = None
     fail_on: tuple[str, ...] | None = None
-    # [check] max_change: each continuous measure's ceiling as a share of the old mean (CT2,
-    # CS10); empty when the file sets none
+    # [check] max_change: each continuous measure's ceiling as a share of the old mean; empty
+    # when the file sets none
     max_change: Mapping[str, float] = field(default_factory=dict)
     names_from: str = "target"
     upload: Mapping[str, Any] = field(default_factory=dict)
-    # [signals]: the field mappings as written (read and checked; in TF21 the import's flags
-    # still say which columns it reads, SA8), the budgets and the taxonomy's rules
+    # [signals]: the field mappings as written (read and checked), the budgets and the
+    # taxonomy's rules
     signals: Mapping[str, Any] = field(default_factory=dict)
     budgets: Budgets | None = None
     rules: tuple[Rule, ...] = ()
@@ -137,7 +137,7 @@ class Config:
 
     @property
     def taxonomy_sha256(self) -> str:
-        """The digest of the rules and budgets this config classifies with (SA9)."""
+        """The digest of the rules and budgets this config classifies with."""
         return taxonomy_sha256(self.rules, self.budgets)
 
     def flags(self) -> tuple[str, ...]:
@@ -560,7 +560,7 @@ class _Checker:
 
     def max_change(self, value: Any) -> dict[str, float]:
         """``[check] max_change``: a table of measure to ``"N%"``, each read as the flag
-        ``--max-change measure=N%`` is (TF23's ``parse_max_change``), in the measures' order."""
+        ``--max-change measure=N%`` is (``parse_max_change``), in the measures' order."""
         from poisson_trace.stats.continuous import MEASURES, parse_max_change
 
         rule = (

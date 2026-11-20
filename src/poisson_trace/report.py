@@ -413,7 +413,7 @@ def _flag_lines(block: Mapping[str, Any], top: int, first: str, second: str) -> 
 
 @dataclass(frozen=True)
 class WhereReport:
-    """``data`` is the JSON structure of the spec's section 5.3, keys in order. ``last_step``
+    """``data`` is the ``poisson-trace.where/1`` structure, keys in order. ``last_step``
     is the largest step index any placed row reached, and ``incidence`` each cause's
     cumulative incidence over the curve's death steps; both serve the SVG only."""
 
@@ -641,7 +641,7 @@ class CompareReport:
             "",
         ]
         if d.get("_breakdown_section"):
-            # the failure breakdown (DM1, FD7): its lines are made by the verb, as the
+            # the failure breakdown: its lines are made by the verb, as the
             # measures' are, so that this module reads no count it did not get from it
             lines += [*d["_breakdown_section"], ""]
         guidance = c.get("guidance")
@@ -715,7 +715,7 @@ class FixCheckReport:
         lines += ["", self._control_heading(), ""]
         lines += self._control_lines()
         if d.get("_breakdown_section"):
-            # the failure breakdown (DM1): its lines are made by the verb
+            # the failure breakdown: its lines are made by the verb
             lines += ["", *d["_breakdown_section"]]
         lines += ["", "## The comparison", ""]
         lines += self._comparison_lines()
@@ -731,7 +731,7 @@ class FixCheckReport:
         lines += ["## Inputs that changed", ""]
         lines += _flag_lines(d["changes"], d["_top"], "old", "new")
         if d.get("_measures_section"):
-            # the continuous measures, when asked for (CT2, SV2): its lines are made by the
+            # the continuous measures, when asked for: its lines are made by the
             # verb, so that this module reads no statistic
             lines += ["", *d["_measures_section"]]
         lines += [""] + _cannot_say_lines(d["cannot_say"]) + [""]
@@ -1024,7 +1024,7 @@ class ChangesReport:
                 f"{count(held['a_only'])} · in B only {count(held['b_only'])}"
             )
         if d.get("_breakdown_section"):
-            # the failure breakdown (DM1): its lines are made by the verb
+            # the failure breakdown: its lines are made by the verb
             lines += ["", *d["_breakdown_section"]]
         lines += ["", "## Inputs that changed", ""]
         lines += _flag_lines(d, d.get("_top", 10), "A", "B")

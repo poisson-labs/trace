@@ -53,7 +53,7 @@ def test_tf21_1_every_signal_field_is_keyword_only_and_present() -> None:
     assert dataclasses.is_dataclass(Row) and Row.__dataclass_params__.frozen  # type: ignore[attr-defined]
 
 
-def test_tf21_1_a_row_built_as_today_records_no_signal() -> None:
+def test_tf21_1_a_row_of_six_fields_records_no_signal() -> None:
     row = Row("c1", "met", None, 0.9)
     for name in (*INT_FIELDS, *FLOAT_FIELDS, "failure_kind", "error_type", "error_span_kind",
                  "result", "repeat", "tool_calls", "span_records"):
@@ -236,7 +236,7 @@ SPAN_FIELDS = (
 )
 
 
-def test_tf21_8_span_record_has_section_18_4_1s_fields_in_order() -> None:
+def test_tf21_8_span_record_has_its_fields_in_order() -> None:
     assert tuple(f.name for f in dataclasses.fields(SpanRecord)) == SPAN_FIELDS
     assert SpanRecord.__dataclass_params__.frozen  # type: ignore[attr-defined]
 

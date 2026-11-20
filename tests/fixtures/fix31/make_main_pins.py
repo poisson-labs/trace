@@ -1,4 +1,4 @@
-"""Takes the pins of what main prints for ``fix-check``, for the tests of trace#31
+"""Takes the pins of what main prints for ``fix-check``, for the tests that hold its other output
 (``tests/test_fix31_unchanged.py``): run on main (the commit ``fix31_support.MAIN`` names),
 before any change, from the repository's root, with the package installed::
 
@@ -7,8 +7,8 @@ before any change, from the repository's root, with the package installed::
 It writes ``tests/fixtures/fix31/main-pins.json``: for each invocation of
 ``fix31_support.run_corpus`` its exit code and the digests of its stdout and its stderr, with
 the folders the run made written ``<ROOT>``. The corpus is every fix-check output but one kind:
-a pair in which the inputs compared hold no failed run in either version, which is what
-trace#31 changes.
+a pair in which the inputs compared hold no failed run in either version, which is the one kind
+the fix changes (``tests/test_fix31_printed.py``).
 """
 
 from __future__ import annotations

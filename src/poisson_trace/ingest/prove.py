@@ -1,4 +1,4 @@
-"""A stored run as normalised rows: the Prove reader (spec section 18.1.1 row 1, 18.5.2; SA1, SA6).
+"""A stored run as normalised rows: the Prove reader.
 
 A run Trace imported comes back from each record's ``meta["trace_signals"]`` exactly as the
 writer put it there. A run Prove swept is read from Prove's own columns and its trace: the case
@@ -41,8 +41,8 @@ from poisson_trace.ingest.writer import RECORD_SCHEMA, stored
 CLASS = re.compile(r"^([A-Za-z_][\w.]*)(?::|$)")
 #: Prove's own error for a harness failure: a prefix, not a class.
 INFRA = "infra:"
-#: Prove's outcome word for a try its executor stopped at its time or step cap (SA3, reading 6
-#: as ruled): read as the source's own ``timeout`` when the try did not reach its step cap.
+#: Prove's outcome word for a try its executor stopped at its time or step cap: read as the
+#: source's own ``timeout`` when the try did not reach its step cap.
 TIMEOUT_WORD = "timeout"
 
 

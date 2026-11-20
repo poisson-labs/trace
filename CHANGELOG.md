@@ -118,15 +118,15 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
 
 A quiet alpha on PyPI, installed with `pip install poisson-trace==0.1.0a1`: pip takes a
 pre-release only when its version is named. It is not the 0.1.0 release and comes with no
-announcement. It reads `poisson-prove` 0.1.3, exactly, as 0.1.0rc2 does. 0.1.0rc2 was built on
-2026-10-28 and never sent, so this is the first release of everything under 0.1.0rc2 too,
+announcement. It reads `poisson-prove` 0.1.3, exactly, as 0.1.0rc2 does. 0.1.0rc2 was built
+and never sent, so this is the first release of everything under 0.1.0rc2 too,
 including three sections written into that entry after it was built (the same digits on every
 Python, Prove 0.1.3 and the clean look on a terminal). Everything below merged after 0.1.0rc2
 was built.
 
 ### fix-check when no run failed
 
-- `fix-check` now answers when the runs compared hold no failed run (trace#31), where it
+- `fix-check` now answers when the runs compared hold no failed run, where it
   refused before. Its range is the stratified Miettinen–Nurminen interval it uses everywhere
   else; *no significant difference* when that range lies inside plus or minus `--max-mde`,
   *too small to tell* otherwise, with the tries or inputs that would bring it inside. The

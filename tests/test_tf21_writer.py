@@ -63,7 +63,7 @@ def _stored(tmp_path: Path, rows: list[Row]) -> tuple[Path, Any]:
 # ---------- TF21-25: the record ----------
 
 
-def test_tf21_25_the_record_of_section_18_4_2() -> None:
+def test_tf21_25_the_signals_record_keys_and_values() -> None:
     record = trace_signals(FULL, 0)
     assert tuple(record) == RECORD_KEYS
     assert record == {
@@ -109,7 +109,7 @@ def test_tf21_25_tool_counts_follow_tool_calls_none_and_empty_apart() -> None:
 # ---------- TF21-26: the record is stored in meta, nulls kept ----------
 
 
-def test_tf21_26_meta_holds_the_record_and_import_as_today(tmp_path: Path) -> None:
+def test_tf21_26_meta_holds_the_record_and_the_import(tmp_path: Path) -> None:
     _, df = _stored(tmp_path, [FULL, BARE])
     metas = {m["trace_signals"]["case"]: m for m in df["meta"]}
     assert metas["case_042"]["trace_signals"] == json.loads(json.dumps(trace_signals(FULL, 0)))
@@ -153,7 +153,7 @@ def test_tf21_27_wall_time_is_the_recorded_time_else_zero(tmp_path: Path) -> Non
     assert recs["case_007"]["wall_time_s"] is None and recs["z"]["wall_time_s"] == 0.0
 
 
-def test_tf21_27_t_and_horizon_are_the_recorded_steps_else_as_today(tmp_path: Path) -> None:
+def test_tf21_27_t_and_horizon_are_the_recorded_steps_where_given(tmp_path: Path) -> None:
     _, df = _stored(tmp_path, [FULL, BARE, Row("s", "met", None, steps=4)])
     by = {m["trace_signals"]["case"]: (t, h) for m, t, h in
           zip(df["meta"], df["t"], df["horizon"], strict=True)}
@@ -322,7 +322,7 @@ def test_tf21_32_write_fills_kind_and_signals_with_the_taxonomy(tmp_path: Path) 
 # ---------- TF21-33: Written, the import's own count, is unchanged ----------
 
 
-def test_tf21_33_written_counts_as_today(tmp_path: Path) -> None:
+def test_tf21_33_the_written_counts(tmp_path: Path) -> None:
     rows = [FULL, BARE, Row("e", None, "timeout", result="censored")]
     written = write(make_run(rows), tmp_path / "store")
     assert (written.rows, written.cases, written.repeats_min, written.repeats_max) == (3, 3, 1, 1)

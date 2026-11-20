@@ -5,8 +5,7 @@ One import reads one metric. The files are DeepEval's own: the results-folder fi
 ``.latest_test_run.json``, as ``.json`` or ``.json.gz``. Nothing here imports DeepEval, and
 no text of a test case is kept: not its input, its outputs or a metric's reason. Of each test
 case the signals read are its ``runDuration`` as the time, the lengths of its ``input`` and
-``actualOutput``, and every metric's score (spec section 18.1.1 row 2, SA7). ``tokenCost`` is
-not read until a committed capture holds one (SA12).
+``actualOutput``, and every metric's score. ``tokenCost`` is not read.
 """
 
 from __future__ import annotations

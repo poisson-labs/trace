@@ -31,7 +31,7 @@ FRESH = (
     "a fresh run, judged on its own"
 )
 LABEL_ONLY = "That changes the label only, not the evidence."
-# the top line where no run failed in either version on the inputs compared (trace#31)
+# the top line where no run failed in either version on the inputs compared
 NEITHER_FAILED = "neither version failed"
 
 # the kinds of step Prove records, as a sentence names the place a try stopped

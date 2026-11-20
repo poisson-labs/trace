@@ -1,5 +1,5 @@
 """The pull that saves a raw copy first: a tool's runs asked of its API, saved under the store
-as the API returned them, and only then read (spec section 18.3.2).
+as the API returned them, and only then read.
 
 ``send`` is the one function in the package that reaches the network, and ``sleep`` the one
 wait between tries; a test replaces both. Every pull goes through them, and each reads its own

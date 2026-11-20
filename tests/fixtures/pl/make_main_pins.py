@@ -1,5 +1,5 @@
-"""Takes the pins of what main prints, builds and holds, for the Prove label kinds pair's unchanged
-tests (``tests/test_pl_unchanged.py``): run on main (the commit ``pl_pins.MAIN`` names), from the
+"""Takes the pins of what main prints, builds and holds, for the unchanged tests of the Prove label
+kinds (``tests/test_pl_unchanged.py``): run on main (the commit ``pl_pins.MAIN`` names), from the
 repository's root, with the package installed with its development extra::
 
     python tests/fixtures/pl/make_main_pins.py

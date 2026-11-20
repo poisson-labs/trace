@@ -58,5 +58,5 @@ def test_no_frozen_file_is_edited_and_no_test_file_is_unheld() -> None:
     unheld = {name: _digest(REPO / name) for name in _python_files() if name not in held}
     lines = "\n".join(f"{digest}  {name}" for name, digest in sorted({**edited, **unheld}.items()))
     assert not gone, f"listed in tests/frozen.sha256 and not there: {gone}"
-    assert not edited, f"edited without its line in tests/frozen.sha256 moved; on a ruling, the lines are:\n{lines}"
+    assert not edited, f"edited without its line in tests/frozen.sha256 moved; for a frozen move, the lines are:\n{lines}"
     assert not unheld, f"not in tests/frozen.sha256; the lines to add are:\n{lines}"

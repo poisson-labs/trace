@@ -1,5 +1,5 @@
-"""Takes the pins of what main prints, builds and shows, for TF26's unchanged tests
-(``tests/test_tf26_unchanged.py``): run on main (the commit ``tf26_pins.MAIN`` names), from the
+"""Takes the pins of what main prints, builds and shows, for the unchanged tests in
+``tests/test_tf26_unchanged.py``: run on main (the commit ``tf26_pins.MAIN`` names), from the
 repository's root, with the package installed and no Weave reader in it::
 
     python tests/fixtures/tf26/make_main_pins.py
@@ -7,9 +7,9 @@ repository's root, with the package installed and no Weave reader in it::
 It writes ``tests/fixtures/tf26/main-pins.json``: for each invocation of
 ``tf26_pins.pin_corpus()``, each step's exit code and the digests of its stdout and stderr,
 whole; for each of ``tf26_pins.CHANGED`` and ``tf26_pins.INIT``, each step's exit code, stdout
-and stderr as text; ``pages``, the digest of each file of the pages TF19's workspace builds; and
-``app``, each screen of the terminal app over that workspace, as text. Paths are written
-``<ROOT>`` and times ``<TIME>``.
+and stderr as text; ``pages``, the digest of each file of the pages the tests' pages workspace
+builds; and ``app``, each screen of the terminal app over that workspace, as text. Paths are
+written ``<ROOT>`` and times ``<TIME>``.
 """
 
 from __future__ import annotations

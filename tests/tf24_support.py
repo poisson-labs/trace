@@ -586,14 +586,9 @@ def tally(data: Mapping[str, Any]) -> dict[str, int]:
 
 # ---------- what main prints, pinned ----------
 
-from tf21_support import FIXTURES  # noqa: E402
 
-TF24 = FIXTURES / "tf24"
-PINS = TF24 / "main-pins.json"
 #: The readers main has, whose helps stay as main prints them.
 EARLIER = ("deepeval", "ragas", "table", "junit", "promptfoo", "inspect", "openai-evals")
-#: Words of the refusal of a fix check asked for an event neither run carries.
-ELSEWHERE = "unknown event"
 ABSENT = ["otel", "files/old.jsonl", "--store", "new-store", "--run", "x"]
 
 #: The invocations whose output this reader changes, pinned from main as text to say exactly how:

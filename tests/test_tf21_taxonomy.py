@@ -198,7 +198,7 @@ def test_tf21_16_two_rules_matching_give_the_earlier_kind(first: str, second: st
         ({"retries": 4, "steps": 20, "horizon": 20, "error_span_kind": "tool"}, "loop_detected",
          "a retry storm at the cap is a loop, ahead of the tool that stormed"),
         ({"steps": 20, "horizon": 20, "error_span_kind": "gate"}, "step_limit",
-         "section 18.5.1 puts step_limit (5) ahead of guardrail_blocked (6)"),
+         "the precedence puts step_limit (5) ahead of guardrail_blocked (6)"),
         ({"error_span_kind": "tool", "error_type": "RuntimeError"}, "tool_error",
          "a failing tool span with an exception is a tool error, not a crash"),
         ({"error": "infra: sandbox lost", "score": 0.0}, "crash",

@@ -3,8 +3,8 @@
     python tools/docs_check.py [--summary FILE] [PAGE ...]
 
 With no page it checks the README, the contributing page and every page under ``docs/`` but
-the two standards (``docs/cli-look.md`` and ``docs/repo-hygiene.md``), of the checkout this
-file sits in. It exits 0 when every block holds, and its last line is then
+the look standard (``docs/cli-look.md``), of the checkout this file sits in. It exits 0 when
+every block holds, and its last line is then
 
     ok  N blocks held on P pages, S skipped
 
@@ -83,7 +83,7 @@ FIXTURES = CHECKOUT / "tests" / "fixtures"
 #: The examples a recipe runs on (the three-tools recipe's), copied beside the fixtures.
 EXAMPLES = CHECKOUT / "examples"
 INGEST = FIXTURES / "ingest"
-STANDARDS = ("cli-look.md", "repo-hygiene.md")
+STANDARDS = ("cli-look.md",)
 #: Fixture folders no page reads: earlier outputs the test suite pins. Left out of a copy of
 #: the whole of ``tests/fixtures``, unless the page names one.
 NOT_COPIED = ("tf5", "tf9", "tf18", "tf19", "tf24", "tf25", "tf26")

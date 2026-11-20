@@ -29,7 +29,7 @@
 - TF5-69: across the whole set: plain words (the pattern of TF0-21, which holds every page
   under ``docs/`` already, applied to the contributing page's commands alone); no method or
   number the statistics retired; every relative link leads to a file; and every page under
-  ``docs/`` but the standards is reached from the README.
+  ``docs/`` but the look standard is reached from the README.
 """
 
 from __future__ import annotations
@@ -280,7 +280,7 @@ def test_tf5_66_what_trace_writes_is_what_the_test_reads(written: dict[str, set[
                                         "run_id", "run_name", "store"}
     assert {"tool", "version", "reader", "from", "name", "sha256", "options"} <= written["produced_by"]
     assert written["event kinds"] == {"planned", "started", "progress", "finished"}
-    assert {"files", "reader", "rows", "run_id"} <= written["event keys"], "the planned event's detail (RR2)"
+    assert {"files", "reader", "rows", "run_id"} <= written["event keys"], "the planned event's detail"
     assert {"poisson-trace.handover/1", "poisson.artifact/1", "poisson.store/1", "poisson.run-event/1"} <= written["schemas"] | {"poisson.artifact/1"}
     assert set(PROMISED) - {"run"} <= written["result.json"] | {"run"}
 
@@ -368,7 +368,7 @@ def test_tf5_68_the_contributing_page() -> None:
     text = read(CONTRIBUTING)
     for word in ("git clone https://github.com/poisson-labs/trace", "pip install -e '.[dev]'", '-m "not math and not lane_j and not slow"', "-m math",
                  "-m slow", "-m lane_j", "ruff check src tests", "mypy --strict", "3.11", "3.12", "tools/docs_check.py", "tests/fixtures/SHA256SUMS",
-                 "PROVENANCE.md", "docs/cli-look.md", "docs/repo-hygiene.md"):
+                 "PROVENANCE.md", "docs/cli-look.md"):
         assert word in text, word
     assert re.search(r"(?i)frozen", text) and re.search(r"_frozen\.py", text), "a frozen test file moves only with its guard's line"
     assert re.search(r"(?i)no (?:paid|network)|never (?:calls|reaches)", text), "the suite calls no service"
@@ -419,8 +419,8 @@ def test_tf5_69_each_of_the_five_words_is_explained(word: str) -> None:
     assert re.search(rf"(?i)\b{article} {word}(?:, [^.]*,)? is\b", said), f"the README never says what {article} {word} is"
 
 
-def test_tf5_69_the_two_standards_are_as_main_has_them() -> None:
+def test_tf5_69_the_look_standard_is_as_main_has_it() -> None:
     import hashlib
 
     got = {name: hashlib.sha256((DOCS / name).read_bytes()).hexdigest() for name in STANDARDS}
-    assert got == {"cli-look.md": "92e71488c2824c056252be9a7b340e7fc138d15359fbcb7431bcfc6fa267d85f", "repo-hygiene.md": "802d0ff86e6a1b269c37281de749e57b9c5b069cd425aa91eed04edeba604131"}
+    assert got == {"cli-look.md": "92e71488c2824c056252be9a7b340e7fc138d15359fbcb7431bcfc6fa267d85f"}

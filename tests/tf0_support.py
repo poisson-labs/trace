@@ -4,8 +4,8 @@ the patterns a user must never read, runners for both commands in-process and in
 conformance and plain-words tests run.
 
 Not a test module and not collected. The corpus: every verb's help and the version, the
-README's worked examples on the committed fixtures, every refusal the front-door transcript's
-mistakes section made, and the refusals the look's tests add.
+README's worked examples on the committed fixtures, a set of common user mistakes, and the
+refusals the look's tests add.
 """
 
 from __future__ import annotations
@@ -382,7 +382,7 @@ def corpus() -> list[Item]:
         add(f"import {tool} help", "import", [tool, "--help"], 0, "help")
     add("version", "trace", ["--version"], 0, "version")
     add("import version", "import", ["--version"], 0, "version")
-    # refusals: the transcript's mistakes, and the paths that ended in a traceback
+    # refusals: common user mistakes, and the paths that ended in a traceback
     fix = ["fix-check", TAU2_B, PILOT, "--store", str(TAU2), "--event", "unsolved"]
     add("an unknown run", "trace", ["where", "no-such-run", "--store", str(CS), "--event", "unresolved"], 1, "refusal")
     add("an unknown event", "trace", ["where", CS_RECORD, "--store", str(CS), "--event", "unresolvd"], 1, "refusal")

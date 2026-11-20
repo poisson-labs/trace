@@ -1,8 +1,8 @@
 """The console script: ``poisson-trace init``, ``runs``, ``name``, ``where``, ``compare``,
 ``fix-check``, ``changes``, ``handover``, ``import``, ``doctor``, ``ui`` and ``report``.
 
-A thin caller of the Python API (spec section 11.8): it reads the command line, calls the
-verb's one function in ``poisson_trace.api`` (``init``, ``doctor`` and ``report`` in
+A thin caller of the Python API: it reads the command line, calls the verb's one function in
+``poisson_trace.api`` (``init``, ``doctor`` and ``report`` in
 ``poisson_trace.commands``) once with what was typed, and prints what the result gives. Of the
 package it imports ``api``, ``commands`` and the shared look alone; it computes nothing, and
 reads, writes and lists no file itself.
@@ -30,10 +30,10 @@ from poisson_trace import api, commands, look
 _NAMED = (
     "init, runs, name, where, compare, fix-check, changes, import, doctor, handover, ui and report"
 )
-# the column the top help's words start at, as main laid it out before the bare command's two
-# options joined (TF19-A3)
+# the column the top help's words start at; the bare command's two options are too long for it
+# and print their helps on the line under them
 _HELP_COLUMN = 15
-# the bare command's options: with no verb, on a terminal, they open the app (section 17.2)
+# the bare command's options: with no verb, on a terminal, they open the app
 _BARE = ("--store", "--config")
 # the verbs that count failures, and whose results are delivered with --save, --out and --svg
 _COUNTING = ("where", "compare", "fix-check", "changes")
@@ -112,8 +112,8 @@ _VERDICTS_HELP = (
 def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
     parser = look.Parser(
         prog="poisson-trace",
-        # the two options of the bare command hold the help's column where main had it, so
-        # their helps start on the line under them and nothing else on the page moves (TF19-A3)
+        # the two options of the bare command do not widen the help's column, so their helps
+        # start on the line under them and nothing else on the page moves
         formatter_class=lambda prog: look._HelpFormatter(prog, max_help_position=_HELP_COLUMN),
         description=_ABOUT,
         epilog=_example(
@@ -576,7 +576,7 @@ def _fail_on(text: str) -> tuple[str, ...]:
 
 def _max_change(text: str) -> tuple[str, float]:
     """``--max-change MEASURE=N%``: the measure and its ceiling as a share, or a wrong command
-    line (TF23's reading of the words, CS10)."""
+    line."""
     try:
         return api._max_change_word(text)
     except ValueError as e:
@@ -859,7 +859,7 @@ def _bare_options(argv: Sequence[str]) -> tuple[str | None, str | None] | None:
 
 
 def _open_app(config: str | None, store: str | None) -> int:
-    """The terminal app, until it is left (section 17.2, AD4): what it leaves to say once it
+    """The terminal app, until it is left: what it leaves to say once it
     has left the terminal (Ctrl-C's ``stopped`` line) is printed as a verb prints it."""
     built = commands.app(config=config, store=store)
     code = commands.run_app(built)
@@ -894,7 +894,7 @@ def _main(session: look.Session) -> int:
         # verb wherever it stands
         raise look.Usage(f"no verb was given; the verbs are {_NAMED}", "poisson-trace --help")
     # a run word may name a folder of results, whose reader's flags the verb's parser leaves
-    # over; whether it is a folder is known once the store is (TF22)
+    # over; whether it is a folder is known once the store is
     folders = [w for _, w in _run_words(ns) if api._is_folder(w)]
     if extra and not folders:
         verbs[ns.verb].error(f"unrecognized arguments: {' '.join(extra)}")
@@ -904,7 +904,7 @@ def _main(session: look.Session) -> int:
     if getattr(ns, "json", False):
         schema = f"poisson-trace.{ns.verb}/1"
         session.render = lambda line: _stopped_json(schema, line)
-    # the options the command line gave: the function is called with those alone (SV5)
+    # the options the command line gave: the function is called with those alone
     typed = {w.split("=", 1)[0] for w in args if w.startswith("--")}
     try:
         if ns.verb == "doctor":
@@ -929,7 +929,7 @@ def _main(session: look.Session) -> int:
 def _raised(e: api.Refusal, argv: Sequence[str], valued: Collection[str]) -> BaseException:
     """The API's refusal as the command prints it: its notes first, then one ``error:`` line
     with the commands under it, at its exit code. latest or previous refused because the runs
-    cannot be ordered gets its first next command from the command line's own words (PA19)."""
+    cannot be ordered gets its first next command from the command line's own words."""
     for note in e.notes:
         look.err(f"note: {note}\n")
     message, nexts = e.message, e.next
@@ -1008,7 +1008,7 @@ def _counting(
 ) -> int:
     """where, compare, fix-check and changes: the verb's function once, with the run words,
     the options typed and the reader's flags for runs given as folders; then its deliveries,
-    the result's own methods (PA4); then what it gives, printed."""
+    the result's own methods; then what it gives, printed."""
     _own_checks(ns)
     # where the deliveries write is looked at before any run is read; each asks again when it
     # writes, as the API's own callers need
@@ -1034,7 +1034,7 @@ def _counting(
 
 def _own_checks(ns: argparse.Namespace) -> None:
     """What the command line refuses about how it was typed, before anything is read: an
-    empty ``--svg`` or ``--out``, and ``--force`` with neither (PA4)."""
+    empty ``--svg`` or ``--out``, and ``--force`` with neither."""
     svg = getattr(ns, "svg", None)
     if ns.verb == "where":
         if svg == "":

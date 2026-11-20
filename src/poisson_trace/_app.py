@@ -1,24 +1,24 @@
-"""The terminal app: ``poisson-trace`` with no verb on a terminal (spec section 17.2).
+"""The terminal app: ``poisson-trace`` with no verb on a terminal.
 
 A face over the core, as the command line is. It opens on home and reaches every screen by keys
 alone; each screen renders an object the core returns (``commands.doctor``, ``api.runs``,
 ``api.where``, ``api.compare``, ``api.fix_check``, ``api.changes``, and the three objects only
 the app needs, ``core.saved_verdicts``, ``core.run_sources`` and ``core.found_results``), laid
 out by the shell copied from Prove (``_app_shell``). It computes nothing: every number, name,
-verdict and sentence on a screen is one the plain command prints for the same runs and settings
-(the facts rule), read off the result's own report. It writes only through the core: a verdict
-it shows is saved and the pages are rebuilt (AD7), a name and an import happen after a ``[y/N]``
-answered ``y`` (AD6), and nothing else. It never makes a network call and reads no key; of the
+verdict and sentence on a screen is one the plain command prints for the same runs and settings,
+read off the result's own report. It writes only through the core: a verdict
+it shows is saved and the pages are rebuilt, a name and an import happen after a ``[y/N]``
+answered ``y``, and nothing else. It never makes a network call and reads no key; of the
 environment it reads ``NO_COLOR`` alone.
 
 **The screens.** Home (``doctor``'s verdict line and its next command, the config's stores and
-failures, the pages' link, then the saved verdicts and the runs newest first, DM5); runs (the
+failures, the pages' link, then the saved verdicts and the runs newest first); runs (the
 listing with ``target or tool``, the saved verdicts, ``n`` names the focused run); run (one run's
 ``where``); imports (the store Trace's import wrote, each run's tool and file, and the files
-``init`` found and did not import, each with its import line: Enter runs it after a question,
-DM12); the two pickers (``compare``, ``fix-check``: ``space`` chooses, ``l`` previous and latest,
+``init`` found and did not import, each with its import line: Enter runs it after a question);
+the two pickers (``compare``, ``fix-check``: ``space`` chooses, ``l`` previous and latest,
 ``h`` sets the limit when the config has none); the verdict screens; changes; could not say;
-help. ``s`` on runs and imports moves to the config's next store (DM9).
+help. ``s`` on runs and imports moves to the config's next store.
 
 **A verdict screen** is the report's sections laid out in the shell's three parts: above the
 table, the summary (Compared or Read, Question, Answer, Next) and the command's ``next``, "before
@@ -26,12 +26,12 @@ you act on this" in full, each section's ``label  value`` lines and prose; the o
 report's main section holds (the kinds of step for where, the arms for compare, the two versions
 for fix-check, the inputs that changed for changes); below it, the figures that follow that table
 in the report, then the links into the pages and the saved line. A section's prose stands above
-the table and its figures below, so the links block is never pushed off a small window (DM13).
+the table and its figures below, so the links block is never pushed off a small window.
 The failures by kind (and compare's per-kind table) are behind ``k``; the second table (where's
 share not yet failed step by step, fix-check's per-input table) behind ``t``; what this cannot say
 is its own screen, ``d``. At 80 × 24 the lines above the table with no room go behind ``m``, as
 the shell has it, and there they scroll a page at a time (PgDn, PgUp, the arrows), so every caveat
-is whole on one read (TF19-A2). Letters mean one thing on every screen (TF19-A1).
+is whole on one read. Letters mean one thing on every screen.
 
 **Entry point.** ``TraceApp(config=None, store=None)``: ``config`` is the ``--config`` value as
 typed, ``store`` the ``--store`` value as typed; with neither the app reads the current folder's
@@ -39,7 +39,7 @@ typed, ``store`` the ``--store`` value as typed; with neither the app reads the 
 state. The exit code is Textual's ``return_code``: 0 for ``q``, 130 for Ctrl-C; ``after`` is the
 one line the app leaves to print once it has left the terminal (Ctrl-C's ``stopped`` line, naming
 what was kept). Work (a verdict worked out, an import) runs beside the screen, which says so in
-one word; Ctrl-C during it exits at once and work let go saves nothing (TF19-A21).
+one word; Ctrl-C during it exits at once and work let go saves nothing.
 """
 
 from __future__ import annotations
@@ -84,7 +84,7 @@ from poisson_trace._app_shell import (
 __all__ = ["TraceApp"]
 
 TOOL = "poisson-trace"
-#: The one word a screen shows while its verdict is worked out beside it (A12).
+#: The one word a screen shows while its verdict is worked out beside it.
 WORKING = {
     "where": "reading…",
     "compare": "comparing…",
@@ -110,14 +110,14 @@ BEHIND_T = {"where": "Share not yet failed, by step", "fix-check": "Inputs that 
 CANNOT_SAY = "What this cannot say"
 BEFORE_YOU_ACT = "Before you act on this"
 SUMMARY = "Summary"
-#: Section 6.4's sentence for an imported run, carried to the could not say screen too.
+#: The report's sentence for an imported run, carried to the could not say screen too.
 NO_TRACES = "This run has no traces"
 KEPT_NONE = "stopped  interrupted; nothing was saved, named or imported"
 KEPT = "stopped  interrupted; kept "
 #: The widest a ``label: value`` line's label is before the line reads as prose.
 LABEL_WIDTH = 36
 #: The limit a comparison could not have seen below: the report says it under the per-kind
-#: table, the verdict screen carries it under its own table (section 17.2's verdict screen).
+#: table, the verdict screen carries it under its own table.
 LIMIT = "could not have detected"
 _RULE = re.compile(r"\|(?:-+\|)+")
 _NUMBER = re.compile(r"^[-+−]?[\d,.]+(?:e[-+]?\d+)?(?:%| points)?$|^–$|^-$")
@@ -216,7 +216,7 @@ def _figure_of(line: str) -> tuple[str, str] | None:
 
 
 def _heading(name: str) -> Line:
-    """A section's heading on the screen, as the design writes it: its first letter small."""
+    """A section's heading on the screen: its first letter small."""
     return text_line(name[:1].lower() + name[1:], "dim")
 
 
@@ -358,7 +358,7 @@ class TraceApp(Shell):
         else:
             self.shown = "no config"
         self.stack: list[Screen] = []
-        #: What the app leaves to print once it has left the terminal (A12).
+        #: What the app leaves to print once it has left the terminal.
         self.after = ""
         #: What was written this session, for Ctrl-C's line: each saved verdict, name, import.
         self.kept: list[str] = []
@@ -406,7 +406,7 @@ class TraceApp(Shell):
 
     def listing(self, word: str | None, path: str) -> tuple[Any, str]:
         """The store's runs as ``runs`` lists them under the config's failures, or, for a
-        store that does not carry them (DM9), with the failed column uncounted and ``runs``'s
+        store that does not carry them, with the failed column uncounted and ``runs``'s
         note for the message line."""
         try:
             return api.runs(word, **self.kw()), ""
@@ -421,8 +421,8 @@ class TraceApp(Shell):
             return []
 
     def pages(self, word: str | None) -> bool:
-        """The pages rebuilt before a link shows, so that the link resolves (section 17.2,
-        Charts); whether they could be."""
+        """The pages rebuilt before a link shows, so that the link resolves; whether
+        they could be."""
         try:
             api.build_pages(word, **self.kw())
         except (api.Refusal, OSError):
@@ -556,7 +556,7 @@ class TraceApp(Shell):
             return
         self.redraw()
 
-    # ---------- the lines behind m, k and t: scrolled a page at a time (TF19-A2) ----------
+    # ---------- the lines behind m, k and t: scrolled a page at a time ----------
 
     def _unscroll(self, page: Screen) -> None:
         """The screen's table again: the lines behind ``m``, ``k`` or ``t`` put away."""
@@ -657,7 +657,7 @@ class TraceApp(Shell):
         page.layout = layout
         return page
 
-    # ---------- home (DM5, DM6) ----------
+    # ---------- home ----------
 
     def home(self) -> Screen:
         page = Screen(
@@ -742,7 +742,7 @@ class TraceApp(Shell):
 
     def empty_home(self) -> Screen:
         """No ``trace.toml`` here and no store named: the two commands that begin, not a
-        refusal (section 17.2)."""
+        refusal."""
         page = Screen("home", keys=[MOVE, OPEN, COPY])
 
         def layout(width: int) -> None:
@@ -761,7 +761,7 @@ class TraceApp(Shell):
 
     def saved_opener(self, v: core.SavedVerdict, word: str | None, path: str) -> Callable[[], None]:
         """Enter on a saved verdict: the verdict worked out again and saved again under the
-        same id (TF19-A13); a saved where opens the run screen."""
+        same id; a saved where opens the run screen."""
 
         def opens() -> None:
             if v.kind == "where" or len(v.runs) < 2:
@@ -844,7 +844,7 @@ class TraceApp(Shell):
         asking: dict[str, Any] = {}
 
         def question(ch: str) -> bool:
-            """``n``: the name typed on the message line, then asked ``[y/N]`` (A11)."""
+            """``n``: the name typed on the message line, then asked ``[y/N]``."""
             if asking.get("typing") is not None:
                 shown = str(asking["row"]["name"])
                 if ch == "\r":
@@ -908,7 +908,7 @@ class TraceApp(Shell):
         page.on_key = keys
         return page
 
-    # ---------- imports (DM9, DM12) ----------
+    # ---------- imports ----------
 
     def imported_index(self) -> int:
         """The store Trace's import wrote: the first whose runs all came from a reader."""
@@ -1016,7 +1016,7 @@ class TraceApp(Shell):
 
     def asking(self, f: core.FoundResult, path: str, index: int) -> Screen:
         """Enter on a found file: the file, what it is, the whole import line, and the question
-        on the message line; ``y`` runs it (AD6, DM12). A line with a word in capitals to fill
+        on the message line; ``y`` runs it. A line with a word in capitals to fill
         in is never run from here."""
         page = Screen("imports", path, keys=[("y", "yes"), ("n", "no"), BACK], path=path)
         run, flags = _import_call(f.command)
@@ -1099,7 +1099,7 @@ class TraceApp(Shell):
 
     def picker(self, kind: str, word: str | None, path: str) -> Screen:
         """Pick two runs, before then after (``space``), or previous and latest (``l``); the
-        limit asked for from the config's ``[check]``, or typed after ``h`` (TF19-A23)."""
+        limit asked for from the config's ``[check]``, or typed after ``h``."""
         limit = "max-mde-hr" if kind == "compare" else "max-mde"
         keyword = limit.replace("-", "_")
         page = Screen(
@@ -1267,7 +1267,7 @@ class TraceApp(Shell):
     ) -> None:
         """The verb's work beside the screen, which says so in one word; its verdict screen
         once it is done. Leaving the screen before then, or Ctrl-C, lets the work go: nothing
-        is saved by it (A12)."""
+        is saved by it."""
         target = Screen(title, subject, keys=[BACK], path=path, kind=kind)
         said = WORKING[kind]
         target.top = [Line(f"  {said}", [(2, 2 + len(said), "dim")])]
@@ -1315,7 +1315,7 @@ class TraceApp(Shell):
         path: str,
         pair: tuple[str, str] | None,
     ) -> Screen:
-        """The verdict saved (AD7) and the pages rebuilt, then its screen from its report."""
+        """The verdict saved and the pages rebuilt, then its screen from its report."""
         delivered = api.save(result)
         ident: str | None = None
         if delivered.saved:
@@ -1449,8 +1449,9 @@ class TraceApp(Shell):
     def could_not_say(
         self, subject: str, lines: list[str], kind: str, ident: str | None, path: str
     ) -> Screen:
-        """The report's "What this cannot say" sentences, whole, and section 6.4's for an
-        imported run; the page of the saved verdict that holds them, as a link."""
+        """The report's "What this cannot say" sentences, whole, and the report's sentence
+        for an imported run with no traces; the page of the saved verdict that holds them, as
+        a link."""
         page = Screen("could not say", subject, keys=[*_OPEN_KEYS, COPY], path=path, kind=kind)
         address = f"trace/{kind}/{ident}/could-not-say.html" if ident is not None else None
 

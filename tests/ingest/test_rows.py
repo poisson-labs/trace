@@ -68,7 +68,7 @@ def test_ic8_cut_and_rows_import_the_standard_library_only() -> None:
             assert top == "__future__" or top in sys.stdlib_module_names, (name, module)
 
 
-def test_s22_run_carries_the_readers_counts_empty_by_default() -> None:
+def test_a_run_carries_the_readers_counts_empty_by_default() -> None:
     """The run carries the reader's counts, and a run given none carries none."""
     from poisson_trace.ingest.rows import Run
 

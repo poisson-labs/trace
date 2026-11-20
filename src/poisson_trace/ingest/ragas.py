@@ -7,9 +7,9 @@ table and not a Ragas format: ``.csv``, ``.jsonl``, ``.json`` (a list of objects
 one score column at a cut the user declares, and one column that identifies the case. Beyond
 the result, every numeric column but the case column is a score in the row's ``scores``, the
 length of ``user_input`` (or ``question``) and of ``response`` (or ``answer``) is measured and
-the text dropped, and a column named exactly as a signal field is read into that signal (spec
-section 18.1.1 row 3, SA7). No value of any other column is kept, and nothing here imports
-Ragas. A judge's NaN is a censored row with no score, unclassified (SG11).
+the text dropped, and a column named exactly as a signal field is read into that signal. No value
+of any other column is kept, and nothing here imports Ragas. A judge's NaN is a censored row with
+no score, unclassified.
 """
 
 from __future__ import annotations

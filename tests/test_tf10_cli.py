@@ -50,7 +50,7 @@ def test_tf10_33_each_reader_s_help_is_the_verb_s(tool: str) -> None:
         assert flag in a.out, flag
 
 
-def test_tf10_33_each_reader_s_flags_are_the_spec_s() -> None:
+def test_tf10_33_each_reader_has_its_flags() -> None:
     flags = {"promptfoo": ("--prompt", "--provider", "--case", "--outcome", "--cut", "--below", "--above"),
              "inspect": ("--scorer", "--outcome", "--cut", "--below", "--above", "--failed")}
     for tool, wanted in flags.items():

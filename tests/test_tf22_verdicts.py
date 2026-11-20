@@ -87,7 +87,7 @@ def _jsonl(path: Path, rows: list[dict[str, Any]]) -> Path:
 # ---------- TF22-33: the input key ----------
 
 
-def test_tf22_33_the_input_key_is_the_spec_formula() -> None:
+def test_tf22_33_the_input_key_is_the_digest_of_the_text() -> None:
     from poisson_trace.ingest.verdicts import input_case
 
     text = deepeval_inputs()["HumanEval/152@0.0"]

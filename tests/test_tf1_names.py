@@ -25,7 +25,7 @@ from tf1_support import (
 
 # ---------- TF1-1: the file ----------
 
-SPEC_FILE = (
+NAMES_FILE_TEXT = (
     "# Poisson Trace: your names for the runs in this store. Written by `poisson-trace name`.\n"
     "version = 1\n"
     "\n"
@@ -35,12 +35,12 @@ SPEC_FILE = (
 )
 
 
-def test_tf1_01_the_names_file_is_the_spec_form_byte_for_byte(tmp_path: Path) -> None:
+def test_tf1_01_the_names_file_is_the_held_form_byte_for_byte(tmp_path: Path) -> None:
     store = tau2_copy(tmp_path)
     # named in the other order from the file's: the entries are sorted by name
     assert name(store, T_A, "tau2 selecting run").code == 0
     assert name(store, T_B, "tau2 old re-run").code == 0
-    assert (store / NAMES_FILE).read_bytes() == SPEC_FILE.encode("utf-8")
+    assert (store / NAMES_FILE).read_bytes() == NAMES_FILE_TEXT.encode("utf-8")
 
 
 AWKWARD = {

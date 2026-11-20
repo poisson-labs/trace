@@ -8,9 +8,8 @@ as UTC when it carries no zone, which the summary says; the eval's name and its 
 functions are declared.
 
 The signals read of a ``match`` event: the length of its sampled answer, and its ``score`` where
-written; a missed match is a wrong answer, or abstained when the answer is empty (spec section
-18.5.2). Nothing of the sampled answer, the expected answer, the options, the pick or the spec's
-run configuration is kept.
+written; a missed match is a wrong answer, or abstained when the answer is empty. Nothing of the
+sampled answer, the expected answer, the options, the pick or the spec's run configuration is kept.
 
 Standard library only.
 """

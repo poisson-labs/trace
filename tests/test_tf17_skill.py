@@ -138,7 +138,7 @@ def test_tf17_8_traces_own_rules_follow_the_shared_ones(skill: tuple[dict[str, o
 # ---------- TF17-9 ----------
 
 
-def test_tf17_9_the_seven_steps_say_what_section_17_4_says(skill: tuple[dict[str, object], str, str]) -> None:
+def test_tf17_9_the_seven_steps_and_what_each_says(skill: tuple[dict[str, object], str, str]) -> None:
     _, body, _ = skill
     steps = steps_of(body)
     assert [s.number for s in steps] == [1, 2, 3, 4, 5, 6, 7], [s.number for s in steps]
@@ -232,7 +232,7 @@ def test_tf17_11_the_skill_and_the_prompt_are_in_plain_words(skill: tuple[dict[s
 # ---------- TF17-12 ----------
 
 
-def test_tf17_12_the_skill_keeps_to_the_tables_the_spec_allows_the_agent(skill: tuple[dict[str, object], str, str]) -> None:
+def test_tf17_12_the_skill_keeps_to_the_tables_the_agent_may_write(skill: tuple[dict[str, object], str, str]) -> None:
     _, body, text = skill
     for table in NOT_FOR_THE_AGENT:
         assert table not in text, table

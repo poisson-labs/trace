@@ -17,7 +17,7 @@ Three faces, and nothing else draws an escape sequence:
   object (an input's key) is printed one field per line; when even that is too wide, one record
   per row. No cell is broken across lines and no word is cut, so the table holds every word and
   number plain's table holds, in the same row order; a number is never coloured, and in the
-  column headed ``verdict`` each cell's verdict word is drawn in its meaning (DM15).
+  column headed ``verdict`` each cell's verdict word is drawn in its meaning.
 
 Every table a later verb adds goes through :func:`table` and ``look.table`` (its plain face), and
 so gets the same rules.
@@ -186,9 +186,9 @@ def _aligned(
 ) -> str | None:
     """The table aligned in columns two spaces apart, the header dim over a dim rule, numbers to
     the right; None when its columns cannot fit ``width`` with every body cell whole on one line
-    (DM4) and every header on two at most. ``stacked`` gives, for a column, each row's cell as
+    and every header on two at most. ``stacked`` gives, for a column, each row's cell as
     fields printed one ``name  value`` a line, the name dim. ``styled`` is the column headed
-    ``verdict``, each cell's verdict word drawn in its meaning (DM15)."""
+    ``verdict``, each cell's verdict word drawn in its meaning."""
     n = len(header)
     stacked = stacked or {}
     cells: list[list[list[str]]] = []  # [row][column] -> lines
@@ -298,7 +298,7 @@ def _records(
     return "".join(out)
 
 
-#: The verdict words a table cell may hold that are drawn in their meaning (DM15): the
+#: The verdict words a table cell may hold that are drawn in their meaning: the
 #: continuous measures' calls. A cell holding any other word (``identical``, ``not tested``,
 #: ``not recorded``, a dash) stays plain, and a direction after the word (``, slower``) is plain.
 _VERDICT_WORDS = ("different", "unconfirmed", "too small to tell", "no significant difference")

@@ -5,9 +5,9 @@ also as ``.gz``, or ``.parquet``, told by the file's extension. One column ident
 and one other column gives each row's result, read one of two ways: an outcome column whose
 cells the user names as failures, or a score column at a cut the user declares. A column named
 exactly as a signal field (``wall_time_s``, ``input_tokens``, ``failure_kind``, ...) is read into
-that signal, and the column ``[signals] cost_field`` names is the cost (spec section 18.1.1 row
-5, SA7). No value of any other column is kept, and of the result column only met or missed. A
-failed row with no column saying how it failed is ``unclassified_error`` (SG11).
+that signal, and the column ``[signals] cost_field`` names is the cost. No value of any other
+column is kept, and of the result column only met or missed. A failed row with no column saying
+how it failed is ``unclassified_error``.
 """
 
 from __future__ import annotations

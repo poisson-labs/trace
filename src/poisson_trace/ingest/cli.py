@@ -8,15 +8,15 @@ come before or after the tool. A refusal is one ``error:`` line on stderr, exit 
 written; a wrong command line exits 2; Ctrl-C and an unexpected failure follow the look
 (``poisson_trace.look``).
 
-A thin caller of the Python API (spec section 11.8): it reads the command line, calls
+A thin caller of the Python API: it reads the command line, calls
 ``poisson_trace.api.import_run`` once with what was typed, and prints what the result gives.
 The readers, their options and the import's work are ``poisson_trace.ingest.importing``,
 reached through ``api``; ``READERS``, ``module_name``, ``reader`` and ``present`` are kept
-here under their old names for what imports them.
+here for what imports them.
 
 A config's ``[signals]`` field mappings stand in for a reader's flags when the command line
-leaves them out (SA8): they are filled into the command line before it is parsed, so each
-reader's help and its refusal of a missing flag are as they were, and a flag given wins.
+leaves them out: they are filled into the command line before it is parsed, so each reader's
+help and its refusal of a missing flag are as they were, and a flag given wins.
 """
 
 from __future__ import annotations

@@ -87,7 +87,7 @@ def line_of(text: str, needle: str) -> int:
 # ---------- TF17-13 ----------
 
 
-def test_tf17_13_the_specs_example_reads_and_the_entries_are_given_in_order(tmp_path: Path) -> None:
+def test_tf17_13_the_example_reads_and_the_entries_are_given_in_order(tmp_path: Path) -> None:
     folder = work(tmp_path)
     text = config_text(EXAMPLE, junit_entry("reports/new.xml", "tests new"), store="proofload-runs")
     held = parse(text, folder)

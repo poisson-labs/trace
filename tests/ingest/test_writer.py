@@ -108,7 +108,7 @@ def test_ic4_the_repeat_is_the_rows_order_within_its_case(tmp_path: Path) -> Non
     }
 
 
-def test_ic4_t_and_horizon_and_meta_import_are_as_section_2_5_says(tmp_path: Path) -> None:
+def test_ic4_t_horizon_and_meta_import_of_rows_without_spans(tmp_path: Path) -> None:
     root = tmp_path / "store"
     detail = {"metric": "Score", "threshold": 0.5, "deepeval_success": True}
     rows = [Row("c1", "met", None, 0.75, None, detail), Row("c2", None, "no score", None, None, detail)]
@@ -127,7 +127,7 @@ def test_ic4_t_and_horizon_and_meta_import_are_as_section_2_5_says(tmp_path: Pat
 # ---------- IC5 ----------
 
 
-def test_ic5_the_manifest_carries_the_fields_of_section_2_5(tmp_path: Path) -> None:
+def test_ic5_the_manifest_carries_the_import_fields(tmp_path: Path) -> None:
     root = tmp_path / "store"
     declared = {"metric": "Answer Relevancy", "cut": 0.7, "side": "below", "case": "name"}
     files = ({"name": "a.json", "sha256": "ab" * 32}, {"name": "b.json.gz", "sha256": "cd" * 32})

@@ -102,7 +102,7 @@ def test_tr26_json_is_byte_identical_across_span_order(tmp_path: Path) -> None:
     assert outputs[0] == outputs[1]
 
 
-def test_tr26_keys_are_in_the_spec_order_and_nothing_is_nan(synth) -> None:  # type: ignore[no-untyped-def]
+def test_tr26_keys_are_in_the_schema_order_and_nothing_is_nan(synth) -> None:  # type: ignore[no-untyped-def]
     declared = where(*synth, SYNTH_EVENTS, "--at", "2", "--json")
     plain = where(TAU2, TAU2_A, TAU2_EVENTS, "--at", "10", "--json")
     cmp = compare(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, 1.5, "--at", "10", "--json")

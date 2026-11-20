@@ -1,5 +1,5 @@
 """The verbs that touch the environment rather than a store: ``init``, ``doctor`` and
-``report`` (spec section 11.8), and the browser the command line opens a page in. Not public:
+``report``, and the browser the command line opens a page in. Not public:
 ``poisson_trace.api`` is the surface; these are what the command line calls for the three
 verbs, each taking every option of its parser as a keyword.
 
@@ -223,7 +223,7 @@ def doctor(*, config: str | None = None, setup: bool = False) -> DoctorResult:
     )
 
 
-# ---------- report DIR: the HTML report (section 17.3 item 8; section 11.7) ----------
+# ---------- report DIR: the HTML report ----------
 
 
 @dataclass(frozen=True)
@@ -307,7 +307,7 @@ def report(folder: str, *, open: bool = False, force: bool = False) -> ReportRes
 
 def _write_report_page(target: Path, handover: dict[str, Any], text: str) -> None:
     """``report.html`` written into the bundle, then ``handover.json`` rewritten with the page's
-    name, digest and size added to ``files`` and every other entry as it was (section 11.7)."""
+    name, digest and size added to ``files`` and every other entry as it was."""
     from poisson_trace import saved
 
     page = target / "report.html"
@@ -326,14 +326,14 @@ def show_page(address: str) -> None:
     webbrowser.open(address)
 
 
-# ---------- the terminal app (section 17.2) ----------
+# ---------- the terminal app ----------
 
 
 def app(*, config: str | None = None, store: str | None = None) -> Any:
     """The terminal app, built and not yet run: ``poisson-trace`` with no verb on a terminal.
     ``config`` and ``store`` are the bare command's ``--config`` and ``--store`` values as typed.
     Textual, the app's framework, is imported here and nowhere a verb reaches; a Textual that
-    cannot be imported is one refusal (A16)."""
+    cannot be imported is one refusal."""
     try:
         from poisson_trace._app import TraceApp
     except ImportError:
@@ -345,7 +345,7 @@ def app(*, config: str | None = None, store: str | None = None) -> Any:
 
 def run_app(built: Any) -> int:
     """The app run until it is left, and its exit code (0 for ``q``, 130 for Ctrl-C). Textual
-    draws on stderr; the app belongs on the terminal stdout is (A2), so a piped stderr takes
+    draws on stderr; the app belongs on the terminal stdout is, so a piped stderr takes
     stdout's terminal for as long as the app runs."""
     import os
     import sys

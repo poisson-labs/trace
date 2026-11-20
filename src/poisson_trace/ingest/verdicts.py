@@ -1,6 +1,5 @@
 """The ``--verdicts FILE`` join: outcomes, scores and feedback another source gave, joined onto
-the rows a reader read (spec section 18.2 option B and 18.2.1 layers 1 and 2, SG5; FI10, FI11,
-FI17 to FI20).
+the rows a reader read.
 
 A verdicts file is a ``.csv`` with the columns ``case``, ``input``, ``outcome``, ``score`` and
 ``failure_kind``, or a ``.jsonl`` with those keys and ``scores`` and ``feedback`` objects. Each
@@ -51,7 +50,7 @@ _WORD = {"pass": MET, "fail": MISSED}
 def input_case(value: Any) -> str:
     """The case key of an input: ``input:`` and the first 12 hex characters of the SHA-256 of
     its canonical form, a string's UTF-8 bytes exactly as written (no trimming, no case
-    folding, no normalisation), anything else as compact JSON with sorted keys (FI18)."""
+    folding, no normalisation), anything else as compact JSON with sorted keys."""
     if isinstance(value, str):
         text = value
     else:
@@ -372,7 +371,7 @@ def join(rows: Sequence[Row], path: Path | str, inputs: Mapping[str, str] | None
 
 
 def block(path: Path | str, joined: Joined) -> dict[str, Any]:
-    """What an import records of a join (FI20): the file's name and digest and the counts;
+    """What an import records of a join: the file's name and digest and the counts;
     never its path or its text."""
     path = Path(path)
     return {

@@ -84,7 +84,7 @@ def test_tf26_81_the_other_readers_files_print_what_main_prints(tmp_path: Path, 
     assert got[0][0] == 1 and got[1][0] == 0
 
 
-def test_tf26_81_and_now_it_finds_them(tmp_path: Path) -> None:
+def test_tf26_81_init_finds_the_weave_files(tmp_path: Path) -> None:
     for label in ("init: weave files", "init: weave tables"):
         holds, steps = INIT[label]
         got = ran_init(tmp_path / label.split()[-1], holds, steps)

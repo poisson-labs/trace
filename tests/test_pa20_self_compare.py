@@ -116,7 +116,7 @@ def test_pa20_3_compare_refuses_every_pair_that_reaches_one_run_as_changes_does(
     assert "the two runs compared must differ" in ran.err, ran.text
 
 
-def test_pa20_4_the_case_in_the_ruling(stores: Stores) -> None:
+def test_pa20_4_a_number_and_a_name_for_one_run(stores: Stores) -> None:
     store, forms = stores["named"]
     ran = _compare(store, forms["number"], NAME)
     assert ran.code == 1 and ran.out == "", ran.text

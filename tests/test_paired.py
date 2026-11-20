@@ -397,7 +397,7 @@ def test_tr52_the_worked_example() -> None:
 
 @SETTINGS
 @given(tables(min_inputs=1, max_inputs=6, max_runs=6), st.floats(0.01, 1.0), st.sampled_from(["drop", "rise"]), st.sampled_from([0.05, 0.1]))
-def test_tr52_power_is_the_formula_of_section_2_5(tab, r, direction, alpha) -> None:  # type: ignore[no-untyped-def]
+def test_tr52_power_matches_the_closed_form(tab, r, direction, alpha) -> None:  # type: ignore[no-untyped-def]
     got = power_at(counts_of(tab), r, direction=direction, alpha=alpha)
     assert got == pytest.approx(_power_oracle(tab, r, direction, alpha), abs=1e-9)
 

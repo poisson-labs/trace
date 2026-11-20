@@ -16,13 +16,12 @@ values declared to mean a failure. ``--scorer`` names the scorer when a sample h
 log whose status is ``error`` is refused with its message's first line; a sample with an error
 has no outcome and is censored.
 
-The signals read of a sample: its total and working time, the lengths of its input (when it is
-text) and of its output's completion, its tokens summed over every model (cached and reasoning
-tokens where Inspect records them), its ``model`` events as LLM calls and its ``tool`` events
-as tool calls, and every score as a number by Inspect's own reading of its letters. Its failure
-kind comes from its limit, its stop reason and its tool errors (spec section 18.5.2). Nothing
-of an input, a target, a message, an output, an event's content or a score's answer or
-explanation is kept, nor an error's text.
+The signals read of a sample: its total and working time, the lengths of its input (when it is text)
+and of its output's completion, its tokens summed over every model (cached and reasoning tokens
+where Inspect records them), its ``model`` events as LLM calls and its ``tool`` events as tool
+calls, and every score as a number by Inspect's own reading of its letters. Its failure kind comes
+from its limit, its stop reason and its tool errors. Nothing of an input, a target, a message, an
+output, an event's content or a score's answer or explanation is kept, nor an error's text.
 """
 
 from __future__ import annotations
@@ -70,7 +69,7 @@ ZSTD_REFUSAL = (
     "this .eval file is Zstandard-compressed; pip install 'poisson-trace[inspect]', or convert "
     "it with: inspect log convert FILE --to json"
 )
-# the kinds a sample's own record gives (section 18.5.2)
+# the kinds a sample's own record gives
 _LIMIT_KINDS: Mapping[str, str] = {
     "time": "timeout",
     "working": "timeout",
@@ -512,8 +511,8 @@ def _stop_reason(sample: Mapping[str, Any]) -> str | None:
 
 
 def _error_kind(text: str) -> str:
-    """An errored sample's kind, from its error's text (RD4 reading 7): a timeout, a rate limit
-    or a context overflow where the text says so, else a crash. The text is kept nowhere."""
+    """An errored sample's kind, from its error's text: a timeout, a rate limit or a context
+    overflow where the text says so, else a crash. The text is kept nowhere."""
     for pattern, kind in (
         (TIMEOUT, "timeout"),
         (RATE_LIMIT, "rate_limit"),
@@ -525,9 +524,9 @@ def _error_kind(text: str) -> str:
 
 
 def _failed_kind(sample: Mapping[str, Any], row: Row) -> str | None:
-    """A failed sample's kind from its own record, in section 18.5.1's precedence: its limit,
-    its stop reason, its tool errors' types. None where the record names none, which the rules
-    then read (a tool error, or a wrong answer)."""
+    """A failed sample's kind from its own record, in precedence order: its limit, its stop reason,
+    its tool errors' types. None where the record names none, which the rules then read (a tool
+    error, or a wrong answer)."""
     limit = sample.get("limit")
     limited = limit.get("type") if isinstance(limit, Mapping) else None
     stop = _stop_reason(sample)

@@ -31,7 +31,7 @@ HE_EVENTS = ("failed_assertion", "crashed")
 TAU2_EVENTS = ("unsolved",)
 
 # the reasons an input is left out, in the order the report gives them
-SPEC_LEFT_OUT = (
+LEFT_OUT_REASONS = (
     "not re-run on the old version",
     "not re-run on the new version",
     "no outcome on the old version",
@@ -39,7 +39,7 @@ SPEC_LEFT_OUT = (
 )
 
 # fix-check's cannot-say block, verbatim, one line each
-SPEC_CANNOT_SAY = (
+CANNOT_SAY_LINES = (
     "A difference between two stored runs is a difference between the runs. The version, the "
     "provider and the hour changed together unless the two were run side by side, and this "
     "test cannot separate them.",

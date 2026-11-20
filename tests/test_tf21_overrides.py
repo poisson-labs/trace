@@ -65,7 +65,7 @@ def parse(text: str, tmp_path: Path) -> Any:
 # ---------- TF21-56: a config using every key of the three tables reads whole ----------
 
 
-def test_tf21_56_the_spec_example_reads(tmp_path: Path) -> None:
+def test_tf21_56_the_example_reads(tmp_path: Path) -> None:
     cfg = parse(EXAMPLE, tmp_path)
     assert dict(cfg.signals) == {
         "case_field": "metadata.case_id", "outcome_field": "feedback_stats.correctness",
@@ -75,7 +75,7 @@ def test_tf21_56_the_spec_example_reads(tmp_path: Path) -> None:
     assert tuple(cfg.rules) == RULES
 
 
-def test_tf21_56_a_config_without_them_reads_as_before(tmp_path: Path) -> None:
+def test_tf21_56_a_config_without_them_reads_with_none(tmp_path: Path) -> None:
     cfg = parse('version = 1\n[store]\npath = "st"\n', tmp_path)
     assert dict(cfg.signals) == {} and cfg.budgets is None and tuple(cfg.rules) == ()
 

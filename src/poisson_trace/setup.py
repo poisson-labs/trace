@@ -1033,7 +1033,7 @@ def file_lines(
     """The import lines of the files, grouped by tool, for at most 12 files (each file shown
     is opened for its answers): every answer init can read from the file filled in, and a
     word in capitals for each it cannot (METRIC, CUT, CASE). ``limit`` None gives every file
-    its lines (the terminal app's imports screen, TF19-A9); the run names are read over every
+    its lines (the terminal app's imports screen); the run names are read over every
     file either way, so a line is the same whether or not the ones before it are shown. A
     file that is no run of its own has no line: a LangSmith feedback list, whose path goes
     after its runs file's, on that file's line; and a Weave file that holds no case. A Weave
@@ -1204,7 +1204,7 @@ def _write(
 ) -> None:
     """The runs to import, then the config. On a refusal, a failure or Ctrl-C, every run this
     wrote is removed, and so is the store folder it made, with the store descriptor the first
-    run wrote into it (the run record, SV1), so nothing is left behind. ``rules`` and
+    run wrote into it (the run record), so nothing is left behind. ``rules`` and
     ``budgets`` are a config's, when the runs join one that has them."""
     from poisson_trace.ingest.rows import Refusal
     from poisson_trace.ingest.writer import write

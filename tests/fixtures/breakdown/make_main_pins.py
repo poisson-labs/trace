@@ -1,6 +1,6 @@
-"""Takes the pins of what main prints, for rule 5 of the failure breakdown pair
-(``tests/test_bd_unchanged.py``): run on main (the commit ``breakdown_support.MAIN`` names),
-from the repository's root, with the package installed::
+"""Takes the pins of what main prints before the failure breakdown, for the tests that hold every
+other output to it (``tests/test_bd_unchanged.py``): run on main (the commit
+``breakdown_support.MAIN`` names), from the repository's root, with the package installed::
 
     python tests/fixtures/breakdown/make_main_pins.py
 

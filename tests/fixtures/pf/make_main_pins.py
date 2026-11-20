@@ -1,4 +1,4 @@
-"""Takes the pins of what main holds, for the Prove floor pair's unchanged tests
+"""Takes the pins of what main holds, for the unchanged tests of the Prove floor
 (``tests/test_pf_unchanged.py``): run from the repository's root, in a checkout that has main's
 commit (the one ``pf_pins.MAIN`` names)::
 

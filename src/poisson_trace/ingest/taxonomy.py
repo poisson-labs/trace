@@ -1,13 +1,12 @@
 """The failure taxonomy: one rule set over the normalised ``Row`` for every source.
 
-Every row whose result is ``fail`` or ``censored`` gets one of the 13 terminal failure kinds of
-spec section 18.5.1, by the first rule that matches in precedence order; every row, passing or
-not, gets the behavioural signals that hold for it. The rules read the row's own fields, so what
-a reader puts into the row decides the kind (SA3): section 18.5.2's per-source table says what
-each reader records, and this module classifies what it finds. A kind the source itself gave
-(a table's ``failure_kind`` column, a Prove run's own word) is kept. User rules from
-``trace.toml``'s ``[[taxonomy.rules]]`` are tried first, in the order written, and every
-condition of a rule must hold for it to match (SG12).
+Every row whose result is ``fail`` or ``censored`` gets one of the 13 terminal failure kinds, by the
+first rule that matches in precedence order; every row, passing or not, gets the behavioural signals
+that hold for it. The rules read the row's own fields, so what a reader puts into the row decides
+the kind: each reader records what its source gives, and this module classifies what it finds. A
+kind the source itself gave (a table's ``failure_kind`` column, a Prove run's own word) is kept.
+User rules from ``trace.toml``'s ``[[taxonomy.rules]]`` are tried first, in the order written, and
+every condition of a rule must hold for it to match.
 
 A reader may also give the kinds its outcome labels name (``labels``): a failed try no rule
 found a cause for takes the kind of its label, before the two rules that find none
@@ -15,7 +14,7 @@ found a cause for takes the kind of its label, before the two rules that find no
 them: ``LABEL_KINDS`` holds its defaults, and a team's ``[taxonomy.labels]`` adds to them.
 
 ``taxonomy_sha256`` is the digest an import records beside what it declared, so a verdict can say
-which rules classified a run (SA5, SA9).
+which rules classified a run.
 
 Standard library and ``rows`` only.
 """
@@ -62,7 +61,7 @@ CONDITIONS: tuple[str, ...] = ("when_error_matches", "when_span_kind", "when_met
 #: The budgets a config may declare, and the signal fields they bound.
 BUDGETS: tuple[str, ...] = ("max_wall_time_s", "max_total_tokens", "max_cost_usd")
 
-# the text rules (section 18.5.2, read as one set): the error's type and the error, joined
+# the text rules, read as one set: the error's type and the error, joined
 TIMEOUT = re.compile(r"(?i)time[ _-]?out|timed[ _-]?out|ETIMEDOUT")
 RATE_LIMIT = re.compile(r"(?i)\b429\b|rate[ _-]?limit")
 CONTEXT = re.compile(
@@ -196,9 +195,9 @@ def taxonomy_sha256(
     rules: Sequence[Rule], budgets: Budgets | None, labels: Mapping[str, str] | None = None
 ) -> str:
     """SHA-256 of the compact, key-sorted JSON of the schema, the rules in order (each its set
-    fields) and the budgets set (SA9). Signal field mappings are not in it. ``labels`` is a
-    team's ``[taxonomy.labels]`` table, which only a run Prove swept is classified by: it is in
-    the document only when it names a label, so every digest without a table is as it was."""
+    fields) and the budgets set. Signal field mappings are not in it. ``labels`` is a team's
+    ``[taxonomy.labels]`` table, which only a run Prove swept is classified by: it is in the
+    document only when it names a label."""
     doc: dict[str, Any] = {
         "schema": SCHEMA,
         "rules": [rule.to_dict() for rule in rules],

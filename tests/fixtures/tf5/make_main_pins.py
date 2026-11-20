@@ -1,6 +1,6 @@
-"""Takes the pins of what main prints, builds and shows, for TF5's unchanged tests
-(``tests/test_tf5_unchanged.py``): run on main (the commit ``tf5_pins.MAIN`` names), from the
-repository's root, with the package installed and nothing of the docs pair's in the tree::
+"""Takes the pins of what main prints, builds and shows, for the unchanged tests in
+``tests/test_tf5_unchanged.py``: run on main (the commit ``tf5_pins.MAIN`` names), from the
+repository's root, with the package installed and none of the docs check's files in the tree::
 
     python tests/fixtures/tf5/make_main_pins.py
 
@@ -10,8 +10,8 @@ whole; for each of ``tf5_pins.CHANGED``, ``tf5_pins.INIT`` and ``tf5_pins.READER
 step's exit code, stdout and stderr as text (of ``doctor``, its readers line alone); ``setup``,
 ``doctor`` and ``init`` on a store as text, the machine's own words written out
 (``tf5_pins.machine``); ``skill``, what ``init --agent --print`` prints; ``pages``, the digest of each file of the pages
-TF19's workspace builds; and ``app``, each screen of the terminal app over that workspace, as
-text. Paths are written ``<ROOT>`` and times ``<TIME>``.
+the tests' pages workspace builds; and ``app``, each screen of the terminal app over that
+workspace, as text. Paths are written ``<ROOT>`` and times ``<TIME>``.
 """
 
 from __future__ import annotations

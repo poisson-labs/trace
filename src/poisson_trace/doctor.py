@@ -13,9 +13,9 @@ The report is returned as data; the command line prints it.
 ``doctor --setup`` (``setup_check``) is the check the setup file a coding agent follows names:
 it reads what ``doctor`` reads, as a setup needs it, and each pending ``[[import]]`` file with
 its reader, writing nothing; its exit codes are the shared check's (0 ready, 1 not ready, 2 a
-config wrong under the config's rules), not ``doctor``'s 4. Plain ``doctor`` is as it was, but
-for its next command once every ``[[import]]`` file is imported: the first fix-check on the
-first pair of one tool's runs.
+config wrong under the config's rules), not ``doctor``'s 4. Once every ``[[import]]`` file is
+imported, plain ``doctor``'s next command is the first fix-check on the first pair of one tool's
+runs.
 """
 
 from __future__ import annotations

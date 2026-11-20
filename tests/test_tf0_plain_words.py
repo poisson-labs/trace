@@ -2,7 +2,7 @@
 
 No spec, invariant or test-group number (TR, IT, IL, IC, ID, IR, FD, LST, TF and the rest), no
 decision number, no session name, and none of the words that only mean something inside the lab,
-in the README, the CHANGELOG, every file under docs/ but the two standards (kept byte for byte
+in the README, the CHANGELOG, every file under docs/ but the look standard (kept byte for byte
 as the lab writes them), every string a user can meet in the source (help text, refusals,
 report text: every literal that is not a docstring), and every output of the corpus: help,
 version, results and errors of both commands. The pattern is the Tasks test's, copied, with
@@ -17,7 +17,7 @@ import pytest
 
 from tf0_support import INTERNAL, REPO, Ran, corpus_ran, plain
 
-STANDARDS = {"cli-look.md", "repo-hygiene.md"}
+STANDARDS = {"cli-look.md"}
 
 
 def _user_files() -> list[Path]:

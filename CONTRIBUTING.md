@@ -96,8 +96,8 @@ PATH="$PWD/.venv/bin:$PATH" python tools/docs_check.py
 PATH="$PWD/.venv/bin:$PATH" python tools/docs_check.py docs/recipes/first-look.md
 ```
 
-With no page it checks the README, this page and every page under `docs/` but the two
-standards. A page marks each block with a comment on the line above it: `<!-- command -->`
+With no page it checks the README, this page and every page under `docs/` but the look
+standard. A page marks each block with a comment on the line above it: `<!-- command -->`
 for a block to run, `<!-- output exit=0 -->` for the whole of what it printed,
 `<!-- excerpt exit=0 -->` for a run of its lines, and `<!-- skip reason="..." -->` for a block
 that is shown and not run. The opening of `tools/docs_check.py` has the whole list. When you
@@ -115,10 +115,9 @@ of every one of them, of each support module beside them and of the pins they re
 test, in `tests/test_frozen.py`, fails when a listed file is edited and when a test file is
 not on the list.
 
-A frozen test changes only when its owner rules that it should. The change goes in a commit
-of its own, with that file's line in the list moved in the same commit, and the commit says
-which ruling it carries out. The failing test prints the line to write, and `shasum` checks
-the whole list:
+A frozen file changes only in a commit of its own that says why, with the file's line in the
+list moved in that commit. The failing test prints the line to write, and `shasum` checks the
+whole list:
 
 <!-- skip reason="a contributor's commands: shown here, and not run by the docs check" -->
 ```
@@ -142,12 +141,11 @@ cd tests/fixtures && shasum -a 256 -c SHA256SUMS
 A new reader needs a real export of its tool among the fixtures before its page may name the
 tool, and a line in both files.
 
-## The two standards
+## The look standard
 
 `docs/cli-look.md` says how every Poisson Labs command prints: the verdict line, the exit
-codes, the colours, the plain form. `docs/repo-hygiene.md` says how a repository is kept.
-Both are copies of the lab's own files, kept byte for byte, and a test holds them to that.
-Do not edit them here.
+codes, the colours, the plain form. It is a copy of the lab's own file, kept byte for byte,
+and a test holds it to that. Do not edit it here.
 
 ## Commits and releases
 

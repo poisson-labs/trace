@@ -231,7 +231,7 @@ def test_tf5_44_the_sections_in_order() -> None:
     assert kept == list(ORDER), kept
     extra = [title for title in titles if title not in ORDER]
     for title in extra:
-        assert title == "Install" or re.search(r"(?i)pre-release", title), f"a section section 8.3 does not name: {title}"
+        assert title == "Install" or re.search(r"(?i)pre-release", title), f"a section the README does not list: {title}"
 
 
 def _outside_blocks() -> list[str]:

@@ -7,14 +7,11 @@ and the Hodges-Lehmann estimate for the typical case with its Walsh-average rang
 step-down holds the measures that can be called to one family. A measure that cannot be called
 says what happened instead: *identical*, *changed on n of K cases*, or *too small to tell*.
 
-Spec section 18.6 as ruled on 2026-11-03 (CS1 to CS14) is what this module implements; the
-reading of each ruling is noted beside the code that carries it. The inputs are plain, so that
-the readers that fill them from a store (TF21) can come later: a :class:`Version` holds, per
-case, its :class:`Try` objects, each with its value per measure, how it ended, its behavioural
-signals and its repeat number.
+The inputs are plain: a :class:`Version` holds, per case, its :class:`Try` objects, each with
+its value per measure, how it ended, its behavioural signals and its repeat number.
 
 Nothing here writes, prints or reads a file. :func:`table` gives a header and rows for
-``look.table``; no verb prints it yet.
+``look.table``.
 
 numpy and scipy only.
 """
@@ -46,18 +43,18 @@ MEASURES: tuple[str, ...] = (
     "total_tokens",
     "cost_usd",
 )
-#: Compared only on the cases both versions finished (CS7): time, and output length.
+#: Compared only on the cases both versions finished: time, and output length.
 FINISHED_ONLY: tuple[str, ...] = ("wall_time_s", "working_time_s", "output_chars")
 #: The measures a timeout cap cuts.
 TIMES: tuple[str, ...] = ("wall_time_s", "working_time_s")
-#: The one measure that is shown and never tested: the sum of the other two token counts (CS5).
+#: The one measure that is shown and never tested: the sum of the other two token counts.
 SHOWN_ONLY = "total_tokens"
-#: How a try can end early without doing the work (CS7); the ``gave_up`` signal is the fifth.
+#: How a try can end early without doing the work; the ``gave_up`` signal is the fifth.
 EARLY: tuple[str, ...] = ("crash", "rate_limit", "abstained", "guardrail_blocked")
 GAVE_UP = "gave_up"
 TIMEOUT = "timeout"
 
-#: Each measure's two direction words, the lower first (section 18.6.1 item 3).
+#: Each measure's two direction words, the lower first.
 WORDS: dict[str, tuple[str, str]] = {
     "wall_time_s": ("faster", "slower"),
     "working_time_s": ("faster", "slower"),
@@ -70,17 +67,17 @@ WORDS: dict[str, tuple[str, str]] = {
 }
 
 #: The sign-flip test is exact up to this many changed cases, and draws this many flips above
-#: it (CS12).
+#: it.
 EXACT_MAX = 20
 FLIPS = 100_000
-#: A *different* call needs this many changed cases and this many paired cases (CS1).
+#: A *different* call needs this many changed cases and this many paired cases.
 FLOOR_CHANGED = 9
 FLOOR_PAIRED = 10
-#: The smallest catchable change is printed from this many paired cases (CS6); the quantiles
-#: P90 and P95 are given from this many (CS11).
+#: The smallest catchable change is printed from this many paired cases; the quantiles
+#: P90 and P95 are given from this many.
 MDE_SIZE_FROM = 15
 QUANTILES_FROM = 20
-#: The tail-spike label needs the typical case's range inside this share of the old P50 (CS11).
+#: The tail-spike label needs the typical case's range inside this share of the old P50.
 TAIL_SHARE = 0.05
 #: The exact table for the typical case's range is built to this many cases; above, the large-
 #: sample formula stands in.
@@ -90,7 +87,7 @@ _BLOCK = 10_000
 _TIE = 1e-12
 #: A share of the old mean (the relative change, the smallest catchable change's share, the
 #: cases needed) is left out of the lines when it is not finite or is at least this large,
-#: past which it prints as hundreds of digits and says nothing (HY1, SV11).
+#: past which it prints as hundreds of digits and says nothing.
 PRINTABLE = 1e12
 
 
@@ -99,7 +96,7 @@ PRINTABLE = 1e12
 
 def seed(run_a: str, run_b: str, measure: str) -> int:
     """The seed every random step of a comparison draws from: the SHA-256 of
-    ``run_a:run_b:measure`` read as a whole number (the seed rule, IC5)."""
+    ``run_a:run_b:measure`` read as a whole number (the seed rule)."""
     return int(hashlib.sha256(f"{run_a}:{run_b}:{measure}".encode()).hexdigest(), 16)
 
 
@@ -138,8 +135,8 @@ def _exact_count(nz: FloatArray, reach: float) -> int:
 def signflip_p(d: npt.ArrayLike, seed: int) -> float:
     """The two-sided sign-flip p of the case differences ``d``, over the changed cases only
     (a zero difference moves with no sign). Exact up to :data:`EXACT_MAX` changed cases; above,
-    ``(1 + count) / (1 + FLIPS)`` over :data:`FLIPS` random sign vectors from ``seed`` (CS12),
-    so never 0. The studentized statistic of the spec gives this p: on every sign vector its
+    ``(1 + count) / (1 + FLIPS)`` over :data:`FLIPS` random sign vectors from ``seed``,
+    so never 0. The studentized statistic gives this same p: on every sign vector its
     size rises with the size of the sum."""
     nz = _array(d)
     nz = nz[nz != 0.0]
@@ -170,7 +167,7 @@ def p_floor(k_nonzero: int) -> float:
 
 
 def t_range(d: npt.ArrayLike, alpha: float = 0.05) -> tuple[float, float]:
-    """The Student t range for the mean of ``d`` (CS3), at level ``1 - alpha``."""
+    """The Student t range for the mean of ``d``, at level ``1 - alpha``."""
     x = _array(d)
     k = int(x.size)
     if k < 2:
@@ -186,7 +183,7 @@ def _walsh(x: FloatArray) -> FloatArray:
 
 
 def hodges_lehmann(d: npt.ArrayLike) -> float:
-    """The typical case's change (CS11): the median of the Walsh averages, the mean of every
+    """The typical case's change: the median of the Walsh averages, the mean of every
     pair of differences (a case with itself included)."""
     return float(np.median(_walsh(_array(d))))
 
@@ -229,7 +226,7 @@ def hl_range(d: npt.ArrayLike, alpha: float = 0.05) -> tuple[float, float]:
 def mde(d: npt.ArrayLike, alpha: float = 0.05) -> float:
     """The smallest change the test would catch 4 times in 5 at level ``alpha``, from the
     spread of ``d``: ``(t(1 - alpha/2) + t(0.80)) * s / sqrt(K)`` with K - 1 degrees of freedom
-    (section 18.6.1 item 3). The caller gives the level the test is held to (CS5)."""
+    The caller gives the level the test is held to."""
     x = _array(d)
     k = int(x.size)
     if k < 2:
@@ -241,7 +238,7 @@ def mde(d: npt.ArrayLike, alpha: float = 0.05) -> float:
 def k_needed(k: int, mde: float, delta: float) -> int | None:
     """The cases a run would need to catch a change of ``delta`` when ``k`` cases caught
     ``mde``: ``ceil(k (mde / delta)^2)``. None where that is not a finite number a run could
-    hold (a ceiling set against a near-zero old mean, HY1 as SV11 reads it)."""
+    hold (a ceiling set against a near-zero old mean)."""
     if delta <= 0.0:
         raise ValueError("the change to catch must be above zero")
     try:
@@ -255,7 +252,7 @@ def k_needed(k: int, mde: float, delta: float) -> int | None:
 
 def share_of(part: float, whole: float) -> float | None:
     """``part / whole`` where that is a finite share a line can print; None where ``whole`` is
-    zero or the share is not finite or too large to print (HY1)."""
+    zero or the share is not finite or too large to print."""
     if whole == 0.0:
         return None
     try:
@@ -282,7 +279,7 @@ def _holm_steps(p: Mapping[str, float], alpha: float) -> dict[str, tuple[bool, f
 
 def holm(p: Mapping[str, float], alpha: float = 0.05) -> dict[str, bool]:
     """Holm's step-down: the i-th smallest p of m is held to ``alpha / (m - i + 1)``, and the
-    first that misses stops it (CS5)."""
+    first that misses stops it."""
     return {name: called for name, (called, _) in _holm_steps(p, alpha).items()}
 
 
@@ -291,7 +288,7 @@ _CEILING = re.compile(r"^(\d+(?:\.\d+)?)%$")
 
 def parse_max_change(text: str) -> tuple[str, float]:
     """``measure=N%`` as the measure and a fraction: ``wall_time_s=10%`` is
-    ``("wall_time_s", 0.10)`` (CS10). Anything else is refused with a ValueError saying why."""
+    ``("wall_time_s", 0.10)``. Anything else is refused with a ValueError saying why."""
     measure, sep, value = text.strip().partition("=")
     measure, value = measure.strip(), value.strip()
     if not sep:
@@ -348,7 +345,7 @@ def _value(t: Try, measure: str) -> float | None:
 
 def _ordered(version: Version, case: str, measure: str) -> list[Try]:
     """A case's tries in the order recorded; tries with no recorded order follow, drawn by the
-    seed rule keyed on the run, the case and the measure (CS14)."""
+    seed rule keyed on the run, the case and the measure."""
     tries = list(version.cases[case])
     known = sorted((t for t in tries if t.repeat is not None), key=lambda t: t.repeat or 0)
     loose = [t for t in tries if t.repeat is None]
@@ -359,7 +356,7 @@ def _ordered(version: Version, case: str, measure: str) -> list[Try]:
 
 
 def _early_kind(tries: Sequence[Try]) -> str | None:
-    """How a case ended early in one version, if any of its tries did (CS7)."""
+    """How a case ended early in one version, if any of its tries did."""
     for t in tries:
         if t.ending in EARLY:
             return str(t.ending)
@@ -393,7 +390,7 @@ class _Gathered:
 def _gather(
     measure: str, a: Version, b: Version, shared: Sequence[str], cap_low: float | None
 ) -> _Gathered:
-    """Pair the shared cases for one measure (section 18.6.1 items 1 and 4)."""
+    """Pair the shared cases for one measure."""
     g = _Gathered(k_total=len(shared))
     cut_at = cap_low if measure in TIMES else None
     for case in shared:
@@ -575,7 +572,7 @@ _SUFFIX = {
     "total_tokens": " tokens",
     "cost_usd": "",
 }
-# what a few cases doing far more would do to the range (CS4): "If a few cases {this} than the
+# what a few cases doing far more would do to the range: "If a few cases {this} than the
 # rest, this range can miss a rise."
 _FAR = {
     "wall_time_s": "took far longer",
@@ -692,7 +689,7 @@ def _summary_line(m: Measure) -> str:
 
 
 def _tries_line(a: Version, b: Version, g: _Gathered) -> str | None:
-    """Say so when the two versions had different numbers of tries per case (CS14)."""
+    """Say so when the two versions had different numbers of tries per case."""
     if g.tries_old == g.tries_new:
         return None
     sa, sb = set(g.tries_old), set(g.tries_new)
@@ -714,7 +711,7 @@ def _tries_line(a: Version, b: Version, g: _Gathered) -> str | None:
 
 
 def _left_out_lines(measure: str, a: Version, b: Version, g: _Gathered) -> list[str]:
-    """What was left out of the comparison, and the caveat that goes with it (CS8)."""
+    """What was left out of the comparison, and the caveat that goes with it."""
     lines: list[str] = []
     if measure in FINISHED_ONLY and (g.left_out or g.unfinished_old or g.unfinished_new):
         both = g.k_total - g.left_out
@@ -757,7 +754,7 @@ def compare(
     """Compare ``a`` (the old version) with ``b`` (the new) on every measure.
 
     ``ceilings`` gives, per measure, the share of the old mean that a change may reach and still
-    count as no difference, chosen before looking (CS10). ``alpha`` is the level of the tests
+    count as no difference, chosen before looking. ``alpha`` is the level of the tests
     and ranges."""
     if not 0.0 < alpha < 1.0:
         raise ValueError("alpha must be between 0 and 1")
@@ -922,7 +919,7 @@ def _speak_tested(
                     f"{_between(measure, m.lo, m.hi)}; p = {_p(m.p_value)}."
                 )
             else:
-                # the sign-flip test saw a change the mean's range does not (CS13): say what moved
+                # the sign-flip test saw a change the mean's range does not: say what moved
                 where = (
                     f"on most cases ({n_way} of {m.k_paired})"
                     if 2 * n_way > m.k_paired
@@ -999,7 +996,7 @@ def _speak_tested(
                     )
                 else:
                     # the ceiling is a share of an old mean so near zero that no run could
-                    # hold the cases needed (HY1, SV11)
+                    # hold the cases needed
                     lines.append(
                         f"To tell a change of ±{_amount(measure, delta)} "
                         f"({_num(fraction * 100.0, 3)}% of the old mean) from none would take "
@@ -1022,7 +1019,7 @@ def table(comparison: Comparison, technical: bool = False) -> tuple[list[str], l
     """The comparison as a header and rows for ``look.table``: one row a measure shown, in the
     order of :data:`MEASURES`, its first cell the measure, its ``change`` the relative change
     alone (``none`` for no change, ``-`` for none to give), and its last the verdict word with
-    its direction after a comma when there is one (``different, slower``; DM3). The absolute
+    its direction after a comma when there is one (``different, slower``). The absolute
     change stays in the measure's lines. A measure no case recorded is left out, and shown as
     ``not recorded`` with ``technical``, which also adds the range and the p."""
     header = ["measure", "old", "new", "change"]
@@ -1060,7 +1057,7 @@ def _row(m: Measure, technical: bool) -> list[str]:
         elif m.relative is not None:
             change = _pct(m.relative)
         else:
-            change = dash  # the old mean too near zero for a share of it (HY1)
+            change = dash  # the old mean too near zero for a share of it
     cells = [name, old, new, change]
     if technical:
         cells.append(

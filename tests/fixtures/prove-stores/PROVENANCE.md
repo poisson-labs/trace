@@ -1,4 +1,4 @@
-# The three Prove stores TF16 and the floor's tests read
+# The three Prove stores the store tests and the floor's tests read
 
 Three stores written by Prove's own `sweep` on its keyless mock agent, with no key, no network and
 no model: one by the oldest published Prove that Trace reads (0.4.0, the floor Trace declares), one
@@ -14,22 +14,21 @@ its old name, before it was published. Nothing in any of them was written or edi
 `prove-0.4.0/` was made by `make.py` beside this file in a fresh Python 3.11.7 environment that
 held only `poisson-prove==0.4.0` from PyPI and what it pulls in (numpy 2.4.6, pandas 3.1.1,
 pyarrow 26.0.1, scipy 1.17.1, rich 15.0.0, textual 8.2.8, threadpoolctl 3.8.0 and their own
-needs), with `HOME` a scratch folder. It was added by Taylor's rulings of 2026-11-17 and
-2026-11-18, which made Trace's exact pin of Prove a floor at 0.4.0: the store the recipe makes is
-made by the floor. It is the fixture of the stored format's 1.2, which Prove 0.4.0 writes.
+needs), with `HOME` a scratch folder. Trace declares Prove 0.4.0 as its floor, so the store the
+recipe makes is made by the floor. It is the fixture of the stored format's 1.2, which Prove 0.4.0
+writes.
 
 `prove-0.1.3/` is kept as `poisson-prove` 0.1.3 wrote it, as the fixture of the stored format's
-1.0, which Trace goes on reading. It was made on 2026-11-04 by `make.py` as it then was (the same
-three steps as below, for 0.1.3 and with no `--note`), in a fresh Python 3.11.7 environment that
-held only `poisson-prove==0.1.3` from PyPI and what it pulls in (numpy 2.4.6, pandas 3.1.1,
-pyarrow 26.0.1, scipy 1.17.1, rich 15.0.0, textual 8.2.8, threadpoolctl 3.7.0 and their own
-needs), with `HOME` a scratch folder. It replaced the store `poisson-prove` 0.1.3 wrote on
-2026-11-03, by Taylor's ruling of 2026-11-04 moving the pin. It is not made again: the recipe now
-makes the floor's store.
+1.0, which Trace goes on reading. It was made by `make.py` as it then was (the same three steps
+as below, for 0.1.3 and with no `--note`), in a fresh Python 3.11.7 environment that held only
+`poisson-prove==0.1.3` from PyPI and what it pulls in (numpy 2.4.6, pandas 3.1.1, pyarrow 26.0.1,
+scipy 1.17.1, rich 15.0.0, textual 8.2.8, threadpoolctl 3.7.0 and their own needs), with `HOME` a
+scratch folder. It is not made again: the recipe now makes the floor's store.
 
 `prove-0.0.1/` is kept as Prove wrote it: it is the shape of a store from before Prove was
-published (no `.poisson/`, no event logs, no names, the version under the old key), which TF16's
-tests read beside the new one. No published Prove writes that shape, so it is not made again.
+published (no `.poisson/`, no event logs, no names, the version under the old key), which the
+tests in `tests/test_tf16_*.py` read beside the new one. No published Prove writes that shape,
+so it is not made again.
 
 ## The recipe
 

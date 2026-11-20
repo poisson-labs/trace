@@ -1,6 +1,5 @@
-"""The static pages and the HTML report: one renderer from the core's view objects (spec
-section 17.3 items 7 to 9; section 11.7 as amended; the design's section 3), and the two charts
-a saved ``compare`` carries (SV15).
+"""The static pages and the HTML report: one renderer from the core's view objects, and the
+two charts a saved ``compare`` carries.
 
 A view (``core.View``) is the data behind one page: every fact the page shows, as the saved
 verdict holds it, and the addresses of the pages it links to. This module formats a view and
@@ -11,7 +10,7 @@ are the one ``<style>`` element every page carries. The HTML report (``poisson-t
 DIR``, ``to_html()``) is the same verdict page rendered self-contained: the stylesheet inlined
 in that one element, no script, no link, no ``href`` but an anchor of its own, the narrower
 policy. Nothing on any page loads from the network; an SVG inside a page carries no namespace
-(a scheme section 11.7 refuses) and no style of its own.
+(a scheme the HTML report's check refuses) and no style of its own.
 
 Every element that shows a fact of the verdict carries ``data-fact``, its JSON pointer, and
 ``data-value``, its value as JSON. The report's lines are shown as the plain command prints
@@ -38,12 +37,12 @@ PROVE_POLICY = (
     "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' "
     "data:; base-uri 'none'; form-action 'none'"
 )
-#: The report's: inline style and images and nothing else (section 17.3 item 8).
+#: The report's: inline style and images and nothing else.
 REPORT_POLICY = (
     "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; "
     "form-action 'none'"
 )
-#: Prove's UI bundle, copied byte for byte beside the pages (section 17.3 item 7).
+#: Prove's UI bundle, copied byte for byte beside the pages.
 BUNDLE = ("style.css", "ui.js")
 FOOTER = f"Built by {TOOL} from the store. Nothing was loaded from the network. Address: "
 #: The look's chart tokens by value, light and dark, for a chart saved as a file of its own.
@@ -65,7 +64,7 @@ DARK = {
 }
 _FONT = "ui-monospace,Menlo,Consolas,monospace"
 #: The pages' own rules beside Prove's stylesheet: the charts' classes (the first run in
-#: ``--dim``, the second in ``--after``, each band a faint fill of its line's colour, DM7) and
+#: ``--dim``, the second in ``--after``, each band a faint fill of its line's colour) and
 #: the verdict panel's lists and links.
 #: Trace's mark, as the lab's site draws it beside the tool's name (its colour there, and the
 #: stepped line of a survival curve: the share of runs still alive, falling at the step where
@@ -170,7 +169,7 @@ def word_class(word: str) -> str:
 
 def verdict_heading(verdict: str, sentence: str) -> str:
     """A page's first heading: the verdict line, ``<verdict>␣␣<sentence>``, in Prove's verdict
-    panel (section 11.7's check reads the text of the first ``<h1>``)."""
+    panel (the HTML report's check reads the text of the first ``<h1>``)."""
     return (
         f'<h1 class="verdict">{fact("/verdict", verdict, tag="b", cls=word_class(verdict))}  '
         f"{fact('/sentence', sentence)}</h1>"
@@ -542,7 +541,7 @@ def curves_svg(
 ) -> str:
     """The share of tries not yet failed by step, each run a step line from 1 at step 0: the
     first run in ``--dim``, the second in ``--after``, each labelled where its line ends; its 95%
-    band a faint fill of its line's colour (DM7); a mark with a hover title on every step."""
+    band a faint fill of its line's colour; a mark with a hover title on every step."""
     last = max([int(p["step"]) for s in series for p in s["curve"]] or [1])
     last = max(last, 1)
 
@@ -661,7 +660,7 @@ def hazard_words(hazard: Mapping[str, Any]) -> str:
 
 def hazard_svg(ident: str, hazard: Mapping[str, Any], *, title: str, standalone: bool) -> str:
     """The hazard ratio with its 95% range on a log axis, the no-change line at 1, the limit the
-    test could not have seen below in both directions and the ratio asked for (DM8), each a
+    test could not have seen below in both directions and the ratio asked for, each a
     solid line with its value written on it; the direction marked ▲ or ▼."""
     hr, lo, hi = (
         hazard.get("hazard_ratio"),
@@ -786,7 +785,7 @@ def _runs_page(v: Mapping[str, Any], store: str) -> str:
             ]
         )
     if len(rows) > 1:
-        # a run's name links its newest saved where page (A8)
+        # a run's name links its newest saved where page
         parts.append(table_html(rows, "runs", filter_rows=True, raw=True, numeric={0, 4, 5}))
         events = v.get("events")
         if events:
@@ -940,7 +939,7 @@ def _where_curve(v: Mapping[str, Any], lines: Sequence[str], ident: str) -> str:
 
 
 def _compare_charts(v: Mapping[str, Any]) -> str:
-    """The compare page's charts (SV15, DM7, DM8): the two runs' curves under compare's
+    """The compare page's charts: the two runs' curves under compare's
     failures and the hazard ratio with its range, each with its data under it."""
     c = v["curves"]
     unit = str(c["unit"])

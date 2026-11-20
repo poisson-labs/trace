@@ -193,7 +193,7 @@ def test_tf20_2_each_step_shows_what_it_printed() -> None:
 def test_tf20_3_init_is_run_with_its_answers_given(ran: Ran) -> None:
     (at, block, command), = _story()["init"]
     assert block.answers is not None and len(block.answers) >= 1, \
-        f"{NAME}:{block.line}: init is run with its answers typed (command tty answers=\"…\"), as section 8.4 runs it"
+        f"{NAME}:{block.line}: init is run with its answers typed (command tty answers=\"…\")"
     assert "--yes" not in command, "the answers given, not --yes"
     shown = "\n".join(b.body for b in _shown_under(at))
     assert re.search(r"(?m)^ok  wrote trace\.toml: store \S+ \(2 runs\)", shown), shown
@@ -485,7 +485,7 @@ def test_tf20_45_every_command_is_one_the_reader_has() -> None:
 # ---------- TF20-46 ----------
 
 
-def test_tf20_46_the_docs_pair_s_tests_read_this_page() -> None:
+def test_tf20_46_the_docs_tests_read_this_page() -> None:
     assert NAME in RECIPES and RECIPES[NAME] is None
     assert PAGE in expected_pages()
     from test_tf5_readers import LISTING

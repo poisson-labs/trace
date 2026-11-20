@@ -19,7 +19,7 @@ from typing import Any
 import pytest
 
 from conftest import FIXTURES, Row, build_store, norm
-from fixcheck_support import CONSISTENCY_KEYS, FIX_KEYS, INPUTS_KEYS, PILOT, SPEC_CANNOT_SAY, fix_check
+from fixcheck_support import CONSISTENCY_KEYS, FIX_KEYS, INPUTS_KEYS, PILOT, CANNOT_SAY_LINES, fix_check
 
 # the few-repeat sentence; {k} and {m} print as the header prints its counts
 FEW = (
@@ -132,7 +132,7 @@ def test_tr73_two_of_ten_inputs_repeat_the_block_prints_no_kappa_and_the_json_ke
     # the JSON keeps its shape (TR61), and the design is named in the Consistency block alone
     assert tuple(d) == FIX_KEYS
     assert set(c) == CONSISTENCY_KEYS and set(d["inputs"]) == INPUTS_KEYS
-    assert tuple(d["cannot_say"]) == SPEC_CANNOT_SAY
+    assert tuple(d["cannot_say"]) == CANNOT_SAY_LINES
     outside = text.replace("\n".join(block), "")
     assert "run more than once" not in outside and "cannot be measured" not in outside
 

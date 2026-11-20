@@ -58,13 +58,9 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
-from conftest import FIXTURES
 from tf0_support import REPO, Ran, chdir, trace, trace_import
 from tf13_support import cli, workspace
 
-TF18 = FIXTURES / "tf18"
-PINS = TF18 / "main-pins.json"
-MAIN = "4eb8c1b"
 TOOL = "poisson-trace"
 EV = ["--event", "violated", "--event", "timeout"]
 KINDS = ("where", "compare", "fix-check", "changes")
@@ -503,7 +499,7 @@ def verdict_line(doc: dict[str, Any]) -> str:
 FORBIDDEN = ("script", "link", "iframe", "object", "embed")
 
 
-def section_11_7(page: Page, result: dict[str, Any]) -> list[str]:
+def report_check_faults(page: Page, result: dict[str, Any]) -> list[str]:
     """The report page's checks, as ``handover --check`` applies them, and what fails."""
     fails = list(page.errors)
     fails += [f"<{t}>" for t in FORBIDDEN if page.all(t)]

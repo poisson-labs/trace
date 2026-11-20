@@ -23,7 +23,7 @@ the window, the lines that do not fit move behind one key and nothing is cut.
 
 It opens only where a person is looking. Where stdin or stdout is not a terminal, as in a
 script or a pipe, or where `CI` is set, the bare command is a mistake in the command line and
-exits 2, as it always was:
+exits 2:
 
 <!-- command -->
 ```

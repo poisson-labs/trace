@@ -1,7 +1,7 @@
 # Fixture provenance
 
-Four of Prove's stored runs, copied from this machine on 2026-09-28 with every observation
-body removed, and three more added on 2026-09-29 for the fix check (the last section below).
+Four of Prove's stored runs, copied from the machine that made them with every observation
+body removed, and three more added for the fix check (their section below).
 Each fixture directory is a Prove store root: `tau2/` holds the two tau2-airline runs and the
 patched pilot, `cs/` the two cs_agents runs and `humaneval/` the two HumanEval runs, so
 `Store(root).runs()` lists them and `compare`, `fix-check` and `changes` can take every run of
@@ -22,7 +22,7 @@ The manifest of every fixture is byte-identical to its source (same sha256):
 - `cs/20260925T235434Z-af48/manifest.json`: `89640893c800d81203a41bcbd54f8f5de804ef9849345a3ad5700619c5a65c50`
 
 `SHA256SUMS` beside this file lists the sha256 of every fixture file (808 files: the 429 of
-the first four runs, their lines unchanged, 341 for the three added on 2026-09-29, two for the
+the first four runs, their lines unchanged, 341 for the three added for the fix check, two for the
 DeepEval import, four for the Ragas import, two for the table import, four for the JUnit
 import, then twelve under `breakdown/`, seven under `setup-agent/`, three for the promptfoo
 import, two for the Inspect import and two for the OpenAI Evals import), in the format
@@ -84,8 +84,8 @@ Checks made on each copy, through Prove's own reader:
   secret *name* `golden-pilot` and no value; the cs manifests hold no `secrets` entry.
 
 The `trace_obs` bodies were removed because they hold prompt and completion content and
-are 46 MB per tau2 run; nothing Trace reads is in them. What each fixture cannot express is
-in the spec's section 9: the tau2 pair has one kind, no nesting, no timeout, no cap reached,
+are 46 MB per tau2 run; nothing Trace reads is in them. What each fixture cannot express: the
+tau2 pair has one kind, no nesting, no timeout, no cap reached,
 no errored row and no declaration; the cs pair has nesting and two kinds but no timeout, no
 cap and no declaration. Timed-out, capped, unreadable, no-leaf and declared-step paths run
 on the synthetic store the tests build through `Store.create_run` / `Store.append`
@@ -95,15 +95,14 @@ on the synthetic store the tests build through `Store.create_run` / `Store.appen
 
 The cs replay fixture's three `error` values are Python tracebacks recorded by the replay
 harness, and the originals name the home directory of the machine that recorded them. In
-the copy, the prefix `/Users/<user>/` in those three strings reads `~/` (ruled 2026-09-28);
-the rest of each traceback, and every other value in every column, is the original. The
+the copy, the prefix `/Users/<user>/` in those three strings reads `~/`; the rest of each
+traceback, and every other value in every column, is the original. The
 digests in `SHA256SUMS` are of the copy as committed.
 
-## Added for the fix check (2026-09-29)
+## Added for the fix check
 
-Three more of Prove's stored runs, copied on 2026-09-29 under rulings 9 and 10 of that day,
-after a scan of every byte that is committed (below). The recipe is `build_fixtures.py`
-beside this file.
+Three more of Prove's stored runs, copied after a scan of every byte that is committed
+(below). The recipe is `build_fixtures.py` beside this file.
 
 | Fixture | Source (on the machine that made it) | Source manifest sha256 | Parts | Rows | Made how | Size before | Size after |
 |---|---|---|---|---|---|---|---|
@@ -120,10 +119,10 @@ Every manifest is byte-identical to its source:
 **The runs.**
 
 - **`tau2/20260917T140219Z-2b2d` (the patched pilot).** `tau2_pilot.rollout:rollout_patched`,
-  the T.4 guardrail pilot, on `tau2-airline/gpt-4.1-mini-2025-04-14@v0` on Modal, tasks 0 to 9
+  the guardrail pilot, on `tau2-airline/gpt-4.1-mini-2025-04-14@v0` on Modal, tasks 0 to 9
   with one replicate each (declared `replicates` 1), stored with no capture, so it holds no
   trace. Outcomes stored: `solved`, `unsolved`. Its config `{"task_id": …}` hashes as the tau2
-  pair's does, so the three runs share their cells. The spec's worked fix check reads it as the
+  pair's does, so the three runs share their cells. A fix check on the three reads it as the
   new version against `965d` re-run, with `4847` selecting the inputs.
 - **`humaneval/20260905T185407Z-0313` (A) and `humaneval/20260905T195009Z-18ac` (B).** Two runs
   of the golden-pilot HumanEval agent (`golden_pilot.agent:rollout`, gpt-4o-mini) on Modal, 164
@@ -157,7 +156,7 @@ which a flag fires. Unbalanced inputs, rows without an outcome, copies and every
 reason exist on the synthetic stores the tests build (`tests/fixcheck_support.py`,
 `tests/test_fix_check_cli.py`).
 
-## Added for the DeepEval import (2026-09-29)
+## Added for the DeepEval import
 
 Two result files written by DeepEval itself, one per run of the HumanEval pair above, for the
 `poisson-trace-import deepeval` tests (`tests/ingest/`). They are not Prove stores: each is the
@@ -206,7 +205,7 @@ metric that raised, two metrics, positional names, a conversational case, differ
 thresholds) is built as a dictionary in the tests. No file is a changed agent: the pair is the
 same agent run twice.
 
-## Added for the Ragas import (2026-09-30)
+## Added for the Ragas import
 
 Four score tables in the shape Ragas's `EvaluationResult.to_pandas()` gives, for the
 `poisson-trace-import ragas` tests (`tests/ingest/`). They are not Prove stores. The recipe is
@@ -282,7 +281,7 @@ scores are on every row.
 files byte for byte (pandas 3.0.6, pyarrow 25.0.1). The digests in `SHA256SUMS` are of the files
 as committed.
 
-**Rebuilt end to end (2026-11-06).** All four recipe steps were run, from the two source stores
+**Rebuilt end to end.** All four recipe steps were run, from the two source stores
 and from huggingface.co, with `make.py` as committed, in three clean environments on Python
 3.11.7. No model was called, no key was set (each step ran with only `HOME` and `PATH` in its
 environment), nothing was paid.
@@ -297,7 +296,7 @@ environment), nothing was paid.
 All four outputs equal the committed files byte for byte, so no fixture changed. The sources
 were copied to a scratch folder first, and the copies' manifests have the two sha256 above
 (the copies were byte for byte the originals); the stores themselves were not written to.
-The first run, on 2026-11-04, could not read the stores or reach huggingface.co; it ran
+An earlier run, which could not read the stores or reach huggingface.co, ran
 `memory-score` and `memory-gzip` alone, on rows written from the committed tables' own
 columns, and also found them equal.
 
@@ -317,7 +316,7 @@ own columns, a missing case value and every refusal are built in the tests
 (`tests/ingest/test_ragas.py`), and Ragas's own output is read once in lane J
 (`tests/ingest/test_ragas_package.py`).
 
-## Added for the table import (2026-10-13)
+## Added for the table import
 
 Two tables of this machine's HumanEval outcomes, one per run of the HumanEval pair above, written
 as CSV, for the `poisson-trace import table` tests. They are not Prove stores. The recipe is
@@ -330,7 +329,7 @@ as CSV, for the `poisson-trace import table` tests. They are not Prove stores. T
 
 **How.** Each stored row of the run, read through `proofload.store.Store` (Prove 0.0.1, under
 its name before it was published; read again through `poisson_prove.store.Store` of
-`poisson-prove==0.1.2` from PyPI on 2026-11-03, the recipe writes the same two files byte for
+`poisson-prove==0.1.2` from PyPI, the recipe writes the same two files byte for
 byte) in the order `Store.read` returns it, became one line: `case` is
 `<task_id>@<temperature>`, as the DeepEval fixture names its test cases; `task_id`,
 `temperature` and `replicate` are the row's config and replicate index; `outcome` is the stored
@@ -354,7 +353,7 @@ the changes on the two imported runs give the source runs' numbers
 format than CSV. Every other shape (JSON Lines, JSON, Parquet, gzip, scores at a cut, empty
 cells, true and false, refusals) is built in the tests (`tests/test_tf3_table.py`).
 
-## Added for the JUnit import (2026-10-13)
+## Added for the JUnit import
 
 Four JUnit XML reports written by pytest 9.1.1 (Python 3.11.7), two pairs, for the
 `poisson-trace import junit` tests. They are not Prove stores. The recipe is `make.py` beside
@@ -415,12 +414,11 @@ only), no skip and no test case without a class name. Suites nested in suites, a
 `<testsuite>` root, a timestamp with no zone, a test case with no name, and every refusal are
 built in the tests (`tests/test_tf3_junit.py`).
 
-## Added for the promptfoo import (2026-11-04)
+## Added for the promptfoo import
 
 Three files promptfoo 0.120.19 (npm, Node v22.14.0) wrote in one evaluation on 2026-10-07, for the
-`poisson-trace import promptfoo` tests. They are not Prove stores. They were made by the front-door
-spec's session (vault `log/trace-front-door-spec/tool-exports/promptfoo/`, its `provenance.md`)
-and copied here byte for byte. The config is `promptfooconfig.yaml` beside them.
+`poisson-trace import promptfoo` tests. They are not Prove stores. They are copied here byte for
+byte as the tool wrote them. The config is `promptfooconfig.yaml` beside them.
 
 | Fixture | What it is | Rows | Size |
 |---|---|---|---|
@@ -451,13 +449,13 @@ named scores; no token, cost or latency a model gave. The other assertion types,
 second provider and every refusal are built in the tests from this file with one field changed
 (`tests/test_tf10_promptfoo.py`).
 
-## Added for the Inspect import (2026-11-04)
+## Added for the Inspect import
 
 Two logs inspect_ai 0.3.277 (Python 3.11) wrote on 2026-10-07, for the `poisson-trace import
-inspect` tests, copied byte for byte from the front-door spec's session (vault
-`log/trace-front-door-spec/tool-exports/inspect/`). The task is `fixture_task.py` and the run
-`run_fixture.py`, beside them, with `INSPECT_DISABLE_TELEMETRY=1`; `run_fixture.py` is the vault's
-with its one unused import (`sys`) removed, so the repository's lint passes on it.
+inspect` tests, copied byte for byte as the tool wrote them. The task is `fixture_task.py` and the
+run `run_fixture.py`, beside them, with `INSPECT_DISABLE_TELEMETRY=1`; `run_fixture.py` is the
+script as it was run with its one unused import (`sys`) removed, so the repository's lint passes
+on it.
 
 | Fixture | What it is | Samples × epochs | Size |
 |---|---|---|---|
@@ -483,11 +481,10 @@ material, home-directory paths, the machine owner's name and email addresses: no
 call, no stop reason but `stop`, no log whose status is `error`. Those and every refusal are built
 in the tests from these files with one field changed (`tests/test_tf10_inspect.py`).
 
-## Added for the OpenAI Evals import (2026-11-04)
+## Added for the OpenAI Evals import
 
 Two records evals 3.0.1.post1 (`oaieval`, Python 3.11) wrote on 2026-10-07, for the `poisson-trace
-import openai-evals` tests, from the front-door spec's session (vault
-`log/trace-front-door-spec/tool-exports/openai-evals/`).
+import openai-evals` tests.
 
 | Fixture | What it is | `match` events | Size |
 |---|---|---|---|
@@ -505,7 +502,7 @@ written ("Found 0/0 sampling events with usage data").
 the tool ran in, under the machine owner's home-derived temporary folder; that prefix is replaced
 by `/opt/venv` in both files, and nothing else is changed. The files as the tool wrote them have
 SHA-256 `661b49d0c386d7afe1d3f8558099c6ee356f5934c167f5d33d2a64275010e1d6` (old) and
-`087171f6390b76e0612402f30f88b73a15f15ddcd9bd789fdb4d1ddf60f93af2` (new), and are kept in the vault.
+`087171f6390b76e0612402f30f88b73a15f15ddcd9bd789fdb4d1ddf60f93af2` (new), and are not committed.
 
 **Checks made.** After the edit, every string was scanned for key-like material, home-directory
 paths, the machine owner's name and email addresses: no hit.
@@ -514,13 +511,12 @@ paths, the machine owner's name and email addresses: no hit.
 event, no empty answer. Those and every refusal are built in the tests from these files with one
 line added or changed (`tests/test_tf10_openai_evals.py`).
 
-## Added for the setup agent (2026-11-04)
+## Added for the setup agent
 
 `setup-agent/setup-file-format-1.txt` is the shared text of the Poisson setup file, format 1
 (the rules, the check, the prompt and the hand-over opening), byte for byte as the shared page
-writes it on 2026-10-23, with the placeholders a tool fills; the same text Prove's copy of
-2026-10-24 carries. `tests/test_tf17_skill.py` checks the skill `poisson-trace init --agent`
-writes against it.
+writes it, with the placeholders a tool fills; the same text Prove's copy carries.
+`tests/test_tf17_skill.py` checks the skill `poisson-trace init --agent` writes against it.
 
 `setup-agent/sample-repo/` is a small repository written by hand for the scripted run of
 `tests/test_tf17_scripted.py`: a stand-in support agent that calls no model (`agent/`, naming the
@@ -533,30 +529,27 @@ copied in: each test builds its copy of the repository by copying the `cs` store
 `reports/junit-new.xml`. `setup-agent/expected/trace.toml` is the config a correct agent writes
 for it. No key, no model and no network were used.
 
-## Added for the failure breakdown and the table fixes (2026-11-05)
+## Added for the failure breakdown and the table fixes
 
-`breakdown/mockups/` holds nine captures the design session made on 2026-11-05 (vault
-`log/trace-design/terminal/`, on vault main at `6f2f2ef`), copied byte for byte: every character a
-real pseudo-terminal received from Trace, the escape sequences removed. The failure breakdown on
+`breakdown/mockups/` holds eight captures of a real pseudo-terminal, copied byte for byte: every
+character the terminal received from Trace, the escape sequences removed. The failure breakdown on
 the committed Prove 0.1.3 store at 80 and 140 columns, pretty and `--plain`
 (`breakdown-prove-*`); the continuous-measures table as proposed for the DeepEval and Inspect
 imports of the committed `ingest/deepeval/humaneval-{a,b}.json.gz` and `ingest/inspect/` logs at
-80 and 140 columns (`continuous-proposed-*`); and the table as main printed it for Inspect at 80
-columns (`continuous-inspect-80-pretty`). The tests of
-`tests/test_bd_*.py` hold the build to them (one cell corrected, FD10 of the pair's rulings).
+80 and 140 columns (`continuous-proposed-*`). The tests of
+`tests/test_bd_*.py` hold Trace's output to them (with one cell corrected).
 
-`breakdown/main-pins.json` holds the digests of what main `7e6fef6` printed for rule 5 of the pair
-(`tests/test_bd_unchanged.py`), taken by `breakdown/make_main_pins.py` on that commit before any
-source changed, twice, with the same result. Paths are written `<ROOT>`. No key, no model and no
-network were used.
+`breakdown/main-pins.json` holds the digests of what an earlier main, `7e6fef6`, printed, so that
+`tests/test_bd_unchanged.py` can check every other output stays as it was; taken by
+`breakdown/make_main_pins.py` on that commit, twice, with the same result. Paths are written
+`<ROOT>`. No key, no model and no network were used.
 
-## Added for the Braintrust captures (2026-11-09)
+## Added for the Braintrust captures
 
 Real captures from Braintrust's service, made on 2026-11-09 against a free account, for the
-Braintrust reader's tests (TF25; spec section 18.3.4). They are not Prove stores, and no reader or
-reader test came with them. Tools: braintrust 0.49.3 (Python SDK and its `braintrust eval`
-command), openai 3.48.0, Python 3.12.13, macOS. The UI's own JSON and CSV downloads are in
-`ingest/braintrust/ui/`.
+Braintrust reader's tests. They are not Prove stores. Tools: braintrust 0.49.3 (Python SDK and
+its `braintrust eval` command), openai 3.48.0, Python 3.12.13, macOS. The UI's own JSON and CSV
+downloads are in `ingest/braintrust/ui/`.
 
 **The runs.** Project `trace-fixture` (id `5fc53fc7-f099-43a1-b281-9e45c708bf38`), four experiments:
 
@@ -573,8 +566,7 @@ CAPTURE_LEDGER=<a file> CAPTURE_CAP_USD=0.25 braintrust eval slice.eval.py
 python pull.py api
 ```
 
-`fixture.eval.py` is the front-door spec's script (vault
-`log/trace-front-door-spec/tool-exports/braintrust/`), byte for byte: `old` is the baseline and
+`fixture.eval.py` is the script as it was run, byte for byte: `old` is the baseline and
 `new` the candidate, inline data, one `exact` score. `old` fails q2 and q3 (four of six rows);
 **`new` has no failing row.** `slice.eval.py` is the paid slice: a stock-desk agent in two versions
 over a Braintrust dataset (`stock-10`, id `754aa7c9-75b6-40ef-b927-13037f5fee97`, record ids `c01`
@@ -639,7 +631,7 @@ script; the cap was $0.25. The lookup experiments called no model.
 **Replacements (the one edit).** The repository is public, so account identifiers were replaced
 as plain strings wherever they occur, by `ingest/scrub_identifiers.py` with a list of pairs that
 is not committed; nothing else was changed, and every file still parses. The digests of the files
-as received are in the vault log (`projects/trace/log/trace-captures/`), not here.
+as received are not committed either.
 
 | Where | Replaced by |
 |---|---|
@@ -657,13 +649,12 @@ of the four keys used: no hit.
 **What a rebuild gives.** New ids, times, durations and cursors; the model's replies are
 single words at temperature 0 and came out the same on each of the three platforms.
 
-## Added for the Weave captures (2026-11-09)
+## Added for the Weave captures
 
 Real captures from W&B Weave's service, made on 2026-11-09 against a free account, for the Weave
-reader's tests (TF26; spec section 18.3.4). Tools: weave 0.54.1, openai 3.48.0, Python 3.12.13,
+reader's tests. Tools: weave 0.54.1, openai 3.48.0, Python 3.12.13,
 macOS. The UI's downloads are in `ingest/weave/ui/`: CSV, TSV, JSON
-and JSONL, the four formats the Traces page offers. **It offers no Parquet**, which the spec
-expected.
+and JSONL, the four formats the Traces page offers. **It offers no Parquet.**
 
 **The runs.** Project `trace-fixture`, four evaluations, one trace each:
 
@@ -681,8 +672,7 @@ python slice_weave.py feedback 01a1c1ff-2284-7c7c-bb3a-8952efef33a7 01a1c1ff-2bb
 python pull.py <entity>/trace-fixture api
 ```
 
-`fixture_weave.py` is the front-door spec's script (vault
-`log/trace-front-door-spec/tool-exports/weave/`) as it was run; afterwards its one line
+`fixture_weave.py` is the script as it was run; afterwards its one line
 `import asyncio, weave` was split in two so that `ruff check tests` passes, and nothing else
 differs. `trace-fixture-old` fails q2 and q3; **`trace-fixture-new` has no failing row.**
 `slice_weave.py` is the same stock-desk agent as Braintrust's slice (the Braintrust section
@@ -760,15 +750,15 @@ was $0.25. The lookup evaluations and the feedback run called no model.
 Kept: call and trace ids, object digests, and `attributes.weave`'s `os_version`, `sys_version`
 and `client_version` (a machine's build strings, no account). The same scan found no hit.
 
-## Added for the LangSmith captures (2026-11-09)
+## Added for the LangSmith captures
 
 Real captures from LangSmith's service, made on 2026-11-09 against a free Developer account, for
-the LangSmith reader's tests (TF24; spec section 18.3.4). Tools: langsmith 0.14.17 (Python SDK),
+the LangSmith reader's tests. Tools: langsmith 0.14.17 (Python SDK),
 openai 3.48.0, Python 3.12.13, macOS, and the `langsmith` command built from the source of
 langchain-ai/langsmith-cli at tag v0.3.13 (`go install …/cmd/langsmith@v0.3.13`; built this way it
 reports its version as `dev`). The UI's CSV downloads are in
 `ingest/langsmith/ui/`; **there is no JSON download from the UI: the experiment page offers CSV
-only**, where the spec expected CSV and JSON.
+only**.
 
 **The runs.** Dataset `trace-fixture-stock-10` (id `d3ab7a03-3d76-4b85-9e30-cdb126f88222`, ten
 examples, `metadata.case` c01 to c10) and two experiments on it:
@@ -820,8 +810,8 @@ files, the third page of each paged pull and `requests.json` are the 20:45 pull'
 | `candidate.runs-v2.page-1…3.json`, `candidate.runs-v1.page-1…3.json`, `candidate.feedback.page-1…3.json` | the same three in pages of 25 | 25, 25, 1 runs twice; 25, 16, 0 feedback objects |
 
 `ingest/langsmith/cli/`: `<name>-runs.jsonl` (one run a line: 48, 51) and `<name>-traces/` (one
-`{trace_id}.jsonl` a trace, ten each, one run a line; **the command writes `.jsonl`, where the
-spec expected `.json`**).
+`{trace_id}.jsonl` a trace, ten each, one run a line; **the command writes `.jsonl`, not
+`.json`**).
 
 `ingest/langsmith/ui/`: `trace-fixture-baseline-bbb64b8e.csv` and
 `trace-fixture-candidate-7e3f7200.csv`, downloaded by hand at 21:07 and 21:09 UTC from each
@@ -851,7 +841,7 @@ replacement made is the home folder in the candidate's traceback.
   tool call is two sibling `tool` runs, the first in error).
 - *the command's export*: `run_id` (not `id`), `parent_run_id` (null on a root), `duration_ms`,
   `token_usage`, `costs`, `custom_metadata`, `feedback_stats`; **no `reference_example_id` and no
-  `dotted_order`**, as the spec says; the example's own metadata arrives as
+  `dotted_order`**; the example's own metadata arrives as
   `custom_metadata.ls_example_case`, which is the only case identity in this shape.
 - *feedback*: `feedback_stats` gives `n` and `avg` a key, and `values` for the categorical
   `review`; the feedback objects give `key`, `score`, `value`, `comment`, `run_id`, and

@@ -190,7 +190,7 @@ def test_tf17_36_stdin_not_a_terminal_without_yes_is_refused_before_the_question
 # ---------- TF17-37 ----------
 
 
-def test_tf17_37_nothing_pending_is_refused_as_today_and_force_sets_up_again(tmp_path: Path) -> None:
+def test_tf17_37_nothing_pending_is_refused_and_force_sets_up_again(tmp_path: Path) -> None:
     repo = pending_repo(tmp_path)
     assert init_yes(repo).code == 0
     before = snapshot(repo)

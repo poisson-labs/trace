@@ -17,10 +17,6 @@ Prove at or above the floor once Prove's version is written as those pins hold i
 (``pin_support.as_pinned``), and the Prove label kinds' pins (``test_pl_unchanged.py``) are the
 newest of them: they hold every output of this main but the refusals the floor moves, which
 ``test_pf_floor.py`` and ``test_pf_store.py`` hold word for word.
-
-``BUILT`` is every file the floor may change: its declaration, the code that reads it and refuses
-on it, the store checks, the release check and the workflows, and the three pages that say which
-Prove Trace reads.
 """
 
 from __future__ import annotations
@@ -37,21 +33,9 @@ PF = TESTS / "fixtures" / "pf"
 PINS = PF / "main-pins.json"
 MAIN = "4bb4b95"
 
-#: The files the floor may change, and nothing else.
-BUILT = (
-    "pyproject.toml",
-    ".github/release/lanes-3.11.txt", ".github/release/lanes-3.12.txt", ".github/release/release_check.py",
-    ".github/workflows/ci.yml", ".github/workflows/release.yml",
-    "README.md", "CONTRIBUTING.md", "docs/setup-with-your-agent.md",
-    "src/poisson_trace/look.py", "src/poisson_trace/doctor.py", "src/poisson_trace/core.py", "src/poisson_trace/saved.py",
-    "src/poisson_trace/names.py", "src/poisson_trace/setup.py", "src/poisson_trace/commands.py", "src/poisson_trace/api.py",
-    "src/poisson_trace/ingest/importing.py", "src/poisson_trace/ingest/writer.py",
-)
-#: The files of ``BUILT`` whose text main's pins hold, each with a test of what moves in it.
+#: The files outside the package whose text main's pins hold, each with a test of what moves in it.
 TEXTS = ("pyproject.toml", ".github/release/lanes-3.11.txt", ".github/release/lanes-3.12.txt", ".github/workflows/ci.yml",
          ".github/workflows/release.yml", "README.md", "CONTRIBUTING.md", "docs/setup-with-your-agent.md")
-#: The fixture store the floor adds, made by the floor (``fixtures/prove-stores/make.py``).
-FLOOR_STORE = "tests/fixtures/prove-stores/prove-0.4.0/"
 
 
 def pinned_paths(names: list[str]) -> list[str]:
@@ -73,4 +57,4 @@ def main_text(name: str) -> str:
     return text
 
 
-__all__ = ["BUILT", "FLOOR_STORE", "MAIN", "PINS", "REPO", "TEXTS", "file_digest", "main_text", "pinned_paths", "pins", "tracked"]
+__all__ = ["MAIN", "PINS", "REPO", "TEXTS", "file_digest", "main_text", "pinned_paths", "pins", "tracked"]

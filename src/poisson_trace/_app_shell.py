@@ -1,4 +1,4 @@
-"""Trace's copy of Prove's terminal-app shell (spec section 17.2, AD5): the bands, the key
+"""Trace's copy of Prove's terminal-app shell: the bands, the key
 bar, the focus marker, the message line, the width and line-break rules, and the moves over a
 screen's rows and links. Copied from Prove's ``main`` at the commit ``PROVE_COMMIT`` names, whose
 two app files (``_cli_app_pages.py`` and ``_cli_app.py``) are byte for byte those of the Prove
@@ -456,7 +456,7 @@ class Shell(App[int]):
             visible = scroll[page.offset : page.offset + window]
             after = len(scroll) - page.offset - len(visible)
             if after > 0 and len(visible) > 1 and not visible[-1][1]:
-                # the design's ``↓ 7 more``: the last row says how many follow
+                # ``↓ 7 more``: the last row says how many follow
                 hint = f"  ↓ {_look.fmt_count(after + 1)} more"
                 visible = [*visible[:-1], (Line(hint, [(2, len(hint), "dim")]), False)]
             lines = top + header + visible + below

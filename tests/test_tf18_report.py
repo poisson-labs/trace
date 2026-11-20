@@ -52,7 +52,7 @@ from tf18_support import (
     recording_browser,
     redigest,
     report_lines,
-    section_11_7,
+    report_check_faults,
     sha256,
     snapshot,
     ui,
@@ -195,9 +195,9 @@ def test_tf18_14_help(work: Path) -> None:
 
 
 @pytest.mark.parametrize("folder", list(BUNDLES))
-def test_tf18_15_section_11_7_holds(reported: Path, folder: str) -> None:
+def test_tf18_15_the_report_holds_to_the_handover_checks(reported: Path, folder: str) -> None:
     page = read_file(reported / folder / "report.html")
-    assert section_11_7(page, result(reported / folder)) == []  # type: ignore[arg-type]
+    assert report_check_faults(page, result(reported / folder)) == []  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("folder", list(BUNDLES))

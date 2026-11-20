@@ -237,7 +237,7 @@ def test_runrec_40_slow_the_large_imports_print_as_on_main(tmp_path: Path) -> No
     assert {k: v for k, v in got.items() if MAIN_SLOW[k] != v} == {}
 
 
-def test_runrec_41_the_import_json_keeps_sa5s_keys(tmp_path: Path) -> None:
+def test_runrec_41_the_import_json_keeps_its_keys(tmp_path: Path) -> None:
     import json
 
     out = run_import([*ARGV["junit-a"](tmp_path / "s", "r"), "--json"])

@@ -1,10 +1,9 @@
-"""The saved verdict: one artifact of the suite's format (``poisson.artifact/1``, the Artifact
-Format sections 2, 3 and 5; spec section 17.3 items 1 to 5), the handover bundle ``--out``
-writes beside it (section 11.2), and the check ``poisson-trace handover --check DIR`` runs over
-a bundle (sections 11.2 and 11.5).
+"""The saved verdict: one artifact of the suite's format (``poisson.artifact/1``), the handover
+bundle ``--out`` writes beside it, and the check ``poisson-trace handover --check DIR`` runs over
+a bundle.
 
 An artifact is built whole in a staging folder: ``result.json`` (the verb's JSON with the keys
-section 11.3 adds), ``report.md`` (the report as the plain command prints it), ``table.parquet``
+the handover promises), ``report.md`` (the report as the plain command prints it), ``table.parquet``
 (the long-form table, the format's columns then Trace's ``step`` and ``cause``), ``where``'s
 curve as ``charts/curve.svg`` with its data beside it, and ``artifact.json`` listing them all.
 Saving renames the folder into the store's ``.poisson/artifacts/<kind>/<id>/`` last, after the
@@ -13,9 +12,9 @@ an id that is there already is that artifact, and nothing is written. The id is 
 the first 16 hex of the SHA-256 of the canonical JSON of the kind, the tool, its major.minor
 version, the inputs (the runs by id) and the result-changing settings.
 
-Nothing saved holds an absolute path, a platform string, a key or a row's content (section
-17.3 item 9): the callers hand over documents already written short, and the check refuses
-what carries Prove's content or observation keys or a string past 400 characters.
+Nothing saved holds an absolute path, a platform string, a key or a row's content: the callers
+hand over documents already written short, and the check refuses what carries Prove's content
+or observation keys or a string past 400 characters.
 
 This is the one module that writes with pyarrow (``table.parquet``; writing an artifact is not
 reading a run, which goes through Prove alone). Standard library, pyarrow and Prove's two
@@ -48,7 +47,7 @@ TABLE_FORMAT = "poisson.table/1"
 CHART_FORMAT = f"{TOOL}.chart/1"
 HANDOVER_SCHEMA = f"{TOOL}.handover/1"
 #: The settings kept in a descriptor that say how a result was asked for, and are not in its
-#: id: where each setting came from, and the config's names of the stores read (SV5).
+#: id: where each setting came from, and the config's names of the stores read.
 HOW_ASKED: tuple[str, ...] = ("from", "stores")
 #: The kinds Trace writes, each the verb's name, and the schema its ``result.json`` carries.
 SCHEMAS: dict[str, str] = {
@@ -57,14 +56,14 @@ SCHEMAS: dict[str, str] = {
     "fix-check": f"{TOOL}.fix-check/2",
     "changes": f"{TOOL}.changes/2",
 }
-#: Each verb's closed set of verdict words (section 11.3).
+#: Each verb's closed set of verdict words.
 VERDICTS: dict[str, tuple[str, ...]] = {
     "where": ("ok",),
     "compare": ("different", "no significant difference", "too small to tell"),
     "fix-check": ("different", "no significant difference", "too small to tell"),
     "changes": ("ok",),
 }
-#: The longest string a ``result.json`` may hold (section 11.2).
+#: The longest string a ``result.json`` may hold.
 LONGEST = 400
 #: The table's columns: the format's nine, then Trace's ``step`` (the curves) and ``cause``.
 TABLE_COLUMNS: tuple[str, ...] = (
@@ -84,7 +83,7 @@ _STAGING = "artifact.json"
 
 
 REPORT_PAGE = "report.html"
-#: The elements the HTML report never holds (section 11.7).
+#: The elements the HTML report never holds.
 _FORBIDDEN = frozenset({"script", "link", "iframe", "object", "embed"})
 _SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:")
 
@@ -159,7 +158,7 @@ def saved_path(kind: str, identity: str) -> str:
 
 def short(text: str, absolute: Mapping[str, str]) -> str:
     """``text`` with each absolute path the command carried written as its last folder's or
-    file's name (section 11.2's rule, taken everywhere by SV7), the longest path first."""
+    file's name, the longest path first."""
     for path in sorted(absolute, key=len, reverse=True):
         text = text.replace(path, absolute[path])
     return text
@@ -394,8 +393,8 @@ def newer_said(store: str, found: str, does: str = "reads") -> str:
 def check_store_descriptor(root: Path) -> dict[str, Any] | None:
     """The descriptor of the store at ``root`` once it is known that Trace may write into the
     store: the document, or None for a store that has none yet. Raises ``Unwritable`` for a
-    file that is not a descriptor and for a descriptor in a newer major (the format's sections
-    3 and 9), and ``OSError`` where the file cannot be read."""
+    file that is not a descriptor and for a descriptor in a newer major, and ``OSError`` where
+    the file cannot be read."""
     doc, fault = _read_descriptor(root)
     if fault is not None:
         raise Unwritable(f"{descriptor_path(root)} is not a store descriptor ({fault})")
@@ -711,7 +710,7 @@ def _check_content(result: Mapping[str, Any]) -> None:
 
 
 def check_bundle(target: Path) -> Checked:
-    """Check the bundle at ``target`` in section 11.2's order; ``NotABundle`` when there is no
+    """Check the bundle at ``target`` in a fixed order; ``NotABundle`` when there is no
     bundle to check, ``Invalid`` with the first failing line otherwise."""
     if not target.exists():
         raise NotABundle(f"there is no folder at {target}")
@@ -741,11 +740,11 @@ def check_bundle(target: Path) -> Checked:
     return Checked(verb=verb, files=files, runs=runs, sentence=sentence)
 
 
-# ---------- the HTML report's checks (section 11.7) ----------
+# ---------- the HTML report's checks ----------
 
 
 class _PageReader(HTMLParser):
-    """What section 11.7 asks of ``report.html``: the first failing line, and the text of the
+    """What the check asks of ``report.html``: the first failing line, and the text of the
     first ``<h1>``."""
 
     def __init__(self) -> None:

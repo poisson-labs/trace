@@ -224,7 +224,7 @@ def test_tf19_2_runs_screen(work: Path) -> None:
     assert g.value_of("next") == json.loads(cli(work, ["runs", "--json"]).out)["next"]
 
 
-def test_tf19_2_runs_s_moves_to_the_next_store_dm9(work: Path) -> None:
+def test_tf19_2_runs_s_moves_to_the_next_store(work: Path) -> None:
     s = drive(work, ["r", "s"], size=(120, 40))
     g = s.last
     assert g.title() == "runs" and g.subject() == "jstore"

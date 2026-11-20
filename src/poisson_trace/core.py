@@ -1,6 +1,5 @@
-"""The one core behind every face of Trace (spec sections 11.8, 17.2 and 18.7.2): the
-verbs' work, from the words the command line or ``poisson_trace.api`` hands it to an outcome
-that holds everything the command prints and saves.
+"""The one core behind every face of Trace: the verbs' work, from the words the command line or
+``poisson_trace.api`` hands it to an outcome that holds everything the command prints and saves.
 
 Nothing here prints. What the command line prints as ``note:`` lines is collected on
 ``ns.notes``; every refusal is raised (``look.Refused`` with its next commands, ``look.Usage``
@@ -10,7 +9,7 @@ prints; ``api.py`` types the surface and turns what is raised here into ``api.Re
 
 The settings reach a verb as an ``argparse.Namespace`` built by the command line's parser or
 by ``api`` from its keywords, each attribute the verb's flag; ``ns.typed_flags`` names the
-flags given (a keyword passed is a flag given, SV5), ``ns.config`` is the config's path, the
+flags given (a keyword passed is a flag given), ``ns.config`` is the config's path, the
 config read already, or None, when no config is read at all.
 """
 
@@ -57,7 +56,7 @@ def unordered(
     and the next commands. For a verb of two runs, the command as it was given with OLDER and
     NEWER in place of each reserved word, so that it cannot be run the wrong way round as it
     stands; ``argv`` is the verb and its words as typed (the command line's) or as rebuilt
-    from the call (the API's, PA19), ``valued`` the options that take a value."""
+    from the call (the API's), ``valued`` the options that take a value."""
     words: list[str] = []
     replaced: list[str] = []
     place = -1  # -1 until the verb is passed; then the place of each run given
@@ -154,10 +153,10 @@ def _from_config(ns: argparse.Namespace, *, folders: bool = False) -> None:
             ns.max_mde_hr = held.max_mde_hr
         if ns.verb == "fix-check" and ns.max_mde is None:
             ns.max_mde = held.max_mde
-    # the continuous measures' ceilings: the config's, a flag winning for its measure (CT2,
-    # CS10); every verb of two runs saves the measures with them, fix-check prints them
+    # the continuous measures' ceilings: the config's, a flag winning for its measure;
+    # every verb of two runs saves the measures with them, fix-check prints them
     ns.ceilings = _ceilings(held, getattr(ns, "max_change", None) or [])
-    ns.joined = None  # the --verdicts join, once made (SV10)
+    ns.joined = None  # the --verdicts join, once made
     ns.temp_store = False  # the runs were read from tool folders into a store that does not last
     ns.verdicts = getattr(ns, "verdicts", None)
     ns.measures = getattr(ns, "measures", False)
@@ -193,7 +192,7 @@ def prove_present(does: str = DOES) -> None:
 
 def _validate(ns: argparse.Namespace) -> None:
     """The settings a verb refuses after the command line is read (the command line's own
-    checks of ``--svg``, ``--out`` and ``--force`` stay with it, PA4)."""
+    checks of ``--svg``, ``--out`` and ``--force`` stay with it)."""
     if ns.verb == "where":
         if not 1 <= ns.boot <= _MOST_BOOT:
             raise _Refusal(f"--boot takes 1 to {count(_MOST_BOOT)} resamples, not {ns.boot}")
@@ -253,7 +252,7 @@ def _validate_fix_check(ns: argparse.Namespace) -> None:
             )
 
 
-# ---------- runs given as folders (TF22, spec section 18.3.1) ----------
+# ---------- runs given as folders ----------
 
 # each verb's run words, by the attribute its parser gives them
 _RUN_WORDS: dict[str, tuple[str, ...]] = {
@@ -297,7 +296,7 @@ def _reached(ns: argparse.Namespace, words: Sequence[str]) -> list[str]:
 
 @dataclass
 class Plan:
-    """Which of a verb's run words are folders to read (FI8, FI12 to FI14), once the words
+    """Which of a verb's run words are folders to read, once the words
     that reach stored runs are taken out: ``kind`` is ``none``, ``prove`` (Prove's folders,
     read where they are) or ``tool`` (one tool's result files, read with its reader's flags
     into a store that does not outlive the call); ``found`` is each folder resolved."""
@@ -310,7 +309,7 @@ class Plan:
 
 def plan_folders(ns: argparse.Namespace) -> Plan:
     """The verb's run words sorted into stored runs and folders, with the refusals the command
-    line gives in its order: a word that reaches a stored run is that run, as before; a word
+    line gives in its order: a word that reaches a stored run is that run; a word
     that reaches none and names a folder is the folder; runs from two places on one report are
     refused, so are folders of two tools and two folders of one name."""
     from poisson_trace.ingest.folder import resolve
@@ -323,7 +322,7 @@ def plan_folders(ns: argparse.Namespace) -> Plan:
         return Plan()
     others = [w for attr, w in words if (attr, w) not in given]
     if others:
-        # each must reach a stored run, refused as before where it does not
+        # each must reach a stored run, and is refused where it does not
         _, index = _named(ns)
         for word in others:
             index.resolve(word)
@@ -468,7 +467,7 @@ def _read_tool_folders(
             read.append((attr, r, run))
         if ns.verdicts is not None:
             # the join as the folders are read, so a verdict joins by the input key the reader
-            # computed as well as by case (SV10 item 8); over both runs' rows at once
+            # computed as well as by case; over both runs' rows at once
             read = _join_read(ns, read)
         for attr, r, run in read:
             importer.checked(run)
@@ -582,7 +581,7 @@ def _load(store: Any, run: Any, *, trace: str = "envelope") -> tuple[Any, Any, A
 
 def _store_shown(ns: argparse.Namespace) -> Any:
     """The store a verb's JSON names: none when the runs were read from folders, since no
-    store the user has holds them (FI13)."""
+    store the user has holds them."""
     return None if ns.from_folders else ns.store
 
 
@@ -737,7 +736,7 @@ def _arrays(placement: Any) -> tuple[Any, Any, Any]:
     return index, died, cause
 
 
-# ---------- the saved verdict, the handover bundle and the measures (TF6) ----------
+# ---------- the saved verdict, the handover bundle and the measures ----------
 
 
 def _check_out(path: str, force: bool) -> None:
@@ -762,10 +761,10 @@ def _check_out(path: str, force: bool) -> None:
 def _signals(
     ns: argparse.Namespace, arms: Sequence[tuple[str, Any]], events: frozenset[str]
 ) -> tuple[dict[str, tuple[Any, ...]], dict[str, tuple[Any, ...]]]:
-    """Each arm's rows as TF21's reader classifies them, before and after the ``--verdicts``
+    """Each arm's rows as the reader classifies them, before and after the ``--verdicts``
     join (the same rows when there is no file). A run Prove swept is classified by the config's
     own taxonomy (``_team``). On stored runs the join is made here, over both runs' rows at
-    once, by case (SV10), and a failure the file filled in is given its kind after it (FD8); on
+    once, by case, and a failure the file filled in is given its kind after it; on
     tool folders it was made as they were read."""
     from poisson_trace.ingest.prove import read_rows
 
@@ -796,7 +795,7 @@ def _signals(
 
 def _kinds_filled(rows: Sequence[Any]) -> list[Any]:
     """The rows after a ``--verdicts`` join, a failure the file filled in given its kind by the
-    built-in rules (FD8), so that the failure-type diff counts it under a kind; a kind the file
+    built-in rules, so that the failure-type diff counts it under a kind; a kind the file
     gave stays, and a try the source graded was classified as it was read."""
     from poisson_trace.ingest.taxonomy import classify
 
@@ -811,7 +810,7 @@ _MISALIGNED = "the run's rows and its signals do not line up; the report was not
 
 def _filled(frame: Any, before: Sequence[Any], after: Sequence[Any], events: frozenset[str]) -> Any:
     """The run's frame with the outcomes a verdict filled: a filled ``fail`` counts as failed
-    whatever the run's failure words, a filled success as not (SV10 item 4); a try with a
+    whatever the run's failure words, a filled success as not; a try with a
     recorded outcome is as it was, since a verdict that differed was refused."""
     changed = [
         (i, a)
@@ -852,7 +851,7 @@ def _verdicts_line(block: Mapping[str, Any]) -> str:
 
 def _absolute(ns: argparse.Namespace) -> dict[str, str]:
     """Each absolute path the command carried, and the name it is written as in what is saved:
-    its last folder's or file's name (section 11.2's rule, SV7; section 17.3 item 9)."""
+    its last folder's or file's name."""
     paths: list[str] = []
     for word in (ns.store, ns.typed_store, ns.config):
         if isinstance(word, str) and word:
@@ -870,7 +869,7 @@ def _absolute(ns: argparse.Namespace) -> dict[str, str]:
 
 
 def _came(ns: argparse.Namespace, flag: str, in_config: bool = False) -> str:
-    """Where a setting came from: the flag, trace.toml or the default (SV5)."""
+    """Where a setting came from: the flag, trace.toml or the default."""
     if flag in ns.typed_flags:
         return "flag"
     return "trace.toml" if in_config else "default"
@@ -883,7 +882,7 @@ def _file_digest(path: str) -> str:
 
 
 def _settings(ns: argparse.Namespace, verb: str, selecting: Any = None) -> dict[str, Any]:
-    """The result-changing settings of a verb, in their order (SV5), then where each came from
+    """The result-changing settings of a verb, in their order, then where each came from
     and the config's names of the stores read."""
     held = ns.settings
     events = sorted(ns.event)
@@ -952,7 +951,7 @@ def _digest_of(
     budgets: Any = None,
 ) -> str:
     """The digest of the rules a run's failure types were decided by: the one its import
-    recorded, or, for a run Prove swept, that of the taxonomy it was read under (SV4 item 4):
+    recorded, or, for a run Prove swept, that of the taxonomy it was read under:
     the built-in rules' when the config has no rules, no budgets and no labels table."""
     from poisson_trace.ingest.taxonomy import taxonomy_sha256
 
@@ -1012,11 +1011,11 @@ def _taxonomy_diff(
     rules: Sequence[Any] = (),
     budgets: Any = None,
 ) -> tuple[dict[str, Any], str | None]:
-    """The saved verdict's failure-type diff (SV4 item 4, SV9): each run's taxonomy digest,
+    """The saved verdict's failure-type diff: each run's taxonomy digest,
     whether the rules are the same, the tries, and each kind's and signal's count in each run
-    in section 18.5.1's order; no counts, and a note, when the rules differ. Where a run has
-    tries with no outcome, each run's number of them and the tries the verdict counts follow
-    the tries (FD15); where none has, the diff is as it was. ``labels``, ``rules`` and
+    in the kinds' precedence order; no counts, and a note, when the rules differ. Where a run
+    has tries with no outcome, each run's number of them and the tries the verdict counts follow
+    the tries; where none has, those two are left out. ``labels``, ``rules`` and
     ``budgets`` are the config's own taxonomy, which the runs Prove swept were read under;
     where the rules are the same and such a run has failed tries whose label has no kind, the
     labels and their counts come last (``labels_without_kind``)."""
@@ -1060,8 +1059,8 @@ def _measures(
     arms: Sequence[tuple[str, Any]],
     labels: tuple[str, str],
 ) -> Any:
-    """TF23's comparison of the two runs' time, length, tokens and cost over every case both
-    hold (SV6), at the verb's level, the ceilings the config and the flags set."""
+    """The comparison of the two runs' time, length, tokens and cost over every case both
+    hold, at the verb's level, the ceilings the config and the flags set."""
     from poisson_trace.ingest.tries import version_of
     from poisson_trace.stats.continuous import compare
 
@@ -1105,7 +1104,7 @@ def _share(n: int, tries: int) -> str:
 
 def _points_between(n_a: int, tries_a: int, n_b: int, tries_b: int) -> str:
     """The second run's share less the first's, in points as the per-input table prints a
-    change: one decimal, signed, no sign on no change (FD6)."""
+    change: one decimal, signed, no sign on no change."""
     from poisson_trace.report import _points
 
     if not tries_a or not tries_b:
@@ -1114,7 +1113,7 @@ def _points_between(n_a: int, tries_a: int, n_b: int, tries_b: int) -> str:
 
 
 def _no_outcome_line(c: Counted, diff: Mapping[str, Any]) -> str:
-    """The sentence under the tries line where a run has tries with no outcome (FD15): how many
+    """The sentence under the tries line where a run has tries with no outcome: how many
     each run has, that the counts above include them, and how many tries the verdict counts,
     which only the inputs both runs carry with an outcome give it."""
     assert c.arms is not None
@@ -1159,13 +1158,13 @@ def _labels_note(labels: Sequence[str]) -> str:
 
 
 def _breakdown_section(c: Counted) -> list[str]:
-    """The report's ``Failures by kind`` section (DM1, DM2), the counts of the failure-type diff
+    """The report's ``Failures by kind`` section, the counts of the failure-type diff
     the saved verdict holds: one sentence on what is counted; a table of each kind either run
-    has, by its count over both runs (a tie in the diff's order, section 18.5.1's precedence),
+    has, by its count over both runs (a tie in the diff's order, the kinds' precedence),
     ``all failures`` last; the tries; once, the labels of a run Prove swept that Trace has no
     kind for, when the diff names any; and, when either run has a signal, the signals' table.
-    Runs classified by different rules get the note and each run's digest, no counts (FD4).
-    ``compare`` and ``changes`` name their runs as their reports do, A and B (FD3)."""
+    Runs classified by different rules get the note and each run's digest, no counts.
+    ``compare`` and ``changes`` name their runs as their reports do, A and B."""
     from poisson_trace.ingest.taxonomy import taxonomy_sha256
 
     assert c.arms is not None and c.diff is not None
@@ -1232,7 +1231,7 @@ def _breakdown_section(c: Counted) -> list[str]:
 
 def _with_breakdown(c: Counted) -> Counted:
     """A verb of two runs with its failure-type diff read and its section's lines made for the
-    report (FD1: the section prints on every run). The lines are made here, so that the report
+    report (the section prints on every run). The lines are made here, so that the report
     reads no count it did not get from the verb."""
     c.diff_part()
     c.data["_breakdown_section"] = _breakdown_section(c)
@@ -1387,7 +1386,7 @@ def _result_document(
     notes: Sequence[str],
     saved_at: str | None,
 ) -> dict[str, Any]:
-    """``result.json``: the printed JSON with section 11.3's keys and TF6's (SV3, SV4): the
+    """``result.json``: the printed JSON with the keys a save adds: the
     summary's lines, the caveats, ``note`` as a list, the versions, and the two-run blocks;
     ``saved`` and ``next`` last."""
     from poisson_trace import saved
@@ -1422,8 +1421,8 @@ def _result_document(
 class Counted:
     """What a counting verb worked out: the verdict line, the data its JSON and report are
     built from, the report, the runs read, the artifact's settings, and the call's own
-    settings (``ns``). The failure-type diff (TF6, TF21) is worked out by every verb of two
-    runs, since its section prints on every run (FD1); the continuous measures (TF23) when asked
+    settings (``ns``). The failure-type diff is worked out by every verb of two
+    runs, since its section prints on every run; the continuous measures when asked
     for (``--measures``) or first read (a save, the API), from the store the call read
     (``ns.store_root``)."""
 
@@ -1445,7 +1444,7 @@ class Counted:
 
     def diff_part(self) -> None:
         """The failure-type diff of a verb of two runs, read now if not yet: each run's rows as
-        TF21's reader classifies them, after the ``--verdicts`` join."""
+        the reader classifies them, after the ``--verdicts`` join."""
         if self.arms is None or self.diff is not None:
             return
         if self.signals is None:
@@ -1465,7 +1464,7 @@ class Counted:
 
     def printed(self) -> dict[str, Any]:
         """The verb's JSON as the command prints it without a delivery: the failure-type diff
-        of a verb of two runs (FD2), the measures when asked for, the join block, ``next``
+        of a verb of two runs, the measures when asked for, the join block, ``next``
         last."""
         ns = self.ns
         tail: dict[str, Any] = {}
@@ -1491,7 +1490,7 @@ class Counted:
 
     def charts(self) -> list[tuple[str, str, dict[str, Any]]]:
         """The charts a saved verdict carries beside its table, each ``(name, svg, data)``:
-        ``where``'s curve as ``--svg`` writes it (TF6); ``compare``'s two charts (SV15, A9), the
+        ``where``'s curve as ``--svg`` writes it; ``compare``'s two charts, the
         two runs' where curves under compare's failures and the hazard ratio with its range."""
         if self.kind == "compare":
             return _compare_charts(self)
@@ -1594,8 +1593,8 @@ def write_svg(c: Counted, d: Delivered, path: str, force: bool) -> Delivered:
 def save(c: Counted, d: Delivered, out: str | None, force: bool) -> Delivered:
     """``--save``, and ``--out`` with it: the verdict built as an artifact in a staging
     folder, saved into the runs' store (a store that cannot be written to is a note, and the
-    result goes on), and handed over as a bundle into ``out`` where asked (section 17.3 items
-    3 to 5). A verdict saved already is not saved again; its bundle is a copy of the artifact
+    result goes on), and handed over as a bundle into ``out`` where asked. A verdict
+    saved already is not saved again; its bundle is a copy of the artifact
     as the store holds it. A store whose descriptor is not one, or is in a newer format, is
     refused with nothing written: what is wrong there is the store's, not this save's."""
     import shutil
@@ -1632,8 +1631,8 @@ def save(c: Counted, d: Delivered, out: str | None, force: bool) -> Delivered:
                     held_notes.append(f"the verdict was not saved: {look.why(e)}")
                 else:
                     saved_at = saved.saved_path(c.kind, identity)
-                    # every command that saves rebuilds the store's pages (section 17.3 item
-                    # 7, A7); pages that cannot be written are one note, and the save stands
+                    # every command that saves rebuilds the store's pages; pages that
+                    # cannot be written are one note, and the save stands
                     try:
                         rebuild_pages(ns)
                     except OSError as e:
@@ -1644,7 +1643,7 @@ def save(c: Counted, d: Delivered, out: str | None, force: bool) -> Delivered:
             held = None if ns.from_folders else saved.short(ns.store, absolute)
             refs = [saved.RunRef(run.run_id, run.name, held) for _, run, _ in c.runs]
             # the bundle is a copy of the artifact as the store holds it, so a second --out on
-            # the same runs hands over the same bytes (section 11.6, TF6-19); the staging folder
+            # the same runs hands over the same bytes; the staging folder
             # stands in when the store could not be written to
             source = staging if saved_at is None else Path(ns.store_root) / saved_at
             try:
@@ -1674,8 +1673,8 @@ class BundleChecked:
 def validate_bundle(folder: str) -> BundleChecked:
     """``poisson-trace handover --check DIR``: ok and exit 0 on a bundle that holds what it
     promises, ``not valid`` with the first failing line and exit 4 otherwise, a refusal when
-    DIR is not a bundle (section 11.2's validator, SV8). A bundle that holds what it promises
-    gets its next command: the HTML report, written, or opened once it is there (SB5, A12)."""
+    DIR is not a bundle. A bundle that holds what it promises
+    gets its next command: the HTML report, written, or opened once it is there."""
     from poisson_trace import saved
 
     prove_present()
@@ -1701,7 +1700,7 @@ class BundleRead:
 
 def load_bundle(folder: str) -> BundleRead:
     """A bundle read back: checked first, as ``handover --check`` checks it, and refused with
-    the first failing line when it does not hold what it promises (PB2); then its four files."""
+    the first failing line when it does not hold what it promises; then its four files."""
     import json
 
     from poisson_trace import saved
@@ -2192,7 +2191,7 @@ def compare(ns: argparse.Namespace) -> Counted:
     )
 
     store, index = _named(ns)
-    # two words that reach one run are refused as changes and fix-check refuse them (PA20)
+    # two words that reach one run are refused as changes and fix-check refuse them
     run_a, run_b = _two(index, ns.a, ns.b, ("A", "B"))
     manifest_a, frame_a, tally_a = _load(store, run_a)
     manifest_b, frame_b, tally_b = _load(store, run_b)
@@ -2249,7 +2248,7 @@ def compare(ns: argparse.Namespace) -> Counted:
         [(p.config_hash, p.index, p.died) for p in rows_a],
         [(p.config_hash, p.index, p.died) for p in rows_b],
     )
-    # ST5: the limit from the log-rank's own information over the common cells
+    # the limit from the log-rank's own information over the common cells
     mde = information_limit(lr.variance, alpha=ns.alpha)
     estimate = one_step(lr)
     if lr.observed_a < lr.expected_a:
@@ -2351,7 +2350,7 @@ def compare(ns: argparse.Namespace) -> Counted:
             "alpha": ns.alpha,
             "direction": direction,
             "paired": False,
-            # ST6: after against before, Peto's one-step estimate from the numbers above
+            # after against before, Peto's one-step estimate from the numbers above
             "hazard_ratio": None if estimate is None else estimate[0],
             "hazard_ratio_lo": None if estimate is None else estimate[1],
             "hazard_ratio_hi": None if estimate is None else estimate[2],
@@ -2448,7 +2447,7 @@ def _compare_guidance(
     for needs, and more than any input had in either run: these runs fell short, so the model
     reaching the target at their own tries does not make them enough. The ceiling offered is
     the detectable hazard ratio rounded up, so it accepts the design as it stands. Deaths, runs
-    and inputs no longer size the guidance and hold no value."""
+    and inputs do not size the guidance and hold no value."""
     from poisson_trace.paired import accepts_at
     from poisson_trace.survival import (
         expected_information,
@@ -2551,7 +2550,7 @@ def _started(run: Any, manifest: Any) -> datetime:
 def _check_events(
     events: frozenset[str], frame_a: Any, frame_b: Any, first: str, second: str
 ) -> list[str]:
-    """The first slice's rule: a name neither run carries is refused; a name one run carries
+    """The rule for event names: a name neither run carries is refused; a name one run carries
     is allowed, and noted."""
     out_a, out_b = _outcomes(frame_a), _outcomes(frame_b)
     present = {o for o in out_a | out_b if not _no_value(o)}
@@ -2569,7 +2568,7 @@ def _check_events(
 
 
 def _check_fix_events(events: frozenset[str], frame_old: Any, frame_new: Any) -> list[str]:
-    """The fix check's rule for a name neither run carries (trace#31). Where every outcome
+    """The fix check's rule for a name neither run carries. Where every outcome
     the two runs carry is a word for success, no run failed under any name, and the fix check
     answers that: the name counts no failure and is noted. Where a run carries an outcome that
     is no word for success, a name neither carries may be that outcome misspelt, and it is
@@ -2753,8 +2752,8 @@ def fix_check(ns: argparse.Namespace) -> Counted:
     limit_text = None if drop is None else _points(drop)
     excludes_zero = lo is not None and hi is not None and (lo > 0.0 or hi < 0.0)
     disagree = variance is not None and ((test.p < ns.alpha) != excludes_zero)
-    # the range reads the verdict only where it is reliable (section 9.5's gate); where it is
-    # not, the drop limit against the size asked reads it, as before
+    # the range reads the verdict only where it is reliable; where it is not, the drop limit
+    # against the size asked reads it
     rough = paired.rough(
         counts, informative=test.informative, disagree=disagree, alpha=ns.alpha
     )
@@ -2807,9 +2806,9 @@ def fix_check(ns: argparse.Namespace) -> Counted:
                 f"{limit_text} points, and {asked} was asked for"
             )
         verdict_line = f"too small to tell: {sentence}"
-    # no run failed in either version on the inputs compared (trace#31). Where the range is
+    # no run failed in either version on the inputs compared. Where the range is
     # reliable there it has read the verdict above, and the guidance is the range's own; where
-    # it is rough (fewer than three inputs, or very unequal tries: F31-3, F31-4) the drop limit
+    # it is rough (fewer than three inputs, or very unequal tries) the drop limit
     # has, as on any rough range, and the guidance is the drop limit's
     none_failed = paired.none_failed(counts)
     clean = none_failed and reliable
@@ -3145,9 +3144,9 @@ VERBS: dict[str, Callable[[argparse.Namespace], Counted]] = {
 }
 
 
-# ---------- the static pages and the HTML report (TF18) ----------
+# ---------- the static pages and the HTML report ----------
 
-#: Where a store's pages are, under its ``.poisson/ui/`` (section 17.3 item 7): Trace's own
+#: Where a store's pages are, under its ``.poisson/ui/``: Trace's own
 #: folder beside Prove's dashboard, which Trace never writes, rebuilds or deletes.
 PAGES = "trace"
 REPORT_PAGE = "report.html"
@@ -3167,7 +3166,7 @@ class View:
 
 
 def _artifact_of(c: Counted) -> tuple[Any, dict[str, str]]:
-    """The artifact a verdict saves (section 17.3 items 1 and 2), as ``--save`` builds it and
+    """The artifact a verdict saves, as ``--save`` builds it and
     ``to_html`` renders it: every path the call carried written short, the charts drawn."""
     from poisson_trace import saved
 
@@ -3198,7 +3197,7 @@ def _artifact_of(c: Counted) -> tuple[Any, dict[str, str]]:
 
 
 def _compare_charts(c: Counted) -> list[tuple[str, str, dict[str, Any]]]:
-    """``compare``'s two charts (SV15, A9): ``curves``, each run's ``where`` curve under
+    """``compare``'s two charts: ``curves``, each run's ``where`` curve under
     compare's failures with where's own defaults, in compare's order; ``hazard-ratio``, the
     verdict's hazard ratio with its range, the limit and the ratio asked for. Each is saved as
     a file of its own, with its data beside it."""
@@ -3293,7 +3292,7 @@ def _report_sections(report: str) -> tuple[str, list[dict[str, Any]]]:
 
 def _measures_from(doc: Mapping[str, Any]) -> list[str]:
     """The continuous-measures section as ``fix-check --measures`` prints it, rebuilt from the
-    measures ``result.json`` saved (A4): the saved ``report.md`` has the section only when the
+    measures ``result.json`` saved: the saved ``report.md`` has the section only when the
     verdict was saved with ``--measures``."""
     from poisson_trace.stats.continuous import Measure
 
@@ -3332,7 +3331,7 @@ def verdict_view(folder: Path, store: str) -> View:
     """The view behind a saved verdict's page (and the HTML report of its bundle): the verdict
     line, the report's title, every section of the report as the plain command prints it, the
     continuous measures where ``fix-check --measures`` prints them, what was saved, and the
-    charts' data. Nothing a save alone decides is in it (A15)."""
+    charts' data. Nothing a save alone decides is in it."""
     art, result, report = _saved_verdict(folder)
     kind, ident = str(art["kind"]), str(art["id"])
     title, sections = _report_sections(report)
@@ -3411,7 +3410,7 @@ def could_not_say_view(folder: Path, store: str) -> View:
 
 
 def _tool_of(run: Mapping[str, Any]) -> str:
-    """The target of a Prove run, or the tool an import came from (section 5.3)."""
+    """The target of a Prove run, or the tool an import came from."""
     backend = str(run.get("backend") or "")
     if backend.startswith("import:"):
         return backend[len("import:") :]
@@ -3424,8 +3423,8 @@ def runs_view(
     events: Sequence[str] | None,
     others: Sequence[tuple[str, str]],
 ) -> View:
-    """The view behind a store's runs page (A8, DM10, DM11): the line ``runs`` prints, the
-    store written as its folder's name (A17); a row a run; a row a saved verdict, newest
+    """The view behind a store's runs page: the line ``runs`` prints, the
+    store written as its folder's name; a row a run; a row a saved verdict, newest
     first, linking its page; a run's name linking its newest saved where page; the config's
     other stores' pages; Prove's dashboard when it is beside these pages."""
     name = root.name or Path(os.path.abspath(root)).name
@@ -3491,7 +3490,7 @@ def store_views(
     others: Sequence[tuple[str, str]],
 ) -> dict[str, View]:
     """Every view of a store's pages, by address under ``ui/``: the runs page, a page and a
-    could-not-say page per saved verdict of Trace's (A1)."""
+    could-not-say page per saved verdict of Trace's."""
     name = root.name or Path(os.path.abspath(root)).name
     views = {f"{PAGES}/index.html": runs_view(root, listing, events, others)}
     for folder in artifact_folders(root):
@@ -3534,8 +3533,8 @@ def build_store_pages(
 ) -> Path:
     """Write a store's pages: every view rendered into a staging folder under the store's
     ``ui/`` with Prove's bundle beside them, then renamed into ``ui/trace/`` last, so an
-    interrupted build leaves the previous pages and nothing of Prove's is touched (section 17.3
-    item 7, A18). Raises ``OSError`` where the pages cannot be written, and a refusal where the
+    interrupted build leaves the previous pages and nothing of Prove's is touched. Raises
+    ``OSError`` where the pages cannot be written, and a refusal where the
     installed Prove lacks the bundle. Returns the index."""
     import shutil
     import tempfile
@@ -3581,9 +3580,9 @@ def build_store_pages(
 
 
 def rebuild_pages(ns: argparse.Namespace) -> None:
-    """The pages of the store a verdict was just saved into, rebuilt (A7): its runs listed
-    under the call's own failures, or uncounted where the store does not carry them (DM9); a
-    link to each other store the call's config names whose pages are there (DM10). Raises
+    """The pages of the store a verdict was just saved into, rebuilt: its runs listed
+    under the call's own failures, or uncounted where the store does not carry them; a
+    link to each other store the call's config names whose pages are there. Raises
     ``OSError`` where the pages cannot be written, a refusal where a saved verdict cannot be
     read."""
     root = Path(ns.store_root)
@@ -3597,7 +3596,7 @@ def rebuild_pages(ns: argparse.Namespace) -> None:
 
 def other_pages(root: Path, held: Any) -> list[tuple[str, str]]:
     """The config's other stores whose pages are there, each as its folder's name and the
-    relative address of its index from this store's (section 17.3 item 9: never absolute)."""
+    relative address of its index from this store's (never absolute)."""
     if held is None:
         return []
     index = root / ".poisson" / "ui" / PAGES / "index.html"
@@ -3636,7 +3635,7 @@ def store_listing(store: str, events: Sequence[str] | None) -> dict[str, Any]:
 
 
 def report_page(bundle: Path, store: str) -> str:
-    """The HTML report of a bundle (section 17.3 item 8; 11.7): the static UI's page for its
+    """The HTML report of a bundle: the static UI's page for its
     artifact, rendered self-contained."""
     from poisson_trace import pages
 
@@ -3645,7 +3644,7 @@ def report_page(bundle: Path, store: str) -> str:
 
 def to_html(c: Counted) -> str:
     """``to_html()``: the HTML report of a verdict, saved or not, the text ``report DIR`` writes
-    for the bundle its ``to_bundle`` wrote (section 11.7, A15): the artifact built in a folder
+    for the bundle its ``to_bundle`` wrote: the artifact built in a folder
     of its own and rendered as the bundle is."""
     import shutil
     import tempfile
@@ -3663,7 +3662,7 @@ def to_html(c: Counted) -> str:
         shutil.rmtree(staging, ignore_errors=True)
 
 
-# ---------- the objects only the terminal app needs (section 17.2; TF13's PA11; TF19-A8) ----------
+# ---------- the objects only the terminal app needs ----------
 # Three core functions, not part of the public API: what the app's screens show that no verb
 # prints (the saved verdicts as a list, a run's target or the tool it was imported from, and
 # the result files init finds with their import lines). Each reads the paths it is given and
@@ -3691,7 +3690,7 @@ class SavedVerdict:
 class RunSource:
     """Where a run came from: a Prove run's target, or the reader an import came from and the
     files it was read from (their names, no folder); ``target_or_tool`` is the one the listing
-    shows (section 5.3)."""
+    shows."""
 
     run_id: str
     target: str | None
@@ -3780,8 +3779,8 @@ def found_results(folder: Any, *, store: str = "trace-store") -> list[FoundResul
     """The result files ``init`` finds under ``folder`` and would offer to import (a JUnit
     report with no test case is left out, as init leaves it out), in the order its search finds
     them, each with the import line init prints for it (``--store STORE``), every file its own
-    line past the twelve init shows (TF19-A9), and whether a run of a store under the folder
-    was imported from a file with these bytes (by the digest the run's record keeps, TF19-A7).
+    line past the twelve init shows, and whether a run of a store under the folder
+    was imported from a file with these bytes (by the digest the run's record keeps).
     A file init prints no line for is no run of its own and is left out (a LangSmith feedback
     list, which goes on its runs' line; a Weave file that holds no case); a file init prints
     several lines for, one for each evaluation a Weave file holds, is here once for each.

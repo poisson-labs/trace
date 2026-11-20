@@ -1,10 +1,10 @@
-"""TF21's per-try records as the plain per-case inputs ``stats/continuous.py`` takes (TF23, CT2).
+"""Normalised rows as the plain per-case inputs ``stats/continuous.py`` takes.
 
 Each normalised ``Row`` becomes one ``Try``: its value for every measure (``None`` where the
 source did not record it; a recorded zero stays a zero), how it ended (its failure kind, or
 ``None`` for a try that finished), its behavioural signals and its repeat number (``None`` where
 only the order read says which it is). Tries keep the order they were read in within a case. No
-verb imports this module yet: nothing prints the continuous table (CT2).
+verb imports this module yet: nothing prints the continuous table.
 """
 
 from __future__ import annotations

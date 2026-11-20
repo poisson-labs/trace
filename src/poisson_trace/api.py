@@ -1,5 +1,4 @@
-"""The Python API: the one core every face of Trace calls (spec section 11.8, as amended on
-2026-10-28; R32, R33).
+"""The Python API: the one core every face of Trace calls.
 
 One function per verb of the command line, taking what the command line takes: the store
 first (a path, a name the config names, a ``Store``, or None for the config's own store or
@@ -101,7 +100,7 @@ class Refusal(Exception):
 
 class Unordered(Refusal):
     """``latest`` or ``previous`` refused because the start times cannot order the runs: the
-    command line rebuilds the first next command from its own words (PA19)."""
+    command line rebuilds the first next command from its own words."""
 
     def __init__(
         self, held: Any, message: str, *, next: Sequence[str], notes: Sequence[str]
@@ -138,14 +137,14 @@ class Config:
         return str(held.named[name])
 
 
-# ---------- a keyword passed is a flag given (PA16) ----------
+# ---------- a keyword passed is a flag given ----------
 
 _GIVEN: contextvars.ContextVar[tuple[str, ...]] = contextvars.ContextVar("given", default=())
 
 
 def _keywords_given(fn: Callable[P, R]) -> Callable[P, R]:
     """The function with the names of the keywords each call passes kept for it, so that a
-    keyword passed at its default value still counts as the flag given (SV5)."""
+    keyword passed at its default value still counts as the flag given."""
 
     @functools.wraps(fn)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
@@ -158,7 +157,7 @@ def _keywords_given(fn: Callable[P, R]) -> Callable[P, R]:
     return wrapper
 
 
-# ---------- the values, as the parser would take them (PA7) ----------
+# ---------- the values, as the parser would take them ----------
 
 
 def _text(name: str, value: Any) -> str:
@@ -309,8 +308,8 @@ def _flag_of(keyword: str) -> str:
 
 
 def _words_of(keyword: str, value: Any) -> list[str]:
-    """A keyword and its value as the command line's words (for a next command and PA19's
-    rebuilt line)."""
+    """A keyword and its value as the command line's words (for a next command and the line
+    an ``Unordered`` refusal rebuilds)."""
     flag = _flag_of(keyword)
     if isinstance(value, bool):
         return [flag] if value else []
@@ -447,7 +446,7 @@ def _counting(
 @dataclass(frozen=True)
 class _Counting:
     """What every counting verb's result carries beside its JSON's keys: the summary's lines
-    and the caveats the report prints, the versions, the artifact's settings (SV5), the notes,
+    and the caveats the report prints, the versions, the artifact's settings, the notes,
     the exit code, and where the verdict was saved (None until it is)."""
 
     schema: str
@@ -469,7 +468,7 @@ class _Counting:
 
     @property
     def note(self) -> list[str]:
-        """Section 11.3's list: the sentence a report of a run with no traces carries, and the
+        """The report's notes: the sentence a report of a run with no traces carries, and the
         note that the two runs' failure types were decided by different rules."""
         return list(self._counted.result_document()["note"])
 
@@ -485,7 +484,7 @@ class _Counting:
         return core.text(self._counted, self._delivered)
 
     def to_html(self) -> str:
-        """The HTML report of this verdict (spec section 11.7): the text ``poisson-trace report
+        """The HTML report of this verdict: the text ``poisson-trace report
         DIR`` writes for the bundle ``to_bundle`` writes, saved or not. Nothing is written."""
         with _calling(self._counted.ns):
             return str(core.to_html(self._counted))
@@ -531,9 +530,9 @@ class WhereResult(_Counting):
 
 @dataclass(frozen=True)
 class _TwoRuns(_Counting):
-    """A verb of two runs: TF6's failure-type diff (TF21's kinds and signals counted in each
-    run) and TF23's continuous measures, saved with every verdict of two runs, worked out when
-    the call read the signals or when first read."""
+    """A verb of two runs: the failure-type diff (the kinds and signals counted in each run)
+    and the continuous measures, saved with every verdict of two runs, worked out when the call
+    read the signals or when first read."""
 
     runs: dict[str, Any]
     verdicts: dict[str, Any] | None
@@ -667,7 +666,7 @@ class RunsResult:
 @dataclass(frozen=True)
 class NameResult:
     """``poisson-trace name`` in its three forms: a name given, taken back, or the names
-    listed. The command prints no JSON, so there is ``to_markdown()`` alone (PB1)."""
+    listed. The command prints no JSON, so there is ``to_markdown()`` alone."""
 
     verdict: str
     sentence: str
@@ -718,8 +717,8 @@ class ImportResult:
 @dataclass(frozen=True)
 class BundleCheck:
     """``poisson-trace handover --check DIR``: ``ok`` and exit 0, or ``not valid`` with the
-    first failing line and exit 4. The command prints no JSON (PB1). ``next`` is the command
-    a bundle that holds what it promises gets: its HTML report (SB5)."""
+    first failing line and exit 4. The command prints no JSON. ``next`` is the command
+    a bundle that holds what it promises gets: its HTML report."""
 
     verdict: str
     sentence: str
@@ -1145,7 +1144,7 @@ def validate_bundle(folder: str) -> BundleCheck:
     return BundleCheck(checked.verdict, checked.sentence, checked.exit_code, (), checked.following)
 
 
-# ---------- the static pages (section 17.3 item 7) ----------
+# ---------- the static pages ----------
 
 
 def _as_ui(e: Refusal) -> Refusal:
@@ -1161,8 +1160,8 @@ def _as_ui(e: Refusal) -> Refusal:
 
 def _ui_listing(store: Any, config: Any) -> RunsResult:
     """The runs of a store for its pages, as ``runs`` lists them under the config's failures;
-    a store that does not carry them (the config's other store, DM9) is listed with the failed
-    column uncounted; a store ``runs`` cannot read is the refusal ``runs`` gives (A5)."""
+    a store that does not carry them (the config's other store) is listed with the failed
+    column uncounted; a store ``runs`` cannot read is the refusal ``runs`` gives."""
     try:
         return runs(store, config=config)
     except Refusal as e:
@@ -1182,7 +1181,7 @@ def _ui_listing(store: Any, config: Any) -> RunsResult:
 def _stores_of(store: Any, config: Any) -> list[tuple[str | None, str]]:
     """The stores ``ui`` builds, each as its config name (None for the unnamed store, or a
     store given by its path) and its path: the store read first, then every other store the
-    config names (DM10)."""
+    config names."""
     word = _store_word(store)
     if config is None:
         assert word is not None
@@ -1209,7 +1208,7 @@ def _stores_of(store: Any, config: Any) -> list[tuple[str | None, str]]:
 def build_pages(store: Any, *, config: Any = None) -> PagesResult:
     """``poisson-trace ui``: Trace's pages over a store's runs and saved verdicts, built into
     its ``.poisson/ui/trace/``, and, when a config is read, over every other store it names,
-    so that the pages link one another (DM10). Prove's own pages beside them are never
+    so that the pages link one another. Prove's own pages beside them are never
     touched. Refused as ``runs`` refuses a store it cannot read, and where the pages cannot be
     written."""
     if config is not None and not isinstance(config, Config):
@@ -1256,8 +1255,7 @@ def build_pages(store: Any, *, config: Any = None) -> PagesResult:
 
 
 def _relative(here: Path, there: Path) -> str:
-    """``there`` as a link on the page at ``here``: a relative path, never an absolute one
-    (section 17.3 item 9)."""
+    """``there`` as a link on the page at ``here``: a relative path, never an absolute one."""
     return os.path.relpath(
         os.path.abspath(there), start=os.path.dirname(os.path.abspath(here))
     ).replace(os.sep, "/")
@@ -1308,7 +1306,8 @@ def _folder_reader(
 def _unordered_line(
     e: Unordered, argv: Sequence[str], valued: Collection[str]
 ) -> tuple[str, tuple[str, ...]]:
-    """PA19: the refusal's sentence and next commands from the command line's own words."""
+    """An ``Unordered`` refusal's sentence and next commands from the command line's own
+    words."""
     return core.unordered(e.held, str(argv[0]), argv, valued)
 
 
@@ -1338,7 +1337,7 @@ def _readers() -> tuple[str, ...]:
 
 def _stand_ins(tool: str, cfg: Config, words: Sequence[str] = ()) -> dict[str, Any]:
     """What ``[signals]`` stands in for among the reader's flags, for the import's command
-    line to fill into its words before it parses them (SA8). ``words`` is the command line,
+    line to fill into its words before it parses them. ``words`` is the command line,
     for a reader whose stand-ins depend on what the line itself says: a cut stands in for the
     LangSmith reader only where the line or the config reads a score."""
     from poisson_trace.ingest import importing
@@ -1403,7 +1402,7 @@ def _fail_on_word(text: str) -> tuple[str, ...]:
 
 
 def _max_change_word(text: str) -> tuple[str, float]:
-    """``--max-change MEASURE=N%`` read: the measure and its ceiling as a share (CS10)."""
+    """``--max-change MEASURE=N%`` read: the measure and its ceiling as a share."""
     from poisson_trace.stats.continuous import parse_max_change
 
     return parse_max_change(text)

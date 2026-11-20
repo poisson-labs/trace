@@ -117,7 +117,7 @@ def page_of(work: Path, store: str, kind: str, ident: str, name: str | None = No
 # ---------- TF18-1 ----------
 
 
-def test_tf18_1_the_saved_verdicts_are_the_design_sessions(ids: dict[str, tuple[str, str, str]]) -> None:
+def test_tf18_1_the_saved_verdicts_are_the_mockups(ids: dict[str, tuple[str, str, str]]) -> None:
     for label, ident in MOCKUP_IDS.items():
         assert ids[label][2] == ident, label
 

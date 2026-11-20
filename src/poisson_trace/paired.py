@@ -191,7 +191,7 @@ def difference(
 
 
 INTERVAL = "stratified Miettinen-Nurminen score interval, Mantel-Haenszel weights"
-# The range is reliable only where at least this many compared inputs vary (section 9.5).
+# The range is reliable only where at least this many compared inputs vary.
 FEW_VARY = 10
 
 
@@ -202,7 +202,7 @@ def none_failed(counts: Sequence[Counts]) -> bool:
 
 # Where no run failed in either version, the range is rough on fewer inputs than this, and
 # where its least favourable one-sided miss is more than this many times the half of alpha it
-# claims: above 5% at a 95% range (rulings F31-3 and F31-4, 2026-11-10).
+# claims: above 5% at a 95% range.
 CLEAN_FEW_INPUTS = 3
 CLEAN_MISS_TIMES = 2.0
 
@@ -706,7 +706,7 @@ def _power_two_proportion(
     """Two-sided normal-approximation power to detect ``rate + delta`` against ``rate``: the
     pooled standard error under the null, separate ones under the alternative. Each version's
     share goes with its own tries: the baseline ``rate`` with ``runs_old``, the raised share with
-    ``runs_new`` (Prove's pairing since its ``b6d6292``)."""
+    ``runs_new``, as Prove pairs them."""
     raised = rate + delta
     pooled = (rate * runs_old + raised * runs_new) / (runs_old + runs_new)
     se_null = math.sqrt(pooled * (1.0 - pooled) * (1.0 / runs_old + 1.0 / runs_new))

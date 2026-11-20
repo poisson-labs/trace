@@ -118,7 +118,7 @@ def test_tf15_l5_each_imported_start_says_where_it_came_from(tmp_path: Path) -> 
                for line in _started_bullets(tau2))
 
 
-def test_tf15_l6_a_deepeval_run_imported_before_this_pair(tmp_path: Path) -> None:
+def test_tf15_l6_a_deepeval_run_with_no_zone_recorded(tmp_path: Path) -> None:
     """A run whose manifest records no zone (imported before zones were recorded) says so."""
     folder = work(tmp_path)
     (folder / "results").mkdir()

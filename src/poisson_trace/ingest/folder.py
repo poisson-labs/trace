@@ -1,24 +1,23 @@
-"""The folder resolver: what a folder of results holds, read without reading a row (spec
-section 18.3.1, SG8 and SG17, as FI1 to FI7 rule it).
+"""The folder resolver: what a folder of results holds, read without reading a row.
 
 ``resolve(path, tool=None)`` says what the folder at ``path`` is, in this order:
 
 1. a Prove run folder (``manifest.json`` beside ``episodes/``): the run, read where it is;
-2. a folder Prove reads as a store (FI4): the one run it holds, or refused naming every run's
-   folder when it holds several (FI2, FI5);
-3. a saved pull folder (``pull.json``, ``poisson.raw-pull/1``, section 18.3.2): its tool's
+2. a folder Prove reads as a store: the one run it holds, or refused naming every run's
+   folder when it holds several;
+3. a saved pull folder (``pull.json``, ``poisson.raw-pull/1``): its tool's
    reader on the files it lists, in its order, each there, inside the folder and of the digest
    listed; refused when any of that is not so or the tool is not in this install;
 4. an unpacked Inspect log (``header.json`` beside ``samples/``): one Inspect run, the folder
-   itself the one "file" the Inspect reader reads (FI3, TF10's RD7); refused, saying so, in an
+   itself the one "file" the Inspect reader reads; refused, saying so, in an
    install without that reader, and when another tool is named;
 5. otherwise one tool's result files: the regular files directly in it, in the order of their
    names, each claimed by the reader whose ``looks_like`` claims it (the readers' own detectors
-   are the signature table, FI1). Hidden files, names starting with ``_`` or ``README``, files
-   no reader claims and subfolders are left out (FI7). Files of two tools are refused unless a
+   are the signature table). Hidden files, names starting with ``_`` or ``README``, files
+   no reader claims and subfolders are left out. Files of two tools are refused unless a
    tool is named, which reads its files alone.
 
-Whether several files of one tool are one run or several (FI6) needs their cases, so the import
+Whether several files of one tool are one run or several needs their cases, so the import
 decides it after reading them (``ingest/importing.py``). Resolving writes nothing, and Prove is
 asked through the writer, the one module under ``ingest/`` that imports it.
 """
@@ -36,10 +35,10 @@ from poisson_trace.ingest.rows import Refusal
 
 #: What a folder can be: a Prove run folder, a store of one run, a saved pull, one tool's files.
 KINDS: tuple[str, ...] = ("run", "store", "pull", "files")
-#: The schema a saved pull's ``pull.json`` names (section 18.3.2).
+#: The schema a saved pull's ``pull.json`` names.
 PULL_SCHEMA = "poisson.raw-pull/1"
 PULL = "pull.json"
-# the names a folder of results holds that are never results (section 18.3.1 step 3)
+# the names a folder of results holds that are never results
 _LEFT_OUT = (".", "_", "README")
 
 

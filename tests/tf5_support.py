@@ -7,8 +7,8 @@ the pages
     ``README.md``; ``CONTRIBUTING.md``; ``CHANGELOG.md``; under ``docs/``: ``commands.md``,
     ``config.md``, ``how-it-decides.md``, ``handover.md``, ``app.md``, ``python.md``,
     ``setup-with-your-agent.md``; the ten pages of ``docs/integrations/``; and the sixteen
-    recipes of ``docs/recipes/`` (``RECIPES``). The two standards (``docs/cli-look.md``,
-    ``docs/repo-hygiene.md``) are not Trace's to change.
+    recipes of ``docs/recipes/`` (``RECIPES``). The look standard (``docs/cli-look.md``) is not
+    Trace's to change.
 ``tools/docs_check.py``
     The docs checker the clean-install job runs. In the repository, not in the wheel.
 ``.github/workflows/ci.yml``
@@ -130,7 +130,7 @@ RECIPES: dict[str, str | None] = {
 WAITING = ("on-a-pull-request.md", "sending-results.md")
 #: The docs set of 0.1.0 beside the recipes and the integration pages.
 DOCS_SET = ("commands.md", "config.md", "how-it-decides.md", "handover.md", "app.md", "python.md", "setup-with-your-agent.md")
-STANDARDS = ("cli-look.md", "repo-hygiene.md")
+STANDARDS = ("cli-look.md",)
 #: The verbs, in the order the top help lists them.
 VERBS = ("init", "runs", "name", "where", "compare", "fix-check", "changes", "import", "doctor", "handover", "ui", "report")
 
@@ -141,7 +141,7 @@ def recipe(name: str) -> Path:
 
 def run_pages() -> list[Path]:
     """Every page whose blocks are held: the README, the contributing page, and every page under
-    ``docs/`` but the two standards."""
+    ``docs/`` but the look standard."""
     pages = [README, CONTRIBUTING]
     pages += sorted(p for p in DOCS.rglob("*.md") if p.name not in STANDARDS)
     return pages

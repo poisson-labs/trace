@@ -4,28 +4,25 @@ Every record is built before the store is touched, so a row Prove would not take
 with nothing written. The run is created, its rows appended in one part, and it is marked
 complete; a run name the store already holds is refused, never appended to.
 
-Each row is classified by the taxonomy before it is written, and its normalised signals go into
-the record's ``meta["trace_signals"]`` as the ``poisson.trace-signals/1`` record (spec section
-18.4.2 as SA1 reads it on the Prove Trace reads): ``wall_time``, ``t``, ``horizon`` and
-``confidence`` take the row's signals where recorded, ``meta["cost_usd"]`` is written where a
-cost was recorded, a row without an outcome stays an errored record, and the digest of the rules
-that classified the run is recorded in the manifest beside what the import declared (SA5).
+Each row is classified by the taxonomy before it is written, and its normalised signals go into the
+record's ``meta["trace_signals"]`` as the ``poisson.trace-signals/1`` record: ``wall_time``, ``t``,
+``horizon`` and ``confidence`` take the row's signals where recorded, ``meta["cost_usd"]`` is
+written where a cost was recorded, a row without an outcome stays an errored record, and the digest
+of the rules that classified the run is recorded in the manifest beside what the import declared.
 
-The run record (spec section 17.3 item 6, SV1; the artifact format sections 2 to 4): the store
-descriptor ``.poisson/store.json`` is written on the first write into a store, or Trace is added
-to its ``writers`` once, as a saved verdict writes it (``saved.write_store_descriptor``), after
-a descriptor in a newer major, or one that is not a descriptor, has been refused with nothing
-written. The run's ``events.jsonl`` is Prove's full log: ``planned``, ``started``, ``progress``
-at most once a second and once at the end, then ``finished``; or a closing ``progress`` and
-``interrupted`` when Ctrl-C stops the import after its run folder exists, with what Prove holds.
-Rows are counted as Prove counts its own: a row with no outcome is ``errored``, the rest
-``kept`` (RR1). Each manifest gains ``produced_by`` (Trace's version, the files the run was
-made from with the verdicts file last, the tool, the reader and the import's options; RR3, RR4),
-added after Prove's last write of the manifest, which does not carry the key. A row with an
-outcome and no recorded steps and no spans is stored as one step, so Prove's pages build over
-the store (RR5). The rows of a run whose source recorded no horizon share one, the most steps
-any of them took, so that the pages also build over a run whose rows took different numbers of
-steps.
+The run record (the artifact format's sections 2 to 4): the store descriptor ``.poisson/store.json``
+is written on the first write into a store, or Trace is added to its ``writers`` once, as a saved
+verdict writes it (``saved.write_store_descriptor``), after a descriptor in a newer major, or one
+that is not a descriptor, has been refused with nothing written. The run's ``events.jsonl`` is
+Prove's full log: ``planned``, ``started``, ``progress`` at most once a second and once at the end,
+then ``finished``; or a closing ``progress`` and ``interrupted`` when Ctrl-C stops the import after
+its run folder exists, with what Prove holds. Rows are counted as Prove counts its own: a row with
+no outcome is ``errored``, the rest ``kept``. Each manifest gains ``produced_by`` (Trace's version,
+the files the run was made from with the verdicts file last, the tool, the reader and the import's
+options), added after Prove's last write of the manifest, which does not carry the key. A row with
+an outcome and no recorded steps and no spans is stored as one step, so Prove's pages build over the
+store. The rows of a run whose source recorded no horizon share one, the most steps any of them
+took, so that the pages also build over a run whose rows took different numbers of steps.
 """
 
 from __future__ import annotations
@@ -51,7 +48,7 @@ from poisson_trace.ingest.taxonomy import Budgets, Rule, classify, taxonomy_sha2
 from poisson_trace.look import why
 from poisson_trace.names import taken
 
-#: The signals record's schema, and its keys in the order written (section 18.4.2, plus horizon).
+#: The signals record's schema, and its keys in the order written.
 RECORD_SCHEMA = "poisson.trace-signals/1"
 RECORD_KEYS: tuple[str, ...] = (
     "schema",
@@ -147,8 +144,8 @@ def _leaves(trace: Trace) -> int:
 
 def trace_signals(row: Row, repeat: int) -> dict[str, Any]:
     """The ``poisson.trace-signals/1`` record of ``row`` as the repeat ``repeat`` of its case:
-    every key of section 18.4.2 in order, ``None`` kept where the source recorded nothing. Its
-    ``outcome`` is the row's normalised result. It carries no error text (IC7)."""
+    every key of ``RECORD_KEYS`` in order, ``None`` kept where the source recorded nothing. Its
+    ``outcome`` is the row's normalised result. It carries no error text."""
     calls = row.tool_calls
     record: dict[str, Any] = {
         "schema": RECORD_SCHEMA,
@@ -185,12 +182,12 @@ def trace_signals(row: Row, repeat: int) -> dict[str, Any]:
 
 
 def _record(run: str, row: Row, repeat: int) -> EpisodeRecord:
-    """``row``, already classified, as the record Prove stores (section 18.4.2 as SA1 reads it)."""
+    """``row``, already classified, as the record Prove stores."""
     config = {"case": row.case}
     meta: dict[str, Any] = {"import": {"score": row.score, **row.detail}}
     if row.cost_usd is not None:
         meta["cost_usd"] = row.cost_usd
-    # no recorded steps and no spans: one step, so that Prove's pages build over the store (RR5)
+    # no recorded steps and no spans: one step, so that Prove's pages build over the store
     steps = 1.0
     if row.spans:
         trace = from_otel([_without_content(span) for span in row.spans])
@@ -348,8 +345,8 @@ def check_before_reading(root: Path, name: str, form: str = "target", *, held: b
 
 
 def _produced_by(run: Run, verdicts: Mapping[str, Any] | None) -> dict[str, Any]:
-    """The manifest's ``produced_by`` (the format's section 4.1; RR3, RR4): the shared
-    ``version`` and ``from``, then Trace's own ``tool``, ``reader`` and ``options``."""
+    """The manifest's ``produced_by`` (the format's section 4.1): the shared ``version`` and
+    ``from``, then Trace's own ``tool``, ``reader`` and ``options``."""
     made_from = [{"name": str(f["name"]), "sha256": str(f["sha256"])} for f in run.files]
     if verdicts is not None:
         made_from.append({"name": str(verdicts["name"]), "sha256": str(verdicts["sha256"])})
@@ -395,7 +392,7 @@ def stored(root: Path, name: str) -> Any:
 def runs_in(root: Path) -> list[str]:
     """The runs Prove reads in the folder ``root`` as a store, by their folders' names in
     order; none for a folder Prove does not read as one. A name starting with a dot (the store's
-    own ``.poisson`` folder) is never a run (SB1). Here so that the folder resolver
+    own ``.poisson`` folder) is never a run. Here so that the folder resolver
     (``ingest/folder.py``) asks Prove without importing it."""
     try:
         held = Store(root).runs()
@@ -425,7 +422,7 @@ def write(
     are named from their manifests, for the check that no other run answers to its name. Each
     row is classified with ``rules`` and ``budgets`` (the config's, or none) before it is
     written, and their digest is recorded in the manifest; so is ``verdicts``, what a
-    ``--verdicts`` join did, when one was given (FI20)."""
+    ``--verdicts`` join did, when one was given."""
     if run.started_from not in STARTED_FROM:
         raise Refusal(f"the start time's source is one of {', '.join(STARTED_FROM)}")
     store = Store(root)
@@ -509,7 +506,7 @@ def write(
         log.emit("finished", {"status": "complete", "kept": kept})
         _add_produced_by(Path(root) / run.name / MANIFEST, _produced_by(run, verdicts))
     except KeyboardInterrupt:
-        # the run stays, partial (section 9.1 L6); the closing count is what Prove holds
+        # the run stays, partial; the closing count is what Prove holds
         if not ended:
             held_rows = _held(store, run.name)
             log.emit(

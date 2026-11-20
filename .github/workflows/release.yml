@@ -5,7 +5,7 @@
 # poisson-trace name it by exactly that file name, release.yml, with the environment `pypi`.
 #
 # The repository is private on GitHub Team, where an environment cannot require a reviewer, so
-# the approval is the hand start (ruled 2026-11-11): only a run started with "Run workflow" on
+# the approval is the hand start: only a run started with "Run workflow" on
 # the tag, the version typed in, reaches PyPI.
 #
 # On the tag (push):

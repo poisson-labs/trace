@@ -29,7 +29,7 @@
 #   runs every marked block of the README and the docs through tools/docs_check.py. Every
 #   block the docs check skipped is listed in the job's summary.
 #
-# Left for the CI setup session to choose, and written here only so the file runs: the runner
+# Not settled yet, and written here only so the file runs: the runner
 # of each job and the systems the full job covers (macos-latest below, where the lanes were
 # last made green), how the jobs are cut into shards, how the socket guard is made, and
 # whether clean-install runs on every pull request.

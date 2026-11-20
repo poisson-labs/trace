@@ -1,11 +1,11 @@
 """What a reader hands the writer: one row per case read, and the run they make.
 
-A ``Row`` keeps today's six positional fields (``case``, ``outcome``, ``error``, ``score``,
-``spans``, ``detail``) and adds the normalised signals of spec section 18.4.1 as keyword-only
-fields after them. ``outcome`` stays the word written to Prove's outcome column; the normalised
-verdict is ``result`` (``pass``, ``fail``, ``censored`` or ``None`` for an unscored row). A
-signal left ``None`` was not recorded by the source; ``0`` is a recorded zero. An error is cut to
-240 characters, and no field holds a prompt, a completion or a tool's arguments.
+A ``Row`` has six positional fields (``case``, ``outcome``, ``error``, ``score``, ``spans``,
+``detail``) and the normalised signals as keyword-only fields after them. ``outcome`` stays the word
+written to Prove's outcome column; the normalised verdict is ``result`` (``pass``, ``fail``,
+``censored`` or ``None`` for an unscored row). A signal left ``None`` was not recorded by the
+source; ``0`` is a recorded zero. An error is cut to 240 characters, and no field holds a prompt, a
+completion or a tool's arguments.
 
 Standard library only.
 """
@@ -22,9 +22,9 @@ from typing import Any
 # the earliest span's, the first file's modification time, or a time the tool wrote in the file
 STARTED_FROM: tuple[str, ...] = ("given", "file name", "earliest span", "file time", "file")
 
-#: The normalised verdicts (section 18.4.1's ``outcome``, kept as ``Row.result``).
+#: The normalised verdicts, kept as ``Row.result``.
 RESULTS: tuple[str, ...] = ("pass", "fail", "censored")
-#: The 13 terminal failure kinds, in precedence order (section 18.5.1).
+#: The 13 terminal failure kinds, in precedence order.
 FAILURE_KINDS: tuple[str, ...] = (
     "timeout",
     "rate_limit",
@@ -45,7 +45,7 @@ SIGNALS: tuple[str, ...] = ("gave_up", "retry_storm", "over_budget")
 #: The span kinds of the Prove Trace reads, which a ``SpanRecord`` takes.
 PROVE_KINDS: tuple[str, ...] = ("llm", "tool", "retrieval", "db", "http", "agent", "other")
 #: The kinds a source may name as where its error happened: Prove's, and the words other sources
-#: use for a span that is not one of Prove's (section 18.1 item 10).
+#: use for a span that is not one of Prove's.
 ERROR_SPAN_KINDS: tuple[str, ...] = (
     *PROVE_KINDS,
     "retriever",
@@ -92,7 +92,7 @@ UNITS: Mapping[str, str] = {
     "llm_calls": "calls",
     "retries": "tries",
 }
-#: The most of an error that is kept (IC7).
+#: The most of an error that is kept.
 ERROR_MAX = 240
 
 
@@ -228,13 +228,13 @@ def _records(name: str, value: Any, kind: type) -> tuple[Any, ...] | None:
     return out
 
 
-# ---------- the shape (section 18.4.1) ----------
+# ---------- the shape ----------
 
 
 @dataclass(frozen=True)
 class ToolCallRecord:
     """One tool call: its name, how it ended, its time, the error's type and which try it was.
-    Never the tool's arguments or what it returned (IC7)."""
+    Never the tool's arguments or what it returned."""
 
     name: str
     status: str
@@ -255,7 +255,7 @@ class ToolCallRecord:
 
 @dataclass(frozen=True)
 class SpanRecord:
-    """One span as the Prove Trace reads stores it (SA1): its identity, kind, name and times,
+    """One span as the Prove Trace reads stores it: its identity, kind, name and times,
     then every optional field Prove's span has, ``None`` where the span did not record it.
     ``tokens`` is the span's total; ``input_tokens`` and ``output_tokens`` are its ``in`` and
     ``out``."""
@@ -311,8 +311,8 @@ class SpanRecord:
 
 @dataclass(frozen=True)
 class Row:
-    """One try of one case. The first six fields are today's, by position; the rest are the
-    signals, by keyword (section 18.4.1, SA2)."""
+    """One try of one case. The first six fields are by position; the rest are the signals, by
+    keyword."""
 
     case: str
     outcome: str | None
@@ -402,11 +402,11 @@ class Run:
     # what the summary adds to where the start came from, such as a zone the file left out
     started_note: str | None = None
     # each case's input key (``input:`` and 12 hex characters), for a reader that reads an
-    # input: what ``--verdicts`` joins by when a verdict names no case (FI18, FI19); never the
+    # input: what ``--verdicts`` joins by when a verdict names no case; never the
     # input's text
     inputs: Mapping[str, str] = field(default_factory=dict)
     # what a pull did, when the run was pulled from a service's API and read from the raw copy
-    # it saved (section 18.3.2): the address, the raw copy's folder, what it holds
+    # it saved: the address, the raw copy's folder, what it holds
     pull: Mapping[str, Any] | None = None
 
 

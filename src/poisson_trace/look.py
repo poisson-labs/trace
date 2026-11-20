@@ -442,7 +442,7 @@ YELLOW_WORDS = (
     "too small to tell",
     "no significant difference",
     "no control",
-    "unconfirmed",  # a measure's call the timeouts leave unconfirmed: it cannot say (DM15)
+    "unconfirmed",  # a measure's call the timeouts leave unconfirmed: it cannot say
 )
 RED_WORDS = ("not ready", "not whole", "not valid")
 
@@ -578,7 +578,7 @@ def _is_terminal(stream: Any) -> bool:
 
 
 def opens_app() -> bool:
-    """Whether the bare command opens the terminal app (section 17.2, AD4): stdin and stdout
+    """Whether the bare command opens the terminal app: stdin and stdout
     are terminals (stderr may be a pipe), ``CI`` is unset (any value, the empty one included,
     counts as set) and ``TERM`` is not ``dumb``. ``--plain`` is the caller's to check."""
     return (
@@ -842,7 +842,7 @@ class Session:
     # under --json, the stopped line as the verb's JSON document, so that stdout stays one
     render: Callable[[str], str] | None = None
     # whether ``--plain`` was given: ``run`` takes it off the command line before the body
-    # sees it, and the bare command never opens the terminal app under it (section 17.2, AD4)
+    # sees it, and the bare command never opens the terminal app under it
     plain: bool = False
 
 

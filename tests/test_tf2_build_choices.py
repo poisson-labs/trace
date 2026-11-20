@@ -119,7 +119,7 @@ REFUSED = {
 
 
 @pytest.mark.parametrize("case", REFUSED)
-def test_the_refusals_of_this_build_write_nothing(tmp_path: Path, case: str) -> None:
+def test_these_refusals_write_nothing(tmp_path: Path, case: str) -> None:
     folder = work(tmp_path)
     if case != "a failure and no store":
         tau2_copy(folder, "proofload-runs")

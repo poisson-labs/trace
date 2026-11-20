@@ -47,7 +47,7 @@ def small_doc() -> dict[str, Any]:
 # ---------- the script entry ----------
 
 
-def test_s22_the_script_entry_is_declared_and_no_dependency_is_added() -> None:
+def test_the_script_entry_is_declared_and_no_dependency_is_added() -> None:
     project = tomllib.loads((REPO / "pyproject.toml").read_text())["project"]
     assert project["scripts"]["poisson-trace-import"] == "poisson_trace.ingest.cli:main"
     # the import adds none; the others are the Prove Trace pins,

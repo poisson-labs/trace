@@ -8,19 +8,18 @@ start) and the JSON Lines file (one result per line, no start) are told by their
 promptfoo's CSV puts the prompts side by side under repeated column names and is refused,
 pointing at the JSON export.
 
-The case is a named test variable (``--case var:NAME``) or the test's position (``--case
-test``, ``test:<testIdx>``); results sharing a case are its repeats in the order read. A result
-is ``missed`` when promptfoo's ``success`` is false and ``met`` when true, or read from its
-``score`` at a declared cut. A result promptfoo marks as an error (``failureReason`` 2) has no
-outcome: its error's text gives its failure kind by section 18.5.2 (a timeout, a rate limit, a
-context overflow, else a crash) and is kept nowhere. A failed assertion takes its kind from the
-first failed assertion's type.
+The case is a named test variable (``--case var:NAME``) or the test's position (``--case test``,
+``test:<testIdx>``); results sharing a case are its repeats in the order read. A result is
+``missed`` when promptfoo's ``success`` is false and ``met`` when true, or read from its ``score``
+at a declared cut. A result promptfoo marks as an error (``failureReason`` 2) has no outcome: its
+error's text gives its failure kind (a timeout, a rate limit, a context overflow, else a crash) and
+is kept nowhere. A failed assertion takes its kind from the first failed assertion's type.
 
 The signals read of a result: ``latencyMs`` as the wall time, the lengths of the prompt sent and
 of the answer, ``response.tokenUsage``'s prompt, completion and total tokens (and its cached and
 reasoning tokens where present), ``response.cost`` and the scores. Nothing of a prompt, an
 answer, a variable but the case, an error or a grader's reason is kept; the prompt's label is
-printed and recorded, since it is how the version is named (RD2).
+printed and recorded, since it is how the version is named.
 
 Standard library only.
 """
@@ -61,7 +60,7 @@ OUTCOMES: tuple[str, ...] = ("success", "score")
 ERROR = "error"
 # promptfoo's failureReason: 1 a failed assertion, 2 an error
 _ASSERT, _ERROR = 1, 2
-# the failure kind each failed assertion type gives (section 18.5.2); any other, a wrong answer
+# the failure kind each failed assertion type gives; any other, a wrong answer
 _ASSERTED: Mapping[str, str] = {
     "is-json": "format_error",
     "is-xml": "format_error",
@@ -382,7 +381,7 @@ def _score(result: Mapping[str, Any]) -> float | None:
 
 
 def _error_kind(result: Mapping[str, Any]) -> str:
-    """An error result's kind, from its text by section 18.5.2; the text is not kept."""
+    """An error result's kind, from its text; the text is not kept."""
     response = result.get("response")
     texts = [result.get("error"), response.get("error") if isinstance(response, Mapping) else None]
     text = " ".join(t for t in texts if isinstance(t, str))

@@ -113,7 +113,7 @@ def test_tf17_42_deepeval_takes_the_metric_and_the_cut_from_the_config(tmp_path:
 
 
 @pytest.mark.parametrize("reader", ["ragas", "table", "deepeval"])
-def test_tf17_42_the_help_is_as_today_and_a_missing_flag_is_still_argparses_refusal(tmp_path: Path, reader: str) -> None:
+def test_tf17_42_the_help_and_a_missing_flags_refusal_are_argparses(tmp_path: Path, reader: str) -> None:
     folder = work(tmp_path)
     helped = trace_in(folder, ["import", reader, "--help"])
     assert helped.code == 0 and helped.out.startswith("usage"), helped.text

@@ -1,13 +1,13 @@
-"""Takes the pins of what main prints, builds and shows, for the pacing pair's unchanged tests
-(``tests/test_pacing_unchanged.py``): run on main (the commit ``pacing_pins.MAIN`` names), from
-the repository's root, with the package installed and the writer as main has it::
+"""Takes the pins of what main prints, builds and shows, for the unchanged tests of the import's
+pacing (``tests/test_pacing_unchanged.py``): run on main (the commit ``pacing_pins.MAIN``
+names), from the repository's root, with the package installed and the writer as main has it::
 
     python tests/fixtures/pacing/make_main_pins.py
 
 It writes ``tests/fixtures/pacing/main-pins.json``: for each invocation of
 ``pacing_pins.pin_corpus()`` and each case of ``pacing_pins.init_corpus()``, each step's exit
 code and the digests of its stdout and stderr, whole; ``pages``, the digest of each file of the
-pages TF19's workspace builds; and ``app``, each screen of the terminal app over that
+pages the tests' pages workspace builds; and ``app``, each screen of the terminal app over that
 workspace, as text. Paths are written ``<ROOT>`` and times ``<TIME>``.
 """
 

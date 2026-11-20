@@ -131,7 +131,7 @@ def test_tf6_17_force_without_svg_or_out_is_still_refused(tmp_path: Path) -> Non
 
 
 @pytest.mark.parametrize("verb", VERBS)
-def test_tf6_18_handover_json_is_section_11_2s(tmp_path: Path, verb: str) -> None:
+def test_tf6_18_handover_json_has_its_keys_in_order(tmp_path: Path, verb: str) -> None:
     store, bundle, _ = _out(tmp_path, verb)
     doc = json.loads((bundle / "handover.json").read_text(encoding="utf-8"))
     assert list(doc) == HANDOVER_KEYS

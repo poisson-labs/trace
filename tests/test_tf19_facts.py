@@ -195,7 +195,7 @@ max_mde = 0.5
 """
 
 
-def test_tf19_3_could_not_say_on_an_imported_store_carries_section_6_4(work: Path) -> None:
+def test_tf19_3_could_not_say_on_an_imported_store_carries_the_imported_run_sentence(work: Path) -> None:
     """The app opened on a config naming the table store: the run screen of an imported run, and
     its could not say screen (``d``), which carries the report's "What this cannot say" whole and
     the sentence the report adds for a run with no traces; a fix-check of the two imports, whose could

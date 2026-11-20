@@ -25,7 +25,7 @@ from conftest import (
 from fixcheck_support import (
     BANNED, BY_INPUT_KEYS, CHANGES_BLOCK_KEYS, CONSISTENCY_KEYS, CONTROL_KEYS, DIFFERENCE_KEYS,
     FIX_KEYS, FLAG_ROW_KEYS, GUIDANCE_KEYS, HE_A, HE_B, HE_EVENTS, HEADER_KEYS, HUMANEVAL, INPUTS_KEYS,
-    LIMITS_KEYS, PILOT, POINTER, ROWS_KEYS, SPEC_CANNOT_SAY, SPEC_LEFT_OUT, TAU2_EVENTS, TEST_KEYS,
+    LIMITS_KEYS, PILOT, POINTER, ROWS_KEYS, CANNOT_SAY_LINES, LEFT_OUT_REASONS, TAU2_EVENTS, TEST_KEYS,
     VERDICT_PHRASES, WORKED, Obs, build_run, changes, counts_of, exact_p_enumerated, fix_check, ok,
     one_sentence, pair_store, rebuild, scrambles,
 )
@@ -109,7 +109,7 @@ def test_tr70_every_header_count_by_construction(store70: Path) -> None:
     assert d["inputs"] == {
         "rule": "failing-from", "failing_from": "sel", "min_failures": 1, "selected": 7,
         "compared": 3, "informative": d["inputs"]["informative"],
-        "left_out": {reason: 1 for reason in SPEC_LEFT_OUT},
+        "left_out": {reason: 1 for reason in LEFT_OUT_REASONS},
     }
     assert d["rows"]["old"] == {"runs": 10, "failed": 5, "timed_out": 1, "no_outcome": 1, "short": 1, "mixed": 3}
     assert d["rows"]["new"] == {"runs": 6, "failed": 2, "timed_out": 0, "no_outcome": 0, "short": 0, "mixed": 0}
@@ -134,7 +134,7 @@ def test_tr70_inputs_all_compares_every_input_with_an_outcome_in_both(store70: P
     inputs = d["inputs"]
     assert (inputs["rule"], inputs["failing_from"], inputs["min_failures"]) == ("all", None, None)
     assert inputs["compared"] == 4
-    assert set(inputs["left_out"]) == set(SPEC_LEFT_OUT)
+    assert set(inputs["left_out"]) == set(LEFT_OUT_REASONS)
     assert inputs["selected"] == inputs["compared"] + sum(inputs["left_out"].values())
     assert inputs["left_out"]["no outcome on the old version"] == 1
     assert inputs["left_out"]["no outcome on the new version"] == 1
@@ -802,21 +802,21 @@ def test_tr63_no_banned_word_in_any_output(tmp_path: Path, two_run_store) -> Non
 def test_tr64_the_six_sentences_under_every_report() -> None:
     from poisson_trace.paired import CANNOT_SAY, LEFT_OUT
 
-    assert CANNOT_SAY == SPEC_CANNOT_SAY
-    assert LEFT_OUT == SPEC_LEFT_OUT
+    assert CANNOT_SAY == CANNOT_SAY_LINES
+    assert LEFT_OUT == LEFT_OUT_REASONS
     for result in (
         fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.1"),
         fix_check(TAU2, TAU2_B, PILOT, TAU2_EVENTS, "--failing-from", TAU2_A, "--max-mde", "0.2"),
         changes(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS),
     ):
         text = norm(ok(result).out)
-        for sentence in SPEC_CANNOT_SAY:
+        for sentence in CANNOT_SAY_LINES:
             assert sentence in text, sentence
     fj = _json(fix_check(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, *ALL, "--max-mde", "0.1", "--json"))
     cj = _json(changes(TAU2, TAU2_A, TAU2_B, TAU2_EVENTS, "--json"))
-    assert fj["cannot_say"] == list(SPEC_CANNOT_SAY)
-    assert fj["changes"]["cannot_say"] == list(SPEC_CANNOT_SAY)
-    assert cj["cannot_say"] == list(SPEC_CANNOT_SAY)
+    assert fj["cannot_say"] == list(CANNOT_SAY_LINES)
+    assert fj["changes"]["cannot_say"] == list(CANNOT_SAY_LINES)
+    assert cj["cannot_say"] == list(CANNOT_SAY_LINES)
 
 
 # ---------- TR65 ----------

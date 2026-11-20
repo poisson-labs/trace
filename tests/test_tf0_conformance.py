@@ -2,8 +2,8 @@
 (``docs/cli-look.md``).
 
 Every invocation of the corpus (every verb's help, the version, the README's worked examples on
-the fixtures, two imports and their fix check, every refusal of the front-door transcript's
-mistakes section and the paths that ended in a traceback) is held to the rules a test can see:
+the fixtures, two imports and their fix check, a set of common user mistakes and the paths that
+ended in a traceback) is held to the rules a test can see:
 the exit code is in the table and is the one the invocation calls for; no traceback; stderr is
 ``error:`` and ``note:`` lines and their two-space continuations; a refusal or a wrong command
 line prints nothing on stdout; nothing a user reads holds a Python representation of a value;

@@ -26,7 +26,7 @@ venv/
 .idea/
 .DS_Store
 
-# Devlogs are kept outside the repository (docs/repo-hygiene.md, section 2.7)
+# Personal notes. Never committed.
 devlog.md
 
 # Local secrets. Never committed.

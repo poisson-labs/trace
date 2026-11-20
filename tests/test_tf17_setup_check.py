@@ -131,7 +131,7 @@ FAULTS = [
 
 
 @pytest.mark.parametrize("case,text,fact", FAULTS, ids=[c for c, _, _ in FAULTS])
-def test_tf17_26_a_config_wrong_under_section_3_2_is_exit_2_with_the_validations_line(tmp_path: Path, case: str, text: str, fact: str) -> None:
+def test_tf17_26_a_config_wrong_under_the_config_rules_is_exit_2_with_the_validations_line(tmp_path: Path, case: str, text: str, fact: str) -> None:
     repo = sample_repo(tmp_path)
     write_toml(repo, text)
     line = usage(setup_check(repo))

@@ -18,11 +18,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from tf21_support import FIXTURES, INGEST
+from tf21_support import INGEST
 
-TF25 = FIXTURES / "tf25"
-PINS = TF25 / "main-pins.json"
-MAIN = "729a678"
 #: The readers main has, whose helps stay as main prints them.
 EARLIER = ("deepeval", "ragas", "table", "junit", "promptfoo", "inspect", "openai-evals", "langsmith")
 ABSENT = ["otel", "files/old.jsonl", "--store", "new-store", "--run", "x"]

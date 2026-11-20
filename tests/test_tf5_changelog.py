@@ -32,18 +32,18 @@ from tf5_support import CHANGELOG, REPO, WORDS, lists_readers, named, passages, 
 VERSION = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
 HEAD = re.compile(r"^## (\S+) — (\S+)$", re.M)
 PRE_RELEASES = "## 0.1.0a1 — pre-release"
-PRE_RELEASES_SHA256 = "a442e6bb2e3006fc4add5e6b2cd36e7c6b29c76bce5387614af490c367e21fcf"
+PRE_RELEASES_SHA256 = "5baf008c5026052ff31dc661aaed2552df48480379cf9147d4cdb8ad012530f0"
 
 #: Every build of 0.1.0 that must have a line: what it is, and the patterns one list item must
 #: all hold. The first seven are the builds that came after 0.1.0a1.
 BUILDS: dict[str, tuple[str, ...]] = {
-    "the handover (SB6)": (r"--out\b", r"handover --check"),
-    "the setup agent (SG7)": (r"init --agent", r"doctor --setup"),
-    "the run record (RB3)": (r"(?i)store descriptor|\.poisson/store\.json", r"(?i)event log|events\.jsonl", r"(?i)produced_by|what produced"),
-    "compare refuses a run against itself (SC1)": (r"`compare`", r"(?i)\bitself\b|\bone run\b|\bthe same run\b"),
-    "the failures by kind (#30)": (r"(?i)failures? by kind|kinds? of failure", r"`fix-check`", r"`compare`", r"`changes`"),
+    "the handover": (r"--out\b", r"handover --check"),
+    "the setup agent": (r"init --agent", r"doctor --setup"),
+    "the run record": (r"(?i)store descriptor|\.poisson/store\.json", r"(?i)event log|events\.jsonl", r"(?i)produced_by|what produced"),
+    "compare refuses a run against itself": (r"`compare`", r"(?i)\bitself\b|\bone run\b|\bthe same run\b"),
+    "the failures by kind": (r"(?i)failures? by kind|kinds? of failure", r"`fix-check`", r"`compare`", r"`changes`"),
     "the tries with no outcome": (r"(?i)no outcome",),
-    "fix-check when no run failed (trace#31)": (r"`fix-check`", r"(?i)no (?:failed )?run(?:s)? failed|holds? no failed|no failures?|none failed"),
+    "fix-check when no run failed": (r"`fix-check`", r"(?i)no (?:failed )?run(?:s)? failed|holds? no failed|no failures?|none failed"),
     "the LangSmith reader": (r"LangSmith", r"`langsmith:", r"LANGSMITH_API_KEY"),
     "the Braintrust reader": (r"Braintrust", r"`braintrust:", r"BRAINTRUST_API_KEY"),
     "the Weave reader": (r"Weave", r"`weave:", r"WANDB_API_KEY"),

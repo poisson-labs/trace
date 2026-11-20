@@ -174,9 +174,9 @@ _TAKES = {
     "LABEL|N": "a label or a number",
 }
 
-# what [signals] stands in for, by reader: the field mapping, and the reader's flag it fills
-# (SA8): the case field for the case column, the outcome field for the outcome column, the
-# score field for the metric or the score column, and the cut for the cut
+# what [signals] stands in for, by reader: the field mapping, and the reader's flag it fills:
+# the case field for the case column, the outcome field for the outcome column, the score
+# field for the metric or the score column, and the cut for the cut
 _STAND_INS: dict[str, tuple[tuple[str, str], ...]] = {
     "ragas": (("case_field", "case_column"), ("score_field", "metric"), ("cut", "cut")),
     "deepeval": (("score_field", "metric"), ("cut", "cut")),
@@ -544,7 +544,7 @@ def _caveats(d: Mapping[str, Any]) -> list[str]:
         said.append("A skipped test has no outcome and is left out.")
     lacking = d["no_outcome"].get("no score", 0)
     if tool == "langsmith" and lacking and not d["counts"].get("feedback records", 0):
-        # the run statistics of an export can trail the feedback records (the captures' TC-11):
+        # the run statistics of an export can trail the feedback records:
         # the score is never guessed, and this says where the records are
         said.append(
             f"{_plural(lacking, 'root run has', 'root runs have')} no score for the key read, "
@@ -790,7 +790,7 @@ def _prove_present() -> None:
 
 def _resolved(path: str, tool: str | None) -> Resolved:
     """What the folder given holds, through the folder resolver; a folder Prove stored is
-    already a store, and is not imported (FI15)."""
+    already a store, and is not imported."""
     found = resolve(Path(path), tool)
     if found.kind in ("run", "store"):
         assert found.store is not None
@@ -820,7 +820,7 @@ def checked(run: Run) -> None:
 def one_run(
     tool: str, ns: argparse.Namespace, found: Resolved, run: Run, reach: Sequence[str]
 ) -> None:
-    """Refused when a folder's files are more than one run (FI6): several DeepEval test runs,
+    """Refused when a folder's files are more than one run: several DeepEval test runs,
     or a case in two files. Shards hold each case once; two versions or two re-runs of one
     suite hold the same cases. A pull's files are one run by its own record."""
     files = found.files
@@ -877,7 +877,7 @@ def _with_pull(data: Mapping[str, Any], pull: Mapping[str, Any]) -> dict[str, An
 
 
 def _with_verdicts(data: Mapping[str, Any], joined: Mapping[str, Any]) -> dict[str, Any]:
-    """The summary with what the join did, after the files it read (FI20)."""
+    """The summary with what the join did, after the files it read."""
     out: dict[str, Any] = {}
     for key, value in data.items():
         out[key] = value
