@@ -918,3 +918,11 @@ c1ffe6d0f391ed70b8f22fd17956f3f39f6d897499dfa9517e5b7aaf86fb5293  ./ingest/weave
 9de0457b0e35827fb501b1a1a0032b1a0539caaf7191b0c86e8dd7eaef9b0276  ./ingest/weave/ui/traces-roots.json
 0353ed36dcdfafd3fdaa0c07f0eafd3d7b31abe1e7fd2d5718947275e6cacb35  ./ingest/weave/ui/traces-roots.jsonl
 44ba7fc1eff5f194acf9486e15ebb05ef3e570d5179fcd5349306a3f3013ca2f  ./ingest/weave/ui/traces-roots.tsv
+f94cff0462fe8ca4a64021030f818c8430dbbc9e80af82ea5e711650de403a25  ./steps-timings/store/20261123T110000Z-5a0a/episodes/part-00000.parquet
+18070c7bb6b56a61bc0bb8952864ea2f300486b5ba3edc7d4b36db2828619ef1  ./steps-timings/store/20261123T110000Z-5a0a/manifest.json
+188d1106a671a5c3e116a78e346b6ae3547aa3be85416406d1da17025a3cefef  ./steps-timings/store/20261123T111000Z-5a0b/episodes/part-00000.parquet
+50a0b2cfb19a989675273473845ac08abde3bb1f90d2bfee77a59f1bfe080612  ./steps-timings/store/20261123T111000Z-5a0b/manifest.json
+9be1234e926fafa2e48e61032c0b57c69982ffbfe580769f98998598055a9014  ./steps-timings/store/20261123T112000Z-5a0c/episodes/part-00000.parquet
+1d75bb9b6b1508d2a5a8f1d54b0506af6055aa89d668ae9b4bad0df96a0f967b  ./steps-timings/store/20261123T112000Z-5a0c/manifest.json
+b527b84c602d6c00fbec233c64accfa79b23382b9e8d80e2493340045b09036e  ./steps-timings/store/20261123T113000Z-5a0d/episodes/part-00000.parquet
+99c03abecfdbdb9ef99092c24f7cfc6d0afe281fe8f485d2b6a8e690712a40d3  ./steps-timings/store/20261123T113000Z-5a0d/manifest.json

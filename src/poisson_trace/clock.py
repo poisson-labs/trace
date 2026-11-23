@@ -1,4 +1,4 @@
-"""The clock and the placement: leaves, step index, cause labels, and where each row lands.
+"""The clock and the placement: leaves, step index, step labels, and where each row lands.
 
 Reads a run only through ``poisson_prove.store.Store``, ``poisson_prove.steps.declaration_check``
 and ``poisson_prove.trace.KINDS``. Spans are walked as plain mappings off the envelope.
@@ -6,7 +6,7 @@ and ``poisson_prove.trace.KINDS``. Spans are walked as plain mappings off the en
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -72,15 +72,18 @@ def _leaves(spans: list[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
     return found
 
 
-def _cause_of(
-    leaf: Mapping[str, Any], spans: list[Mapping[str, Any]], by: Literal["kind", "step"]
+def _label(
+    span: Mapping[str, Any], by_id: Mapping[str, Mapping[str, Any]], by: Literal["kind", "step"]
 ) -> str:
+    """A step's label: its span's kind, or the nearest step name up its parents. A parent chain
+    that comes back to a span it has passed carries no step name, so the walk stops there."""
     if by == "kind":
-        kind = leaf.get("kind")
+        kind = span.get("kind")
         return kind if isinstance(kind, str) else _UNKNOWN_KIND
-    by_id = {span["span_id"]: span for span in spans}
-    node: Mapping[str, Any] | None = leaf
-    while node is not None:
+    node: Mapping[str, Any] | None = span
+    passed: set[int] = set()
+    while node is not None and id(node) not in passed:
+        passed.add(id(node))
         name = node.get("step_name")
         if isinstance(name, str):
             return name
@@ -97,30 +100,55 @@ def _cap_of(manifest: RunManifest) -> int | None:
     return value if _is_int(value) else None
 
 
-def _rows(
+@dataclass(frozen=True)
+class Conversation:
+    """One row of a run: which conversation it is, where the clock placed it or why it did not,
+    its spans, and its steps: the leaves in the clock's order, each with its label."""
+
+    config_hash: str
+    seed: int
+    replicate_index: int
+    placed: Placed | None
+    exclusion: str | None
+    spans: list[Mapping[str, Any]] | None
+    leaves: tuple[Mapping[str, Any], ...] = ()
+    labels: tuple[str, ...] = ()
+
+
+def conversations(
     manifest: RunManifest,
     frame: pd.DataFrame,
     *,
     events: frozenset[str],
     by: Literal["kind", "step"],
-) -> Iterator[tuple[Placed | None, str | None, list[Mapping[str, Any]] | None]]:
-    """Each row as ``(placed, exclusion, spans)``: exactly one of the first two is set."""
+) -> list[Conversation]:
+    """Each row of the run in the store's order, read once: exactly one of ``placed`` and
+    ``exclusion`` is set, and a placed row carries the label of every one of its steps."""
     cap = _cap_of(manifest)
-    columns = (frame["config_hash"], frame["outcome"], frame["error"], frame["trace"])
-    for config_hash, outcome, error, envelope in zip(*columns, strict=True):
+    columns = (
+        frame["config_hash"],
+        frame["seed"],
+        frame["replicate_index"],
+        frame["outcome"],
+        frame["error"],
+        frame["trace"],
+    )
+    out: list[Conversation] = []
+    for config_hash, seed, replicate, outcome, error, envelope in zip(*columns, strict=True):
+        who = (str(config_hash), int(seed), int(replicate))
         if envelope is None:
-            yield None, "no trace", None
+            out.append(Conversation(*who, None, "no trace", None))
             continue
         spans = _spans_of(envelope)
         if spans is None:
-            yield None, "unreadable trace", None
+            out.append(Conversation(*who, None, "unreadable trace", None))
             continue
         found = _leaves(spans)
         if not found:
-            yield None, "no leaf span", spans
+            out.append(Conversation(*who, None, "no leaf span", spans))
             continue
         if outcome is None and error != _TIMEOUT:
-            yield None, "no outcome, not a timeout", spans
+            out.append(Conversation(*who, None, "no outcome, not a timeout", spans))
             continue
         if outcome is None:
             reason = "timed out"
@@ -130,14 +158,31 @@ def _rows(
             reason = "died"
         else:
             reason = "ended"
+        by_id = {span["span_id"]: span for span in spans} if by == "step" else {}
+        labels = tuple(_label(leaf, by_id, by) for leaf in found)
         placed = Placed(
-            config_hash=str(config_hash),
+            config_hash=who[0],
             index=len(found),
             died=reason == "died",
-            cause=_cause_of(found[-1], spans, by),
+            cause=labels[-1],
             reason=reason,
         )
-        yield placed, None, spans
+        out.append(Conversation(*who, placed, None, spans, tuple(found), labels))
+    return out
+
+
+def placement(rows: Sequence[Conversation], manifest: RunManifest, tally: RunTally) -> Placement:
+    """Where the rows landed: the placed ones in order, and the count of each exclusion."""
+    excluded = {reason: 0 for reason in EXCLUSIONS}
+    for row in rows:
+        if row.exclusion is not None:
+            excluded[row.exclusion] += 1
+    return Placement(
+        rows=tuple(row.placed for row in rows if row.placed is not None),
+        excluded=excluded,
+        tally=tally,
+        cap=_cap_of(manifest),
+    )
 
 
 def place(
@@ -148,29 +193,16 @@ def place(
     events: frozenset[str],
     by: Literal["kind", "step"],
 ) -> Placement:
-    rows: list[Placed] = []
-    excluded = {reason: 0 for reason in EXCLUSIONS}
-    for placed, exclusion, _ in _rows(manifest, frame, events=events, by=by):
-        if placed is not None:
-            rows.append(placed)
-        elif exclusion is not None:
-            excluded[exclusion] += 1
-    return Placement(rows=tuple(rows), excluded=excluded, tally=tally, cap=_cap_of(manifest))
+    return placement(conversations(manifest, frame, events=events, by=by), manifest, tally)
 
 
-def _reached_by(
-    manifest: RunManifest,
-    frame: pd.DataFrame,
-    *,
-    events: frozenset[str],
-    by: Literal["kind", "step"],
-) -> dict[str, int]:
+def _reached_by(rows: Sequence[Conversation]) -> dict[str, int]:
     """For each ``step_name`` any span carries, the number of placed rows carrying it."""
     counts: dict[str, int] = {}
-    for placed, _, spans in _rows(manifest, frame, events=events, by=by):
-        if placed is None or spans is None:
+    for row in rows:
+        if row.placed is None or row.spans is None:
             continue
-        names = {span.get("step_name") for span in spans}
+        names = {span.get("step_name") for span in row.spans}
         for name in names:
             if isinstance(name, str):
                 counts[name] = counts.get(name, 0) + 1

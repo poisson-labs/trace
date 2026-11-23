@@ -31,6 +31,10 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
   table of its own.
 - A run's note, what `poisson-prove sweep --note` recorded as changed for it, shows on a line
   of its own under the run's line in each report.
+- `where` and `compare` JSON carry `steps`: for every step, how many tries reached it and how
+  many ended there, and how. With `--timings` they also carry `timings`: each try's step start
+  times and durations from its spans, and the spans above its steps, so the tree can be drawn,
+  no text; `--timings-of` asks for named tries only (`docs/handover.md`).
 
 ### Setting up
 
@@ -82,6 +86,7 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
 - `--save` on `where`, `compare`, `fix-check` and `changes` keeps the verdict in the store.
 - `--out DIR` writes the result as a folder of files, and `poisson-trace handover --check DIR`
   checks that folder file by file (`docs/handover.md`).
+- `handover --check` holds `steps` and `timings` to their shape when a bundle has them.
 - `poisson-trace ui` builds pages over a store's runs and saved verdicts, and
   `poisson-trace report DIR` writes one result as a single HTML page that opens from disk.
 - `--out DIR` and `where --svg FILE` are checked before any run is read, so a folder or file
@@ -131,7 +136,7 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
 
 - The examples in `--help` name the store folder `prove-runs`, the folder the published Prove
   writes. They named `proofload-runs` before. Nothing else a command prints has moved but
-  the six items below.
+  the nine items below.
 - The help of the command now says Trace reads the results of ten other tools, and names all
   of them.
 - The two refusals that list the verbs now list them in the order the help does.
@@ -145,6 +150,13 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
 - `handover --check` says a whole bundle's `result.json` has every key of the table, where
   0.1.0a1 said every promised key: every public key is now promised, and the check holds the
   keys of the handover page's table.
+- The JSON of `where` and `compare` gains `steps`, and their `--help` lists `--timings` and
+  `--timings-of`.
+- `handover --help` says the check holds every key of the table, where 0.1.0a1 said every
+  file, digest and promised key.
+- `where --by step` returns on a hand-written trace whose parent links go round in a circle,
+  and labels the step `unnamed`, where 0.1.0a1 never returned. A store Prove wrote holds no
+  such trace.
 
 ## 0.1.0a1 — pre-release
 

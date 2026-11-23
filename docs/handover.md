@@ -91,11 +91,179 @@ What the main keys of `result.json` mean:
 | `next` | the command of the `next:` line, or null |
 | `note` | a list of sentences, empty when there is none |
 | `run` or `runs` | the run or the two runs read, each with its `run_id` and its `run_name` |
+| `steps` | on `where` and `compare`: for every step, how many tries reached it and how many ended there. Optional; see [Steps and timings](#steps-and-timings) |
+| `timings` | on `where` and `compare` run with `--timings` or `--timings-of`: each try's step times. Optional; see [Steps and timings](#steps-and-timings) |
 | `cannot_say` | the sentences the report ends with: what this result cannot say |
 | `versions` | the versions of Trace and Prove that wrote it |
 
 A number is a JSON number and never `NaN`; a value that is missing is null. The same inputs
 give the same bytes.
+
+## Steps and timings
+
+The JSON of `where` and `compare` carries two keys for a reader that draws the run step by
+step: `steps`, which counts the tries at each step, and `timings`, which gives each try's
+step times. Both are in `--json` and in `result.json`, just before `cannot_say`. Neither is
+in the report, the table or the charts.
+
+Both keys are optional. A reader must accept a `where/1` or `compare/1` document without
+them: one written before they were added has neither, and `timings` is there only when it was
+asked for. A verdict saved by an earlier Trace keeps the `result.json` it was saved with, so a
+bundle written from it today has no `steps`.
+
+### `steps`
+
+A step is one leaf span of a try's trace, in the order the spans started: step 1 is its first
+leaf, step 2 its second. `steps` lists every step, from the first to the last step any try
+reached, with none left out. On a run with no traces it is an empty list.
+
+<!-- command -->
+```
+cd my-agent && poisson-trace where latest --json
+```
+
+<!-- excerpt exit=0 -->
+```
+  "steps": [
+    {
+      "step": 1,
+      "reached": 21,
+      "ended_here": 0,
+      "ends": {
+        "died": 0,
+        "ended": 0,
+        "timed out": 0,
+        "capped": 0
+      },
+      "died_by": [],
+      "labels": [
+        {
+          "label": "llm",
+          "count": 21
+        }
+      ]
+    },
+```
+
+| key | what it is |
+|---|---|
+| `step` | the step's number, from 1 |
+| `reached` | the tries that got to this step or past it. Only tries placed on a step are counted: at step 1 it equals `run.placement.placed` |
+| `ended_here` | the tries whose last step this is, however they ended. At every step, `reached` less the next step's `reached` is `ended_here` |
+| `ends` | `ended_here` split by how the try ended, always with the four words `died`, `ended`, `timed out` and `capped`, zeros kept. `capped` means the try's record stops here because its trace reached the run's span limit |
+| `died_by` | the tries that failed here, by the step's label: a list of `{label, count}` in the order of `causes`, with no zero counts |
+| `labels` | the tries that reached this step, by the label the step had for each of them: a list of `{label, count}` with no zero counts. Two tries' third steps can be of different kinds, so one step can have several labels |
+
+A label is the kind of the step's span under `--by kind`, and the nearest declared step name
+above it under `--by step`. `--by` changes the labels and nothing else: the step numbers and
+the counts are the same under both.
+
+The curve and the header agree with `steps`. The curve's points are the steps where a try
+failed, with `at_risk` equal to `reached` and `died` equal to `ends.died`; each row of
+`causes` has the deaths its label has in `died_by` over all steps; and the sum of each `ends`
+word over the steps is that word's count in `run.placement`.
+
+On `compare`, `steps` is `{"a": [...], "b": [...]}`, one list for each run. Both lists run to
+the later of the two runs' last steps, so entry `i` of each is the same step. A step one run
+never reached is listed for it with every count zero and empty lists. Each list counts every
+try its run placed, not only those on the inputs both runs share.
+
+### `timings`
+
+`timings` is written when the command carries `--timings`, for every try of the run, or
+`--timings-of HASH:REPLICATE`, for the tries named. It holds times, kinds, ids and labels. It
+holds no span name and nothing a span recorded: no prompt, no output, no tool argument.
+
+<!-- command -->
+```
+cd my-agent && poisson-trace where latest --timings-of 1a2aa279c5e046bc:0 --json
+```
+
+<!-- excerpt exit=0 -->
+```
+  "timings": {
+    "most_steps": null,
+    "conversations": 21,
+    "listed": 1,
+    "no_end": 0,
+    "parents_no_end": 0,
+    "no_tree": 0,
+    "asked": [
+      {
+        "config_hash": "1a2aa279c5e046bc",
+        "replicate_index": 0
+      }
+    ],
+    "not_listed": [],
+```
+
+After these comes `items`, one object for each try listed. Shape only, with made-up values:
+
+```json
+{
+  "config_hash": "3f9c0a1b2d4e5f60",
+  "seed": 1832749261,
+  "replicate_index": 0,
+  "end": "died",
+  "cause": "tool",
+  "steps": [
+    {"step": 1, "offset_ns": 1250000, "duration_ns": 812340000, "kind": "llm", "label": "llm", "span_id": "0000000a5e1f9c2b", "parent_id": "00000009c4d2a7e0"},
+    {"step": 2, "offset_ns": 815002000, "duration_ns": 40211000, "kind": "tool", "label": "tool", "span_id": "0000000b77d0e3a1", "parent_id": "00000009c4d2a7e0"}
+  ],
+  "parents": [
+    {"span_id": "0000000812ab90f1", "parent_id": null, "kind": "agent", "offset_ns": 0, "duration_ns": 861500000},
+    {"span_id": "00000009c4d2a7e0", "parent_id": "0000000812ab90f1", "kind": "agent", "offset_ns": 1100000, "duration_ns": 856000000}
+  ]
+}
+```
+
+| key | what it is |
+|---|---|
+| `most_steps` | with `--timings`, the most steps and parent spans listed for one run, 20,000; null with `--timings-of`, which has no limit |
+| `conversations` | the tries the run placed on a step, `run.placement.placed` |
+| `listed` | the tries in `items` |
+| `no_end` | the listed steps whose `duration_ns` is null |
+| `parents_no_end` | the listed parent spans whose `duration_ns` is null |
+| `no_tree` | the listed tries whose `parents` is null |
+| `asked` | null with `--timings`; with `--timings-of`, the tries named, each `{config_hash, replicate_index}`, once each and in that order |
+| `not_listed` | the tries named and not listed, each `{config_hash, replicate_index, why}`; always empty with `--timings` |
+| `items[].config_hash`, `seed`, `replicate_index` | which try it is, as Prove stored it. `config_hash` and `replicate_index` together name one try of a run |
+| `items[].end` | how it ended: `died`, `ended`, `timed out` or `capped` |
+| `items[].cause` | the label of its last step when it died, else null |
+| `items[].steps` | its steps, from 1 to its own last step |
+| `offset_ns` | when the span started, in whole nanoseconds after the earliest start of any span of the try. It is never negative |
+| `duration_ns` | the span's end less its start, in whole nanoseconds; null for a span with no recorded end, such as the one open when a try timed out |
+| `kind` | the span's kind: `llm`, `tool`, `retrieval`, `db`, `http`, `agent` or `other`, or `unknown` |
+| `label` | the step's label, the word `steps` and `causes` use |
+| `span_id` | the span's id as stored when it is printable and at most 80 characters, else `sha256:` and 16 hex digits of its digest |
+| `parent_id` | the `span_id` of the span's parent in the same try, written by the same rule so the two are equal as text; null for a span with no parent, and for one whose parent is not a span of the trace |
+| `items[].parents` | the spans above the steps, such as an agent around its model and tool calls: each once, by start, with `span_id`, `parent_id`, `kind`, `offset_ns` and `duration_ns`. Empty when every span is a step |
+
+To draw a try as a tree, join each `parent_id` to the `span_id` it names in `parents`. Every
+`parent_id` that is not null names exactly one entry of the same item's `parents`, and a span
+with a null `parent_id` is a root; a try can have several. `parents` is null, and every
+`parent_id` with it, when the links of a trace cannot be followed, because two of its spans
+share an id or its parent links go round in a circle. A store Prove wrote holds no such trace.
+
+Only tries placed on a step are listed, the same tries `steps` counts, in the order of
+`config_hash` and then `replicate_index`. On `compare`, `timings` is `{"a": {...}, "b": {...}}`,
+each side as above for its run. A try and its pair in the other run have the same
+`config_hash` and `replicate_index`.
+
+**The limit, with `--timings`.** One run's list holds at most 20,000 spans, its steps and
+parent spans counted together: it stops before the first try that would take it past that. A
+try is listed whole or not at all, so `listed` is
+then below `conversations`, and the report and `result.json`'s `note` say so in one line, such
+as `timings lists 812 of 1,024 conversations: listing more would pass 20,000 steps and parent
+spans`. `steps` is never cut.
+
+**Named tries, with `--timings-of`.** `HASH` is the try's `config_hash` in full and
+`REPLICATE` its `replicate_index`, as `timings` prints them. The option repeats, and on
+`compare` one list of names applies to both runs, so one name fetches a pair. Each try named
+is listed whole, with no limit. A name the run holds and did not place is in `not_listed`
+with why: `no trace`, `unreadable trace`, `no leaf span` or `no outcome, not a timeout`. On
+`compare`, a name only one run holds is in the other run's `not_listed` as `not in the run`.
+A name that no run of the command holds is refused with exit code 1 and nothing written.
 
 ## Checking a bundle
 
@@ -114,9 +282,10 @@ next: poisson-trace report bundle
 ```
 
 It checks that every file `handover.json` and `artifact.json` list is there with the digest
-and the size listed; that `result.json` has every key of the table above; that the first
-line of `report.md` is the verdict and the sentence of `result.json`; and that nothing Trace
-never hands over is in it. It exits 0 when the bundle is whole. It exits 4 when it is not,
+and the size listed; that `result.json` has every key of the table above; that `steps` and
+`timings`, when a `where` or `compare` bundle has them, have the keys and the types the last
+section gives; that the first line of `report.md` is the verdict and the sentence of
+`result.json`; and that nothing Trace never hands over is in it. It exits 0 when the bundle is whole. It exits 4 when it is not,
 with one line that says what is wrong. It exits 1 when `DIR` is missing, is not a folder or
 holds no `handover.json`. Run it in your own tests over what Trace wrote: it is the test both
 sides share.

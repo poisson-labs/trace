@@ -54,11 +54,12 @@ CASES = _cases()
 # and next: poisson-trace report bundle; compare's bundle lists its four chart files besides
 # That step's line now says result.json has every key of the table, where it said every
 # promised key: every public key is promised, and the check holds only the table's keys.
+# The --json steps of where and compare carry the steps key before cannot_say.
 PINNED: dict[str, list[tuple[int, str, str]]] = {
     'save: where': [
         (0, '059ed63192014937228496010e478c4b67d159e5988de759d30e458e688ddbf9',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, '61339e61de9f31b4b11956cfd6b5649e3dcbea2b80fa73ebf3ee9e49cd14bc5f',
+        (0, '6bcb9a0131b253b2e7539e74ae19ccec39ead2527a4128ac1392d3a8ecae2b13',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'out: where': [
@@ -68,13 +69,13 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),
-        (0, '61339e61de9f31b4b11956cfd6b5649e3dcbea2b80fa73ebf3ee9e49cd14bc5f',
+        (0, '6bcb9a0131b253b2e7539e74ae19ccec39ead2527a4128ac1392d3a8ecae2b13',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'save: compare': [
         (0, 'ae881376b33d74808916ee7c8bf4cee592f308e1d70be9cf531188b3ba6a0ef0',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, '6ed2cc20b2e45bca98ad5c63dd0faec496672b18fb7d167f0ff1ef1b6750f5bf',
+        (0, '27304d758bdaec1a6fbc23518e1ada837df872156f324fcaa821b95d64b8c54a',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'out: compare': [
@@ -84,7 +85,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),
-        (0, '6ed2cc20b2e45bca98ad5c63dd0faec496672b18fb7d167f0ff1ef1b6750f5bf',
+        (0, '27304d758bdaec1a6fbc23518e1ada837df872156f324fcaa821b95d64b8c54a',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'save: fix-check': [

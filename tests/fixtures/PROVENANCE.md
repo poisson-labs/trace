@@ -874,3 +874,39 @@ cap was $0.50. Of these, 37 calls ($0.001012) were the first, unstreamed pair an
 
 Kept: run, trace, session, dataset and example ids, and the session's git `remote_url`, branch
 and commit (this public repository's). The same scan found no hit.
+
+## Added for the steps and timings keys
+
+`steps-timings/store/` is a Prove store of four small runs, written on 2026-11-23 by
+`steps-timings/make.py` with poisson-prove 0.4.0 (from PyPI) under Python 3.12.13, for the tests
+of `steps` and `timings` in `where` and `compare`. No model was called and nothing was fetched:
+every trace is built by hand at fixed times, and the recipe writes it through Prove's own
+`Store.create_run` and `Store.append`, the calls Trace's importer makes, so Prove checked each
+trace and split it into its envelope and its content as it does for every run. The run ids, salts,
+times and span ids are fixed in the recipe, so a second run writes the same files byte for byte
+(checked: two runs, no difference).
+
+```
+python tests/fixtures/steps-timings/make.py tests/fixtures/steps-timings
+```
+
+The four runs, named `A`, `B`, `C` and `D`, are on three inputs (`alpha`, `beta`, `gamma`). The
+recipe's opening says what each conversation holds: deaths, ends, a capped conversation and a
+timeout; traces nested four deep, two roots, an orphan, a flat trace, parents with no end, a
+parent id of 81 characters, a leaf id of 80, and two leaf ids that are written as digests (90
+characters, and one holding a tab); leaves that start before their parent or their root, that run
+in parallel, and that start in the same nanosecond; a row with no span and a row with no outcome that
+did not time out. `C` repeats `A` under another salt.
+
+Marked text is planted in span names, inputs, outputs and a tool-call-arguments attribute
+(`PLANTED-NAME`, `PLANTED-PROMPT`, `PLANTED-OUTPUT`, `PLANTED-ARG`), so the tests can show that none
+of it reaches Trace's JSON. Prove moves the inputs, outputs and the attribute out of the envelope;
+the names stay in it, as they do in every store.
+
+**The one edit, on purpose.** Run `D` holds three traces Prove refuses: two spans with one id, a
+parent cycle, and spans whose end is before their start or is not a whole number. Prove's `append`
+cannot store such a trace (it keeps it out of the trace columns), so the recipe writes `D` through
+`Store` like the others and then rewrites those three rows' envelopes in the episodes file with
+pyarrow, as a store written by hand could hold them. Every other value of those rows, and every
+other row, is as Prove wrote it. Prove's reader hands such an envelope to Trace unchecked, which is
+what the tests need: Trace's handling of a trace it cannot follow.

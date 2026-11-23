@@ -103,12 +103,12 @@ tables
 ## api.where
 
 ```python
-api.where(store, run, *, event=None, config=None, by='kind', at=(), boot=1000, seed=0, **reader_flags)
+api.where(store, run, *, event=None, config=None, by='kind', at=(), timings=False, timings_of=(), boot=1000, seed=0, **reader_flags)
 ```
 
-`poisson-trace where`: where in the workflow the episodes of one stored run died. `WhereResult` holds the JSON's keys (`run`, `curve`, `median_step`, `at`, `causes`, `bootstrap`, `note`, `next`) and the report's `summary` and `before_you_act`; `to_svg()` is the curve as SVG text and `write_svg(path, force=False)` writes it, as `--svg` does.
+`poisson-trace where`: where in the workflow the episodes of one stored run died. `WhereResult` holds the JSON's keys (`run`, `curve`, `median_step`, `at`, `causes`, `bootstrap`, `steps`, `timings`, `note`, `next`) and the report's `summary` and `before_you_act`; `to_svg()` is the curve as SVG text and `write_svg(path, force=False)` writes it, as `--svg` does. `steps` is always there. `timings` is `None` unless the call asks for it: `timings=True` for every try of the run, as `--timings` does, or `timings_of=[(config_hash, replicate_index), ...]` for the tries named, as `--timings-of` does ([the handover page](handover.md#steps-and-timings)).
 
-**Refusals.** `api.Refusal` for an unknown run, an unknown event, a store that is not there, a names file that is not one, a bootstrap of none, a negative seed; with exit code 2 when neither the call nor the config gives a store or the failures. `ValueError` for a value the flag would refuse: a `by` that is neither `kind` nor `step`, a `boot` or an `at` step that is not a whole number, an `event` that is not a list, a reader's flag for runs read from a store.
+**Refusals.** `api.Refusal` for an unknown run, an unknown event, a store that is not there, a names file that is not one, a bootstrap of none, a negative seed, a `timings_of` pair that is no try of the run; with exit code 2 when neither the call nor the config gives a store or the failures. `ValueError` for a value the flag would refuse: a `by` that is neither `kind` nor `step`, a `boot` or an `at` step that is not a whole number, an `event` that is not a list, a `timings_of` item that is not a `(config_hash, replicate_index)` pair, a reader's flag for runs read from a store.
 
 ```python
 from poisson_trace import api
@@ -128,12 +128,12 @@ poisson-trace compare "agent before" "agent after" --store store --event violate
 ## api.compare
 
 ```python
-api.compare(store, a, b, *, event=None, config=None, by='kind', at=(), max_mde_hr=None, alpha=0.05, verdicts=None, **reader_flags)
+api.compare(store, a, b, *, event=None, config=None, by='kind', at=(), timings=False, timings_of=(), max_mde_hr=None, alpha=0.05, verdicts=None, **reader_flags)
 ```
 
-`poisson-trace compare`: a before (A) and an after (B), compared by the log-rank test stratified by config cell. `CompareResult` holds `comparison`, `per_cause`, `at` and the rest of the JSON, with `failure_taxonomy_diff` and `continuous_measures` as a save writes them.
+`poisson-trace compare`: a before (A) and an after (B), compared by the log-rank test stratified by config cell. `CompareResult` holds `comparison`, `per_cause`, `at`, `steps`, `timings` and the rest of the JSON, with `failure_taxonomy_diff` and `continuous_measures` as a save writes them. `steps` holds a list for each run under `a` and `b`. `timings` is `None` unless asked for with `timings=True` or `timings_of=[...]`, as on `api.where`; the pairs named apply to both runs.
 
-**Refusals.** `api.Refusal` for a run with no traces (fix-check reads it), no death in either run, no common config cell, an alpha outside 0 to 1; with exit code 2 when nothing gives a store or the failures. `max_mde_hr` has no default: left out, with none in the config, it is refused. `ValueError` for a value the flag would refuse (an `alpha` given as text).
+**Refusals.** `api.Refusal` for a run with no traces (fix-check reads it), no death in either run, no common config cell, an alpha outside 0 to 1, a `timings_of` pair that is a try of neither run; with exit code 2 when nothing gives a store or the failures. `max_mde_hr` has no default: left out, with none in the config, it is refused. `ValueError` for a value the flag would refuse (an `alpha` given as text).
 
 ```python
 from poisson_trace import api

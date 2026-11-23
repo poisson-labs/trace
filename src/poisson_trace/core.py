@@ -38,6 +38,8 @@ DOES = "Poisson Trace reads stored runs"
 _COUNTING = ("where", "compare", "fix-check", "changes")
 # the complete runs the listing shows, newest first, before it says how many more there are
 _LISTED = 50
+#: The most steps and parent spans ``timings`` lists for one run when it lists the whole run.
+MOST_STEPS = 20_000
 
 
 class _Refusal(look.Refused):
@@ -926,11 +928,72 @@ def _settings(ns: argparse.Namespace, verb: str, selecting: Any = None) -> dict[
         came["max_change"] = _came(ns, "--max-change", held is not None and bool(held.max_change))
     if verb in _TWO_RUNS:
         settings["verdicts"], came["verdicts"] = verdicts, _came(ns, "--verdicts")
+    if verb in ("where", "compare") and (ns.timings or ns.timings_of):
+        # asked for by --timings or by --timings-of, which implies it: either way it was asked
+        # on the command, so the two ways of asking for the same conversations are one result
+        settings["timings"], came["timings"] = True, "flag"
+        named = _timings_named(ns)
+        if named is not None:
+            settings["timings_of"] = [[config_hash, replicate] for config_hash, replicate in named]
+            came["timings_of"] = "flag"
     settings["from"] = came
     settings["stores"] = (
         [ns.typed_store] if held is not None and ns.typed_store in held.named else []
     )
     return settings
+
+
+def _timings_named(ns: argparse.Namespace) -> list[tuple[str, int]] | None:
+    """The conversations ``--timings-of`` names, each once and in ``(config_hash,
+    replicate_index)`` order whatever order they were given in; None when the whole run is
+    asked for or ``timings`` is not."""
+    if not ns.timings_of:
+        return None
+    return sorted({(str(config_hash), int(replicate)) for config_hash, replicate in ns.timings_of})
+
+
+def _refuse_unheld(
+    named: Sequence[tuple[str, int]], holds: Collection[tuple[str, int]], of: str, following: str
+) -> None:
+    """Refuse a ``--timings-of`` name that is a conversation of no run read: a mistyped name
+    is told at once, where a conversation the run holds and did not place is a result."""
+    from poisson_trace import steps
+
+    words = [steps.name_word(name) for name in steps.missing(named, holds)]
+    if not words:
+        return
+    if len(words) == 1:
+        raise _Refusal(
+            f"--timings-of names {words[0]}, which is not a conversation {of}", following
+        )
+    raise _Refusal(
+        f"--timings-of names {', '.join(words[:-1])} and {words[-1]}, "
+        f"which are not conversations {of}",
+        following,
+    )
+
+
+def _timings(
+    ns: argparse.Namespace, rows: Sequence[Any], side: str = ""
+) -> tuple[dict[str, Any], list[str]]:
+    """One run's ``timings`` and the line to print with it, if any: that the ceiling cut the
+    whole-run list short, or that some of the conversations named are not listed. ``side`` says
+    which run of two the line is about."""
+    from poisson_trace import steps
+
+    named = _timings_named(ns)
+    made = steps.timings_of(rows, named, MOST_STEPS)
+    document = made.document
+    lines: list[str] = []
+    if made.cut:
+        lines.append(
+            f"timings lists {count(document['listed'])} of {count(document['conversations'])} "
+            f"conversations{side}: listing more would pass {count(MOST_STEPS)} steps and parent "
+            "spans"
+        )
+    elif document["not_listed"]:
+        lines.append(steps.not_listed_line(document, side))
+    return document, lines
 
 
 def _team(ns: argparse.Namespace) -> tuple[Mapping[str, str], tuple[Any, ...], Any]:
@@ -1448,6 +1511,8 @@ class Counted:
     signals: tuple[dict[str, tuple[Any, ...]], dict[str, tuple[Any, ...]]] | None = None
     diff: tuple[dict[str, Any], str | None] | None = None
     measures: Any = None
+    # what to say of ``timings`` beside the JSON: a list the ceiling cut, or names not listed
+    timings_lines: tuple[str, ...] = ()
 
     def diff_part(self) -> None:
         """The failure-type diff of a verb of two runs, read now if not yet: each run's rows as
@@ -1541,6 +1606,7 @@ def _added(c: Counted) -> tuple[dict[str, Any], list[str]]:
             notes.append(c.diff[1])
     if c.measures is not None:
         added["continuous_measures"] = c.measures.to_dict()
+    notes.extend(c.timings_lines)
     return added, notes
 
 
@@ -1572,6 +1638,7 @@ def details(c: Counted, d: Delivered) -> list[str]:
     out = []
     if c.ns.joined is not None:
         out.append(_verdicts_line(c.ns.joined))
+    out.extend(f"  {line}" for line in c.timings_lines)
     if d.svg is not None:
         out.append(f"  wrote  {d.svg}")
     if d.out is not None:
@@ -2000,8 +2067,9 @@ def where(ns: argparse.Namespace) -> Counted:
     import poisson_prove
     from poisson_prove.steps import declaration_check
 
-    from poisson_trace import summary
-    from poisson_trace.clock import _reached_by, place
+    from poisson_trace import steps, summary
+    from poisson_trace.clock import _reached_by, conversations
+    from poisson_trace.clock import placement as placement_of
     from poisson_trace.report import CANNOT_SAY, WhereReport
     from poisson_trace.survival import competing, competing_band
 
@@ -2016,7 +2084,16 @@ def where(ns: argparse.Namespace) -> Counted:
             f"unknown event {', '.join(missing)}; the run carries the outcomes: "
             f"{', '.join(sorted(present)) or 'none'}"
         )
-    placement = place(manifest, frame, tally, events=events, by=ns.by)
+    rows = conversations(manifest, frame, events=events, by=ns.by)
+    named = _timings_named(ns)
+    if named is not None:
+        _refuse_unheld(
+            named,
+            steps.held(rows),
+            f"of the run {look.word(index.word_for(run))}",
+            _next(index, "where", (run,), ns, "--timings", "--json"),
+        )
+    placement = placement_of(rows, manifest, tally)
     index_steps = _arrays(placement)[0]
     causes = _ordered({p.cause for p in placement.rows if p.died})
     tries = _tries(placement)
@@ -2085,7 +2162,11 @@ def where(ns: argparse.Namespace) -> Counted:
     check = declaration_check(manifest, frame)
     if check is not None:
         data["declared"] = check.provenance()
-        data["_reached"] = _reached_by(manifest, frame, events=events, by=ns.by)
+        data["_reached"] = _reached_by(rows)
+    data["steps"] = steps.steps_of(rows, causes, steps.last_step(rows), _ordered)
+    timings_lines: list[str] = []
+    if ns.timings or named is not None:
+        data["timings"], timings_lines = _timings(ns, rows)
     data["cannot_say"] = list(CANNOT_SAY)
     traced = _traced(frame)
     svg_refusal = None
@@ -2139,6 +2220,7 @@ def where(ns: argparse.Namespace) -> Counted:
         _settings(ns, "where"),
         ns,
         svg_refusal=svg_refusal,
+        timings_lines=tuple(timings_lines),
     )
 
 
@@ -2185,8 +2267,9 @@ def compare(ns: argparse.Namespace) -> Counted:
     import numpy as np
     import poisson_prove
 
-    from poisson_trace import summary
-    from poisson_trace.clock import place
+    from poisson_trace import steps, summary
+    from poisson_trace.clock import conversations
+    from poisson_trace.clock import placement as placement_of
     from poisson_trace.report import CANNOT_SAY, CompareReport
     from poisson_trace.survival import (
         bh,
@@ -2233,8 +2316,21 @@ def compare(ns: argparse.Namespace) -> Counted:
         for e in sorted(events)
         if (e in out_a) != (e in out_b)
     ]
-    placement_a = place(manifest_a, frame_a, tally_a, events=events, by=ns.by)
-    placement_b = place(manifest_b, frame_b, tally_b, events=events, by=ns.by)
+    read_a = conversations(manifest_a, frame_a, events=events, by=ns.by)
+    read_b = conversations(manifest_b, frame_b, events=events, by=ns.by)
+    asked = _timings_named(ns)
+    if asked is not None:
+        # a setting the command typed goes on the next command; one trace.toml gave is read
+        # there again
+        carried = ["--max-mde-hr", f"{ns.max_mde_hr:g}"] if "--max-mde-hr" in ns.typed_flags else []
+        _refuse_unheld(
+            asked,
+            steps.held(read_a) | steps.held(read_b),
+            "of A (before) or of B (after)",
+            _next(index, "compare", (run_a, run_b), ns, *carried, "--timings", "--json"),
+        )
+    placement_a = placement_of(read_a, manifest_a, tally_a)
+    placement_b = placement_of(read_b, manifest_b, tally_b)
     rows_a, rows_b = placement_a.rows, placement_b.rows
     if not any(p.died for p in rows_a) and not any(p.died for p in rows_b):
         raise _Refusal(
@@ -2336,6 +2432,14 @@ def compare(ns: argparse.Namespace) -> Counted:
         qs = bh(np.array([r["p"] for r in per], dtype=np.float64), ns.alpha)
         for row, q_value in zip(per, qs, strict=True):
             row["q"] = float(q_value)
+    # both runs on one axis: each side is listed to the later of the two runs' last steps
+    last = max(steps.last_step(read_a), steps.last_step(read_b))
+    timings: dict[str, Any] = {}
+    timings_lines: list[str] = []
+    if ns.timings or asked is not None:
+        for arm, read, side in (("a", read_a, " of A (before)"), ("b", read_b, " of B (after)")):
+            timings[arm], lines = _timings(ns, read, side)
+            timings_lines += lines
     data: dict[str, Any] = {
         "schema": "poisson-trace.compare/1",
         "prove": {"version": poisson_prove.__version__, "store": _store_shown(ns)},
@@ -2367,6 +2471,11 @@ def compare(ns: argparse.Namespace) -> Counted:
             "guidance": guidance,
         },
         "per_cause": per,
+        "steps": {
+            "a": steps.steps_of(read_a, causes, last, _ordered),
+            "b": steps.steps_of(read_b, causes, last, _ordered),
+        },
+        **({"timings": timings} if timings else {}),
         "cannot_say": list(CANNOT_SAY),
         "_observed_b": float(sum(p.died for p in common_b)),
         "_deaths_common": deaths_common,
@@ -2410,6 +2519,7 @@ def compare(ns: argparse.Namespace) -> Counted:
         arms=("a", "b"),
         labels=("A", "B"),
         signals=signals,
+        timings_lines=tuple(timings_lines),
     )
     return _with_breakdown(counted)
 

@@ -45,11 +45,11 @@ CANNOT_SAY = (
 # the verdict and its sentence after the schema, next last (docs/cli-look.md, rule 9)
 WHERE_KEYS = (
     "schema", "verdict", "sentence", "prove", "run", "events", "clock", "curve", "median_step",
-    "at", "causes", "bootstrap", "declared", "cannot_say", "next",
+    "at", "causes", "bootstrap", "declared", "steps", "cannot_say", "next",
 )
 COMPARE_KEYS = (
     "schema", "verdict", "sentence", "prove", "runs", "events", "clock", "at", "comparison",
-    "per_cause", "cannot_say", "failure_taxonomy_diff", "next",
+    "per_cause", "steps", "cannot_say", "failure_taxonomy_diff", "next",
 )
 
 

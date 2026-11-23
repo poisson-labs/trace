@@ -691,12 +691,127 @@ def _check_result(folder: Path, verb: str) -> dict[str, Any]:
             for key in ("run_id", "run_name"):
                 if not isinstance(run.get(key), str):
                     raise Invalid(f"result.json's runs.{arm} lacks its {key}")
+    if verb in ("where", "compare"):
+        _check_steps_and_timings(result, verb)
     if result["verdict"] not in VERDICTS[verb]:
         raise Invalid(
             f"result.json's verdict {json.dumps(result['verdict'])} is not one {verb} gives "
             f"({', '.join(VERDICTS[verb])})"
         )
     return dict(result)
+
+
+def _is_whole(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _is_whole_or_null(value: Any) -> bool:
+    return value is None or _is_whole(value)
+
+
+def _is_text_or_null(value: Any) -> bool:
+    return value is None or isinstance(value, str)
+
+
+def _has(value: Any, shape: Mapping[str, Any]) -> bool:
+    """Whether ``value`` is an object holding every key of ``shape``, each as its check takes
+    it. A key that is not there fails, where a check would have taken null."""
+    return isinstance(value, Mapping) and all(
+        key in value and holds(value[key]) for key, holds in shape.items()
+    )
+
+
+def _each(shape: Mapping[str, Any]) -> Any:
+    """A check for a list whose every entry has ``shape``."""
+    return lambda value: isinstance(value, list) and all(_has(entry, shape) for entry in value)
+
+
+def _is_text(value: Any) -> bool:
+    return isinstance(value, str)
+
+
+def _is_steps(value: Any) -> bool:
+    from poisson_trace.clock import REASONS
+
+    counts = _each({"label": _is_text, "count": _is_whole})
+    return bool(
+        _each(
+            {
+                "step": _is_whole,
+                "reached": _is_whole,
+                "ended_here": _is_whole,
+                "ends": lambda ends: _has(ends, dict.fromkeys(REASONS, _is_whole)),
+                "died_by": counts,
+                "labels": counts,
+            }
+        )(value)
+    )
+
+
+def _is_timings(value: Any) -> bool:
+    from poisson_trace.clock import EXCLUSIONS
+    from poisson_trace.steps import NOT_IN_RUN
+
+    name = {"config_hash": _is_text, "replicate_index": _is_whole}
+    step = {
+        "step": _is_whole,
+        "offset_ns": _is_whole,
+        "duration_ns": _is_whole_or_null,
+        "kind": _is_text,
+        "label": _is_text,
+        "span_id": _is_text,
+        "parent_id": _is_text_or_null,
+    }
+    parent = {
+        "span_id": _is_text,
+        "parent_id": _is_text_or_null,
+        "kind": _is_text,
+        "offset_ns": _is_whole,
+        "duration_ns": _is_whole_or_null,
+    }
+    item = {
+        **name,
+        "seed": _is_whole,
+        "end": _is_text,
+        "cause": _is_text_or_null,
+        "steps": _each(step),
+        "parents": lambda parents: parents is None or _each(parent)(parents),
+    }
+    return _has(
+        value,
+        {
+            "most_steps": _is_whole_or_null,
+            "conversations": _is_whole,
+            "listed": _is_whole,
+            "no_end": _is_whole,
+            "parents_no_end": _is_whole,
+            "no_tree": _is_whole,
+            "asked": lambda asked: asked is None or _each(name)(asked),
+            "not_listed": _each({**name, "why": lambda why: why in (*EXCLUSIONS, NOT_IN_RUN)}),
+            "items": _each(item),
+        },
+    )
+
+
+def _check_steps_and_timings(result: Mapping[str, Any], verb: str) -> None:
+    """``steps`` and ``timings`` are optional: a result written before they were, or without
+    ``--timings``, lacks them and is whole. One that is there is held to its shape: the keys
+    and their types, for one run on ``where`` and for each of ``a`` and ``b`` on ``compare``.
+    What the values add up to is the verb's to get right, not a bundle's to prove."""
+    for key, holds, what in (
+        ("steps", _is_steps, "a list of steps"),
+        ("timings", _is_timings, "a timings object"),
+    ):
+        if key not in result:
+            continue
+        value = result[key]
+        if verb == "where":
+            if not holds(value):
+                raise Invalid(f"result.json's {key} is not {what}")
+            continue
+        for arm in ("a", "b"):
+            if not isinstance(value, Mapping) or arm not in value or not holds(value[arm]):
+                raise Invalid(f"result.json's {key}.{arm} is not {what}")
 
 
 def _check_report(folder: Path, result: Mapping[str, Any]) -> None:

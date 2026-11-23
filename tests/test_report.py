@@ -37,7 +37,7 @@ BANNED = ("better", "worse", "unchanged", "verified", "guaranteed", "pass", "sur
 # (and Python's statement), in the modules under ``ingest/`` only.
 READERS_WORD = re.compile(r"\bpass\b", re.IGNORECASE)
 # A banned word allowed in one sentence of one module, by the words around it.
-ALLOWED_PHRASES = (("stats/continuous.py", "looks better"),)
+ALLOWED_PHRASES = (("stats/continuous.py", "looks better"), ("core.py", "would pass"))
 
 
 # ---------- TR21 ----------

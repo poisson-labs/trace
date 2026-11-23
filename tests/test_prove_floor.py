@@ -14,8 +14,9 @@ reads every stored format from 1.0 to 1.2 alike (``prove_floor_support``'s openi
 - PF-7: what needs no Prove still needs none: every help and the version line.
 - PF-10: the store the floor made is the stored format's 1.2 and the store 0.1.3 made its 1.0,
   and they hold the same outcomes row for row.
-- PF-11: every verb reads the 1.2 store as it reads the 1.0 store: the same exit code and, once
-  what names the store's own runs and times is written out, the same report.
+- PF-11: every verb reads the 1.2 store as it reads the 1.0 store: the same exit code and,
+  once what names the store's own runs and times is written out, the same report, a run's
+  note lines aside.
 - PF-12: every write Trace makes into a 1.2 store leaves every key and file Prove wrote as it
   was, the 1.1 and 1.2 keys among them, and Prove reads the store after it.
 - PF-13: the two stores are listed whole in the fixture's digests.

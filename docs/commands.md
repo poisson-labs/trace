@@ -66,8 +66,7 @@ verbs:
                store
     doctor     whether this environment is ready, and what to run when it is
                not
-    handover   check a handover bundle --out wrote: every file, digest and
-               promised key
+    handover   check a handover bundle --out wrote: every key of the table
     ui         build the pages over a store's runs and saved verdicts, opened
                from disk
     report     write a handover bundle's verdict as one HTML page into it
@@ -373,7 +372,8 @@ poisson-trace where --help
 <!-- output exit=0 -->
 ```
 usage: poisson-trace where [-h] [--store ROOT] [--event NAME] [--config PATH]
-                           [--by kind|step] [--at STEP] [--boot B] [--seed S]
+                           [--by kind|step] [--at STEP] [--timings]
+                           [--timings-of HASH:REPLICATE] [--boot B] [--seed S]
                            [--svg FILE] [--force] [--save] [--out DIR]
                            [--json] [--debug]
                            RUN
@@ -385,39 +385,54 @@ and timing out are ends of their own, and only episodes at the capture cap are
 censored.
 
 positional arguments:
-  RUN             the run, by its name, latest, previous or its number in the
-                  runs listing ("#3"), or a folder of results
+  RUN                   the run, by its name, latest, previous or its number
+                        in the runs listing ("#3"), or a folder of results
 
 options:
-  -h, --help      show this help message and exit
-  --store ROOT    the folder Prove stored the runs in, or the name of a store
-                  trace.toml names (default: the store trace.toml names)
-  --event NAME    an outcome that counts as a death; repeatable (default: the
-                  failures trace.toml names)
-  --config PATH   the config file to read (default: trace.toml in the current
-                  folder, if any)
-  --by kind|step  label the step an episode died at by the kind of its last
-                  step, or by the nearest declared step name (default: kind)
-  --at STEP       a step to read the curve at; repeatable (no default)
-  --boot B        bootstrap resamples of the inputs, for the bands (default:
-                  1000)
-  --seed S        the bootstrap's seed (default: 0)
-  --svg FILE      also write the curve as an SVG file; a file that exists is
-                  refused without --force (no default)
-  --force         let --svg or --out replace what exists
-  --save          save the verdict as an artifact in the runs' store, under
-                  .poisson/artifacts (no default: nothing is written without
-                  it)
-  --out DIR       also write the saved verdict as a handover bundle into DIR,
-                  created; a DIR that exists is refused without --force (no
-                  default)
-  --json          print the JSON structure instead of the report
-  --debug         on an unexpected failure, print its details on stderr as
-                  well as in the log
+  -h, --help            show this help message and exit
+  --store ROOT          the folder Prove stored the runs in, or the name of a
+                        store trace.toml names (default: the store trace.toml
+                        names)
+  --event NAME          an outcome that counts as a death; repeatable
+                        (default: the failures trace.toml names)
+  --config PATH         the config file to read (default: trace.toml in the
+                        current folder, if any)
+  --by kind|step        label the step an episode died at by the kind of its
+                        last step, or by the nearest declared step name
+                        (default: kind)
+  --at STEP             a step to read the curve at; repeatable (no default)
+  --timings             also put each conversation's step times in the JSON:
+                        when each step started and how long it took (no
+                        default: left out)
+  --timings-of HASH:REPLICATE
+                        also put in the JSON the step times of only the
+                        conversation with this config hash and replicate
+                        index; repeatable, and implies --timings (no default:
+                        with --timings, every conversation)
+  --boot B              bootstrap resamples of the inputs, for the bands
+                        (default: 1000)
+  --seed S              the bootstrap's seed (default: 0)
+  --svg FILE            also write the curve as an SVG file; a file that
+                        exists is refused without --force (no default)
+  --force               let --svg or --out replace what exists
+  --save                save the verdict as an artifact in the runs' store,
+                        under .poisson/artifacts (no default: nothing is
+                        written without it)
+  --out DIR             also write the saved verdict as a handover bundle into
+                        DIR, created; a DIR that exists is refused without
+                        --force (no default)
+  --json                print the JSON structure instead of the report
+  --debug               on an unexpected failure, print its details on stderr
+                        as well as in the log
 
 examples:
   poisson-trace where previous --store prove-runs --event unsolved --at 20
 ```
+
+With `--json`, `where` also prints `steps`: for every step, how many tries reached it and how
+many ended there. With `--timings` it adds `timings`, each try's step times, and with
+`--timings-of HASH:REPLICATE` the `timings` of the tries named only. Neither key is in the
+report. Their layout is on [the handover page](handover.md#steps-and-timings).
 
 ## `poisson-trace compare`
 
@@ -432,6 +447,7 @@ poisson-trace compare --help
 ```
 usage: poisson-trace compare [-h] [--store ROOT] [--event NAME]
                              [--config PATH] [--by kind|step] [--at STEP]
+                             [--timings] [--timings-of HASH:REPLICATE]
                              --max-mde-hr X [--alpha A] [--verdicts FILE]
                              [--save] [--out DIR] [--force] [--json] [--debug]
                              A B
@@ -443,44 +459,59 @@ different, no significant difference, or too small to tell. --max-mde-hr is the
 largest detectable hazard ratio you accept, and it has no default.
 
 positional arguments:
-  A                the run before the change, by its name, latest, previous or
-                   its number in the runs listing ("#3"), or a folder of
-                   results
-  B                the run after the change
+  A                     the run before the change, by its name, latest,
+                        previous or its number in the runs listing ("#3"), or
+                        a folder of results
+  B                     the run after the change
 
 options:
-  -h, --help       show this help message and exit
-  --store ROOT     the folder Prove stored the runs in, or the name of a store
-                   trace.toml names (default: the store trace.toml names)
-  --event NAME     an outcome that counts as a death; repeatable (default: the
-                   failures trace.toml names)
-  --config PATH    the config file to read (default: trace.toml in the current
-                   folder, if any)
-  --by kind|step   label the step an episode died at by the kind of its last
-                   step, or by the nearest declared step name (default: kind)
-  --at STEP        a step to read the curve at; repeatable (no default)
-  --max-mde-hr X   the largest minimum detectable hazard ratio you accept,
-                   such as 1.5 (default: max_mde_hr in trace.toml's [check],
-                   else none)
-  --alpha A        the test's level (default: 0.05)
-  --verdicts FILE  a .csv or .jsonl of verdicts (case, outcome, score,
-                   failure_kind) joined onto both runs where they recorded
-                   none; nothing is written (no default)
-  --save           save the verdict as an artifact in the runs' store, under
-                   .poisson/artifacts (no default: nothing is written without
-                   it)
-  --out DIR        also write the saved verdict as a handover bundle into DIR,
-                   created; a DIR that exists is refused without --force (no
-                   default)
-  --force          let --out replace a folder that exists
-  --json           print the JSON structure instead of the report
-  --debug          on an unexpected failure, print its details on stderr as
-                   well as in the log
+  -h, --help            show this help message and exit
+  --store ROOT          the folder Prove stored the runs in, or the name of a
+                        store trace.toml names (default: the store trace.toml
+                        names)
+  --event NAME          an outcome that counts as a death; repeatable
+                        (default: the failures trace.toml names)
+  --config PATH         the config file to read (default: trace.toml in the
+                        current folder, if any)
+  --by kind|step        label the step an episode died at by the kind of its
+                        last step, or by the nearest declared step name
+                        (default: kind)
+  --at STEP             a step to read the curve at; repeatable (no default)
+  --timings             also put each conversation's step times in the JSON:
+                        when each step started and how long it took (no
+                        default: left out)
+  --timings-of HASH:REPLICATE
+                        also put in the JSON the step times of only the
+                        conversation with this config hash and replicate
+                        index; repeatable, and implies --timings (no default:
+                        with --timings, every conversation)
+  --max-mde-hr X        the largest minimum detectable hazard ratio you
+                        accept, such as 1.5 (default: max_mde_hr in
+                        trace.toml's [check], else none)
+  --alpha A             the test's level (default: 0.05)
+  --verdicts FILE       a .csv or .jsonl of verdicts (case, outcome, score,
+                        failure_kind) joined onto both runs where they
+                        recorded none; nothing is written (no default)
+  --save                save the verdict as an artifact in the runs' store,
+                        under .poisson/artifacts (no default: nothing is
+                        written without it)
+  --out DIR             also write the saved verdict as a handover bundle into
+                        DIR, created; a DIR that exists is refused without
+                        --force (no default)
+  --force               let --out replace a folder that exists
+  --json                print the JSON structure instead of the report
+  --debug               on an unexpected failure, print its details on stderr
+                        as well as in the log
 
 examples:
   poisson-trace compare "#3" previous --store prove-runs --event unsolved \
       --max-mde-hr 1.5
 ```
+
+With `--json`, `compare` also prints `steps`, one list for each run on one shared step axis.
+With `--timings` it adds each run's `timings`, and with `--timings-of HASH:REPLICATE` the
+`timings` of the tries named only, in both runs: one name fetches a try and its pair. Their
+layout is on [the handover page](handover.md#steps-and-timings).
 
 An example, on the two runs of one airline agent under `tests/fixtures/tau2` in a clone of
 the repository, ten minutes apart with nothing changed between them:

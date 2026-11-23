@@ -242,6 +242,26 @@ def _max_change(value: Any) -> list[tuple[str, float]]:
     return out
 
 
+def _timings_of(value: Any) -> list[tuple[str, int]]:
+    out = []
+    for item in _items("timings_of", value):
+        if (
+            not isinstance(item, tuple)
+            or len(item) != 2
+            or not isinstance(item[0], str)
+            or not item[0]
+            or isinstance(item[1], bool)
+            or not isinstance(item[1], int)
+            or item[1] < 0
+        ):
+            raise ValueError(
+                "timings_of takes (config_hash, replicate_index) pairs, as the flag's "
+                f"HASH:REPLICATE is read, not {item!r}"
+            )
+        out.append((item[0], item[1]))
+    return out
+
+
 def _store_word(value: Any) -> str | None:
     if value is None:
         return None
@@ -322,7 +342,9 @@ def _words_of(keyword: str, value: Any) -> list[str]:
     if isinstance(value, list | tuple):
         out: list[str] = []
         for item in value:
-            if isinstance(item, tuple) and len(item) == 2:
+            if keyword == "timings_of":
+                out.append(look.option(flag, f"{item[0]}:{item[1]}"))
+            elif isinstance(item, tuple) and len(item) == 2:
                 out.append(look.option(flag, f"{item[0]}={100.0 * float(item[1]):g}%"))
             else:
                 out.append(look.option(flag, str(item)))
@@ -512,6 +534,8 @@ class WhereResult(_Counting):
     causes: list[dict[str, Any]]
     bootstrap: dict[str, Any]
     declared: dict[str, Any] | None
+    steps: list[dict[str, Any]]
+    timings: dict[str, Any] | None
 
     def to_svg(self) -> str:
         """The curve as SVG text; refused where the run has no traces."""
@@ -556,6 +580,8 @@ class CompareResult(_TwoRuns):
     at: list[dict[str, Any]]
     comparison: dict[str, Any]
     per_cause: list[dict[str, Any]]
+    steps: dict[str, Any]
+    timings: dict[str, Any] | None
 
 
 @dataclass(frozen=True)
@@ -806,6 +832,8 @@ def where(
     config: Any = None,
     by: str = "kind",
     at: Sequence[int] = (),
+    timings: bool = False,
+    timings_of: Sequence[tuple[str, int]] = (),
     boot: int = 1000,
     seed: int = 0,
     **reader_flags: Any,
@@ -816,6 +844,8 @@ def where(
         "config": config,
         "by": _choice("by", by, ("kind", "step")),
         "at": _ints("at", at),
+        "timings": _bool("timings", timings),
+        "timings_of": _timings_of(timings_of),
         **_whole({"boot": boot, "seed": seed}),
     }
     result: WhereResult = _counting(
@@ -834,6 +864,8 @@ def compare(
     config: Any = None,
     by: str = "kind",
     at: Sequence[int] = (),
+    timings: bool = False,
+    timings_of: Sequence[tuple[str, int]] = (),
     max_mde_hr: float | None = None,
     alpha: float = 0.05,
     verdicts: str | None = None,
@@ -845,6 +877,8 @@ def compare(
         "config": config,
         "by": _choice("by", by, ("kind", "step")),
         "at": _ints("at", at),
+        "timings": _bool("timings", timings),
+        "timings_of": _timings_of(timings_of),
         "max_mde_hr": _optional_float("max_mde_hr", max_mde_hr),
         "alpha": _float("alpha", alpha),
         "verdicts": _optional_text("verdicts", verdicts),
@@ -1399,6 +1433,15 @@ def _fail_on_word(text: str) -> tuple[str, ...]:
     if any(p not in FAIL_ON for p in picked):
         raise ValueError(f'takes failed-more, too-small or both, comma-separated, not "{text}"')
     return tuple(dict.fromkeys(picked))
+
+
+def _timings_of_word(text: str) -> tuple[str, int]:
+    """``--timings-of HASH:REPLICATE`` read: the config hash, in full, and the replicate index.
+    The word splits at its last colon."""
+    config_hash, colon, replicate = text.rpartition(":")
+    if not colon or not config_hash or not (replicate.isascii() and replicate.isdigit()):
+        raise ValueError(f'"{text}" is not HASH:REPLICATE, such as 3f9c0a1b2d4e5f60:0')
+    return config_hash, int(replicate)
 
 
 def _max_change_word(text: str) -> tuple[str, float]:

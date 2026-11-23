@@ -227,6 +227,22 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
             metavar="STEP",
             help="a step to read the curve at; repeatable (no default)",
         )
+        p.add_argument(
+            "--timings",
+            action="store_true",
+            help="also put each conversation's step times in the JSON: when each step started "
+            "and how long it took (no default: left out)",
+        )
+        p.add_argument(
+            "--timings-of",
+            action="append",
+            type=_timings_of,
+            default=[],
+            metavar="HASH:REPLICATE",
+            help="also put in the JSON the step times of only the conversation with this config "
+            "hash and replicate index; repeatable, and implies --timings (no default: with "
+            "--timings, every conversation)",
+        )
 
     def saving(p: argparse.ArgumentParser, force: bool = True) -> None:
         p.add_argument("--save", action="store_true", help=_SAVE_HELP)
@@ -473,7 +489,7 @@ def _build_parser() -> tuple[look.Parser, dict[str, look.Parser]]:
     tail(doctor)
     handover = verbs.add_parser(
         "handover",
-        help="check a handover bundle --out wrote: every file, digest and promised key",
+        help="check a handover bundle --out wrote: every key of the table",
         description=(
             "Checks a handover bundle that where, compare, fix-check or changes wrote with\n"
             "--out DIR: every file handover.json and artifact.json list is there with its\n"
@@ -570,6 +586,15 @@ def _fail_on(text: str) -> tuple[str, ...]:
     """``--fail-on``: the check's results that fail its job, comma-separated."""
     try:
         return api._fail_on_word(text)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(str(e)) from None
+
+
+def _timings_of(text: str) -> tuple[str, int]:
+    """``--timings-of HASH:REPLICATE``: the conversation's config hash and replicate index, or a
+    wrong command line."""
+    try:
+        return api._timings_of_word(text)
     except ValueError as e:
         raise argparse.ArgumentTypeError(str(e)) from None
 

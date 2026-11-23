@@ -126,7 +126,7 @@ MAIN_FAST: dict[str, str] = {
     "where junit-a --event missed":
         "237958984a97f3d70c70b22ec5af37a691e83cd45263e8d9feb48d45492e0d1c",
     "where junit-a --event missed --json":
-        "6ae6f825cec6175c330b725646b3679828fa52f4f2d1a79f403889002a6bcf5d",
+        "94b1e1a9ec31e272acbc283b2450fc3c46233ae1fe3ae7dd4f5a731d4963ff60",
     "fix-check junit-a junit-b --event missed --inputs all --max-mde 0.5":
         "94a44a83f89185b38aaa8abbd06ed9e2cecbb00abafcb96066571f0162932c70",
     "fix-check junit-a junit-b --event missed --inputs all --max-mde 0.5 --json":
@@ -200,7 +200,7 @@ MAIN_SLOW: dict[str, str] = {
     "where deepeval-a --event missed":
         "0f0bc4da906d0f6519c6299690de107b6b5ccd064da9d73e9f0dd5d269e7f858",
     "where deepeval-a --event missed --json":
-        "9c645b738c04866d650a15b03c0e4c6d98ab168dcd5a36779d1109f83756dc2b",
+        "9dd71cf9054ddc0304e9588b12b58ed3cb31ebaf11daddf4973805a74dd3fd1f",
     "fix-check deepeval-a deepeval-b --event missed --inputs all --max-mde 0.5":
         "42bcda89bfa4ade5845fa83354160b79b258a862945ee40063d344f19acbc13c",
     "fix-check deepeval-a deepeval-b --event missed --inputs all --max-mde 0.5 --json":

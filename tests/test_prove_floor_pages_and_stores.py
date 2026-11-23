@@ -222,6 +222,7 @@ MADE_WITH_PROVE = {
     "prove-stores/prove-0.0.1": "Prove's own sweep on its mock agent, under its old name proofload 0.0.1",
     f"prove-stores/prove-{FORMAT_1_0}": "Prove's own sweep on its mock agent, poisson-prove 0.1.3 from PyPI: the stored format's 1.0",
     f"prove-stores/prove-{RECORDED}": "Prove's own sweep on its mock agent, poisson-prove from PyPI at the floor",
+    "steps-timings/store": "hand-built traces written through Prove's own store by poisson-prove at the floor, three of run D's rows edited after",
 }
 
 
