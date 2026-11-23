@@ -1267,14 +1267,17 @@ def _held(path: str) -> list[str]:
 
 
 def _format_read(path: str) -> None:
-    """Refuse a store whose descriptor says it is in a newer format than Trace knows, before
-    its runs are read for the setup and before anything is written: init sets up no store that
-    no verb would then read."""
+    """Refuse a store whose descriptor says it is in a newer format than Trace knows, or whose
+    descriptor file is not a descriptor, before its runs are read for the setup and before
+    anything is written: init sets up no store that no verb would then read."""
     from poisson_trace import saved
 
     newer = saved.newer_format(Path(path))
     if newer is not None:
         raise Refused(saved.newer_said(f"the store at {look.shown(path)}", newer))
+    broken = saved.broken_said(Path(path))
+    if broken is not None:
+        raise Refused(f"{broken}; nothing was written")
 
 
 def _index(path: str, form: str) -> tuple[Any, Any]:

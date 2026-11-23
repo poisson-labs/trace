@@ -52,6 +52,8 @@ CASES = _cases()
 # workspace's path as <WORK>.
 # TF18: the four out cases' handover --check step prints main's line, a blank line
 # and next: poisson-trace report bundle; compare's bundle lists its four chart files besides
+# That step's line now says result.json has every key of the table, where it said every
+# promised key: every public key is promised, and the check holds only the table's keys.
 PINNED: dict[str, list[tuple[int, str, str]]] = {
     'save: where': [
         (0, '059ed63192014937228496010e478c4b67d159e5988de759d30e458e688ddbf9',
@@ -62,7 +64,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
     'out: where': [
         (0, '471de063e86507b69d589ed54f039e084cbc45403cb5f6dd3bdff94e8a6d498a',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, 'fdbb2935b0e68759220830a00f06379151991d471ebe2195c8955abdf926459e',
+        (0, 'e962e719d052b016b34d78afc91e87a0a63b60481f5486d2e45054176c76ba04',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),
@@ -78,7 +80,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
     'out: compare': [
         (0, '17268fbd6488935f0a407bff51e95f9b55877925d0a2cc8f1149e5295afc5729',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, 'b3042f352b42d4c4635a8fccb3d8c78d4217df20740c4b8c436ca3ebd9fb6265',
+        (0, 'f2924ba070efba7ffeeccecac086b38ba977146cb6dcb1c9ff274f15be711ffb',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),
@@ -94,7 +96,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
     'out: fix-check': [
         (0, '0c43a31b4a028f46c9627ccc59d3137f06c46dd1e6f5c1b21263d139ba9fee73',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, '87336e7c6f350893ac6c50cfce2965122e61e2136328566ceeeedbbb587cb2e6',
+        (0, '60f309f4e20212d733f385eefc9edf470c55d803bf8b2252c570bceda72b4640',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),
@@ -110,7 +112,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
     'out: changes': [
         (0, 'c4760614752471bb4f208f7b540b59545aa47f3a7e1d3bf9ee9e27e5e2b4a395',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, 'a96548afc02b0ad8fc654666f05613057265933a5b4a335d0d472f26a7ad6efd',
+        (0, 'f739889069a2de07c86f77a284bc73fae93bcb335478045b8300df49100dbdfa',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),

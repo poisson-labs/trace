@@ -127,9 +127,11 @@ def _store_words(name: str | None, path: str) -> str:
     return f"store {path}" if name is None else f"store {name} at {path}"
 
 
-def _newer_store(held: config.Config, shown: str) -> dict[str, Any] | None:
+def _refused_store(held: config.Config, shown: str) -> dict[str, Any] | None:
     """The config check, failed, when a store the config names is in a newer format than Trace
-    knows; else None. No command of Trace's mends that, and nothing of such a store is read."""
+    knows, or its descriptor file is not a descriptor; else None. Every verb refuses such a
+    store, the broken file in the sentence the verbs print; no command of Trace's mends either,
+    and nothing of such a store is read."""
     from poisson_trace import saved
 
     for name, store_path in held.stores():
@@ -137,6 +139,9 @@ def _newer_store(held: config.Config, shown: str) -> dict[str, Any] | None:
         if newer is not None:
             said = saved.newer_said(f"the {_store_words(name, store_path)}", newer)
             return _check("config", False, f"{shown}: {said}", None)
+        broken = saved.broken_said(Path(store_path))
+        if broken is not None:
+            return _check("config", False, f"{shown}: {broken}; nothing was written", None)
     return None
 
 
@@ -188,9 +193,9 @@ def _config_and_names(given: str | None, prove_ok: bool) -> list[dict[str, Any]]
         ]
     from poisson_prove.store import Store
 
-    newer = _newer_store(held, shown)
-    if newer is not None:
-        return [newer, nothing]
+    refused = _refused_store(held, shown)
+    if refused is not None:
+        return [refused, nothing]
     described: list[str] = []
     indexes: list[tuple[str | None, str, Any]] = []
     for name, store_path in held.stores():
@@ -505,9 +510,9 @@ def _setup_config(
     init = look.command("poisson-trace", "init", *reach)
     again = look.command("poisson-trace", "init", "--force", *reach)
     nothing = _check("names", True, _NO_STORE)
-    newer = _newer_store(held, shown)
-    if newer is not None:
-        return [newer, nothing], [], False
+    refused = _refused_store(held, shown)
+    if refused is not None:
+        return [refused, nothing], [], False
     store = imports.imports_store(held)
     pending = imports.pending(held, store.path)
     import_checks: list[dict[str, Any]] = []

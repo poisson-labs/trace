@@ -383,6 +383,22 @@ def newer_format(root: Path) -> str | None:
         return None
 
 
+def _not_a_descriptor(root: Path, fault: str) -> str:
+    return f"{descriptor_path(root)} is not a store descriptor ({fault})"
+
+
+def broken_said(root: Path) -> str | None:
+    """The sentence for a store whose descriptor file is there and is not a descriptor: not
+    text, not JSON, or JSON that is not an object; else None. A store with no descriptor yet is
+    None, and so is a file the system will not let Trace read: that is the system's to say, and
+    says nothing of what the file holds."""
+    try:
+        fault = _read_descriptor(root)[1]
+    except OSError:
+        return None
+    return None if fault is None else _not_a_descriptor(root, fault)
+
+
 def newer_said(store: str, found: str, does: str = "reads") -> str:
     """The sentence for a store in a newer format: ``store`` is how the sentence names it (``the
     store at PATH``), ``found`` the format its descriptor names, and ``does`` what this Trace
@@ -397,7 +413,7 @@ def check_store_descriptor(root: Path) -> dict[str, Any] | None:
     the file cannot be read."""
     doc, fault = _read_descriptor(root)
     if fault is not None:
-        raise Unwritable(f"{descriptor_path(root)} is not a store descriptor ({fault})")
+        raise Unwritable(_not_a_descriptor(root, fault))
     found = _newer(doc)
     if found is not None:
         raise Unwritable(newer_said(f"the store at {root}", found, "writes"))
@@ -735,7 +751,7 @@ def check_bundle(target: Path) -> Checked:
     sentence = (
         f"{target} holds what it promises: a {verb} verdict over "
         f"{'one run' if runs == 1 else f'{runs} runs'}, {files} files of the digests and sizes "
-        "listed, result.json with every promised key, and nothing Trace does not hand over"
+        "listed, result.json with every key of the table, and nothing Trace does not hand over"
     )
     return Checked(verb=verb, files=files, runs=runs, sentence=sentence)
 

@@ -524,8 +524,10 @@ _ARMS = ("a", "b", "old", "new")
 def _open(path: str) -> tuple[Any, list[str]]:
     """The store and the runs it holds, or a refusal when no folder under the path holds a run
     Prove stored: a path that is not there, an empty folder and a plain file alike. A store
-    whose descriptor says it is in a newer format than Trace knows is refused before anything
-    of it is read: every verb opens its store here, so none reads or writes into one."""
+    whose descriptor says it is in a newer format than Trace knows, or whose descriptor file is
+    not a descriptor, is refused before anything of it is read: every verb opens its store
+    here, so none reads or writes into one. The broken file is refused in the words --save
+    refuses it in."""
     from poisson_prove.store import Store
 
     from poisson_trace import saved
@@ -533,6 +535,9 @@ def _open(path: str) -> tuple[Any, list[str]]:
     newer = saved.newer_format(Path(path))
     if newer is not None:
         raise _Refusal(saved.newer_said(f"the store at {look.shown(path)}", newer))
+    broken = saved.broken_said(Path(path))
+    if broken is not None:
+        raise _Refusal(f"{broken}; nothing was written")
     store = Store(path)
     try:
         held = store.runs()
@@ -712,6 +717,8 @@ def _header(run: Any, manifest: Any, placement: Any) -> dict[str, Any]:
         },
         "_imported": run.imported,
         "_start": _start_of(manifest),
+        # what sweep --note recorded for the run, as Prove reads it; None where there is none
+        "_note": getattr(manifest, "note", None),
     }
 
 
@@ -2530,6 +2537,8 @@ def _paired_header(run: Any, manifest: Any, tally: Any) -> dict[str, Any]:
         "tally": tally.to_dict(),
         "_imported": run.imported,
         "_start": _start_of(manifest),
+        # what sweep --note recorded for the run, as Prove reads it; None where there is none
+        "_note": getattr(manifest, "note", None),
     }
 
 

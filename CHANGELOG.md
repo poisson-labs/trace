@@ -29,6 +29,8 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
 - `compare` refuses two words that reach one run: a run cannot be compared with itself.
 - `fix-check --measures` also compares the two runs' time, length, tokens and cost, in a
   table of its own.
+- A run's note, what `poisson-prove sweep --note` recorded as changed for it, shows on a line
+  of its own under the run's line in each report.
 
 ### Setting up
 
@@ -99,8 +101,15 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
   terminal too, and so does `NO_COLOR`.
 - `--json` prints any result as one JSON document, the same bytes whenever the inputs are
   the same.
+- Each JSON document, on `--json` and in a bundle's `result.json`, opens with its schema id.
+  Within one schema number no public key, one that does not start with an underscore, is
+  renamed or removed, and keys are only added (`docs/handover.md`).
 - A refusal is one line that opens `error:`, with the command that moves you on under it.
   The exit codes are the same on every command.
+- A store whose `.poisson/store.json` is not a store descriptor is refused by every command
+  that opens the store, in the one line `--save` gives, where reading it, `ui`, `name` and
+  `init` used to go on. `doctor` fails its config check on such a store with the same
+  sentence, where it said the environment was ready.
 
 ### The docs
 
@@ -122,7 +131,7 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
 
 - The examples in `--help` name the store folder `prove-runs`, the folder the published Prove
   writes. They named `proofload-runs` before. Nothing else a command prints has moved but
-  the four items below.
+  the six items below.
 - The help of the command now says Trace reads the results of ten other tools, and names all
   of them.
 - The two refusals that list the verbs now list them in the order the help does.
@@ -130,6 +139,12 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
   the version.
 - The refusal when Prove is missing, or is not a version Trace reads, names the package as
   `version 0.4.0 or later`, where 0.1.0a1 named `version 0.1.3`.
+- The pages `ui` writes and the HTML report set table cells, detail values and the links at
+  the top of a page in the system's monospace, where 0.1.0a1 set them in its sans. The curve
+  `where --svg` draws names the system's sans alone, where 0.1.0a1 named Helvetica and Arial.
+- `handover --check` says a whole bundle's `result.json` has every key of the table, where
+  0.1.0a1 said every promised key: every public key is now promised, and the check holds the
+  keys of the handover page's table.
 
 ## 0.1.0a1 — pre-release
 

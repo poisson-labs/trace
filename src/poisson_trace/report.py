@@ -130,6 +130,13 @@ def _name(run: Mapping[str, Any]) -> str:
     return str(run.get("run_name", run["run_id"]))
 
 
+def _note_lines(run: Mapping[str, Any], label: str) -> list[str]:
+    """The run's note under its line, as Prove prints it under the run: what ``sweep --note``
+    recorded for it. Nothing for a run with none."""
+    note = run.get("_note")
+    return [f"{label}: {note}"] if note else []
+
+
 def _header_lines(run: Mapping[str, Any], events: Sequence[str]) -> list[str]:
     tally = run["tally"]
     placement = run["placement"]
@@ -138,6 +145,7 @@ def _header_lines(run: Mapping[str, Any], events: Sequence[str]) -> list[str]:
     lines = [
         f"- run: {_named(run)} · target: {run['target_id']} · t_unit: {run['t_unit']} · "
         f"status: {run['status']} · {cap}",
+        *_note_lines(run, "- note"),
         f"- {_tallied(run)}: "
         + " · ".join(
             f"{label} {count(tally[key])}"
@@ -335,6 +343,7 @@ def _run_lines(label: str, run: Mapping[str, Any]) -> list[str]:
         f"- {label}: {_named(run)} · target: {run['target_id']} · status: {run['status']} · "
         f"started: {started} · declared repeats: "
         f"{'not recorded' if declared is None else count(declared)}",
+        *_note_lines(run, f"- note ({label})"),
         _tally_line(label, run["tally"], _tallied(run)),
     ]
 

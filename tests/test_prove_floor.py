@@ -370,7 +370,9 @@ def test_pf_11_every_verb_reads_the_1_2_store_as_it_reads_the_1_0_store(tmp_path
         ran = run(argv_of(READING[label], store, source, by), work)
         assert ran.code == 0, ran.text
         assert tree(store) == before, "a reading verb writes nothing"
-        got.append((_own_words_out(ran.out, store), _own_words_out(ran.err, store)))
+        # a run's note (the 1.2 store's runs carry one) is shown on lines of its own, not compared
+        out = "".join(line for line in ran.out.splitlines(keepends=True) if not line.startswith("- note"))
+        got.append((_own_words_out(out, store), _own_words_out(ran.err, store)))
     assert got[0] == got[1], label
 
 

@@ -79,7 +79,7 @@ cd my-agent && poisson-trace handover --check bundle
 
 <!-- output exit=0 -->
 ```
-ok  bundle holds what it promises: a where verdict over one run, 6 files of the digests and sizes listed, result.json with every promised key, and nothing Trace does not hand over
+ok  bundle holds what it promises: a where verdict over one run, 6 files of the digests and sizes listed, result.json with every key of the table, and nothing Trace does not hand over
 
 next: poisson-trace report bundle
 ```

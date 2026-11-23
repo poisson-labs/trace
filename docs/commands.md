@@ -113,6 +113,12 @@ a terminal the same facts are drawn with colour and wrapped to the window; `--pl
 the plain text there too, and so does `NO_COLOR` set to anything. `--json` prints the result
 as one JSON document and nothing else, the same bytes whenever the inputs are the same.
 
+A run Prove stored with a note, what `poisson-prove sweep --note` recorded as changed for it,
+has the note on a line of its own directly under the run's line in the report: `note:` in
+`where` and `compare`, `note (old):` and `note (new):` in `fix-check`, and `note (A):` and
+`note (B):` in `changes`. The pages, the HTML report and the terminal app show it there too. A
+note Prove reads as none is not shown, and `--json` does not carry it.
+
 **Options that are everywhere.** `--help` on the command and on every verb. `--version`
 prints the versions of Trace, Prove and Python. `--debug` prints the details of an
 unexpected failure on stderr; without it they go to `~/.cache/poisson-trace/errors.log`, and
@@ -129,10 +135,13 @@ code 1 and no `next:` line, such as
 `error: Poisson Trace reads stored runs through Prove (the poisson-prove package, version 0.4.0 or later) and found poisson-prove 0.9.0, which has no poisson_prove.store.RunTally`,
 and `doctor`'s Prove check fails on it with
 `poisson-prove 0.9.0 is installed and has no poisson_prove.store.RunTally, which Trace imports from it`
-and exit code 4. `--save` into a store whose `.poisson/store.json` is not a store descriptor is
-refused in one line with exit code 1, and nothing is saved:
+and exit code 4. A store whose `.poisson/store.json` is not a store descriptor is refused in
+one line with exit code 1, and nothing is read, saved or handed over: by `--save` and `--out`,
+by every verb that reads the store, and by `ui`, `name` and `init`:
 `error: prove-runs/.poisson/store.json is not a store descriptor (not a JSON object); nothing was written`,
-or `(JSONDecodeError)` in the brackets for a file that is not JSON.
+or `(JSONDecodeError)` in the brackets for a file that is not JSON. `doctor` fails its config
+check on such a store, with exit code 4 and that sentence after the config's name:
+`config    trace.toml: prove-runs/.poisson/store.json is not a store descriptor (not a JSON object); nothing was written`.
 
 ## Exit codes
 
@@ -144,6 +153,14 @@ or `(JSONDecodeError)` in the brackets for a file that is not JSON.
 | `3` | a failure after work started, or an unexpected failure |
 | `4` | a check you asked for did not pass: `doctor` not ready, `handover --check` not whole |
 | `130` | stopped with Ctrl-C |
+
+## What the JSON promises
+
+Every document `--json` prints, and the `result.json` of a bundle, opens with its schema id,
+such as `poisson-trace.where/1`. Within one number no public key is renamed or removed, and
+keys are only added. A public key is any key that does not start with an underscore; one that
+does is internal and may change in any release. The whole promise, and what the main keys
+mean, are on [the handover page](handover.md#what-resultjson-promises).
 
 ## `poisson-trace init`
 

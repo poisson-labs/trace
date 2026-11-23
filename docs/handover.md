@@ -41,7 +41,7 @@ curve.svg
 
 | file | what it holds |
 |---|---|
-| `result.json` | the result as data: what `--json` prints. Its promised keys are in the next section |
+| `result.json` | the result as data: what `--json` prints. What its keys promise is in the next section |
 | `report.md` | the report as text, as the command printed it, the verdict line first |
 | `table.parquet` | the report's numbers in long form, one row for each number, in the schema `poisson.table/1` |
 | `charts/curve.svg`, `charts/curve.json` | from `where`: the curve as a picture, and the points behind it in the schema `poisson-trace.chart/1` |
@@ -70,8 +70,18 @@ cd my-agent && head -7 bundle/handover.json
 
 ## What `result.json` promises
 
-`result.json` holds every number of the report, and most of its keys may change between
-releases. These are the ones a reader may rely on:
+`result.json` holds every number of the report. It is one of the JSON documents Trace writes,
+and each carries its schema id as its first key: `poisson-trace.where/1`,
+`poisson-trace.compare/1`, `poisson-trace.runs/1`, `poisson-trace.fix-check/2`,
+`poisson-trace.changes/2`, `poisson-trace.init/1` and `poisson-trace.doctor/1`. For every one
+of them, as `--json` prints it and as a bundle's `result.json` holds it:
+
+- within one number, no public key is renamed or removed, and keys are only added;
+- a rename or a removal moves the number;
+- a public key is any key that does not start with an underscore;
+- keys that start with an underscore are internal and may change in any release.
+
+What the main keys of `result.json` mean:
 
 | key | what it is |
 |---|---|
@@ -98,18 +108,18 @@ cd my-agent && poisson-trace handover --check bundle
 
 <!-- output exit=0 -->
 ```
-ok  bundle holds what it promises: a where verdict over one run, 6 files of the digests and sizes listed, result.json with every promised key, and nothing Trace does not hand over
+ok  bundle holds what it promises: a where verdict over one run, 6 files of the digests and sizes listed, result.json with every key of the table, and nothing Trace does not hand over
 
 next: poisson-trace report bundle
 ```
 
 It checks that every file `handover.json` and `artifact.json` list is there with the digest
-and the size listed; that `result.json` has every promised key; that the first line of
-`report.md` is the verdict and the sentence of `result.json`; and that nothing Trace never
-hands over is in it. It exits 0 when the bundle is whole. It exits 4 when it is not, with one
-line that says what is wrong. It exits 1 when `DIR` is missing, is not a folder or holds no
-`handover.json`. Run it in your own tests over what Trace wrote: it is the test both sides
-share.
+and the size listed; that `result.json` has every key of the table above; that the first
+line of `report.md` is the verdict and the sentence of `result.json`; and that nothing Trace
+never hands over is in it. It exits 0 when the bundle is whole. It exits 4 when it is not,
+with one line that says what is wrong. It exits 1 when `DIR` is missing, is not a folder or
+holds no `handover.json`. Run it in your own tests over what Trace wrote: it is the test both
+sides share.
 
 ## What is never in a bundle
 
@@ -120,9 +130,11 @@ when that was a relative path, and by its last folder alone when it was not. No 
 
 ## How the promise is kept
 
-A change to a promised key is a breaking change. The number at the end of the `schema`
-moves, the check refuses a bundle of the old number and names the version that wrote it, and
-the CHANGELOG says so. A key that is not promised above may change in any release.
+Renaming or removing a public key is a breaking change. The number at the end of the
+`schema` moves, the check refuses a bundle of the old number and names the version that wrote
+it, and the CHANGELOG says so. Adding a key moves nothing, so a reader passes over a key it
+does not know. Trace's own tests hold every public key of each document as it is written
+today, and fail when one is renamed or removed without the number moving.
 
 ## The page, and the pages
 

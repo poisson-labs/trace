@@ -35,6 +35,11 @@ An installed Prove that lacks something Trace imports from it is refused by ever
 that reads through Prove, with exit code 1, no `next` and the message
 `Poisson Trace reads stored runs through Prove (the poisson-prove package, version 0.4.0 or later) and found poisson-prove 0.9.0, which has no poisson_prove.store.RunTally`;
 on the command line, `poisson-trace doctor`'s Prove check fails on it and exits 4.
+A store whose `.poisson/store.json` is not a store descriptor is refused by every function that
+opens the store, and by `api.save` and a result's `to_bundle`, which write nothing, with exit
+code 1, no `next` and the message
+`store/.poisson/store.json is not a store descriptor (not a JSON object); nothing was written`,
+or `(JSONDecodeError)` in the brackets for a file that is not JSON.
 
 The API prints nothing, reads no environment variable, reads no file and lists no folder it was
 not given a path to, and writes only in `import_run`, `name`, `forget_name`, `save`,
@@ -420,3 +425,11 @@ print(r.verdict, r.location.endswith("/store/.poisson/ui/trace/index.html"))
 ```text
 ok True
 ```
+
+## What the JSON promises
+
+`to_json()` is the document `--json` prints, and `to_bundle` writes the `result.json` that
+`--out` writes, so both keep the promise those make. Within one schema number no public key is
+renamed or removed, and keys are only added. A public key is any key that does not start with
+an underscore; one that does is internal and may change in any release. The whole promise is
+on [the handover page](handover.md#what-resultjson-promises).
