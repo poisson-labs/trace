@@ -55,8 +55,8 @@ def test_the_script_entry_is_declared_and_no_dependency_is_added() -> None:
     # which the terminal app is built with at the floor Prove declares (TF19)
     # and pyarrow, which Trace imports itself to write a saved verdict's table, declared at the
     # floor Prove declares (TF5-96); numpy and scipy are declared at the oldest versions the
-    # lanes run with
-    assert sorted(project["dependencies"]) == sorted(["numpy>=2.4.6", "scipy>=1.17.1", "pandas>=2", "pyarrow>=17.0.0", REQUIREMENT, "rich>=14.2.0",
+    # lanes pass at
+    assert sorted(project["dependencies"]) == sorted(["numpy>=2.1.0", "scipy>=1.13.0", "pandas>=2", "pyarrow>=17.0.0", REQUIREMENT, "rich>=14.2.0",
                                                       "textual>=6.4.0"])
 
 
