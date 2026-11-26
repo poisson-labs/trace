@@ -16,6 +16,8 @@ the assistant attribution it already refuses.
   one line;
 - one faulty commit anywhere in the history fails it, not the newest alone;
 - the release workflow runs it over the whole history, in the job every other job waits for.
+- CI runs it too, on every event, over the whole history: on a pull request over the pull
+  request's own commits, so a commit under another identity shows before it reaches main.
 
 Each history is made here, in a repository of its own under the test's folder, with the
 identities given on the command line, so the test reads nothing of the checkout's own history
@@ -159,3 +161,16 @@ def test_the_release_runs_it_over_the_whole_history() -> None:
         return "check" in needs[job] or any(reaches(needed) for needed in needs[job])
 
     assert [job for job in held if job != "check" and not reaches(job)] == []
+
+
+def test_ci_runs_it_on_every_pull_request_and_push() -> None:
+    found = {name: body for name, body in jobs().items() if re.search(r"python \.github/release/history\.py", body)}
+    assert len(found) == 1, sorted(found)
+    (job,) = found.values()
+    assert not re.search(r"(?m)^    if:", job), "no event skips it"
+    assert re.search(r"(?m)^    timeout-minutes: \d+$", job)
+    assert re.search(r"(?m)^          fetch-depth: 0$", job), "on the whole history"
+    # A pull request is checked out as a merge commit the runner makes, committed as GitHub.
+    # The check reads the pull request's own newest commit; the expression is empty on any
+    # other event, which then checks out the commit the event is for.
+    assert re.search(r"(?m)^          ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}$", job), "the pull request's own commits"
