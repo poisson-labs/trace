@@ -4,9 +4,9 @@
 # This file is .github/workflows/release.yml, and PyPI's and TestPyPI's trusted publishers for
 # poisson-trace name it by exactly that file name, release.yml, with the environment `pypi`.
 #
-# The repository is private on GitHub Team, where an environment cannot require a reviewer, so
-# the approval is the hand start: only a run started with "Run workflow" on
-# the tag, the version typed in, reaches PyPI.
+# Two things stand before a publish. The environment `pypi` requires a reviewer, so the upload
+# to TestPyPI and the upload to PyPI each wait for an approval. And PyPI is reached only by the
+# hand start: a run started with "Run workflow" on the tag, the version typed in.
 #
 # On the tag (push):
 # - check: the ref is a tag GitHub verified as signed; the tag, pyproject.toml, __version__ and
