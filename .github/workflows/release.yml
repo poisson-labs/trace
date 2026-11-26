@@ -10,7 +10,7 @@
 #
 # On the tag (push):
 # - check: the ref is a tag GitHub verified as signed; the tag, pyproject.toml, __version__ and
-#   the CHANGELOG entry agree; no commit names an assistant.
+#   the CHANGELOG entry agree; every commit is by the work identity and none names an assistant.
 # - build: the sdist and the wheel from the tagged tree (`git archive`, never the checkout);
 #   twine's metadata check; every requirement one an index can serve, Prove as a floor; the
 #   wheel holds the package alone, and neither file an absolute path or a key. Kept as `dist`.
@@ -92,7 +92,7 @@ jobs:
           fi
       - name: The tag, the version and the CHANGELOG agree
         run: python .github/release/release_check.py tag "$GITHUB_REF_NAME"
-      - name: No commit names an assistant
+      - name: Every commit is by the work identity, and none names an assistant
         run: python .github/release/history.py
 
   build:
