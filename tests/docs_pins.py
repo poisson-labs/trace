@@ -39,7 +39,7 @@ from signals_support import FIXTURES, INGEST
 
 DOCS_FIXTURES = FIXTURES / "docs"
 PINS = DOCS_FIXTURES / "main-pins.json"
-MAIN = "2ff191b"
+MAIN = "a688e14"
 #: The ten tools main reads beside Prove's own stores, in the order every listing gives them.
 TOOLS = ("deepeval", "ragas", "table", "junit", "promptfoo", "inspect", "openai-evals", "langsmith", "braintrust", "weave")
 ABSENT = ["otel", "files/old.jsonl", "--store", "new-store", "--run", "x"]

@@ -26,7 +26,7 @@ from signals_support import FIXTURES, INGEST
 
 PACING = FIXTURES / "pacing"
 PINS = PACING / "main-pins.json"
-MAIN = "2ff191b"
+MAIN = "a688e14"
 #: The readers main has, each of whose helps stays as main prints it.
 READERS = ("deepeval", "ragas", "table", "junit", "promptfoo", "inspect", "openai-evals", "langsmith", "braintrust", "weave")
 

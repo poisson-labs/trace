@@ -182,7 +182,7 @@ from terminal_support import open_terminal
 APP_FIXTURES = FIXTURES / "app"
 PINS = APP_FIXTURES / "main-pins.json"
 PROVE_SHELL = APP_FIXTURES / "prove-shell.json"
-MAIN = "b988bd3"
+MAIN = "ea3a841"
 PACKAGE = REPO / "src" / "poisson_trace"
 TOOL = "poisson-trace"
 APP_MODULE = "poisson_trace._app"

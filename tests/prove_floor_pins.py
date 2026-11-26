@@ -31,7 +31,7 @@ TESTS = Path(__file__).resolve().parent
 REPO = TESTS.parent
 PROVE_FLOOR_FIXTURES = TESTS / "fixtures" / "prove-floor"
 PINS = PROVE_FLOOR_FIXTURES / "main-pins.json"
-MAIN = "4bb4b95"
+MAIN = "e7e3784"
 
 #: The files outside the package whose text main's pins hold, each with a test of what moves in it.
 TEXTS = ("pyproject.toml", ".github/release/lanes-3.11.txt", ".github/release/lanes-3.12.txt", ".github/workflows/ci.yml",
