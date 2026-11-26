@@ -245,6 +245,15 @@ def test_tf5_96_pyarrow_is_declared() -> None:
     assert found >= floor, importlib.metadata.version("pyarrow")
 
 
+def test_every_dependency_is_declared_with_a_floor() -> None:
+    """Each requirement of the package and of its extras names the oldest version it is run
+    with, or one exact version: a bare name would let an install resolve to any version."""
+    declared = [*PROJECT["dependencies"], *[d for extra in PROJECT["optional-dependencies"].values() for d in extra]]
+    assert len(declared) >= 16, declared
+    bare = [d for d in declared if not re.fullmatch(r"[A-Za-z0-9_.-]+(>=|==)\d+(\.\d+)*", d.replace(" ", ""))]
+    assert not bare, f"declared with no floor: {bare}"
+
+
 def test_tf5_96_the_description_is_not_the_one_of_one_source() -> None:
     assert not re.search(r"read from Prove's stored runs\.?$", PROJECT["description"]), PROJECT["description"]
     assert len(PROJECT["description"]) <= 200
