@@ -32,12 +32,23 @@
 #   newest Prove, so a third cell installs the wheel with the oldest Prove Trace reads named
 #   beside it, the floor pyproject.toml declares, and checks that is the one installed.
 #
+# - history: on every event. Every commit is authored and committed under the work identity
+#   and none names an assistant: the check a release runs, .github/release/history.py, over
+#   the whole history. On a pull request it reads the pull request's own commits, and not the
+#   merge commit the runner makes of them, so a commit under another identity shows before
+#   it reaches main.
+#
 # Where the jobs run. Every runner is one GitHub hosts; none is self-hosted. A pull request's
 # jobs run on Linux (ubuntu-latest). A push to main, the night and a run started by hand run
 # every job on macOS (macos-latest), where a release runs its lanes too, so both systems the
 # package declares are run before a release. No job is cut into shards: a lane is one pytest
 # run over every core of its runner. The socket guard is .github/lanes/socket_guard.py, put
 # on PYTHONPATH as sitecustomize.py.
+#
+# On a pull request the pull-request job runs on macOS as well as on Linux. The numbers
+# `--json` writes differ in their last digit between the two systems, and the outputs the
+# tests pin were taken on macOS, so some of those tests fail on Linux today. Until they hold
+# on both, the macOS cell is the one that must be green before a merge.
 #
 # Started by hand ("Run workflow", on any branch) every job runs as it does on main, so the
 # jobs a pull request never starts can be run on a branch before it merges.
@@ -70,7 +81,11 @@ env:
 
 jobs:
   pull-request:
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'macos-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-latest", "macos-latest"]' || '["macos-latest"]') }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -93,6 +108,23 @@ jobs:
         run: .venv/bin/ruff check src tests
       - name: mypy --strict
         run: .venv/bin/mypy --strict
+
+  history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # On a pull request this is the pull request's own newest commit; on any other event the
+      # expression is empty, and the commit the event is for is checked out.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Every commit is by the work identity, and none names an assistant
+        run: python .github/release/history.py
 
   math:
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'macos-latest' }}
@@ -149,6 +181,10 @@ jobs:
             .venv/bin/python -m pip install --quiet -e ".[dev]"
           fi
           .venv/bin/python --version
+      # Trace itself left out: these lines, from a run whose lanes are green, are what a
+      # .github/release/lanes-*.txt records.
+      - name: The packages this environment holds, as pip writes constraints
+        run: .venv/bin/python -m pip freeze --exclude-editable
       - name: Tasks' tokenizer file, which the three-tools recipe the lanes run needs
         run: .venv/bin/poisson-tasks doctor --fix --yes
       - name: Pull-request lane
