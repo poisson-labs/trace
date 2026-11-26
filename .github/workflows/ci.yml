@@ -10,8 +10,9 @@
 #   to main; on a pull request only when .github/lanes/math_lane.py says the pull request could
 #   have moved a statistic (the statistics code, a test of the math suite, the declared
 #   dependencies, or a numpy, scipy, pandas or lifelines other than the lanes were green with).
-# - full: on main and every night, never on a pull request: the pull-request lane and the slow
-#   lane on Python 3.11, 3.12 and 3.13, with ruff and mypy --strict on each.
+# - full: on main and every night, never on a pull request: the pull-request lane, the slow
+#   lane and the math lane on Python 3.11, 3.12 and 3.13, with ruff and mypy --strict on each,
+#   which is what a release runs on each of them.
 # - newest-prove: on main and every night, never on a pull request: the pull-request lane on
 #   Python 3.12 with the newest poisson-prove the package index serves installed over the one
 #   the lanes were last green with. Trace declares the oldest Prove it reads and no cap, so a
@@ -169,7 +170,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python }}
-      # The versions the lanes were last green with are recorded for Python 3.11 and 3.12; on
+      # The versions the lanes were last green with are recorded for Python 3.11, 3.12 and 3.13; on
       # a Python with no such file, pip resolves the newest versions the package allows.
       - name: Environment
         run: |
@@ -191,6 +192,8 @@ jobs:
         run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m "not math and not lane_j and not slow" tests
       - name: Slow lane
         run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m slow tests
+      - name: Math lane
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m math tests
       - name: ruff
         run: .venv/bin/ruff check src tests
       - name: mypy --strict

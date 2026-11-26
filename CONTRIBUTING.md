@@ -153,5 +153,5 @@ Sign your commits. Keep a commit to one thing, and say in its message what chang
 user. `CHANGELOG.md` gets a line for every change a user can see.
 
 A release is a signed tag: `.github/workflows/release.yml` builds the package from the tag,
-runs the lanes above on Python 3.11 and 3.12, and publishes. `.github/workflows/ci.yml` runs
+runs the lanes above on Python 3.11, 3.12 and 3.13, and publishes. `.github/workflows/ci.yml` runs
 the same lanes on pull requests and on `main`.
