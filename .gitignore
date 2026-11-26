@@ -9,12 +9,14 @@ dist/
 
 # Virtual environments
 .venv/
+.venv*/
 venv/
 
 # Testing / tooling caches
 .pytest_cache/
 .hypothesis/
 .mypy_cache/
+.mypy_cache_*/
 .ruff_cache/
 .coverage
 
