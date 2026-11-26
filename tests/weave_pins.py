@@ -23,7 +23,7 @@ from signals_support import FIXTURES, INGEST
 
 WEAVE_READER_FIXTURES = FIXTURES / "weave-reader"
 PINS = WEAVE_READER_FIXTURES / "main-pins.json"
-MAIN = "bfda500"
+MAIN = "93b6568"
 #: The readers main has, whose helps stay as main prints them.
 EARLIER = ("deepeval", "ragas", "table", "junit", "promptfoo", "inspect", "openai-evals", "langsmith", "braintrust")
 ABSENT = ["otel", "files/old.jsonl", "--store", "new-store", "--run", "x"]

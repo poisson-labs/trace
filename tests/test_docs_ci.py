@@ -245,6 +245,15 @@ def test_tf5_96_pyarrow_is_declared() -> None:
     assert found >= floor, importlib.metadata.version("pyarrow")
 
 
+def test_every_dependency_is_declared_with_a_floor() -> None:
+    """Each requirement of the package and of its extras names the oldest version it is run
+    with, or one exact version: a bare name would let an install resolve to any version."""
+    declared = [*PROJECT["dependencies"], *[d for extra in PROJECT["optional-dependencies"].values() for d in extra]]
+    assert len(declared) >= 16, declared
+    bare = [d for d in declared if not re.fullmatch(r"[A-Za-z0-9_.-]+(>=|==)\d+(\.\d+)*", d.replace(" ", ""))]
+    assert not bare, f"declared with no floor: {bare}"
+
+
 def test_tf5_96_the_description_is_not_the_one_of_one_source() -> None:
     assert not re.search(r"read from Prove's stored runs\.?$", PROJECT["description"]), PROJECT["description"]
     assert len(PROJECT["description"]) <= 200
@@ -264,3 +273,23 @@ def test_tf5_97_the_release_runs_the_same_lanes() -> None:
     release = (REPO / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
     for mark in (PR_LANE, "-m slow", "-m math", "ruff check src tests", "mypy --strict"):
         assert mark in release and mark in workflow(), mark
+
+
+def test_the_release_runs_its_lanes_on_every_python_declared() -> None:
+    """A release runs the lanes on each Python the package says it runs on, and each installs
+    through constraints recorded for it: one exact version a line, Prove at the floor."""
+    lanes = jobs((REPO / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8"))["lanes"]
+    matrix = re.search(r"(?m)^        python: \[(.+)\]$", lanes)
+    assert matrix, "the lanes job has no list of Pythons"
+    declared = {c.rsplit(" ", 1)[1] for c in PROJECT["classifiers"] if re.fullmatch(r"Programming Language :: Python :: 3\.\d+", c)}
+    assert set(re.findall(r"3\.\d+", matrix.group(1))) == declared, matrix.group(1)
+    (floor,) = [d.replace(" ", "").removeprefix("poisson-prove>=") for d in PROJECT["dependencies"] if d.startswith("poisson-prove")]
+    for python in sorted(declared):
+        path = REPO / ".github" / "release" / f"lanes-{python}.txt"
+        assert path.is_file(), f"no constraints are recorded for Python {python}"
+        lines = path.read_text(encoding="utf-8").splitlines()
+        assert lines[0].startswith(f"# The packages the release lanes ran green with on Python {python} "), lines[0]
+        held = [line for line in lines if not line.startswith("#")]
+        assert held and all(re.fullmatch(r"[A-Za-z0-9_.-]+==\S+", line) for line in held), path.name
+        assert [line for line in held if line.startswith("poisson-prove")] == [f"poisson-prove=={floor}"], path.name
+        assert not [line for line in held if line.startswith("poisson-trace")], "Trace itself is left out"

@@ -46,7 +46,7 @@ TESTS = Path(__file__).resolve().parent
 REPO = TESTS.parent
 LABEL_KINDS_FIXTURES = TESTS / "fixtures" / "label-kinds"
 PINS = LABEL_KINDS_FIXTURES / "main-pins.json"
-MAIN = "c981832"
+MAIN = "5f110d8"
 
 TAU2_A, TAU2_B = "20260915T210140Z-4847", "20260915T211148Z-965d"
 CS_A, CS_B = "20260925T234602Z-3ea0", "20260925T235434Z-af48"

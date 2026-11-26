@@ -10,7 +10,7 @@ no model and no key, and it costs nothing. The install's second line fetches a f
 
 <!-- skip reason="installs from the package index, which the docs check does not reach" -->
 ```
-pip install poisson-trace poisson-tasks==0.4.2 pytest
+pip install poisson-trace poisson-tasks==0.4.2 'pytest>=9.2.0'
 poisson-tasks doctor --fix --yes
 ```
 

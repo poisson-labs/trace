@@ -30,6 +30,10 @@ files your evaluation tool wrote, or in runs stored by
 - `poisson-trace init --agent` writes a setup file that your own coding agent follows to set
   Trace up, for you to review.
 
+Trace finds the step where runs fail and sorts each failure into one of thirteen types, such
+as a timeout, a tool error or a wrong answer. More about it is on the Trace page at
+[poissonlabs.ai/tools/trace](https://poissonlabs.ai/tools/trace/).
+
 Python 3.11 to 3.13 on macOS and Linux. Trace runs nothing, captures nothing and sends nothing.
 
 ---
@@ -78,9 +82,8 @@ Trace needs Python 3.11, 3.12 or 3.13, and the `python3` that macOS ships is old
 `python3 --version` prints a version below Python 3.11, type `python3.11`, `python3.12` or
 `python3.13` in the first line, whichever your machine has.
 
-The repository is private for now, so a link on this page to github.com/poisson-labs/trace
-may not open for you. Every page it names is in the source archive, which is on PyPI beside
-the package. Fetch it and work inside it in place of a clone:
+The example files and every page this one names are also in the source archive, which is on
+PyPI beside the package. To work inside it in place of a clone, fetch it:
 
 <!-- skip reason="fetches from the package index, which the docs check does not reach" -->
 ```

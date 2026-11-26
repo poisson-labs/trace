@@ -10,8 +10,9 @@
 #   to main; on a pull request only when .github/lanes/math_lane.py says the pull request could
 #   have moved a statistic (the statistics code, a test of the math suite, the declared
 #   dependencies, or a numpy, scipy, pandas or lifelines other than the lanes were green with).
-# - full: on main and every night, never on a pull request: the pull-request lane and the slow
-#   lane on Python 3.11, 3.12 and 3.13, with ruff and mypy --strict on each.
+# - full: on main and every night, never on a pull request: the pull-request lane, the slow
+#   lane and the math lane on Python 3.11, 3.12 and 3.13, with ruff and mypy --strict on each,
+#   which is what a release runs on each of them.
 # - newest-prove: on main and every night, never on a pull request: the pull-request lane on
 #   Python 3.12 with the newest poisson-prove the package index serves installed over the one
 #   the lanes were last green with. Trace declares the oldest Prove it reads and no cap, so a
@@ -22,17 +23,36 @@
 # - lane-j: on main and every night, never on a pull request: the one job that reads the
 #   package index for other tools. It installs the real DeepEval and Ragas and runs the tests
 #   that run them, and the tests that the built wheel installs beside a Prove it reads.
-# - clean-install: builds the source archive and the wheel from the commit; installs one of
-#   them with plain pip into a fresh environment (the wheel in one cell, the source archive in
-#   the other); moves to an empty folder with a home of its own; checks that the package
-#   imported is the installed one; then, with every connection but to this machine refused,
-#   runs every marked block of the README and the docs through tools/docs_check.py. Every
-#   block the docs check skipped is listed in the job's summary.
+# - clean-install: on every event, a pull request included. Builds the source archive and the
+#   wheel from the commit; installs one of them with plain pip into a fresh environment, with
+#   the `inspect` extra the two Inspect pages ask for (the wheel in one cell, the source
+#   archive in another); moves to an empty folder with a home of its own; checks that the
+#   package imported is the installed one; then, with every connection but to this machine
+#   refused, runs every marked block of the README and the docs through tools/docs_check.py.
+#   Every block the docs check skipped is listed in the job's summary. Plain pip brings the
+#   newest Prove, so a third cell installs the wheel with the oldest Prove Trace reads named
+#   beside it, the floor pyproject.toml declares, and checks that is the one installed.
 #
-# Not settled yet, and written here only so the file runs: the runner
-# of each job and the systems the full job covers (macos-latest below, where the lanes were
-# last made green), how the jobs are cut into shards, how the socket guard is made, and
-# whether clean-install runs on every pull request.
+# - history: on every event. Every commit is authored and committed under the work identity
+#   and none names an assistant: the check a release runs, .github/release/history.py, over
+#   the whole history. On a pull request it reads the pull request's own commits, and not the
+#   merge commit the runner makes of them, so a commit under another identity shows before
+#   it reaches main.
+#
+# Where the jobs run. Every runner is one GitHub hosts; none is self-hosted. A pull request's
+# jobs run on Linux (ubuntu-latest). A push to main, the night and a run started by hand run
+# every job on macOS (macos-latest), where a release runs its lanes too, so both systems the
+# package declares are run before a release. No job is cut into shards: a lane is one pytest
+# run over every core of its runner. The socket guard is .github/lanes/socket_guard.py, put
+# on PYTHONPATH as sitecustomize.py.
+#
+# On a pull request the pull-request job runs on macOS as well as on Linux. The numbers
+# `--json` writes differ in their last digit between the two systems, and the outputs the
+# tests pin were taken on macOS, so some of those tests fail on Linux today. Until they hold
+# on both, the macOS cell is the one that must be green before a merge.
+#
+# Started by hand ("Run workflow", on any branch) every job runs as it does on main, so the
+# jobs a pull request never starts can be run on a branch before it merges.
 #
 # The workflow reads the repository and nothing else. It holds no secret and asks for no
 # token. Every action is pinned to a full commit SHA. CI is unset for every pytest line: Trace
@@ -46,6 +66,7 @@ on:
     branches: [main]
   schedule:
     - cron: "17 6 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -61,7 +82,11 @@ env:
 
 jobs:
   pull-request:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-latest", "macos-latest"]' || '["macos-latest"]') }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -85,8 +110,25 @@ jobs:
       - name: mypy --strict
         run: .venv/bin/mypy --strict
 
+  history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # On a pull request this is the pull request's own newest commit; on any other event the
+      # expression is empty, and the commit the event is for is checked out.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Every commit is by the work identity, and none names an assistant
+        run: python .github/release/history.py
+
   math:
-    runs-on: macos-latest
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'macos-latest' }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -128,7 +170,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python }}
-      # The versions the lanes were last green with are recorded for Python 3.11 and 3.12; on
+      # The versions the lanes were last green with are recorded for Python 3.11, 3.12 and 3.13; on
       # a Python with no such file, pip resolves the newest versions the package allows.
       - name: Environment
         run: |
@@ -140,12 +182,18 @@ jobs:
             .venv/bin/python -m pip install --quiet -e ".[dev]"
           fi
           .venv/bin/python --version
+      # Trace itself left out: these lines, from a run whose lanes are green, are what a
+      # .github/release/lanes-*.txt records.
+      - name: The packages this environment holds, as pip writes constraints
+        run: .venv/bin/python -m pip freeze --exclude-editable
       - name: Tasks' tokenizer file, which the three-tools recipe the lanes run needs
         run: .venv/bin/poisson-tasks doctor --fix --yes
       - name: Pull-request lane
         run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m "not math and not lane_j and not slow" tests
       - name: Slow lane
         run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m slow tests
+      - name: Math lane
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m math tests
       - name: ruff
         run: .venv/bin/ruff check src tests
       - name: mypy --strict
@@ -207,8 +255,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        install: [wheel, sdist]
-    runs-on: macos-latest
+        include:
+          - install: wheel
+          - install: sdist
+          # plain pip brings the newest Prove; this cell names the oldest one Trace reads
+          - install: wheel
+            prove: floor
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'macos-latest' }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -224,20 +277,31 @@ jobs:
           git archive --format=tar HEAD | tar -x -C "$RUNNER_TEMP/tree"
           python -m build --outdir "$RUNNER_TEMP/dist" "$RUNNER_TEMP/tree"
           ls -l "$RUNNER_TEMP/dist"
-      - name: Install it with plain pip into a fresh environment
+      # The `inspect` extra is what the two Inspect pages tell a reader to install, so their
+      # blocks run here. In the floor's cell the oldest Prove Trace reads is named beside the
+      # wheel, read from the one line of pyproject.toml that declares it.
+      - name: Install it with plain pip into a fresh environment, with the inspect extra
         run: |
           python -m venv "$RUNNER_TEMP/clean"
+          prove=""
+          if [ "${{ matrix.prove }}" = "floor" ]; then
+            floor=$(sed -n 's/^dependencies = .*"poisson-prove>=\([0-9][0-9.]*\)".*$/\1/p' pyproject.toml)
+            test -n "$floor"
+            prove="poisson-prove==$floor"
+            echo "PROVE_FLOOR=$floor" >> "$GITHUB_ENV"
+          fi
           if [ "${{ matrix.install }}" = "wheel" ]; then
-            "$RUNNER_TEMP/clean/bin/python" -m pip install --quiet "$RUNNER_TEMP"/dist/*.whl
+            "$RUNNER_TEMP/clean/bin/python" -m pip install --quiet "$(echo "$RUNNER_TEMP"/dist/*.whl)[inspect]" ${prove:+"$prove"}
           else
-            "$RUNNER_TEMP/clean/bin/python" -m pip install --quiet "$RUNNER_TEMP"/dist/*.tar.gz
+            "$RUNNER_TEMP/clean/bin/python" -m pip install --quiet "$(echo "$RUNNER_TEMP"/dist/*.tar.gz)[inspect]"
           fi
           "$RUNNER_TEMP/clean/bin/python" -m pip check
       # The three-tools recipe runs Poisson Tasks and the team's own pytest file. Neither Trace
-      # nor Tasks brings pytest, so it is installed here, as the recipe's install line does.
+      # nor Tasks brings pytest, so it is installed here, as the recipe's install line does, at
+      # or above the pytest the lanes run with.
       - name: Poisson Tasks at its pin, its tokenizer file and pytest, for the three-tools recipe
         run: |
-          "$RUNNER_TEMP/clean/bin/python" -m pip install --quiet "poisson-tasks==0.4.2" pytest
+          "$RUNNER_TEMP/clean/bin/python" -m pip install --quiet "poisson-tasks==0.4.2" "pytest>=9.2.0"
           "$RUNNER_TEMP/clean/bin/poisson-tasks" doctor --fix --yes
       - name: An empty folder, a home of its own, and the package that was installed
         run: |
@@ -246,6 +310,10 @@ jobs:
           export HOME="$RUNNER_TEMP/home"
           "$RUNNER_TEMP/clean/bin/poisson-trace" --version | tee -a "$GITHUB_STEP_SUMMARY"
           "$RUNNER_TEMP/clean/bin/python" -c "import pathlib, sys, poisson_trace; where = pathlib.Path(poisson_trace.__file__).resolve(); env = pathlib.Path(sys.prefix).resolve(); assert env in where.parents, (where, env); print(where)"
+          "$RUNNER_TEMP/clean/bin/python" -c "import zstandard; print('zstandard', zstandard.__version__)"
+          if [ -n "$PROVE_FLOOR" ]; then
+            "$RUNNER_TEMP/clean/bin/python" -c "import importlib.metadata, os; found = importlib.metadata.version('poisson-prove'); assert found == os.environ['PROVE_FLOOR'], found; print('poisson-prove', found, 'is the oldest Trace reads')"
+          fi
       # From here on every Python refuses a connection to any address that is not this
       # machine's, and writes it down: the guard is sitecustomize.py in a folder on PYTHONPATH.
       - name: Socket guard, so that no connection leaves this machine

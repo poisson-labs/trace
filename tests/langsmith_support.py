@@ -95,7 +95,7 @@ KEY_VARIABLE = "LANGSMITH_API_KEY"
 ENDPOINT_VARIABLE = "LANGSMITH_ENDPOINT"
 #: A key no service ever issued: what the tests put in the environment, and look for afterwards.
 PLANTED_KEY = "lsv2_pt_0f1e2d3c4b5a69788796a5b4c3d2e1f0_planted00"
-MAIN = "a4bc065"
+MAIN = "f8d725a"
 
 VERSIONS = ("baseline", "candidate")
 EXPERIMENT = {"baseline": "trace-fixture-baseline-bbb64b8e", "candidate": "trace-fixture-candidate-7e3f7200"}

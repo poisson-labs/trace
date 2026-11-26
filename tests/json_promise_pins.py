@@ -1,5 +1,5 @@
 """The public keys of each JSON document Trace writes, pinned for ``tests/test_json_promise.py``
-as main 9ba6307 wrote them for each of that module's cases, by its own ``public_keys``. A
+as main 5445a34 wrote them for each of that module's cases, by its own ``public_keys``. A
 removed or renamed key is one the module finds missing here; an added key is not pinned and
 passes. These change only with the schema number they are listed under.
 """

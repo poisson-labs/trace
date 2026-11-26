@@ -41,7 +41,7 @@ from fixcheck_support import Obs, arm_rows, build_run, pair_store
 from look_support import Ran, chdir, trace
 
 # the commit of main the pins were taken at
-MAIN = "a4bc065"
+MAIN = "f8d725a"
 NO_FAILURES_FIXTURES = FIXTURES / "no-failures"
 PINS = NO_FAILURES_FIXTURES / "main-pins.json"
 BREAK_CASE = NO_FAILURES_FIXTURES / "break-case.json"

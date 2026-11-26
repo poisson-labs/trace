@@ -4,17 +4,17 @@
 # This file is .github/workflows/release.yml, and PyPI's and TestPyPI's trusted publishers for
 # poisson-trace name it by exactly that file name, release.yml, with the environment `pypi`.
 #
-# The repository is private on GitHub Team, where an environment cannot require a reviewer, so
-# the approval is the hand start: only a run started with "Run workflow" on
-# the tag, the version typed in, reaches PyPI.
+# Two things stand before a publish. The environment `pypi` requires a reviewer, so the upload
+# to TestPyPI and the upload to PyPI each wait for an approval. And PyPI is reached only by the
+# hand start: a run started with "Run workflow" on the tag, the version typed in.
 #
 # On the tag (push):
 # - check: the ref is a tag GitHub verified as signed; the tag, pyproject.toml, __version__ and
-#   the CHANGELOG entry agree; no commit names an assistant.
+#   the CHANGELOG entry agree; every commit is by the work identity and none names an assistant.
 # - build: the sdist and the wheel from the tagged tree (`git archive`, never the checkout);
 #   twine's metadata check; every requirement one an index can serve, Prove as a floor; the
 #   wheel holds the package alone, and neither file an absolute path or a key. Kept as `dist`.
-# - lanes, on Python 3.12 and 3.11: pull-request, slow, math, ruff, mypy --strict.
+# - lanes, on Python 3.13, 3.12 and 3.11: pull-request, slow, math, ruff, mypy --strict.
 # - lane-j, on Python 3.12 and 3.11: the built wheel installed into a clean environment brings
 #   a Prove at or above its floor and reads a store; and lane J's own clean-install test.
 # - testpypi: uploads `dist` to TestPyPI by trusted publishing; testpypi-check then checks
@@ -92,7 +92,7 @@ jobs:
           fi
       - name: The tag, the version and the CHANGELOG agree
         run: python .github/release/release_check.py tag "$GITHUB_REF_NAME"
-      - name: No commit names an assistant
+      - name: Every commit is by the work identity, and none names an assistant
         run: python .github/release/history.py
 
   build:
@@ -131,7 +131,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.12", "3.11"]
+        python: ["3.13", "3.12", "3.11"]
     runs-on: macos-latest
     timeout-minutes: 180
     steps:

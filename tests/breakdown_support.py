@@ -351,7 +351,7 @@ def sha256(text: str) -> str:
 # ---------- what main prints ----------
 
 #: The commit the pins in ``fixtures/breakdown/main-pins.json`` were taken on.
-MAIN = "7e6fef6"
+MAIN = "7d601f5"
 PINS = BD / "main-pins.json"
 #: Widths the terminal pins are taken at, and the verbs of one run whose terminal output is pinned.
 PTY_WIDTHS = (60, 80, 100, 120, 140, 160)

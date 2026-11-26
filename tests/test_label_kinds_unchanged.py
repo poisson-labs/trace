@@ -43,7 +43,7 @@ def _param(label: str) -> Any:
 
 
 def test_pl_50_the_pins_are_whole() -> None:
-    assert PINNED["main"] == MAIN == "c981832" and PINNED["python"] == "3.12.13"
+    assert PINNED["main"] == MAIN == "5f110d8" and PINNED["python"] == "3.12.13"
     assert set(PINNED["piped"]) == set(CORPUS) and len(CORPUS) >= 198
     assert set(EXTRA) <= set(CORPUS) and set(CHANGED) <= set(CORPUS)
     assert set(PINNED["init"]) == {*INIT, EVERY_LABEL} and set(PINNED["setup"]) == set(SETUP) and len(PINNED["skill"]) == 1

@@ -32,7 +32,7 @@ def _digest(text: str) -> str:
 
 
 def test_bd_5_every_case_is_pinned() -> None:
-    assert PINNED["main"] == "7e6fef6"
+    assert PINNED["main"] == "7d601f5"
     assert set(PINNED["piped"]) == set(PIPED)
     assert set(PINNED["pty"]) == set(PTY)
     assert all(set(v) == {f"{w} {r}" for w in PTY_WIDTHS for r in ("pretty", "plain")} for v in PINNED["pty"].values())

@@ -42,7 +42,7 @@ from docs_pins import CHANGED, EVERY_LABEL, INIT, READERS_SAID, SETUP, SKILL, pi
 
 TESTS = Path(__file__).resolve().parent
 REPO = TESTS.parent
-MAIN = "901e845"
+MAIN = "5700ad9"
 
 #: The files the recipe changes, pinned as text as well, so that a test can say what moved in
 #: them without the repository's history (a shallow clone has none).

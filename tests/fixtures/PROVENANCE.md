@@ -361,13 +361,13 @@ them, in `ingest/junit/`, with the suite `replay_humaneval.py` and the plugin `f
 
 | Fixture | The suite | Test cases | Passed / failed / errors / skipped | Suite timestamp | Size |
 |---|---|---|---|---|---|
-| `ingest/junit/trace-suite-1.xml` | three of Trace's own test files at `a1abc6c` | 91 | 90 / 0 / 0 / 1 | `2026-10-13T00:01:11.564615-04:00` | 14,727 B |
+| `ingest/junit/trace-suite-1.xml` | three of Trace's own test files at `3862811` | 91 | 90 / 0 / 0 / 1 | `2026-10-13T00:01:11.564615-04:00` | 14,727 B |
 | `ingest/junit/trace-suite-2.xml` | the same, run again | 91 | 90 / 0 / 0 / 1 | `2026-10-13T00:01:23.261977-04:00` | 14,727 B |
 | `ingest/junit/humaneval-a.xml` | `replay_humaneval.py` on `humaneval/20260905T185407Z-0313` | 656 | 569 / 86 / 1 / 0 | `2026-10-13T00:20:34.510483-04:00` | 92,702 B |
 | `ingest/junit/humaneval-b.xml` | `replay_humaneval.py` on `humaneval/20260905T195009Z-18ac` | 656 | 573 / 83 / 0 / 0 | `2026-10-13T00:20:35.677086-04:00` | 91,387 B |
 
 **Trace's own tests, run twice.** `tests/test_tf1_names.py`, `tests/ingest/test_cut.py` and
-`tests/ingest/test_rows.py` of Trace's `main` at `a1abc6c`, run from a `git archive` of that
+`tests/ingest/test_rows.py` of Trace's `main` at `3862811`, run from a `git archive` of that
 commit extracted at `/Users/Shared/trace-fixture/trace` (so the one path pytest writes, a skip's
 location, names no home folder), one run after the other, nothing changed between them. One test
 skips itself; nothing fails. pytest writes each run's Hypothesis statistics as properties.
@@ -539,7 +539,7 @@ imports of the committed `ingest/deepeval/humaneval-{a,b}.json.gz` and `ingest/i
 80 and 140 columns (`continuous-proposed-*`). The tests of
 `tests/test_bd_*.py` hold Trace's output to them (with one cell corrected).
 
-`breakdown/main-pins.json` holds the digests of what an earlier main, `7e6fef6`, printed, so that
+`breakdown/main-pins.json` holds the digests of what an earlier main, `7d601f5`, printed, so that
 `tests/test_breakdown_unchanged.py` can check every other output stays as it was; taken by
 `breakdown/make_main_pins.py` on that commit, twice, with the same result. Paths are written
 `<ROOT>`. No key, no model and no network were used.

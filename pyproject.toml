@@ -34,13 +34,15 @@ classifiers = [
 # poisson_trace/_pretty.py and the terminal app's modules alone; the floor is the one Prove
 # declares. Textual is the terminal app's framework, imported by poisson_trace/_app*.py alone,
 # at the floor Prove declares.
-dependencies = ["numpy", "scipy", "pandas>=2", "pyarrow>=17.0.0", "poisson-prove>=0.4.0", "rich>=14.2.0", "textual>=6.4.0"]
+# NumPy and SciPy are declared at the oldest versions the lanes run with, the ones Python 3.11's
+# constraints hold (.github/release/lanes-3.11.txt), and so are the tools of the dev extra.
+dependencies = ["numpy>=2.4.6", "scipy>=1.17.1", "pandas>=2", "pyarrow>=17.0.0", "poisson-prove>=0.4.0", "rich>=14.2.0", "textual>=6.4.0"]
 
 [project.optional-dependencies]
 # pyte reads a pseudo-terminal's screen back for the clean-look tests
 # zstandard reads an Inspect .eval log, whose members are Zstandard-compressed
 inspect = ["zstandard>=0.22"]
-dev = ["pytest", "pytest-xdist", "hypothesis", "mypy", "ruff", "lifelines", "pyte", "zstandard>=0.22", "poisson-tasks==0.4.2"]
+dev = ["pytest>=9.2.0", "pytest-xdist>=3.8.0", "hypothesis>=6.170.15", "mypy>=2.4.1", "ruff>=0.17.4", "lifelines>=0.30.0", "pyte>=0.8.2", "zstandard>=0.22", "poisson-tasks==0.4.2"]
 
 [project.scripts]
 poisson-trace = "poisson_trace.cli:main"
