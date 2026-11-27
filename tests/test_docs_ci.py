@@ -276,13 +276,16 @@ def test_tf5_97_the_release_runs_the_same_lanes() -> None:
 
 
 def test_the_release_runs_its_lanes_on_every_python_declared() -> None:
-    """A release runs the lanes on each Python the package says it runs on, and each installs
-    through constraints recorded for it: one exact version a line, Prove at the floor."""
-    lanes = jobs((REPO / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8"))["lanes"]
-    matrix = re.search(r"(?m)^        python: \[(.+)\]$", lanes)
-    assert matrix, "the lanes job has no list of Pythons"
+    """A release runs the lanes, and installs the built wheel alone, on each Python the package
+    says it runs on, and each installs through constraints recorded for it: one exact version a
+    line, Prove at the floor, and every package the package and its dev extra name."""
+    release = jobs((REPO / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8"))
     declared = {c.rsplit(" ", 1)[1] for c in PROJECT["classifiers"] if re.fullmatch(r"Programming Language :: Python :: 3\.\d+", c)}
-    assert set(re.findall(r"3\.\d+", matrix.group(1))) == declared, matrix.group(1)
+    for job in ("lanes", "lane-j"):
+        matrix = re.search(r"(?m)^        python: \[(.+)\]$", release[job])
+        assert matrix, f"the {job} job has no list of Pythons"
+        assert set(re.findall(r"3\.\d+", matrix.group(1))) == declared, (job, matrix.group(1))
+    named = {re.split(r"[><=]", d.replace(" ", ""))[0].lower().replace("_", "-") for d in [*PROJECT["dependencies"], *PROJECT["optional-dependencies"]["dev"]]}
     (floor,) = [d.replace(" ", "").removeprefix("poisson-prove>=") for d in PROJECT["dependencies"] if d.startswith("poisson-prove")]
     for python in sorted(declared):
         path = REPO / ".github" / "release" / f"lanes-{python}.txt"
@@ -293,3 +296,5 @@ def test_the_release_runs_its_lanes_on_every_python_declared() -> None:
         assert held and all(re.fullmatch(r"[A-Za-z0-9_.-]+==\S+", line) for line in held), path.name
         assert [line for line in held if line.startswith("poisson-prove")] == [f"poisson-prove=={floor}"], path.name
         assert not [line for line in held if line.startswith("poisson-trace")], "Trace itself is left out"
+        recorded = {line.split("==")[0].lower().replace("_", "-") for line in held}
+        assert named <= recorded, f"{path.name} does not hold {sorted(named - recorded)}"

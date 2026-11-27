@@ -131,8 +131,8 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
   through Prove refuses in one line that names what is missing, and `doctor`'s Prove check
   says the same. No command is offered: installing that Prove again would change nothing.
 - `pyarrow` is a declared dependency: Trace uses it to write a saved result's table.
-- NumPy and SciPy are declared at floors, `numpy>=2.4.6` and `scipy>=1.17.1`, the oldest
-  versions Trace's tests run with. An install upgrades an older one.
+- NumPy and SciPy are declared at floors, `numpy>=2.1.0` and `scipy>=1.13.0`, the oldest
+  versions Trace's tests pass at. An install upgrades an older one.
 
 ### If you used a pre-release
 

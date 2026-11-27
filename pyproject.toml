@@ -34,9 +34,11 @@ classifiers = [
 # poisson_trace/_pretty.py and the terminal app's modules alone; the floor is the one Prove
 # declares. Textual is the terminal app's framework, imported by poisson_trace/_app*.py alone,
 # at the floor Prove declares.
-# NumPy and SciPy are declared at the oldest versions the lanes run with, the ones Python 3.11's
-# constraints hold (.github/release/lanes-3.11.txt), and so are the tools of the dev extra.
-dependencies = ["numpy>=2.4.6", "scipy>=1.17.1", "pandas>=2", "pyarrow>=17.0.0", "poisson-prove>=0.4.0", "rich>=14.2.0", "textual>=6.4.0"]
+# NumPy and SciPy are declared at the oldest versions the lanes pass at. NumPy 2.1.0 is the
+# oldest the lanes can be installed with: Poisson Tasks, in the dev extra, needs it. SciPy 1.13.0
+# is the oldest SciPy that runs with NumPy 2; on Python 3.13 the oldest with a wheel is 1.14.1.
+# The tools of the dev extra are declared at the versions the lanes run with.
+dependencies = ["numpy>=2.1.0", "scipy>=1.13.0", "pandas>=2", "pyarrow>=17.0.0", "poisson-prove>=0.4.0", "rich>=14.2.0", "textual>=6.4.0"]
 
 [project.optional-dependencies]
 # pyte reads a pseudo-terminal's screen back for the clean-look tests

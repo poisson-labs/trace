@@ -117,12 +117,24 @@ def test_pf_61_the_lanes_constraints_hold_the_floor(python: str) -> None:
     name = f".github/release/lanes-{python}.txt"
     lines = (REPO / name).read_text(encoding="utf-8").splitlines()
     assert [line for line in lines if re.match(r"poisson[-_]prove\b", line)] == [f"poisson-prove=={RECORDED}"]
-    # every other line is main's, the first without its build date: the lanes move the one package
+    # every other package main's file held is held at the version main held, the first line
+    # without its build date: the lanes move the one package. The file is the whole freeze of the
+    # lanes' environment now, so it holds more packages than main's did, each written as pip
+    # writes its name.
     was = main_text(name).splitlines()
     assert [line for line in was if re.match(r"poisson[-_]prove\b", line)] == [f"poisson-prove=={FORMAT_1_0}"]
     assert lines[0] == re.sub(r", \d{4}-\d{2}-\d{2}\.$", ".", was[0]) != was[0]
-    assert [line for line in lines[1:] if not line.startswith("poisson-prove")] == [line for line in was[1:] if not line.startswith("poisson-prove")]
-    assert len(lines) == len(was)
+    assert lines[1] == was[1]
+
+    def held(text: list[str]) -> dict[str, str]:
+        found = [line.split("==") for line in text if "==" in line and not line.startswith("#")]
+        return {re.sub(r"[-_.]+", "-", package).lower(): version for package, version in found}
+
+    now, then = held(lines), held(was)
+    assert len(now) == len(lines) - 2 and len(then) == len(was) - 2, "one line a package, under the two opening lines"
+    assert {package: version for package, version in now.items() if package in then and package != "poisson-prove"} == {
+        package: version for package, version in then.items() if package != "poisson-prove"}
+    assert set(then) < set(now), "and the rest of what the environment holds"
 
 
 def test_pf_61_the_pull_request_lane_installs_through_them() -> None:
