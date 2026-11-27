@@ -17,9 +17,9 @@ suite carries no YAML reader.
   statistics code or the resolved numpy, scipy, pandas or lifelines changed: the workflow, or
   a script under ``.github/lanes/`` it runs, names each of those, in what it runs or holds and not
   in a comment alone.
-- TF5-93: the slow lane (``-m slow``), lane J (``-m lane_j``, the one job that reads the
-  package index for DeepEval and Ragas) and the full matrix (Python 3.11, 3.12 and 3.13) run
-  on a push to ``main`` and on the schedule, and never on a pull request.
+- TF5-93: the slow lane (``-m slow``), lane J (``-m lane_j``, which reads the package index
+  for DeepEval and Ragas) and the full matrix (Python 3.11, 3.12 and 3.13) run on a push to
+  ``main`` and on the schedule, and never on a pull request.
 - TF5-94: the job ``clean-install``: builds the source archive and the wheel from the commit;
   installs the wheel with plain pip into a fresh environment, and the source archive in one
   cell; leaves the checkout for an empty folder with ``HOME`` set to another; checks
@@ -35,11 +35,18 @@ suite carries no YAML reader.
   the one that says Trace reads Prove's stored runs alone.
 - TF5-97: the release workflow still runs the same lanes by the same marks, so CI and the
   release cannot drift.
+- The floors of numpy and scipy: one job installs the two at exactly the versions
+  ``pyproject.toml`` declares, read from it by the job's own lines, and every other package
+  as ``lanes-3.11.txt`` holds it; checks that the two installed are those before any lane;
+  and runs the four lanes on Python 3.11, on a push to ``main``, on the schedule and on a
+  hand start, never on a pull request.
 """
 
 from __future__ import annotations
 
 import re
+import shlex
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -298,3 +305,74 @@ def test_the_release_runs_its_lanes_on_every_python_declared() -> None:
         assert not [line for line in held if line.startswith("poisson-trace")], "Trace itself is left out"
         recorded = {line.split("==")[0].lower().replace("_", "-") for line in held}
         assert named <= recorded, f"{path.name} does not hold {sorted(named - recorded)}"
+
+
+# ---------- the floors of numpy and scipy ----------
+
+FLOORS = {name: d.replace(" ", "").removeprefix(f"{name}>=") for name in ("numpy", "scipy") for d in PROJECT["dependencies"]
+          if re.fullmatch(rf"{name}>=\d+(\.\d+)*", d.replace(" ", ""))}
+
+
+def _floors() -> str:
+    """The one job that installs numpy at an exact version, and scipy beside it."""
+    found = {name: text for name, text in _all().items() if re.search(r"pip install\b[^\n]*\bnumpy==", text)}
+    assert len(found) == 1, f"one job installs numpy at an exact version: {sorted(found)}"
+    (job,) = found.values()
+    return job
+
+
+def test_the_floors_cell_runs_on_main_and_every_night_and_never_on_a_pull_request() -> None:
+    job = _floors()
+    assert _never_on_a_pull_request(job), "a push to main, the night and a hand start"
+    assert re.search(r"(?m)^  schedule:", triggers()) and re.search(r"(?m)^  workflow_dispatch:", triggers())
+    assert _pythons(job) == {"3.11"}, "the oldest Python the package declares, where both floors install"
+
+
+def test_the_floors_cell_reads_each_floor_from_pyproject() -> None:
+    """The versions are the ones ``pyproject.toml`` declares, read from it by the job's own
+    lines, so a floor that moves there moves the cell. Each line is run here as the job runs
+    it, so a ``pyproject.toml`` the lines no longer read fails here and not on main alone."""
+    assert sorted(FLOORS) == ["numpy", "scipy"], PROJECT["dependencies"]
+    job = _floors()
+    reads = dict(re.findall(r"(?m)^ +(numpy|scipy)=\$\((sed -n '[^'\n]+' pyproject\.toml)\)$", job))
+    assert sorted(reads) == ["numpy", "scipy"], "each floor is read from pyproject.toml"
+    for name, command in reads.items():
+        ran = subprocess.run(shlex.split(command), cwd=REPO, capture_output=True, text=True, timeout=60)
+        assert (ran.returncode, ran.stdout) == (0, FLOORS[name] + "\n"), (command, ran.stdout, ran.stderr)
+    assert not re.search(r"\b(?:numpy|scipy)==\d", job), "no version of either is written in the job"
+    for name in reads:
+        assert re.search(rf'(?m)^ +test -n "\${name}"$', job), f"an empty reading of {name} stops the job, on a line of its own"
+
+
+def test_the_floors_cell_installs_them_exactly_and_the_rest_as_the_lanes_do() -> None:
+    job = _floors()
+    made = re.search(r'(?m)^ +grep -v -i -E "\^\(numpy\|scipy\)==" \.github/release/lanes-3\.11\.txt > (\S+)$', job)
+    assert made, "the constraints are those of lanes-3.11.txt with its numpy and scipy lines left out"
+    install = re.search(r'(?m)^ +\.venv/bin/python -m pip install [^\n]*-c (\S+) -e "\.\[dev\]" "numpy==\$numpy" "scipy==\$scipy"$', job)
+    assert install and install.group(1) == made.group(1), "the dev extra through them, numpy and scipy named exactly"
+    assert not re.search(r"-c \.github/release/lanes-", job), "never through the whole file, which holds another numpy"
+    assert re.search(r"(?m)^ +\.venv/bin/python -m pip check$", job)
+    # the file holds one line for each of the two, written as the job's pattern reads them
+    lines = (REPO / ".github" / "release" / "lanes-3.11.txt").read_text(encoding="utf-8").splitlines()
+    assert sorted(line.split("==")[0] for line in lines if re.match(r"(?i)(numpy|scipy)==", line)) == ["numpy", "scipy"]
+
+
+def test_the_floors_cell_checks_what_it_installed_before_any_lane() -> None:
+    job = _floors()
+    steps = re.split(r"(?m)^      - ", job)[1:]
+    checks = [n for n, step in enumerate(steps) if "importlib.metadata.version" in step and re.search(r"\bassert\b", step)]
+    assert checks, "a step compares the installed numpy and scipy with the floors"
+    (compared,) = [line for line in steps[checks[0]].split("\n") if "importlib.metadata.version" in line]
+    assert "|" not in compared, "the comparison is not piped: a pipe would hide its failure from the step"
+    for name in ("numpy", "scipy"):
+        assert re.search(rf"os\.environ\['{name.upper()}_FLOOR'\]", steps[checks[0]]), name
+        assert re.search(rf'(?m)^ +echo "{name.upper()}_FLOOR=\${name}" >> "\$GITHUB_ENV"$', job), name
+    lanes = [n for n, step in enumerate(steps) if PYTEST.search(step)]
+    assert lanes and checks[0] < min(lanes), "before any lane runs"
+
+
+def test_the_floors_cell_runs_the_four_lanes() -> None:
+    lines = PYTEST.findall(_floors())
+    for mark in (PR_LANE, "-m slow", "-m math", "-m lane_j"):
+        assert [line for line in lines if line.endswith(f"{mark} tests")], f"the floors cell does not run {mark}"
+    assert len(lines) == 4, lines
