@@ -13,6 +13,12 @@
 # - full: on main and every night, never on a pull request: the pull-request lane, the slow
 #   lane and the math lane on Python 3.11, 3.12 and 3.13, with ruff and mypy --strict on each,
 #   which is what a release runs on each of them.
+# - floors: on main and every night, never on a pull request: the pull-request lane, the slow
+#   lane, the math lane and lane J on Python 3.11 with numpy and scipy installed at exactly
+#   the oldest versions pyproject.toml declares, each read from the one line that declares
+#   it, and every other package as lanes-3.11.txt holds it. Every other lane runs with a
+#   newer numpy and scipy, so this is the job that says so when Trace stops working at the
+#   floors. It checks that the two installed are the floors before any lane runs.
 # - newest-prove: on main and every night, never on a pull request: the pull-request lane on
 #   Python 3.12 with the newest poisson-prove the package index serves installed over the one
 #   the lanes were last green with. Trace declares the oldest Prove it reads and no cap, so a
@@ -20,7 +26,7 @@
 #   as Trace expects. Every other lane installs through .github/release/lanes-*.txt, which
 #   hold the floor. It stays off pull requests, where a new Prove would fail every one open
 #   for something none of them changed.
-# - lane-j: on main and every night, never on a pull request: the one job that reads the
+# - lane-j: on main and every night, never on a pull request: the lane that reads the
 #   package index for other tools. It installs the real DeepEval and Ragas and runs the tests
 #   that run them, and the tests that the built wheel installs beside a Prove it reads.
 # - clean-install: on every event, a pull request included. Builds the source archive and the
@@ -198,6 +204,57 @@ jobs:
         run: .venv/bin/ruff check src tests
       - name: mypy --strict
         run: .venv/bin/mypy --strict
+
+  floors:
+    if: github.event_name != 'pull_request'
+    runs-on: macos-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      # Each floor is read from the one line of pyproject.toml that declares it and named
+      # beside the install at exactly that version. The constraints are those of the lanes
+      # for this Python with their own numpy and scipy lines left out, so those two are all
+      # that differs from the full job's environment.
+      - name: Environment, with numpy and scipy at exactly the floors pyproject.toml declares
+        run: |
+          numpy=$(sed -n 's/^dependencies = .*"numpy>=\([0-9][0-9.]*\)".*$/\1/p' pyproject.toml)
+          scipy=$(sed -n 's/^dependencies = .*"scipy>=\([0-9][0-9.]*\)".*$/\1/p' pyproject.toml)
+          test -n "$numpy"
+          test -n "$scipy"
+          echo "NUMPY_FLOOR=$numpy" >> "$GITHUB_ENV"
+          echo "SCIPY_FLOOR=$scipy" >> "$GITHUB_ENV"
+          python -m venv .venv
+          grep -v -i -E "^(numpy|scipy)==" .github/release/lanes-3.11.txt > "$RUNNER_TEMP/others.txt"
+          .venv/bin/python -m pip install --quiet -c "$RUNNER_TEMP/others.txt" -e ".[dev]" "numpy==$numpy" "scipy==$scipy"
+          .venv/bin/python -m pip check
+          .venv/bin/python --version
+      - name: The numpy and scipy installed are the floors
+        run: |
+          .venv/bin/python -c "import importlib.metadata, os; found = {name: importlib.metadata.version(name) for name in ('numpy', 'scipy')}; assert found == {'numpy': os.environ['NUMPY_FLOOR'], 'scipy': os.environ['SCIPY_FLOOR']}, found; print('numpy', found['numpy'], 'and scipy', found['scipy'], 'are the oldest Trace declares')"
+          echo "numpy $NUMPY_FLOOR and scipy $SCIPY_FLOOR, the oldest Trace declares" >> "$GITHUB_STEP_SUMMARY"
+          .venv/bin/poisson-trace --version | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Tasks' tokenizer file, which the three-tools recipe the lanes run needs
+        run: .venv/bin/poisson-tasks doctor --fix --yes
+      - name: Pull-request lane
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m "not math and not lane_j and not slow" tests
+      - name: Slow lane
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m slow tests
+      - name: Math lane
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m math tests
+      # As in the lane-j job: the tests install the two tools themselves, and this step fails
+      # early and plainly when the package index cannot serve them.
+      - name: The real DeepEval and Ragas, from the package index
+        run: |
+          DEEPEVAL=$(sed -n 's/^DEEPEVAL = "\(.*\)"$/\1/p' tests/ingest/test_deepeval_package.py)
+          python -m venv "$RUNNER_TEMP/tools"
+          "$RUNNER_TEMP/tools/bin/python" -m pip install --quiet "deepeval==$DEEPEVAL" ragas
+      - name: Lane J
+        run: env -u CI .venv/bin/python -m pytest -q -p no:cacheprovider -m lane_j tests
 
   newest-prove:
     if: github.event_name != 'pull_request'
