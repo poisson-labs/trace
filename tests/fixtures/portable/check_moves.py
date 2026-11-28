@@ -24,6 +24,15 @@ file whose pins were re-taken. For every pin that moved it checks, and prints on
    ``max(1e-12 * |old|, 1e-13)`` of the old one. Some pins hash one invocation as
    ``f"{exit code}\n{stdout}\n{stderr}"``; when its stdout is one JSON document, the exit code
    and stderr are the same byte for byte and the document is held as above.
+
+   One reordering is allowed, the one exact arithmetic makes: rows that tie exactly on p. A
+   table's rows are sorted by ``(p, config_hash)``, and where two rows' p are equal as exact
+   rationals their old floats could differ in the last bits, which set their old order. In a
+   JSON list whose items each hold a ``config_hash`` and a ``p``, rows may change places only
+   where their new p are equal, and then into ``config_hash`` order; each row is held to its own
+   old row as above. In a plain text, the rows of a table whose header names a ``p`` column may
+   change places only among the consecutive rows that print the same p; every other line is the
+   same byte for byte.
 5. One line per moved pin: where it is held, the old digest, the new digest and the largest float
    change. The exit code is 1 if any move is refused, and 0 if every one holds.
 """
@@ -73,6 +82,46 @@ def _typed(text: str) -> Any:
     )
 
 
+def _row_key(row: Any) -> tuple[str, float] | None:
+    """A table row's ``(config_hash, p)``: an object holding a string ``config_hash`` and a
+    number ``p``; None for anything else."""
+    if not (isinstance(row, tuple) and row and row[0] == "object"):
+        return None
+    fields = dict(row[1])
+    tag, p = fields.get("config_hash"), fields.get("p")
+    if not isinstance(tag, str) or not (isinstance(p, tuple) and p and p[0] in ("int", "float")):
+        return None
+    return tag, p[1]
+
+
+def _tied_rows(old: list[Any], new: list[Any], at: str) -> float | None:
+    """The largest float change from the rows ``old`` to ``new`` where they are a table's rows in
+    another order; None where they are not rows, or are in the same order. Two rows may change
+    places only where their new p are equal, and then into ``config_hash`` order."""
+    old_keys, new_keys = [_row_key(r) for r in old], [_row_key(r) for r in new]
+    if not old or None in old_keys or None in new_keys:
+        return None
+    old_tags = [k[0] for k in old_keys if k is not None]
+    new_tags = [k[0] for k in new_keys if k is not None]
+    if old_tags == new_tags:
+        return None
+    if len(set(old_tags)) != len(old_tags) or sorted(old_tags) != sorted(new_tags):
+        raise Refused(f"{at or '/'}: the rows changed, not only their order")
+    where = {tag: i for i, tag in enumerate(old_tags)}
+    keys = [k for k in new_keys if k is not None]
+    for i, (first, first_p) in enumerate(keys):
+        for second, second_p in keys[i + 1 :]:
+            if where[first] > where[second]:
+                if first_p != second_p:
+                    raise Refused(f"{at}: the rows {first} and {second} changed places, and their p "
+                                  f"{first_p!r} and {second_p!r} do not tie")
+                if not first < second:
+                    raise Refused(f"{at}: the rows {first} and {second} tie on p and changed places "
+                                  "out of config_hash order")
+    pairs = enumerate(zip(new_tags, new, strict=True))
+    return max(_walk(old[where[tag]], row, f"{at}/{j}") for j, (tag, row) in pairs)
+
+
 def _walk(old: Any, new: Any, at: str) -> float:
     """The largest float change from ``old`` to ``new``; raises ``Refused`` on any other change."""
     if isinstance(old, tuple) and isinstance(new, tuple) and old[0] == new[0] == "object":
@@ -83,6 +132,9 @@ def _walk(old: Any, new: Any, at: str) -> float:
     if isinstance(old, list) and isinstance(new, list):
         if len(old) != len(new):
             raise Refused(f"{at or '/'}: a list of {len(old)} became one of {len(new)}")
+        reordered = _tied_rows(old, new, at)
+        if reordered is not None:
+            return reordered
         return max([0.0, *(_walk(o, n, f"{at}/{i}") for i, (o, n) in enumerate(zip(old, new, strict=True)))])
     if isinstance(old, tuple) and isinstance(new, tuple) and old[0] == new[0] == "float":
         change = abs(new[1] - old[1])
@@ -133,6 +185,53 @@ def _exit_stdout_stderr(text: str) -> tuple[str, Any, str] | None:
     return text[: line.end()], doc, text[end:]
 
 
+_SEPARATOR = re.compile(r"^\|(?: *:?-+:? *\|)+$")
+
+
+def _cells(line: str) -> list[str]:
+    return [cell.strip() for cell in line.strip()[1:-1].split("|")]
+
+
+def _p_blocks(lines: list[str]) -> list[tuple[int, str] | None]:
+    """For each line, ``(table, printed p)`` where it is a row of a table whose header names one
+    column ``p``, the table counted from 0; None for every other line."""
+    out: list[tuple[int, str] | None] = []
+    table, column, width = -1, None, 0
+    for i, line in enumerate(lines):
+        if i and _SEPARATOR.match(line) and lines[i - 1].startswith("|"):
+            head = _cells(lines[i - 1])
+            table += 1
+            column, width = (head.index("p"), len(head)) if head.count("p") == 1 else (None, 0)
+            out.append(None)
+            continue
+        if not line.startswith("|"):
+            column = None
+        cells = _cells(line) if column is not None and line.endswith("|") else []
+        out.append((table, cells[column]) if column is not None and len(cells) == width else None)
+    return out
+
+
+def _rows_reordered(old: str, new: str) -> bool:
+    """Whether ``new`` is ``old`` with only rows of its tables that print the same p changed
+    places among themselves, every other line the same byte for byte."""
+    lines_old, lines_new = old.split("\n"), new.split("\n")
+    if len(lines_old) != len(lines_new):
+        return False
+    keys = _p_blocks(lines_old)
+    if keys != _p_blocks(lines_new):
+        return False
+    start = 0
+    while start < len(lines_old):
+        end = start + 1
+        while end < len(lines_old) and keys[start] is not None and keys[end] == keys[start]:
+            end += 1
+        block_old, block_new = lines_old[start:end], lines_new[start:end]
+        if block_old != block_new and (keys[start] is None or sorted(block_old) != sorted(block_new)):
+            return False
+        start = end
+    return True
+
+
 def compare_texts(old: str, new: str) -> float:
     """The largest float change from ``old`` to ``new``, two outputs of one invocation; raises
     ``Refused`` when the move is not one the rules allow."""
@@ -147,6 +246,8 @@ def compare_texts(old: str, new: str) -> float:
             raise Refused(f"stderr moved: {old_run[2][:200]!r} -> {new_run[2][:200]!r}")
         return _walk(old_run[1], new_run[1], "")
     if old_doc is None or new_doc is None:
+        if _rows_reordered(old, new):
+            return 0.0
         lines_old, lines_new = old.splitlines(), new.splitlines()
         first = next((i for i, (a, b) in enumerate(zip(lines_old, lines_new)) if a != b), min(len(lines_old), len(lines_new)))
         shown_old = lines_old[first] if first < len(lines_old) else "(no line)"
