@@ -91,8 +91,8 @@
   },
   "difference": {
     "points": 0.0,
-    "lo": -0.2991450484195442,
-    "hi": 0.2991450484195442,
+    "lo": -0.2991450484195441,
+    "hi": 0.2991450484195441,
     "variance": 0.0,
     "interval": "stratified Miettinen-Nurminen score interval, Mantel-Haenszel weights"
   },
@@ -127,7 +127,7 @@
     "flagged": 0,
     "alpha": 0.05,
     "lone_threshold": 0.025,
-    "smallest_attainable_p": 0.007936507936507938,
+    "smallest_attainable_p": 0.007936507936507936,
     "together": 1,
     "lone_flip_repeats": 5,
     "rows": [
