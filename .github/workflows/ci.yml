@@ -6,6 +6,12 @@
 #
 # - pull-request: on every pull request, push and night, on Python 3.11, the oldest the package
 #   declares: the pull-request lane, ruff check src tests and mypy --strict. Nothing skips it.
+# - portable: on every event, a pull request included, on macOS and Python 3.11: the tests that
+#   hold every number Trace computes to the same bits on every platform (the arithmetic rule,
+#   the portable functions' accuracy, the golden table of exact bits, the range's ends, the ties
+#   at a threshold, and the fixtures' SHA256SUMS), each named by its file. A pull request's other
+#   lanes run on Linux, so this is the job that shows a number that differs between the two
+#   systems before a merge.
 # - math: the statistics' slow checks against their references. Every night and on every push
 #   to main; on a pull request only when .github/lanes/math_lane.py says the pull request could
 #   have moved a statistic (the statistics code, a test of the math suite, the declared
@@ -52,10 +58,8 @@
 # run over every core of its runner. The socket guard is .github/lanes/socket_guard.py, put
 # on PYTHONPATH as sitecustomize.py.
 #
-# On a pull request the pull-request job runs on macOS as well as on Linux. The numbers
-# `--json` writes differ in their last digit between the two systems, and the outputs the
-# tests pin were taken on macOS, so some of those tests fail on Linux today. Until they hold
-# on both, the macOS cell is the one that must be green before a merge.
+# On a pull request the pull-request job runs on macOS as well as on Linux. Every number Trace
+# computes is the same bits on both systems, and the outputs the tests pin hold on both.
 #
 # Started by hand ("Run workflow", on any branch) every job runs as it does on main, so the
 # jobs a pull request never starts can be run on a branch before it merges.
@@ -115,6 +119,25 @@ jobs:
         run: .venv/bin/ruff check src tests
       - name: mypy --strict
         run: .venv/bin/mypy --strict
+
+  portable:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: Environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --quiet -c .github/release/lanes-3.11.txt -e ".[dev]"
+          .venv/bin/python --version
+          .venv/bin/poisson-trace --version
+      - name: The tests that hold the numbers to the same bits on every platform
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider tests/test_portable_arithmetic.py tests/test_portable_functions.py tests/test_portable_golden.py tests/test_portable_interval.py tests/test_portable_ties.py tests/test_fixture_sums.py
 
   history:
     runs-on: ubuntu-latest
