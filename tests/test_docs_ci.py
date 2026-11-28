@@ -3,8 +3,8 @@
 Frozen here: what ``ci.yml`` must run, on which Pythons, and when. Left open: which
 runner each job uses (``runs-on``, hosted or not, and which systems the
 full matrix covers), how the jobs are cut into shards, and how the socket guard is made.
-Nothing here reads ``runs-on``. ``ci.yml`` is read as text, by its indentation, since the
-suite carries no YAML reader.
+Nothing here reads ``runs-on`` but for the one job whose point is its system, ``portable``.
+``ci.yml`` is read as text, by its indentation, since the suite carries no YAML reader.
 
 - TF5-90: the workflow runs on every pull request, on every push to ``main`` and on a
   schedule; it holds read access to the repository's contents and no secret; every action is
@@ -40,6 +40,11 @@ suite carries no YAML reader.
   as ``lanes-3.11.txt`` holds it; checks that the two installed are those before any lane;
   and runs the four lanes on Python 3.11, on a push to ``main``, on the schedule and on a
   hand start, never on a pull request.
+- The portable job: on every pull request, on macOS (``macos-latest``) and Python 3.11,
+  installed as the pull-request job installs, it runs the tests that hold the numbers to the
+  same bits on every platform, each named by its file. A pull request's other lanes run on
+  Linux, so this is the job that shows a number that differs between the two systems before a
+  merge.
 """
 
 from __future__ import annotations
@@ -376,3 +381,52 @@ def test_the_floors_cell_runs_the_four_lanes() -> None:
     for mark in (PR_LANE, "-m slow", "-m math", "-m lane_j"):
         assert [line for line in lines if line.endswith(f"{mark} tests")], f"the floors cell does not run {mark}"
     assert len(lines) == 4, lines
+
+
+# ---------- the portable job ----------
+
+#: The tests that hold Trace's numbers to the same bits on every platform, and the fixtures' sums.
+PORTABLE_TESTS = (
+    "tests/test_portable_arithmetic.py",
+    "tests/test_portable_functions.py",
+    "tests/test_portable_golden.py",
+    "tests/test_portable_interval.py",
+    "tests/test_portable_ties.py",
+    "tests/test_fixture_sums.py",
+)
+
+
+def _portable() -> str:
+    found = _all()
+    assert "portable" in found, "ci.yml has no job named portable"
+    return found["portable"]
+
+
+def test_the_portable_job_runs_on_every_pull_request_on_macos_and_python_3_11() -> None:
+    job = _portable()
+    assert not _never_on_a_pull_request(job), "a pull request starts it"
+    found = re.search(r"^    if:\s*(.+)$", job, re.M)
+    assert not found or "pull_request" in found.group(1) and "!=" not in found.group(1), found
+    assert re.search(r"(?m)^    runs-on:\s*macos-latest\s*$", job), "on macos-latest, and on it alone"
+    assert _pythons(job) == {"3.11"}
+
+
+def test_the_portable_job_installs_as_the_pull_request_job_does() -> None:
+    job = _portable()
+    pull_request = _all()["pull-request"]
+    installs = re.findall(r"(?m)^ +(\.venv/bin/python -m pip install .+)$", pull_request)
+    assert installs, "the pull-request job installs with pip"
+    for line in installs:
+        assert re.search(rf"(?m)^ +{re.escape(line)}$", job), f"the portable job does not run: {line}"
+    assert re.search(r"(?m)^ +python -m venv \.venv$", job)
+
+
+def test_the_portable_job_runs_the_portability_tests_by_file() -> None:
+    lines = PYTEST.findall(_portable())
+    assert lines, "the portable job runs no pytest line"
+    named = " ".join(lines)
+    for path in PORTABLE_TESTS:
+        assert path in named, f"the portable job does not run {path}"
+        assert (REPO / path).is_file(), path
+    for line in lines:
+        assert " -m " not in line.split("pytest", 1)[1], f"no mark leaves a test of the file out: {line}"
