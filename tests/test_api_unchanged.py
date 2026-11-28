@@ -75,7 +75,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
     'save: compare': [
         (0, 'ae881376b33d74808916ee7c8bf4cee592f308e1d70be9cf531188b3ba6a0ef0',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, '27304d758bdaec1a6fbc23518e1ada837df872156f324fcaa821b95d64b8c54a',
+        (0, '7e7f9098dd4f4a9a2003bac0f515d1a51e4432acd339765bfc7ad2f90dbf1a2c',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'out: compare': [
@@ -85,13 +85,13 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),
-        (0, '27304d758bdaec1a6fbc23518e1ada837df872156f324fcaa821b95d64b8c54a',
+        (0, '7e7f9098dd4f4a9a2003bac0f515d1a51e4432acd339765bfc7ad2f90dbf1a2c',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'save: fix-check': [
         (0, 'cd1bea34c9b3a78b426c12202da485a2290111d53203ad0fb0201b9a04249e74',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
-        (0, '750bd01f953d7df00c96e6c9607fcae393224ac0218a5c8b6b5bba1b269272c4',
+        (0, 'cec79d1c94d5f134cacbf48fba16c306975701b6dc60d411e74ec02e397342e2',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'out: fix-check': [
@@ -101,7 +101,7 @@ PINNED: dict[str, list[tuple[int, str, str]]] = {
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
         (1, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
          '1fd1bbcea4819052b7284b02d43c5669d429b48456cd10317f88583704f48738'),
-        (0, '750bd01f953d7df00c96e6c9607fcae393224ac0218a5c8b6b5bba1b269272c4',
+        (0, 'cec79d1c94d5f134cacbf48fba16c306975701b6dc60d411e74ec02e397342e2',
          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ],
     'save: changes': [
