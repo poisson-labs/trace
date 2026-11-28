@@ -1,0 +1,53 @@
+# A trial, on this branch alone: the slow lane on Linux, at the lanes' own versions on each Python
+# and with numpy and scipy at exactly the floors pyproject.toml declares. The slow lane does not
+# run on Linux in CI, so this shows whether its pinned outputs hold on Linux.
+
+name: Trial, Linux slow lane
+
+on:
+  push:
+    branches: [trace-portable-slow-try-linux]
+
+permissions:
+  contents: read
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  OPENBLAS_NUM_THREADS: "1"
+
+jobs:
+  slow-on-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {python: "3.11", at: "the lanes' own versions", pins: ""}
+          - {python: "3.11", at: "the floors", pins: "numpy==2.1.0 scipy==1.13.0"}
+          - {python: "3.12", at: "the lanes' own versions", pins: ""}
+          - {python: "3.13", at: "the lanes' own versions", pins: ""}
+    name: slow on Linux, ${{ matrix.python }}, at ${{ matrix.at }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Environment
+        run: |
+          python -m venv .venv
+          if [ -n "${{ matrix.pins }}" ]; then
+            grep -v -i -E "^(numpy|scipy)==" ".github/release/lanes-${{ matrix.python }}.txt" > "$RUNNER_TEMP/held.txt"
+          else
+            cp ".github/release/lanes-${{ matrix.python }}.txt" "$RUNNER_TEMP/held.txt"
+          fi
+          .venv/bin/python -m pip install --quiet -c "$RUNNER_TEMP/held.txt" -e ".[dev]" ${{ matrix.pins }}
+          .venv/bin/python -m pip check
+          .venv/bin/poisson-trace --version | tee -a "$GITHUB_STEP_SUMMARY"
+          .venv/bin/python -m pip freeze --exclude-editable
+      - name: Tasks' tokenizer file, which the three-tools recipe the lanes run needs
+        run: .venv/bin/poisson-tasks doctor --fix --yes
+      - name: Slow lane
+        run: env -u CI .venv/bin/python -m pytest -n auto -q -p no:cacheprovider -m slow tests
