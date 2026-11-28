@@ -9,6 +9,12 @@ It writes ``tests/fixtures/no-failures/main-pins.json``: for each invocation of
 the folders the run made written ``<ROOT>``. The corpus is every fix-check output but one kind:
 a pair in which the inputs compared hold no failed run in either version, which is the one kind
 the fix changes (``tests/test_no_failures_printed.py``).
+
+When the numbers Trace computes became the same bits on every platform, the outputs whose last
+digits moved (their ``--json`` numbers, and in a few plain reports the order of rows that tie
+exactly on p) were re-taken from that build, entry by entry, and each move was checked by
+``tests/fixtures/portable/check_moves.py``; run on main, this maker gives those entries' earlier
+digests.
 """
 
 from __future__ import annotations
