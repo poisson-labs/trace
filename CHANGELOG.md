@@ -138,7 +138,7 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
 
 - The examples in `--help` name the store folder `prove-runs`, the folder the published Prove
   writes. They named `proofload-runs` before. Nothing else a command prints has moved but
-  the nine items below.
+  the ten items below.
 - The help of the command now says Trace reads the results of ten other tools, and names all
   of them.
 - The two refusals that list the verbs now list them in the order the help does.
@@ -159,6 +159,11 @@ and sends nothing. It runs on Python 3.11 to 3.13, on macOS and Linux.
 - `where --by step` returns on a hand-written trace whose parent links go round in a circle,
   and labels the step `unnamed`, where 0.1.0a1 never returned. A store Prove wrote holds no
   such trace.
+- `compare`, `fix-check`, `changes` and `where` compute their numbers with arithmetic that
+  gives the same bits on every platform. The `--json` and `result.json` numbers can differ
+  from 0.1.0a1 in their last digits, and where two inputs' p are exactly equal, the table of
+  inputs that changed lists them by their config hash. The same inputs now give the same bytes
+  on macOS and on Linux.
 
 ## 0.1.0a1 — pre-release
 

@@ -529,6 +529,19 @@ def test_tr56_deaths_needed_on_the_tau2_pair() -> None:
 # ---------- TR57 (the functions) ----------
 
 
+def _fisher_rounded(xa: int, na: int, xb: int, nb: int) -> float:
+    """The two-sided Fisher exact p of one input's table as an exact rational, rounded once to a
+    float: every table with the input's margins counted in integers, a table taken as no more
+    probable than the observed one when it is at most ``1 + 1e-7`` times as probable."""
+    failed, total = xa + xb, na + nb
+    lowest, highest = max(0, failed - nb), min(failed, na)
+    terms = [math.comb(na, k) * math.comb(nb, failed - k) for k in range(lowest, highest + 1)]
+    at = terms[xa - lowest]
+    held = sum(t for t in terms if t * 10_000_000 <= at * 10_000_001)
+    whole = math.comb(total, failed)
+    return 1.0 if held >= whole else held / whole
+
+
 @pytest.mark.math
 @SETTINGS
 @given(tables(min_inputs=1, max_inputs=12, max_runs=12), st.sampled_from([0.05, 0.1, 0.2]))
@@ -540,13 +553,16 @@ def test_tr57_flags_are_fisher_then_benjamini_hochberg(tab, alpha) -> None:  # t
     assert set(got) == {x.config_hash for x in c}
     p = np.array([fisher_test(x.failed_old, x.runs_old, x.failed_new, x.runs_new)[1] for x in c])
     q = bh(p, alpha)
-    for x, pi, qi in zip(c, p, q):
+    # the flag is decided on the exact p, rounded once: where an input's exact p sits on the level
+    # Prove's rounded p can fall either side of it, so Prove's flag is not the one to hold there
+    exact_q = bh(np.array([_fisher_rounded(x.failed_old, x.runs_old, x.failed_new, x.runs_new) for x in c]), alpha)
+    for x, pi, qi, qe in zip(c, p, q, exact_q):
         f = got[x.config_hash]
         change = x.failed_new / x.runs_new - x.failed_old / x.runs_old
         assert f.p == pytest.approx(float(pi), abs=1e-12)
         assert f.q == pytest.approx(float(qi), abs=1e-12)
         assert f.change == pytest.approx(change, abs=1e-12)
-        if qi < alpha:
+        if qe < alpha:
             assert f.flag == ("failed more in B" if change > 0 else "failed less in B")
         else:
             assert f.flag is None

@@ -262,7 +262,7 @@ Fisher's exact test per input, Benjamini-Hochberg at q = 0.05 over 328 inputs; 2
 |---|---|---|---|---|---|---|
 | {"case":"HumanEval/129@0.7"} | 12/32 | 32/32 | +62.5 points | 2.30e-08 | 7.55e-06 | failed more in new |
 | {"case":"HumanEval/129@0.0"} | 20/32 | 32/32 | +37.5 points | 1.38e-04 | 0.023 | failed more in new |
-| {"case":"HumanEval/91@0.7"} | 28/32 | 32/32 | +12.5 points | 0.113 | 1.000 | – |
+| {"case":"HumanEval/22@0.7"} | 0/32 | 4/32 | +12.5 points | 0.113 | 1.000 | – |
 
 3 of 328 inputs shown, by ascending p; --json lists all.
 

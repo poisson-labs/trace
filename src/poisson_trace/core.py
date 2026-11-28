@@ -28,6 +28,7 @@ from typing import Any
 
 from poisson_trace import look
 from poisson_trace.look import count
+from poisson_trace.stats import portable
 
 # The by-input reading's seeded sign assignments, when there are too many to enumerate.
 _DRAWS = 100_000
@@ -703,7 +704,7 @@ def _no_traces(run: Any) -> str:
 def _header(run: Any, manifest: Any, placement: Any) -> dict[str, Any]:
     from poisson_trace.clock import REASONS
 
-    counts = {r: sum(1 for p in placement.rows if p.reason == r) for r in REASONS}
+    counts = {r: portable.isum(1 for p in placement.rows if p.reason == r) for r in REASONS}
     return {
         "run_id": run.run_id,
         "run_name": run.name,
@@ -1098,19 +1099,22 @@ def _taxonomy_diff(
         kinds = [
             {
                 "failure_kind": k,
-                **{arm: sum(1 for r in rows[arm] if r.failure_kind == k) for arm in arms},
+                **{arm: portable.isum(1 for r in rows[arm] if r.failure_kind == k) for arm in arms},
             }
             for k in FAILURE_KINDS
             if any(r.failure_kind == k for arm in arms for r in rows[arm])
         ]
         signals = [
-            {"signal": s, **{arm: sum(1 for r in rows[arm] if s in r.signals) for arm in arms}}
+            {
+                "signal": s,
+                **{arm: portable.isum(1 for r in rows[arm] if s in r.signals) for arm in arms},
+            }
             for s in SIGNALS
             if any(s in r.signals for arm in arms for r in rows[arm])
         ]
     tries = {arm: len(rows[arm]) for arm in arms}
     diff: dict[str, Any] = {"taxonomy_sha256": digests, "same_rules": same, "tries": tries}
-    none = {arm: sum(1 for r in rows[arm] if r.outcome is None) for arm in arms}
+    none = {arm: portable.isum(1 for r in rows[arm] if r.outcome is None) for arm in arms}
     if verdict_tries is not None and any(none.values()):
         diff["no_outcome"] = none
         diff["verdict_tries"] = {arm: verdict_tries[arm] for arm in arms}
@@ -1269,7 +1273,8 @@ def _breakdown_section(c: Counted) -> list[str]:
     # by the count over both runs, the sort stable so a tie keeps the diff's precedence order
     kinds = sorted(diff["kinds"], key=lambda k: -(k[a] + k[b]))
     rows = [row(k["failure_kind"], k[a], k[b]) for k in kinds]
-    rows.append(row("all failures", sum(k[a] for k in kinds), sum(k[b] for k in kinds)))
+    all_a, all_b = portable.isum(k[a] for k in kinds), portable.isum(k[b] for k in kinds)
+    rows.append(row("all failures", all_a, all_b))
     header = ["kind", label_a, f"{label_a} share", label_b, f"{label_b} share", "change"]
     if c.kind == "fix-check":
         of = f"of {count(tries_a)} tries of the old version and {count(tries_b)} of the new"
@@ -1421,8 +1426,8 @@ def _changes_rows(data: Mapping[str, Any]) -> list[Any]:
 
     rows = []
     for arm, key in (("a", "a"), ("b", "b")):
-        runs = sum(r[f"runs_{key}"] for r in data["rows"])
-        failed = sum(r[f"failed_{key}"] for r in data["rows"])
+        runs = portable.isum(r[f"runs_{key}"] for r in data["rows"])
+        failed = portable.isum(r[f"failed_{key}"] for r in data["rows"])
         rows += [
             Row("tries", runs, arm),
             Row("failed", failed, arm),
@@ -1868,7 +1873,7 @@ def runs(ns: argparse.Namespace) -> Listed:
                 "run_id": run.run_id,
                 "named_by": run.named_by,
                 "rows": int(tally.rows),
-                "failed": sum(1 for o in outcomes if o in events) if events else None,
+                "failed": portable.isum(1 for o in outcomes if o in events) if events else None,
                 "traced": bool(frame["trace"].notna().any()) if len(frame) else False,
                 "created_at": run.created_at,
                 "status": run.status,
@@ -1882,7 +1887,7 @@ def runs(ns: argparse.Namespace) -> Listed:
             f"unknown event {', '.join(missing)}; the runs listed carry the outcomes: "
             f"{', '.join(sorted(carried)) or 'none'}"
         )
-    yours = sum(1 for r in index.runs if r.named_by == "you")
+    yours = portable.isum(1 for r in index.runs if r.named_by == "you")
     total = len(index.runs)
     theirs = total - yours
     sentence = (
@@ -2128,7 +2133,7 @@ def where(ns: argparse.Namespace) -> Counted:
         cause_rows.append(
             {
                 "cause": k,
-                "deaths": int(sum(1 for p in placement.rows if p.died and p.cause == k)),
+                "deaths": int(portable.isum(1 for p in placement.rows if p.died and p.cause == k)),
                 "f": aj.final[k],
                 "lo": None if band is None else band.final[k][0],
                 "hi": None if band is None else band.final[k][1],
@@ -2151,7 +2156,7 @@ def where(ns: argparse.Namespace) -> Counted:
         # the share of tries that timed out, an end of its own beside the kinds, with its band;
         # the first step by which half of all tries had failed; the last step a try reached
         "_timed_out": {
-            "count": sum(1 for p in placement.rows if p.reason == "timed out"),
+            "count": portable.isum(1 for p in placement.rows if p.reason == "timed out"),
             "f": aj.timed_out,
             "lo": None if band is None else band.timed_out[0],
             "hi": None if band is None else band.timed_out[1],
@@ -2344,7 +2349,8 @@ def compare(ns: argparse.Namespace) -> Counted:
         raise _Refusal("the runs share no config cell, so there is nothing to stratify by")
     common_a = [p for p in rows_a if p.config_hash in common]
     common_b = [p for p in rows_b if p.config_hash in common]
-    deaths_common = sum(p.died for p in common_a) + sum(p.died for p in common_b)
+    deaths_common = portable.isum(p.died for p in common_a)
+    deaths_common += portable.isum(p.died for p in common_b)
     if deaths_common == 0:
         raise _Refusal("no death in either run over the common cells; nothing to compare")
     lr = logrank_stratified(
@@ -2419,8 +2425,8 @@ def compare(ns: argparse.Namespace) -> Counted:
         per.append(
             {
                 "cause": k,
-                "deaths_a": sum(1 for p in rows_a if p.died and p.cause == k),
-                "deaths_b": sum(1 for p in rows_b if p.died and p.cause == k),
+                "deaths_a": portable.isum(1 for p in rows_a if p.died and p.cause == k),
+                "deaths_b": portable.isum(1 for p in rows_b if p.died and p.cause == k),
                 "statistic": lr_k.statistic,
                 "p": lr_k.p,
                 "q": None,
@@ -2477,7 +2483,7 @@ def compare(ns: argparse.Namespace) -> Counted:
         },
         **({"timings": timings} if timings else {}),
         "cannot_say": list(CANNOT_SAY),
-        "_observed_b": float(sum(p.died for p in common_b)),
+        "_observed_b": float(portable.isum(p.died for p in common_b)),
         "_deaths_common": deaths_common,
         "_verdict_line": verdict_line,
         "_same_salt": manifest_a.run_salt == manifest_b.run_salt,
@@ -2491,7 +2497,7 @@ def compare(ns: argparse.Namespace) -> Counted:
         # for the summary: the tries and failures over the common cells, how far apart the two
         # started, and whether every common input failed as often of as many tries in both
         "_common": {
-            arm: {"tries": len(rows), "failed": sum(1 for p in rows if p.died)}
+            arm: {"tries": len(rows), "failed": portable.isum(1 for p in rows if p.died)}
             for arm, rows in (("a", common_a), ("b", common_b))
         },
         "_gap_seconds": _gap_between(run_a, manifest_a, run_b, manifest_b),
@@ -2706,12 +2712,12 @@ def _check_fix_events(events: frozenset[str], frame_old: Any, frame_new: Any) ->
 def _arm_rows(arm: Mapping[str, _Input], compared: Sequence[str], declared: int | None) -> Any:
     rows = [arm[h] for h in compared]
     return {
-        "runs": sum(r.runs for r in rows),
-        "failed": sum(r.failed for r in rows),
-        "timed_out": sum(r.timed_out for r in rows),
-        "no_outcome": sum(r.no_outcome for r in rows),
-        "short": 0 if declared is None else sum(1 for r in rows if r.runs < declared),
-        "mixed": sum(1 for r in rows if 0 < r.failed < r.runs),
+        "runs": portable.isum(r.runs for r in rows),
+        "failed": portable.isum(r.failed for r in rows),
+        "timed_out": portable.isum(r.timed_out for r in rows),
+        "no_outcome": portable.isum(r.no_outcome for r in rows),
+        "short": 0 if declared is None else portable.isum(1 for r in rows if r.runs < declared),
+        "mixed": portable.isum(1 for r in rows if 0 < r.failed < r.runs),
     }
 
 
@@ -2747,12 +2753,14 @@ def _changes_block(
     tested = len(counts)
     smallest = min(extreme(a, b) for a, b in {(c.runs_old, c.runs_new) for c in counts})
     together = next((j for j in range(1, tested + 1) if smallest * tested / j < alpha), None)
+    # a lone input is flagged only where its p is below alpha / M, so the repeats are the first at
+    # which the most extreme table's p is below it; at exactly the threshold it is not flagged
     repeats = 1
-    while extreme(repeats, repeats) > alpha / tested:
+    while extreme(repeats, repeats) >= alpha / tested:
         repeats += 1
     return {
         "tested": tested,
-        "flagged": sum(1 for r in rows if r["flag"] is not None),
+        "flagged": portable.isum(1 for r in rows if r["flag"] is not None),
         "alpha": alpha,
         "lone_threshold": alpha / tested,
         "smallest_attainable_p": smallest,
@@ -2846,7 +2854,7 @@ def fix_check(ns: argparse.Namespace) -> Counted:
     # an input repeats when one version holds two or more of its runs with an outcome; where
     # fewer than half the compared inputs repeat, most pairs of runs of one input still set
     # the two versions side by side rather than a version beside itself
-    repeating = sum(1 for c in counts if c.runs_old >= 2 or c.runs_new >= 2)
+    repeating = portable.isum(1 for c in counts if c.runs_old >= 2 or c.runs_new >= 2)
     few_repeat = 0 < 2 * repeating < len(counts)
     if one_run or few_repeat:
         again = kappa = math.nan
@@ -2869,7 +2877,7 @@ def fix_check(ns: argparse.Namespace) -> Counted:
     )
     asked = f"{100.0 * ns.max_mde:g}"
     limit_text = None if drop is None else _points(drop)
-    excludes_zero = lo is not None and hi is not None and (lo > 0.0 or hi < 0.0)
+    excludes_zero = lo is not None and hi is not None and paired.excludes_zero(lo, hi)
     disagree = variance is not None and ((test.p < ns.alpha) != excludes_zero)
     # the range reads the verdict only where it is reliable; where it is not, the drop limit
     # against the size asked reads it
@@ -2878,7 +2886,7 @@ def fix_check(ns: argparse.Namespace) -> Counted:
     )
     reliable = lo is not None and hi is not None and not rough
     inside = (
-        reliable and lo is not None and hi is not None and -ns.max_mde <= lo and hi <= ns.max_mde
+        reliable and lo is not None and hi is not None and paired.lies_inside(lo, hi, ns.max_mde)
     )
     enough = drop is not None and drop <= ns.max_mde
     guidance = None
@@ -3034,7 +3042,7 @@ def fix_check(ns: argparse.Namespace) -> Counted:
         },
         "_new_first": started_new < started_old,
         "_no_outcome": {
-            name: sum(arm[h].no_outcome + arm[h].timed_out for h in selected if h in arm)
+            name: portable.isum(arm[h].no_outcome + arm[h].timed_out for h in selected if h in arm)
             for name, arm in (("old", arm_old), ("new", arm_new))
         },
     }
@@ -3143,8 +3151,8 @@ def _unconfirmed(counts: Sequence[Any], block: Mapping[str, Any]) -> dict[str, A
             for c in counts
             if c.config_hash in flagged
         ],
-        "extra": sum(extra(c) for c in counts if c.config_hash in flagged),
-        "net_extra": sum(extra(c) for c in counts),
+        "extra": math.fsum(extra(c) for c in counts if c.config_hash in flagged),
+        "net_extra": math.fsum(extra(c) for c in counts),
         "compared_without": len(rest),
         "points_without": points_without,
         "p_without": p_without,
@@ -3215,8 +3223,8 @@ def changes(ns: argparse.Namespace) -> Counted:
         "_top": ns.top,
         "_gap_seconds": gap,
         "_verdict_tries": {
-            "a": sum(arm_a[h].runs for h in compared),
-            "b": sum(arm_b[h].runs for h in compared),
+            "a": portable.isum(arm_a[h].runs for h in compared),
+            "b": portable.isum(arm_b[h].runs for h in compared),
         },
         "_inputs": {
             "a": len(arm_a),
@@ -3228,9 +3236,9 @@ def changes(ns: argparse.Namespace) -> Counted:
     # for the summary: each run's tries with no outcome, and the inputs both carry that one of
     # them gives no outcome on
     data["_no_outcome"] = {
-        "a": sum(r.no_outcome + r.timed_out for r in arm_a.values()),
-        "b": sum(r.no_outcome + r.timed_out for r in arm_b.values()),
-        "left_out": sum(
+        "a": portable.isum(r.no_outcome + r.timed_out for r in arm_a.values()),
+        "b": portable.isum(r.no_outcome + r.timed_out for r in arm_b.values()),
+        "left_out": portable.isum(
             1 for h in set(arm_a) & set(arm_b) if not (arm_a[h].runs and arm_b[h].runs)
         ),
     }

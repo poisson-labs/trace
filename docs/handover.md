@@ -97,7 +97,8 @@ What the main keys of `result.json` mean:
 | `versions` | the versions of Trace and Prove that wrote it |
 
 A number is a JSON number and never `NaN`; a value that is missing is null. The same inputs
-give the same bytes.
+give the same bytes on macOS and on Linux, on every Python Trace declares, and with any numpy
+and scipy at or above the declared floors.
 
 ## Steps and timings
 

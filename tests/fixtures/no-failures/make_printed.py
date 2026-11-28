@@ -7,6 +7,10 @@ the repository's root, with the package installed::
 Unlike ``main-pins.json`` these were taken from the fixed code: they are a record of what it
 prints, kept so that a later change to any byte of it is made on purpose. The numbers in them are
 checked against independent computations in ``tests/test_no_failures.py``.
+
+The ``--json`` files were taken again when the numbers Trace computes became the same bits on
+every platform: the last digits of the range's ends moved, and each move was held to the rule of
+``tests/fixtures/portable/check_moves.py``; the plain files did not move.
 """
 
 from __future__ import annotations
