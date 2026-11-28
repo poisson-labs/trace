@@ -14,6 +14,7 @@ import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, Decimal
+from functools import lru_cache
 from typing import Literal
 
 import numpy as np
@@ -802,6 +803,7 @@ def _power_two_proportion(
     return upper + lower
 
 
+@lru_cache(maxsize=4096)
 def limit_rise(
     rate_old: float, runs_old: int, runs_new: int, *, alpha: float = 0.05, power: float = 0.8
 ) -> float:
@@ -809,7 +811,8 @@ def limit_rise(
     at ``power``, two-sided at ``alpha``: Prove's per-cell limit, number for number. A rate of
     exactly 0 is moved in by half a run; at a rate of 1 no rise is possible and there is no limit
     (NaN, as Prove gives); when even the largest rise is not detectable the largest rise is
-    returned."""
+    returned. It depends on its arguments alone, and many inputs share them (the same failures
+    of the same tries), so each is computed once."""
     if runs_old <= 0 or runs_new <= 0:
         raise ValueError("the per-input limit needs at least one run in each arm")
     if not 0.0 <= rate_old <= 1.0:
