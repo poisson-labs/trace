@@ -6,6 +6,12 @@ repository's root, with the package installed with its development extra::
 
 It writes ``tests/fixtures/label-kinds/main-pins.json`` (see ``label_kinds_pins``'s opening for what each section
 holds). It refuses to run when the checkout is not main's tree as committed.
+
+When the numbers Trace computes became the same bits on every platform, the outputs whose last
+digits moved (their ``--json`` numbers, and in a few plain reports the order of rows that tie
+exactly on p) were re-taken from that build, entry by entry, and each move was checked by
+``tests/fixtures/portable/check_moves.py``; run on main, this maker gives those entries' earlier
+digests.
 """
 
 from __future__ import annotations
