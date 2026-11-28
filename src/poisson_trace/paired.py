@@ -3,7 +3,9 @@ Cochran-Mantel-Haenszel test stratified by input, the Mantel-Haenszel difference
 stratified Miettinen-Nurminen interval, the by-input sign-flip reading, consistency, the
 detection limits, the guidance, and the per-input flags.
 
-numpy and scipy only.
+numpy, with every number computed by arithmetic that gives the same bits on every platform
+(``poisson_trace.stats.portable``): float sums by ``math.fsum``, no BLAS product, and no
+function of the platform's math library.
 """
 
 from __future__ import annotations
@@ -15,8 +17,8 @@ from decimal import ROUND_CEILING, Decimal
 from typing import Literal
 
 import numpy as np
-from scipy import stats
 
+from poisson_trace.stats import portable
 from poisson_trace.survival import bh
 
 # The four reasons an input is left out, in the order they are tried, and the six sentences
@@ -114,14 +116,15 @@ def _hypergeometric(runs_old: int, runs_new: int, failed: int) -> tuple[int, np.
 
 def _two_sided(pmf: np.ndarray, at: int) -> float:
     """The total probability of every value no more probable than the one observed."""
-    return float(min(1.0, pmf[pmf <= pmf[at] * (1.0 + _TIE)].sum()))
+    return min(1.0, math.fsum(pmf[pmf <= pmf[at] * (1.0 + _TIE)]))
 
 
 def paired_test(counts: Sequence[Counts]) -> PairedTest:
     """The exact conditional Cochran-Mantel-Haenszel test, stratified by input. Given each
     input's total failures, the new arm's count on it is hypergeometric under the null; the
-    distribution of the sum is their convolution, computed in full. An input whose runs all
-    failed or all did not is a single point and adds nothing."""
+    distribution of the sum is their convolution, computed in full, each input's values added in
+    in a fixed order. An input whose runs all failed or all did not is a single point and adds
+    nothing."""
     observed = informative = 0
     expected = variance = weight = 0.0
     lowest = 0
@@ -137,7 +140,7 @@ def paired_test(counts: Sequence[Counts]) -> PairedTest:
             variance += n_a * n_b * failed * (total - failed) / (total * total * (total - 1))
             low, one = _hypergeometric(n_a, n_b, failed)
             lowest += low
-            pmf = np.convolve(pmf, one)
+            pmf = _convolved(pmf, one)
         else:
             lowest += c.failed_new
     return PairedTest(
@@ -149,6 +152,16 @@ def paired_test(counts: Sequence[Counts]) -> PairedTest:
         weight=weight,
         p=_two_sided(pmf, observed - lowest),
     )
+
+
+def _convolved(pmf: np.ndarray, one: np.ndarray) -> np.ndarray:
+    """The distribution of the sum of two independent counts, ``pmf`` and ``one``: for each value
+    of ``one`` in turn, ``pmf`` shifted to it and added in, elementwise. The order of the
+    additions is fixed, so the sum is the same bits on every platform."""
+    out = np.zeros(len(pmf) + len(one) - 1, dtype=np.float64)
+    for k in range(len(one)):
+        out[k : k + len(pmf)] += one[k] * pmf
+    return out
 
 
 # ---------- the difference and its interval ----------
@@ -170,13 +183,13 @@ def difference(
     w = math.fsum(na * nb / (na + nb) for _, na, _, nb in rows)
     d = math.fsum((xb * na - xa * nb) / (na + nb) for xa, na, xb, nb in rows) / w
     p_sum = math.fsum(
-        (nb * nb * xa - na * na * xb + na * nb * (na - nb) / 2) / (na + nb) ** 2
+        (nb * nb * xa - na * na * xb + na * nb * (na - nb) / 2) / ((na + nb) * (na + nb))
         for xa, na, xb, nb in rows
     )
     q_sum = math.fsum(
         (xb * (na - xa) + xa * (nb - xb)) / (2 * (na + nb)) for xa, na, xb, nb in rows
     )
-    variance = (d * p_sum + q_sum) / w**2
+    variance = (d * p_sum + q_sum) / (w * w)
     if none_failed(counts):
         lo, hi = _clean_ends(
             np.array([na for _, na, _, _ in rows], dtype=np.float64),
@@ -193,6 +206,17 @@ def difference(
 INTERVAL = "stratified Miettinen-Nurminen score interval, Mantel-Haenszel weights"
 # The range is reliable only where at least this many compared inputs vary.
 FEW_VARY = 10
+
+
+def excludes_zero(lo: float, hi: float) -> bool:
+    """The range excludes zero only when its low end is above zero or its high end below it:
+    an end exactly at zero, of either sign, includes zero."""
+    return lo > 0.0 or hi < 0.0
+
+
+def lies_inside(lo: float, hi: float, max_mde: float) -> bool:
+    """The range lies inside plus or minus ``max_mde``, its ends included."""
+    return -max_mde <= lo and hi <= max_mde
 
 
 def none_failed(counts: Sequence[Counts]) -> bool:
@@ -231,7 +255,7 @@ def rough(
     if informative < FEW_VARY:
         why.append(f"fewer than {FEW_VARY} inputs vary")
     for arm, runs in (("new", [c.runs_new for c in counts]), ("old", [c.runs_old for c in counts])):
-        once = sum(1 for n in runs if n == 1)
+        once = portable.isum(1 for n in runs if n == 1)
         if 2 * (len(runs) - once) < len(runs):
             whole = once == len(runs)
             why.append(
@@ -247,40 +271,71 @@ def rough(
 _EDGE = 1e-9
 
 
+def _cubic(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray, q: np.ndarray) -> np.ndarray:
+    out: np.ndarray = ((a * q + b) * q + c) * q + d
+    return out
+
+
 def _restricted(
     x1: np.ndarray, n1: np.ndarray, x2: np.ndarray, n2: np.ndarray, delta: float
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Each input's two failure rates at their maximum likelihood under ``p1 - p2 = delta``,
-    from the closed-form root of the likelihood's cubic (Miettinen and Nurminen 1985; Farrington
-    and Manning 1990). Arm 1 is the new version, arm 2 the old."""
+    """Each input's two failure rates at their maximum likelihood under ``p1 - p2 = delta``
+    (Miettinen and Nurminen 1985; Farrington and Manning 1990). Arm 1 is the new version, arm 2
+    the old.
+
+    The likelihood's slope is a cubic in the new version's rate, ``a q^3 + b q^2 + c q + d`` with
+    ``a > 0``. It rises to a peak, falls, and rises again, and the maximum is its middle real root:
+    the one between its two turning points, where it falls. The other two roots are not maxima;
+    one can sit at 0 or at 1 inside the rates' range when no try or every try of the new version
+    failed. The root found is then clipped to the rates' range under ``delta``,
+    ``[max(0, delta), min(1, 1 + delta)]``.
+
+    It is found by halving: the turning points are clipped to that range, and where the cubic
+    changes sign between them the bracket is halved, in the order of the floats, until its two
+    ends are adjacent floats. Only basic arithmetic is used, so every platform gives the same
+    bits. Where the turning points are not real the cubic only rises, and its flattest point
+    stands in for the root, as it does for the root in closed form."""
     p1, p2 = x1 / n1, x2 / n2
     theta = n2 / n1
     a = 1.0 + theta
     b = -(1.0 + theta + p1 + theta * p2 + delta * (theta + 2.0))
     c = delta * delta + delta * (2.0 * p1 + theta + 1.0) + p1 + theta * p2
     d = -p1 * delta * (1.0 + delta)
-    v = b**3 / (27.0 * a**3) - b * c / (6.0 * a * a) + d / (2.0 * a)
-    u = np.where(v < 0.0, -1.0, 1.0) * np.sqrt(
-        np.maximum(b * b / (9.0 * a * a) - c / (3.0 * a), 0.0)
-    )
-    with np.errstate(divide="ignore", invalid="ignore"):
-        ratio = np.where(u == 0.0, 0.0, v / u**3)
-    w = (math.pi + np.arccos(np.clip(ratio, -1.0, 1.0))) / 3.0
-    q1 = np.where(u == 0.0, -b / (3.0 * a), 2.0 * u * np.cos(w) - b / (3.0 * a))
-    q1 = np.clip(q1, max(0.0, delta), min(1.0, 1.0 + delta))
+    low, high = max(0.0, delta), min(1.0, 1.0 + delta)
+    # the turning points, where 3 a q^2 + 2 b q + c = 0
+    centre = -b / (3.0 * a)
+    half = np.sqrt(np.maximum(b * b - 3.0 * a * c, 0.0)) / (3.0 * a)
+    turn_low, turn_high = centre - half, centre + half
+    # adding 0.0 turns a -0.0 into 0.0, so that every end below orders by its bits
+    left = np.maximum(turn_low, low) + 0.0
+    right = np.minimum(turn_high, high) + 0.0
+    apart = left > right
+    q1 = np.where(turn_low > high, high, low)
+    f_left = _cubic(a, b, c, d, left)
+    f_right = _cubic(a, b, c, d, right)
+    at_left = ~apart & (f_left <= 0.0)
+    at_right = ~apart & ~at_left & (f_right >= 0.0)
+    q1 = np.where(at_left, left, np.where(at_right, right, q1))
+    searched = ~apart & ~at_left & ~at_right
+    if bool(searched.any()):
+        # every end lies in [0, 1], so its bits, read as an integer, order as its value does
+        lo_bits = np.where(searched, left, 0.0).view(np.int64)
+        hi_bits = np.where(searched, right, 0.0).view(np.int64)
+        while bool((hi_bits - lo_bits > 1).any()):
+            mid_bits = lo_bits + ((hi_bits - lo_bits) >> 1)
+            above = _cubic(a, b, c, d, mid_bits.view(np.float64)) > 0.0
+            lo_bits = np.where(above, mid_bits, lo_bits)
+            hi_bits = np.where(above, hi_bits, mid_bits)
+        q1 = np.where(searched, hi_bits.view(np.float64), q1)
     return q1, np.clip(q1 - delta, 0.0, 1.0)
 
 
-def _miettinen_nurminen(
-    counts: Sequence[Counts], estimate: float, alpha: float
-) -> tuple[float, float]:
-    """The stratified Miettinen-Nurminen score interval for new minus old: every difference
-    ``delta`` whose score, ``sum w (d_i - delta)`` over the square root of ``sum w^2 V_i(delta)``,
-    lies within the normal quantile. ``w`` are the Mantel-Haenszel weights, ``d_i`` each input's
-    difference, and ``V_i`` its variance at the rates constrained to ``delta``, times its
-    ``N / (N - 1)``. An end the score never reaches is the end of ``[-1, 1]``."""
-    from scipy import optimize
-
+def _score(counts: Sequence[Counts]) -> Callable[[float], float]:
+    """The stratified Miettinen-Nurminen score for new minus old as a function of ``delta``:
+    ``sum w (d_i - delta)`` over the square root of ``sum w^2 V_i(delta)``, both sums by
+    ``math.fsum``. ``w`` are the Mantel-Haenszel weights, ``d_i`` each input's difference, and
+    ``V_i`` its variance at the rates constrained to ``delta``, times its ``N / (N - 1)``. It
+    falls as ``delta`` rises."""
     x1 = np.array([c.failed_new for c in counts], dtype=np.float64)
     n1 = np.array([c.runs_new for c in counts], dtype=np.float64)
     x2 = np.array([c.failed_old for c in counts], dtype=np.float64)
@@ -291,23 +346,43 @@ def _miettinen_nurminen(
     factor = total / (total - 1.0)
 
     def score(delta: float) -> float:
-        num = float(np.sum(w * (each - delta)))
+        num = math.fsum(w * (each - delta))
         q1, q2 = _restricted(x1, n1, x2, n2, delta)
-        var = float(np.sum(w * w * (q1 * (1.0 - q1) / n1 + q2 * (1.0 - q2) / n2) * factor))
+        var = math.fsum(w * w * (q1 * (1.0 - q1) / n1 + q2 * (1.0 - q2) / n2) * factor)
         if var > 0.0:
             return num / math.sqrt(var)
         return math.copysign(math.inf, num) if num else 0.0
 
-    z = float(stats.norm.isf(alpha / 2.0))
+    return score
+
+
+def mn_score(counts: Sequence[Counts], delta: float) -> float:
+    """The stratified Miettinen-Nurminen score at ``delta``, the function whose crossings of the
+    normal quantile are the ends of the range ``difference`` gives."""
+    return _score(_checked(counts))(delta)
+
+
+def _miettinen_nurminen(
+    counts: Sequence[Counts], estimate: float, alpha: float
+) -> tuple[float, float]:
+    """The stratified Miettinen-Nurminen score interval for new minus old: every difference
+    ``delta`` whose score lies within the normal quantile ``z``. The low end is the float where
+    the score crosses ``z``: the score is at most ``z`` there and above it at the float below.
+    The high end is the float where it crosses ``-z``: at least ``-z`` there and below it at the
+    float above. Both are found by halving to adjacent floats. An end the score never reaches
+    is the end of ``[-1, 1]``."""
+    score = _score(counts)
+    z = portable.norm_isf(alpha / 2.0)
     low_end, high_end = -1.0 + _EDGE, 1.0 - _EDGE
     if estimate <= low_end or score(low_end) <= z:
         lo = -1.0
     else:
-        lo = float(optimize.brentq(lambda x: score(x) - z, low_end, estimate, xtol=1e-14))
+        # the low end, searched as the high end of the score turned round: -score(-y) falls in y
+        lo = -portable.bisect_root(lambda y: -score(-y), -estimate, -low_end, -z)
     if estimate >= high_end or score(high_end) >= -z:
         hi = 1.0
     else:
-        hi = float(optimize.brentq(lambda x: score(x) + z, estimate, high_end, xtol=1e-14))
+        hi = portable.bisect_root(score, estimate, high_end, -z)
     return lo, hi
 
 
@@ -336,16 +411,16 @@ def by_input(
     moves = _moves(counts)
     if not moves:
         return 1.0, 0, "exact"
-    observed = abs(sum(moves))
+    observed = abs(portable.isum(moves))
     if len(moves) <= _EXACT_MOVED:
         sums = [0]
         for move in moves:
             sums = [s + move for s in sums] + [s - move for s in sums]
-        hits = sum(1 for s in sums if abs(s) >= observed)
+        hits = portable.isum(1 for s in sums if abs(s) >= observed)
         return hits / len(sums), len(moves), "exact"
     if draws < 1:
         raise ValueError("the by-input reading needs at least one draw")
-    reach = sum(abs(m) for m in moves)
+    reach = portable.isum(abs(m) for m in moves)
     if reach < 2**62:
         values = np.array(moves, dtype=np.int64)
         bar: float = observed
@@ -359,7 +434,11 @@ def by_input(
     while left > 0:
         block = min(_BLOCK, left)
         signs = 2 * rng.integers(0, 2, size=(block, len(moves)), dtype=np.int8) - 1
-        hits += int(np.count_nonzero(np.abs(signs.astype(values.dtype) @ values) >= bar))
+        # each draw's signed sum, the moves added one at a time in their order
+        drawn = np.zeros(block, dtype=values.dtype)
+        for j in range(len(moves)):
+            drawn += signs[:, j].astype(values.dtype) * values[j]
+        hits += int(np.count_nonzero(np.abs(drawn) >= bar))
         left -= block
     return (1 + hits) / (1 + draws), len(moves), "monte carlo"
 
@@ -376,12 +455,13 @@ def consistency(counts: Sequence[Counts]) -> tuple[float, float, float, float, f
     total = np.array([c.runs_old + c.runs_new for c in counts], dtype=np.float64)
     if len(failed) == 0:
         raise ValueError("consistency needs at least one input")
-    share = float(failed.sum() / total.sum())
-    within = float(np.mean(failed * (total - failed) / (total * (total - 1.0))))
+    failures, tries = math.fsum(failed), math.fsum(total)
+    share = failures / tries
+    within = math.fsum(failed * (total - failed) / (total * (total - 1.0))) / len(failed)
     pooled = share * (1.0 - share)
-    if failed.sum() == 0.0 or failed.sum() == total.sum():
+    if failures == 0.0 or failures == tries:
         return share, math.nan, math.nan, within, pooled
-    again = float(np.sum(failed * (failed - 1.0)) / np.sum(failed * (total - 1.0)))
+    again = math.fsum(failed * (failed - 1.0)) / math.fsum(failed * (total - 1.0))
     return share, again, (again - share) / (1.0 - share), within, pooled
 
 
@@ -434,36 +514,37 @@ def _power(design: _Design, r: float, direction: str, alpha: float) -> tuple[flo
     n_a, n_b = design.runs_old, design.runs_new
     total = n_a + n_b
     w = n_a * n_b / total
+    kept = 1.0 - r
     if direction == "drop":
-        mean_b = (1.0 - r) * p
-        second_b = (1.0 - r) ** 2 * m
-        cross = (1.0 - r) * m
+        mean_b = kept * p
+        second_b = kept * kept * m
+        cross = kept * m
         shift = w * (p - mean_b)
     elif direction == "rise":
         q, q2 = 1.0 - p, 1.0 - 2.0 * p + m
-        mean_b = 1.0 - (1.0 - r) * q
-        second_b = 1.0 - 2.0 * (1.0 - r) * q + (1.0 - r) ** 2 * q2
+        mean_b = 1.0 - kept * q
+        second_b = 1.0 - 2.0 * kept * q + kept * kept * q2
         cross = p - (1.0 - r) * (p - m)
         shift = w * (mean_b - p)
     else:
         raise ValueError(f"direction must be drop or rise, not {direction}")
     s_b = mean_b - second_b
     together = (n_a * p + n_b * mean_b) / total
-    together_sq = (n_a * n_a * m + n_b * n_b * second_b + 2.0 * n_a * n_b * cross) / total**2
+    together_sq = (n_a * n_a * m + n_b * n_b * second_b + 2.0 * n_a * n_b * cross) / (total * total)
     ref = (
         w
         * np.maximum(total * total * (together - together_sq) - n_a * s - n_b * s_b, 0.0)
         / (total * (total - 1.0))
     )
     spread = w * w * (s / n_a + s_b / n_b)
-    delta = float(shift.sum()) * design.scale
-    v_ref = float(ref.sum()) * design.scale
-    v_one = float(spread.sum()) * design.scale
-    weight = float(w.sum()) * design.scale
-    edge = float(stats.norm.isf(alpha / 2.0)) * math.sqrt(v_ref)
+    delta = math.fsum(shift) * design.scale
+    v_ref = math.fsum(ref) * design.scale
+    v_one = math.fsum(spread) * design.scale
+    weight = math.fsum(w) * design.scale
+    edge = portable.norm_isf(alpha / 2.0) * math.sqrt(v_ref)
     if v_one <= 0.0:
         return (1.0 if delta - 0.5 > edge else 0.0), delta / weight
-    return float(stats.norm.sf((edge + 0.5 - delta) / math.sqrt(v_one))), delta / weight
+    return portable.norm_sf((edge + 0.5 - delta) / math.sqrt(v_one)), delta / weight
 
 
 def power_at(
@@ -564,12 +645,12 @@ def _clean_ends(
     version's tries. ``scale`` multiplies the number of inputs like these."""
     total = runs_old + runs_new
     w = runs_old * runs_new / total
-    weight = float(w.sum()) * scale
-    z = float(stats.norm.isf(alpha / 2.0))
+    weight = math.fsum(w) * scale
+    z = portable.norm_isf(alpha / 2.0)
 
     def end(tries: np.ndarray) -> float:
-        spread = float(np.sum(w * w * total / (tries * (total - 1.0)))) * scale
-        c = z * z * spread / weight**2
+        spread = math.fsum(w * w * total / (tries * (total - 1.0))) * scale
+        c = z * z * spread / (weight * weight)
         return c / (1.0 + c)
 
     return -end(runs_old), end(runs_new)
@@ -581,7 +662,7 @@ def _least_favourable(weights: np.ndarray, tries: np.ndarray, share: float) -> f
     maximise ``prod (1 - p_i)^n_i`` subject to ``sum w_i p_i / W = share``. At the maximum
     ``p_i = max(0, 1 - t n_i / w_i)`` for one ``t``, found by bisection; where the share drives
     an input's rate to 1 a clean run is impossible."""
-    total = float(weights.sum())
+    total = math.fsum(weights)
 
     def rates(t: float) -> np.ndarray:
         clipped: np.ndarray = np.clip(1.0 - t * tries / weights, 0.0, 1.0)
@@ -590,14 +671,14 @@ def _least_favourable(weights: np.ndarray, tries: np.ndarray, share: float) -> f
     low, high = 0.0, float((weights / tries).max())
     for _ in range(200):
         mid = (low + high) / 2.0
-        if float((weights * rates(mid)).sum()) / total >= share:
+        if math.fsum(weights * rates(mid)) / total >= share:
             low = mid
         else:
             high = mid
     held = rates(low)
     if bool((held >= 1.0).any()):
         return 0.0
-    return float(np.exp(float((tries * np.log1p(-held)).sum())))
+    return float(portable.exp(math.fsum(tries * portable.log1p(-held))))
 
 
 def clean_miss(counts: Sequence[Counts], *, alpha: float = 0.05) -> float:
@@ -666,12 +747,14 @@ def accepts_at(limit: float, *, decimals: int) -> float:
 
 
 def _fisher(c: Counts) -> float:
-    """Fisher's exact test on one input, two-sided, computed as Prove computes it (scipy's
-    ``fisher_exact``). The exact test above gives the same number to 1e-12 on one input; the
+    """Fisher's exact test on one input, two-sided: the exact rational p in integers, rounded
+    once, with tables taken as equally probable within one part in ten million, as Prove's
+    ``diff`` takes them. The exact test above gives the same number to 1e-12 on one input; the
     flags use this one so that an input whose adjusted value sits exactly on the level is
-    flagged, or not, as Prove's ``diff`` flags it."""
-    table = [[c.failed_old, c.runs_old - c.failed_old], [c.failed_new, c.runs_new - c.failed_new]]
-    return float(stats.fisher_exact(table, alternative="two-sided")[1])
+    flagged, or not, by the exact p."""
+    return portable.fisher_two_sided(
+        c.failed_old, c.runs_old - c.failed_old, c.failed_new, c.runs_new - c.failed_new
+    )
 
 
 def flags(counts: Sequence[Counts], *, alpha: float = 0.05, power: float = 0.8) -> tuple[Flag, ...]:
@@ -711,11 +794,11 @@ def _power_two_proportion(
     pooled = (rate * runs_old + raised * runs_new) / (runs_old + runs_new)
     se_null = math.sqrt(pooled * (1.0 - pooled) * (1.0 / runs_old + 1.0 / runs_new))
     se_alt = math.sqrt(rate * (1.0 - rate) / runs_old + raised * (1.0 - raised) / runs_new)
-    z = float(stats.norm.isf(alpha / 2.0))
+    z = portable.norm_isf(alpha / 2.0)
     if se_alt == 0.0:
         return 1.0 if delta > z * se_null else 0.0
-    upper = float(stats.norm.sf((z * se_null - delta) / se_alt))
-    lower = float(stats.norm.cdf((-z * se_null - delta) / se_alt))
+    upper = portable.norm_sf((z * se_null - delta) / se_alt)
+    lower = portable.norm_cdf((-z * se_null - delta) / se_alt)
     return upper + lower
 
 

@@ -3,7 +3,9 @@ stratified log-rank with its own information, the detection limit and the tries 
 one-step hazard ratio, and Benjamini-Hochberg. Kaplan-Meier, the try-level bootstrap and
 Schoenfeld's formula stay as functions; no report prints them.
 
-numpy and scipy only.
+numpy, with every number computed by arithmetic that gives the same bits on every platform
+(``poisson_trace.stats.portable``): float sums by ``math.fsum`` or added in a fixed order, and
+no function of the platform's math library.
 """
 
 from __future__ import annotations
@@ -13,7 +15,8 @@ from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 
 import numpy as np
-from scipy import stats
+
+from poisson_trace.stats import portable
 
 _Z95 = 1.96
 
@@ -68,7 +71,7 @@ def kaplan_meier(index: np.ndarray, died: np.ndarray) -> KMCurve:
     obs = np.asarray(died, dtype=bool)
     steps = np.unique(idx[obs])
     at_risk = np.array([np.sum(idx >= x) for x in steps], dtype=np.int64)
-    deaths = np.array([np.sum((idx == x) & obs) for x in steps], dtype=np.int64)
+    deaths = np.array([np.count_nonzero((idx == x) & obs) for x in steps], dtype=np.int64)
     n = at_risk.astype(np.float64)
     d = deaths.astype(np.float64)
     survival = np.cumprod((n - d) / n, dtype=np.float64)
@@ -76,7 +79,7 @@ def kaplan_meier(index: np.ndarray, died: np.ndarray) -> KMCurve:
     # its last finite value.
     with np.errstate(divide="ignore", invalid="ignore"):
         term = np.where(n > d, d / (n * (n - d)), 0.0)
-    var = survival**2 * np.cumsum(term)
+    var = survival * survival * np.cumsum(term)
     return KMCurve(steps=steps, at_risk=at_risk, deaths=deaths, survival=survival, var=var)
 
 
@@ -187,8 +190,8 @@ def logrank_stratified(
             n_a = int(np.sum(t_a >= x))
             n_b = int(np.sum(t_b >= x))
             n = n_a + n_b
-            d_a = int(np.sum((t_a == x) & o_a))
-            d_b = int(np.sum((t_b == x) & o_b))
+            d_a = int(np.count_nonzero((t_a == x) & o_a))
+            d_b = int(np.count_nonzero((t_b == x) & o_b))
             d = d_a + d_b
             if n == 0 or d == 0:
                 continue
@@ -199,8 +202,8 @@ def logrank_stratified(
     if variance <= 0.0:
         statistic, p = 0.0, 1.0
     else:
-        statistic = (observed - expected) ** 2 / variance
-        p = float(stats.chi2.sf(statistic, 1))
+        statistic = (observed - expected) * (observed - expected) / variance
+        p = portable.chi2_sf_1(statistic)
     return LogRank(
         cells=len(cells),
         observed_a=observed,
@@ -220,8 +223,8 @@ def mde_hazard_ratio(
         raise ValueError("the minimum detectable hazard ratio needs at least one death")
     if not 0.0 < share_a < 1.0:
         raise ValueError("share_a must be strictly between 0 and 1")
-    z = float(stats.norm.isf(alpha / 2.0)) + float(stats.norm.ppf(power))
-    return math.exp(z / math.sqrt(deaths * share_a * (1.0 - share_a)))
+    z = _z(alpha, power)
+    return float(portable.exp(z / math.sqrt(deaths * share_a * (1.0 - share_a))))
 
 
 def bh(p: np.ndarray, q: float) -> np.ndarray:
@@ -252,8 +255,9 @@ def deaths_needed(
         raise ValueError("no number of deaths detects a hazard ratio of 1 or below")
     if not 0.0 < share_a < 1.0:
         raise ValueError("share_a must be strictly between 0 and 1")
-    z = float(stats.norm.isf(alpha / 2.0)) + float(stats.norm.ppf(power))
-    deaths = max(1, math.ceil((z / math.log(max_mde_hr)) ** 2 / (share_a * (1.0 - share_a))))
+    z = _z(alpha, power)
+    root = z / float(portable.log(max_mde_hr))
+    deaths = max(1, math.ceil(root * root / (share_a * (1.0 - share_a))))
     while mde_hazard_ratio(deaths, share_a, alpha=alpha, power=power) > max_mde_hr:
         deaths += 1
     while deaths > 1 and mde_hazard_ratio(deaths - 1, share_a, alpha=alpha, power=power) <= (
@@ -312,13 +316,25 @@ def _ends(cells: Sequence[str], rows: Sequence[Try], causes: Sequence[str]) -> _
     return _Ends(steps=steps, at_risk=at_risk, ends=ends, kinds=kinds)
 
 
+def _added_over(values: np.ndarray, axis: int) -> np.ndarray:
+    """``values`` summed over one axis, the slices added elementwise one after another in their
+    order, so that the order of the additions is fixed."""
+    moved = np.moveaxis(values, axis, 0)
+    if moved.shape[0] == 0:
+        return np.zeros(moved.shape[1:], dtype=values.dtype)
+    out: np.ndarray = moved[0].copy()
+    for part in moved[1:]:
+        out = out + part
+    return out
+
+
 def _cumulative(at_risk: np.ndarray, ends: np.ndarray) -> np.ndarray:
     """Aalen-Johansen from counts summed over inputs: ``at_risk`` is ``(..., T)`` and ``ends``
     ``(..., J, T)``; each end's cumulative incidence, ``(..., J, T)``."""
     risk = at_risk[..., None, :]
     with np.errstate(divide="ignore", invalid="ignore"):
         hazard = np.where(risk > 0, ends / np.where(risk > 0, risk, 1.0), 0.0)
-    going = np.cumprod(1.0 - hazard.sum(axis=-2), axis=-1)
+    going = np.cumprod(1.0 - _added_over(hazard, -2), axis=-1)
     before = np.concatenate([np.ones_like(going[..., :1]), going[..., :-1]], axis=-1)
     out: np.ndarray = np.cumsum(before[..., None, :] * hazard, axis=-1)
     return out
@@ -337,7 +353,7 @@ def _at(steps: np.ndarray, values: np.ndarray, at: Sequence[int], start: float) 
 
 
 def _not_failed(incidence: np.ndarray, kinds: int) -> np.ndarray:
-    out: np.ndarray = 1.0 - incidence[..., :kinds, :].sum(axis=-2)
+    out: np.ndarray = 1.0 - _added_over(incidence[..., :kinds, :], -2)
     return out
 
 
@@ -373,10 +389,10 @@ def competing(rows: Sequence[Try], causes: Sequence[str]) -> Competing:
     """Aalen-Johansen over ``rows``, the failure kinds ``causes`` in order."""
     keys = tuple(dict.fromkeys(causes))
     e = _ends(sorted({r[0] for r in rows}), rows, keys)
-    at_risk, ends = e.at_risk.sum(axis=0), e.ends.sum(axis=0)
+    at_risk, ends = _added_over(e.at_risk, 0), _added_over(e.ends, 0)
     incidence = _cumulative(at_risk, ends)
     not_failed = _not_failed(incidence, e.kinds)
-    failed = ends[: e.kinds].sum(axis=0)
+    failed = _added_over(ends[: e.kinds], 0)
     hit = failed > 0
     last = incidence[:, -1] if len(e.steps) else np.zeros(e.kinds + 2)
     return Competing(
@@ -431,7 +447,7 @@ def competing_band(
     keys = tuple(dict.fromkeys(causes))
     cells = sorted({r[0] for r in rows})
     e = _ends(cells, rows, keys)
-    hit = np.flatnonzero(e.ends[:, : e.kinds].sum(axis=(0, 1)) > 0)
+    hit = np.flatnonzero(np.count_nonzero(e.ends[:, : e.kinds] > 0, axis=(0, 1)) > 0)
     curve, asked, final = [], [], []
     for weights in _resampled(len(cells), b, seed):
         incidence = _resampled_incidence(e, weights)
@@ -479,7 +495,7 @@ def difference_band(
 
 
 def _z(alpha: float, power: float) -> float:
-    return float(stats.norm.isf(alpha / 2.0)) + float(stats.norm.ppf(power))
+    return portable.norm_isf(alpha / 2.0) + portable.norm_ppf(power)
 
 
 def information_limit(variance: float, *, alpha: float = 0.05, power: float = 0.8) -> float | None:
@@ -488,7 +504,7 @@ def information_limit(variance: float, *, alpha: float = 0.05, power: float = 0.
     ``None`` where ``V`` is not positive."""
     if not variance > 0.0:
         return None
-    return math.exp(_z(alpha, power) / math.sqrt(variance))
+    return float(portable.exp(_z(alpha, power) / math.sqrt(variance)))
 
 
 def one_step(lr: LogRank, *, level: float = 0.95) -> tuple[float, float, float] | None:
@@ -498,8 +514,12 @@ def one_step(lr: LogRank, *, level: float = 0.95) -> tuple[float, float, float] 
     if not lr.variance > 0.0:
         return None
     log_h = -(lr.observed_a - lr.expected_a) / lr.variance
-    half = float(stats.norm.isf((1.0 - level) / 2.0)) / math.sqrt(lr.variance)
-    return math.exp(log_h), math.exp(log_h - half), math.exp(log_h + half)
+    half = portable.norm_isf((1.0 - level) / 2.0) / math.sqrt(lr.variance)
+    return (
+        float(portable.exp(log_h)),
+        float(portable.exp(log_h - half)),
+        float(portable.exp(log_h + half)),
+    )
 
 
 def fit_cells(rows: Sequence[tuple[str, int, bool]]) -> dict[str, tuple[int, float, float]]:
@@ -512,8 +532,8 @@ def fit_cells(rows: Sequence[tuple[str, int, bool]]) -> dict[str, tuple[int, flo
     fit = {}
     for cell, tries in cells.items():
         offset = min(s for s, _ in tries) - 1
-        exposure = sum(s - offset for s, _ in tries)
-        failed = sum(1 for _, d in tries if d)
+        exposure = portable.isum(s - offset for s, _ in tries)
+        failed = portable.isum(1 for _, d in tries if d)
         fit[cell] = (offset, failed / exposure, (len(tries) - failed) / exposure)
     return fit
 
@@ -539,19 +559,21 @@ def expected_information(fit: Mapping[str, tuple[int, float, float]], repeats: i
         rate = failing + ending
         if not failing > 0.0 or not rate > 0.0:
             continue
-        q = math.exp(-rate)
+        q = float(portable.exp(-rate))
         h = (1.0 - q) * failing / rate
         if q > 0.0:
             # what is left after k steps is below (2R q^k)^2 / (2 (1 - q^2))
-            room = math.log(_TAIL * 2.0 * max(-math.expm1(2.0 * math.log(q)), 1e-300)) / 2.0
-            k = math.ceil((room - math.log(2.0 * r)) / math.log(q)) + 1
+            log_q = float(portable.log(q))
+            gone = max(-float(portable.expm1(2.0 * log_q)), 1e-300)
+            room = float(portable.log(_TAIL * 2.0 * gone)) / 2.0
+            k = math.ceil((room - float(portable.log(2.0 * r))) / log_q) + 1
             k = min(_MOST_STEPS, max(1, k))
         else:
             k = 1
-        p = q ** np.arange(k, dtype=np.float64)
-        with np.errstate(divide="ignore"):
-            terms = 2.0 * r * p + np.expm1(2.0 * r * np.log1p(-p))
-        total += h * (1.0 - h) * r / (2.0 * (2.0 * r - 1.0)) * float(terms.sum())
+        # q^j as e^(-rate j), elementwise
+        p = portable.exp(-rate * np.arange(k, dtype=np.float64))
+        terms = 2.0 * r * p + portable.expm1(2.0 * r * portable.log1p(-p))
+        total += h * (1.0 - h) * r / (2.0 * (2.0 * r - 1.0)) * math.fsum(terms.tolist())
     return total
 
 
@@ -560,7 +582,8 @@ def information_needed(ratio: float, *, alpha: float = 0.05, power: float = 0.8)
     ``None`` for a ratio of 1 or below."""
     if not ratio > 1.0:
         return None
-    return (_z(alpha, power) / math.log(ratio)) ** 2
+    root = _z(alpha, power) / float(portable.log(ratio))
+    return root * root
 
 
 _TRIES_CEILING = 2**30

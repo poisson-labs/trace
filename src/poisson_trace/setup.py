@@ -40,6 +40,7 @@ from typing import Any
 from poisson_trace import config, imports, look, names
 from poisson_trace.imports import IMPORTED_STORE
 from poisson_trace.look import count
+from poisson_trace.stats import portable
 
 # the outcomes whose names mean success, which the failure question's default leaves out
 SUCCESS_WORDS: tuple[str, ...] = (
@@ -1677,7 +1678,7 @@ def _hand_over_summary(
         "config_path": held.shown,
         "stores": [{"name": n, "path": p, "runs": runs[p]} for n, p in stores],
         "events": list(events),
-        "named": sum(1 for index in indexes for r in index.runs if r.named_by == "you"),
+        "named": portable.isum(1 for index in indexes for r in index.runs if r.named_by == "you"),
         "prove": {"installed": True, "version": look.prove_found()},
         "equivalent_command": command,
         "next": following,
@@ -1899,8 +1900,8 @@ def _names_line(index: Any) -> str:
         return "no run whose record Prove can read"
     shown = [r.name for r in index.runs[:NAMES_SHOWN]]
     more = ", …" if total > NAMES_SHOWN else ""
-    imported = sum(1 for r in index.runs if r.imported and r.name == r.run_id)
-    yours = sum(1 for r in index.runs if r.named_by == "you") - imported
+    imported = portable.isum(1 for r in index.runs if r.imported and r.name == r.run_id)
+    yours = portable.isum(1 for r in index.runs if r.named_by == "you") - imported
     computed = total - yours - imported
     manifests = "its manifest" if computed == 1 else "their manifests"
     labels = (
@@ -1993,7 +1994,7 @@ def _summary(
         "config_path": shown,
         "stores": [{"name": n, "path": p, "runs": runs[p]} for n, p in stores],
         "events": list(events),
-        "named": sum(1 for index in indexes for r in index.runs if r.named_by == "you"),
+        "named": portable.isum(1 for index in indexes for r in index.runs if r.named_by == "you"),
         "prove": {"installed": True, "version": look.prove_found()},
         "equivalent_command": command,
         "next": following,
@@ -2143,7 +2144,7 @@ def add_store(
             for (n, p), i in zip(stores, indexes, strict=True)
         ],
         "events": list(after.events or ()),
-        "named": sum(1 for index in indexes for r in index.runs if r.named_by == "you"),
+        "named": portable.isum(1 for index in indexes for r in index.runs if r.named_by == "you"),
         "prove": {"installed": True, "version": look.prove_found()},
         "equivalent_command": command,
         "next": following,

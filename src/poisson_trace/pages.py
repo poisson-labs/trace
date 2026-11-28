@@ -23,13 +23,13 @@ from __future__ import annotations
 
 import html as _html
 import json
-import math
 import re
 from collections.abc import Mapping, Sequence
 from importlib import resources
 from typing import Any
 
 from poisson_trace import look, report
+from poisson_trace.stats import portable
 
 TOOL = "poisson-trace"
 #: Prove's Content-Security-Policy, on every static page (poisson_prove._render_ui.POLICY).
@@ -674,7 +674,8 @@ def hazard_svg(ident: str, hazard: Mapping[str, Any], *, title: str, standalone:
     width, height, x0, x1, mid = 700, 124, 60, 640, 62
 
     def x(v: float) -> float:
-        return x0 + (math.log(v) - math.log(low)) / (math.log(high) - math.log(low)) * (x1 - x0)
+        span = float(portable.log(high)) - float(portable.log(low))
+        return x0 + (float(portable.log(v)) - float(portable.log(low))) / span * (x1 - x0)
 
     body: list[str] = []
     for tick in _HR_TICKS:

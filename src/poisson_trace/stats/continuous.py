@@ -13,7 +13,9 @@ its value per measure, how it ended, its behavioural signals and its repeat numb
 Nothing here writes, prints or reads a file. :func:`table` gives a header and rows for
 ``look.table``.
 
-numpy and scipy only.
+numpy, with every number computed by arithmetic that gives the same bits on every platform
+(``poisson_trace.stats.portable``): float sums by ``math.fsum`` or added in a fixed order, and
+no function of the platform's math library.
 """
 
 from __future__ import annotations
@@ -28,7 +30,8 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from scipy import stats
+
+from poisson_trace.stats import portable
 
 FloatArray = npt.NDArray[np.float64]
 
@@ -107,8 +110,8 @@ def _array(d: npt.ArrayLike) -> FloatArray:
 def _reach(nz: FloatArray) -> float:
     """What a sign vector's absolute sum must reach to count as at least the observed one, a
     hair below it so that sums equal up to rounding are ties."""
-    observed = abs(float(nz.sum()))
-    return observed - _TIE * (observed + float(np.abs(nz).sum()))
+    observed = abs(math.fsum(nz))
+    return observed - _TIE * (observed + math.fsum(np.abs(nz)))
 
 
 def _subset_sums(x: FloatArray) -> FloatArray:
@@ -129,7 +132,7 @@ def _exact_count(nz: FloatArray, reach: float) -> int:
         return int(left.size * right.size)
     above = right.size - np.searchsorted(right, reach - left, side="left")
     below = np.searchsorted(right, -reach - left, side="right")
-    return int(above.sum() + below.sum())
+    return portable.isum(above.tolist()) + portable.isum(below.tolist())
 
 
 def signflip_p(d: npt.ArrayLike, seed: int) -> float:
@@ -145,14 +148,18 @@ def signflip_p(d: npt.ArrayLike, seed: int) -> float:
         return 1.0
     reach = _reach(nz)
     if k <= EXACT_MAX:
-        return _exact_count(nz, reach) / 2.0**k
+        return _exact_count(nz, reach) / (1 << k)
     rng = np.random.default_rng(seed)
     count = 0
     left = FLIPS
     while left > 0:
         n = min(_BLOCK, left)
         bits = rng.integers(0, 2, size=(n, k), dtype=np.int8)
-        sums = 2.0 * (bits @ nz) - float(nz.sum())
+        # each draw's sum of the differences it keeps, added one difference at a time in order
+        kept = np.zeros(n, dtype=np.float64)
+        for j in range(k):
+            kept += bits[:, j].astype(np.float64) * nz[j]
+        sums = 2.0 * kept - math.fsum(nz)
         count += int((np.abs(sums) >= reach).sum())
         left -= n
     return (1 + count) / (1 + FLIPS)
@@ -163,7 +170,19 @@ def p_floor(k_nonzero: int) -> float:
     both unanimous flips are always as extreme as the observed one. 1 at no change."""
     if k_nonzero <= 0:
         return 1.0
-    return 2.0 ** (1 - k_nonzero)
+    return math.ldexp(1.0, 1 - k_nonzero)
+
+
+def _mean(x: FloatArray) -> float:
+    """The mean, its sum by ``math.fsum``."""
+    return math.fsum(x) / x.size
+
+
+def _sd(x: FloatArray) -> float:
+    """The sample standard deviation, with ``K - 1`` below: the squared deviations from the mean
+    summed by ``math.fsum``."""
+    deviation = x - _mean(x)
+    return math.sqrt(math.fsum(deviation * deviation) / (x.size - 1))
 
 
 def t_range(d: npt.ArrayLike, alpha: float = 0.05) -> tuple[float, float]:
@@ -172,8 +191,8 @@ def t_range(d: npt.ArrayLike, alpha: float = 0.05) -> tuple[float, float]:
     k = int(x.size)
     if k < 2:
         raise ValueError("a range for the mean needs at least two cases")
-    half = float(stats.t.ppf(1.0 - alpha / 2.0, k - 1)) * float(x.std(ddof=1)) / math.sqrt(k)
-    mean = float(x.mean())
+    half = portable.t_ppf(1.0 - alpha / 2.0, k - 1) * _sd(x) / math.sqrt(k)
+    mean = _mean(x)
     return mean - half, mean + half
 
 
@@ -217,7 +236,7 @@ def hl_range(d: npt.ArrayLike, alpha: float = 0.05) -> tuple[float, float]:
             return -math.inf, math.inf
         c = int(below[-1])
     else:
-        z = float(stats.norm.ppf(1.0 - alpha / 2.0))
+        z = portable.norm_ppf(1.0 - alpha / 2.0)
         spread = math.sqrt(n * (n + 1) * (2 * n + 1) / 24.0)
         c = max(0, math.floor(n * (n + 1) / 4.0 - z * spread))
     return float(w[c]), float(w[w.size - 1 - c])
@@ -231,8 +250,8 @@ def mde(d: npt.ArrayLike, alpha: float = 0.05) -> float:
     k = int(x.size)
     if k < 2:
         raise ValueError("a smallest catchable change needs at least two cases")
-    factor = float(stats.t.ppf(1.0 - alpha / 2.0, k - 1)) + float(stats.t.ppf(0.8, k - 1))
-    return factor * float(x.std(ddof=1)) / math.sqrt(k)
+    factor = portable.t_ppf(1.0 - alpha / 2.0, k - 1) + portable.t_ppf(0.8, k - 1)
+    return factor * _sd(x) / math.sqrt(k)
 
 
 def k_needed(k: int, mde: float, delta: float) -> int | None:
@@ -242,7 +261,8 @@ def k_needed(k: int, mde: float, delta: float) -> int | None:
     if delta <= 0.0:
         raise ValueError("the change to catch must be above zero")
     try:
-        x = k * (mde / delta) ** 2
+        ratio = mde / delta
+        x = k * (ratio * ratio)
     except (OverflowError, ZeroDivisionError):
         return None
     if not math.isfinite(x) or x >= PRINTABLE:
@@ -591,7 +611,10 @@ def _num(x: float, digits: int = 3) -> str:
     zeros."""
     if x == 0.0:
         return "0"
-    places = min(12, max(0, digits - 1 - math.floor(math.log10(abs(x)))))
+    # the power of ten of |x|, read from CPython's own formatting to 18 digits, which no float
+    # rounds up to the next power
+    exponent = int(f"{abs(x):.17e}".partition("e")[2])
+    places = min(12, max(0, digits - 1 - exponent))
     text = f"{abs(x):,.{places}f}"
     if "." in text:
         text = text.rstrip("0").rstrip(".")
@@ -663,8 +686,8 @@ def _described(measure: str, g: _Gathered, status: str) -> Measure:
     m.cases = list(g.cases)
     m.d = [float(x) for x in d]
     if k:
-        m.mean_a, m.mean_b = float(ya.mean()), float(yb.mean())
-        m.change = float(d.mean())
+        m.mean_a, m.mean_b = _mean(ya), _mean(yb)
+        m.change = _mean(d)
         m.relative = share_of(m.change, m.mean_a)
         m.p50_a, m.p50_b = float(np.median(ya)), float(np.median(yb))
         if k >= QUANTILES_FROM:
@@ -718,7 +741,7 @@ def _left_out_lines(measure: str, a: Version, b: Version, g: _Gathered) -> list[
         text = f"This reading is on the {both} of {g.k_total} cases both versions finished"
         for v, counts in ((a, g.unfinished_old), (b, g.unfinished_new)):
             if counts:
-                n = sum(counts.values())
+                n = portable.isum(counts.values())
                 noun = "case" if n == 1 else "cases"
                 text += f"; {v.label} did not finish {n} {noun} ({_kinds(counts)})"
         lines.append(text + ".")
@@ -894,13 +917,16 @@ def _speak_tested(
         up = m.change > 0.0
         m.direction = high if up else low
         favoured, other = ("a", "b") if up else ("b", "a")
-        unf = {"a": sum(g.unfinished_old.values()), "b": sum(g.unfinished_new.values())}
+        unf = {
+            "a": portable.isum(g.unfinished_old.values()),
+            "b": portable.isum(g.unfinished_new.values()),
+        }
         timed = {"a": g.timed_out_old, "b": g.timed_out_new}
         who = {"a": a, "b": b}
         hidden = measure in FINISHED_ONLY and (
             unf[favoured] > unf[other] or timed[favoured] > timed[other]
         )
-        n_way = sum(1 for x in m.d if (x > 0.0) == up and x != 0.0)
+        n_way = portable.isum(1 for x in m.d if (x > 0.0) == up and x != 0.0)
         excludes = m.lo > 0.0 if up else m.hi < 0.0
         if hidden:
             m.verdict = "unconfirmed"

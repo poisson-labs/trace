@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from poisson_trace.clock import REASONS, Conversation
+from poisson_trace.stats import portable
 
 #: The reason ``not_listed`` gives for a conversation that one run of a comparison does not hold.
 NOT_IN_RUN = "not in the run"
@@ -60,7 +61,7 @@ def steps_of(
     out: list[dict[str, Any]] = []
     reached = 0
     for at in reversed(range(last)):
-        ended_here = sum(ends[at].values())
+        ended_here = portable.isum(ends[at].values())
         reached += ended_here
         out.append(
             {
@@ -232,9 +233,9 @@ def timings_of(rows: Sequence[Conversation], named: Sequence[Named] | None, most
         "most_steps": most if named is None else None,
         "conversations": len(placed),
         "listed": len(items),
-        "no_end": sum(1 for step in steps if step["duration_ns"] is None),
-        "parents_no_end": sum(1 for parent in parents if parent["duration_ns"] is None),
-        "no_tree": sum(1 for item in items if item["parents"] is None),
+        "no_end": portable.isum(1 for step in steps if step["duration_ns"] is None),
+        "parents_no_end": portable.isum(1 for parent in parents if parent["duration_ns"] is None),
+        "no_tree": portable.isum(1 for item in items if item["parents"] is None),
         "asked": None
         if named is None
         else [{"config_hash": h, "replicate_index": i} for h, i in named],

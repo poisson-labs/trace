@@ -10,12 +10,14 @@ is reliable, and then always "if tries of an input are independent".
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
 from poisson_trace.look import count
 from poisson_trace.report import _gap, _p, file_timed, input_words, value_words
+from poisson_trace.stats import portable
 
 # How a Next that ends on a placeholder ceiling says to choose it.
 CHOOSE_X = "choosing X before you look"
@@ -407,14 +409,14 @@ def _shared_caveats(p: _Pair) -> list[str]:
             if k and not reason.startswith("no outcome")
         }
         if left:
-            total = sum(left.values())
+            total = portable.isum(left.values())
             reasons = "; ".join(f"{count(k)} {reason}" for reason, k in left.items())
             said.append(f"{inputs(total)} {'was' if total == 1 else 'were'} left out ({reasons}).")
     a, b = p.no_outcome
     if a or b:
         line = f"{count(a)} tries of the old and {count(b)} of the new had no outcome"
         left_out = held["left_out"]
-        k = sum(n for reason, n in left_out.items() if reason.startswith("no outcome"))
+        k = portable.isum(n for reason, n in left_out.items() if reason.startswith("no outcome"))
         if k:
             line += (
                 f"; the {inputs(k)} that leaves without a result on one side "
@@ -523,8 +525,8 @@ def _different(p: _Pair, changes: str) -> tuple[str, str, str, str | None, list[
         )
     carried = ""
     flagged = p.flagged
-    net = sum(_extra(r) for r in d["changes"]["rows"])
-    share = sum(_extra(r) for r in flagged)
+    net = math.fsum(_extra(r) for r in d["changes"]["rows"])
+    share = math.fsum(_extra(r) for r in flagged)
     if flagged and net != 0.0 and share * net > 0.0:
         who = (
             inputs_named([r["config"] for r in flagged])
@@ -1129,7 +1131,7 @@ def where(
         )
     excluded = {reason: n for reason, n in placement["excluded"].items() if n}
     if excluded:
-        total = sum(excluded.values())
+        total = portable.isum(excluded.values())
         reasons = "; ".join(f"{reason} {count(n)}" for reason, n in excluded.items())
         caveats.append(
             f"{count(total)} {'row is' if total == 1 else 'rows are'} not placed ({reasons}), so "

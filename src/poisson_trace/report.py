@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 from xml.sax.saxutils import escape
 
 from poisson_trace.look import count
+from poisson_trace.stats import portable
 
 CANNOT_SAY: tuple[str, ...] = (
     "The step index is where the run stopped, not why. A run that died at a tool step may "
@@ -163,7 +165,7 @@ def _header_lines(run: Mapping[str, Any], events: Sequence[str]) -> list[str]:
             f"{label} {count(placement[label])}"
             for label in ("placed", "died", "ended", "timed out", "capped")
         )
-        + f" · excluded {count(sum(excluded.values()))}"
+        + f" · excluded {count(portable.isum(excluded.values()))}"
         + (
             " (" + "; ".join(f"{reason} {count(n)}" for reason, n in excluded.items() if n) + ")"
             if any(excluded.values())
@@ -505,7 +507,7 @@ class WhereReport:
                 f"| timed out | {count(timed['count'])} | {_f(timed['f'])} | "
                 f"{_band(timed['lo'], timed['hi'])} |"
             )
-        total = sum(row["f"] for row in d["causes"])
+        total = math.fsum(row["f"] for row in d["causes"])
         s_last = d["curve"][-1]["survival"] if d["curve"] else 1.0
         lines += [
             "",
@@ -764,7 +766,7 @@ class FixCheckReport:
         reasons = "; ".join(f"{reason} {count(n)}" for reason, n in left.items() if n)
         lines.append(
             f"- inputs: {rule} · selected {count(inputs['selected'])} · compared "
-            f"{count(inputs['compared'])} · left out {count(sum(left.values()))}"
+            f"{count(inputs['compared'])} · left out {count(portable.isum(left.values()))}"
             + (f" ({reasons})" if reasons else "")
         )
         lines.append(
@@ -1119,7 +1121,7 @@ def _render_svg(report: WhereReport) -> str:
         f'<text x="{_PAD_L}" y="40" fill="{_INK2}">placed {count(placement["placed"])} · '
         f"died {count(placement['died'])} · ended {count(placement['ended'])} · "
         f"timed out {count(placement['timed out'])} · capped {count(placement['capped'])} · "
-        f"excluded {count(sum(placement['excluded'].values()))} · "
+        f"excluded {count(portable.isum(placement['excluded'].values()))} · "
         f"events: {escape(', '.join(d['events']))}</text>"
     )
     for y0, h, sy, ylabel in (
