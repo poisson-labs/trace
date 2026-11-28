@@ -2753,8 +2753,10 @@ def _changes_block(
     tested = len(counts)
     smallest = min(extreme(a, b) for a, b in {(c.runs_old, c.runs_new) for c in counts})
     together = next((j for j in range(1, tested + 1) if smallest * tested / j < alpha), None)
+    # a lone input is flagged only where its p is below alpha / M, so the repeats are the first at
+    # which the most extreme table's p is below it; at exactly the threshold it is not flagged
     repeats = 1
-    while extreme(repeats, repeats) > alpha / tested:
+    while extreme(repeats, repeats) >= alpha / tested:
         repeats += 1
     return {
         "tested": tested,
